@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|AnyCPU">
+      <Configuration>Debug</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|AnyCPU">
+      <Configuration>Release</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>80d44b58-2b9c-426f-ac73-165fa3e96065</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup>
+    <NuProjPath Condition=" '$(NuProjPath)' == '' ">$(MSBuildExtensionsPath)\NuProj\</NuProjPath>
+  </PropertyGroup>
+  <Import Project="$(NuProjPath)\NuProj.props" Condition="Exists('$(NuProjPath)\NuProj.props')" />
+  <PropertyGroup Label="Configuration">
+    <Id>Microsoft.NetMicroFramework.Tools.UsbDebugClient</Id>
+    <Version>0.1.0-alpha15</Version>
+    <Title>USB debug client for .NET Micro Framework devices</Title>
+    <Authors>Eclo Solutions</Authors>
+    <Owners>Eclo Solutions</Owners>
+    <Summary>This library provides an USB debug client for .NETMF devices.</Summary>
+    <Description>This library provides an USB debug client for .NETMF devices.</Description>
+    <ReleaseNotes>
+    </ReleaseNotes>
+    <ProjectUrl>https://github.com/Eclo/NETMF-Debug</ProjectUrl>
+    <LicenseUrl>http://opensource.org/licenses/Apache-2.0</LicenseUrl>
+    <Copyright>Copyright © Eclo Solutions 2016</Copyright>
+    <Tags>NETMF, Micro Framework</Tags>
+    <IconUrl>https://nuget.org/Content/Images/packageDefaultIcon-50x50.png</IconUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NuGet.NETMF Debug Base Components\NuGet.NETMF Debug Base Components.nuproj" />
+  </ItemGroup>
+  <Import Project="$(NuProjPath)\NuProj.targets" />
+</Project>

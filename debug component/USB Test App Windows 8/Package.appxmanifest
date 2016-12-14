@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/2010/manifest" xmlns:m2="http://schemas.microsoft.com/appx/2013/manifest">
+  <Identity Name="d173134b-d0e2-4f05-a4c8-8948ad27ed8f" Publisher="CN=jassimoes" Version="1.0.0.0" />
+  <Properties>
+    <DisplayName>Test App Windows 8</DisplayName>
+    <PublisherDisplayName>jassimoes</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <Prerequisites>
+    <OSMinVersion>6.3.0</OSMinVersion>
+    <OSMaxVersionTested>6.3.0</OSMaxVersionTested>
+  </Prerequisites>
+  <Resources>
+    <Resource Language="x-generate" />
+  </Resources>
+  <Applications>
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="Test_App_Windows_8.App">
+      <m2:VisualElements DisplayName="NETMF USB Debug Client Test App Windows 8" Square150x150Logo="Assets\Logo.png" Square30x30Logo="Assets\SmallLogo.png" Description="Test App Windows 8" ForegroundText="light" BackgroundColor="#464646">
+        <m2:SplashScreen Image="Assets\SplashScreen.png" />
+      </m2:VisualElements>
+    </Application>
+  </Applications>
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <m2:DeviceCapability Name="usb">
+      <m2:Device Id="vidpid:0483 A08f">
+        <m2:Function Type="name:vendorSpecific" />
+      </m2:Device>
+    </m2:DeviceCapability>
+  </Capabilities>
+</Package>

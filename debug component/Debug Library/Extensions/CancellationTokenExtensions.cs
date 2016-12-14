@@ -1,0 +1,35 @@
+﻿//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// This file is part of the Microsoft .NET Micro Framework and is unsupported. 
+// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use these files except in compliance with the License.
+// You may obtain a copy of the License at:
+// 
+// http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing
+// permissions and limitations under the License.
+// 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+using System;
+using System.Threading;
+
+namespace Microsoft.SPOT.Debugger
+{
+    static class CancellationTokenExtensions
+    {
+        /// <summary>
+        /// Links cancellation token source with a set timeout cancellation token.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <param name="timeout">Timeout to link with cancelation token.</param>
+        /// <returns>A linked cancellation token.</returns>
+        public static CancellationToken AddTimeout(this CancellationToken cancellationToken, TimeSpan timeout)
+        {
+            var timeoutCancellatioToken = new CancellationTokenSource(timeout).Token;
+            return CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellatioToken).Token;
+        }
+    }
+}
