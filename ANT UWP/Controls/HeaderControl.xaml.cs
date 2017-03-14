@@ -1,24 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using MFDeploy.ViewModels;
-using Microsoft.NetMicroFramework.Tools.MFDeployTool.Engine;
-using Microsoft.SPOT.Debugger.WireProtocol;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+﻿//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+using NanoFramework.ANT.ViewModels;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 
 // The User Control item template is documented at http://go.microsoft.com/fwlink/?LinkId=234236
 
-namespace MFDeploy.Controls
+namespace NanoFramework.ANT.Controls
 {
     public sealed partial class HeaderControl : UserControl
     {

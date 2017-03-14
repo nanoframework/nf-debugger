@@ -1,13 +1,13 @@
 ﻿<Page
-    x:Class="MFDeploy.Views.ConfigNetworkPage"
+    x:Class="NanoFramework.ANT.Views.ConfigNetworkPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:MFDeploy.Views"
+    xmlns:local="using:NanoFramework.ANT.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:Template10.Controls"
     xmlns:conv10="using:Template10.Converters"
-    xmlns:vm="using:MFDeploy.ViewModels" mc:Ignorable="d"
+    xmlns:vm="using:NanoFramework.ANT.ViewModels" mc:Ignorable="d"
     DataContext="{Binding ConfigNetworkViewModel, Mode=OneWay, Source={StaticResource Locator}}"
     >
 
@@ -25,7 +25,7 @@
         </conv10:ValueWhenConverter>
     </Page.Resources>
 
-    <RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <RelativePanel Padding="0,48,0,0" Background="{ThemeResource LigtherAreaBrush}">
 
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="AdaptiveVisualStateGroup">
@@ -59,27 +59,64 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
-        <Pivot x:Name="mainPivot" Padding="0,48,0,0">
+        <Pivot x:Name="mainPivot"  
+               RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignTopWithPanel="True"
+               RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True" 
+               HeaderTemplate="{StaticResource PivotItemHeaderTemplate}" >
             <!-- general configuration -->
-            <PivotItem Header="Network">
-                <Grid>
-                    <TextBox x:Name="staticIPAdrressTextBox" x:Uid="CU_StaticIPAdrressTextBox" Header="Static IP Address" HorizontalAlignment="Left" Margin="30,30,0,0" TextWrapping="NoWrap" MaxLength="15" Text="{x:Bind ViewModel.StaticIPAdrress, Mode=TwoWay}" VerticalAlignment="Top" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}" IsEnabled="{Binding IsChecked, ElementName=dhcpEnableCheckBox, Converter={StaticResource BooleanInverterConverter} }"/>
-                    <TextBox x:Name="subnetMaskTextBox" x:Uid="CU_SubnetMaskTextBox" Header="Subnet Mask" HorizontalAlignment="Left" Margin="30,100,0,0" TextWrapping="NoWrap" MaxLength="15" Text="{x:Bind ViewModel.SubnetMask, Mode=TwoWay}" VerticalAlignment="Top" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}" IsEnabled="{Binding IsChecked, ElementName=dhcpEnableCheckBox, Converter={StaticResource BooleanInverterConverter} }"/>
-                    <TextBox x:Name="defaultGatewayTextBox" x:Uid="CU_DefaultGatewayTextBox" Header="Default Gateway" HorizontalAlignment="Left" Margin="30,170,0,0" TextWrapping="NoWrap" MaxLength="15" Text="{x:Bind ViewModel.DefaultGateway, Mode=TwoWay}" VerticalAlignment="Top" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}" IsEnabled="{Binding IsChecked, ElementName=dhcpEnableCheckBox, Converter={StaticResource BooleanInverterConverter} }"/>
-                    <TextBox x:Name="macAdrressTextBox" x:Uid="CU_MacAdrressTextBox" Header="MAC Address" HorizontalAlignment="Left" Margin="30,240,0,0" TextWrapping="NoWrap" MaxLength="17" Text="{x:Bind ViewModel.MACAdrress, Mode=TwoWay}" VerticalAlignment="Top" Width="180" PlaceholderText="##:##:##:##:##:##" TextChanged="macAdrressTextBox_TextChanged"/>
-                    <TextBox x:Name="dnsPrimaryAdrressTextBox" x:Uid="CU_DnsPrimaryAdrressTextBox" Header="DNS Primary Address" HorizontalAlignment="Left" Margin="30,310,0,0" TextWrapping="NoWrap" MaxLength="15" Text="{x:Bind ViewModel.DNSPrimaryAdrress, Mode=TwoWay}" VerticalAlignment="Top" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}"/>
-                    <TextBox x:Name="dnsSecondaryAdrressTextBox" x:Uid="CU_DnsSecondaryAdrressTextBox" Header="DNS Secondary Address" HorizontalAlignment="Left" Margin="30,380,0,0" TextWrapping="NoWrap" MaxLength="15" Text="{x:Bind ViewModel.DNSSecondaryAdrress, Mode=TwoWay}" VerticalAlignment="Top" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}"/>
-                    <CheckBox x:Name="dhcpEnableCheckBox" x:Uid="CU_DhcpEnableCheckBox" HorizontalAlignment="Left" Margin="30,450,0,0" Content="Enable DHCP" IsChecked="{x:Bind ViewModel.DHCPEnable, Mode=TwoWay}"/>
-                    <TextBlock x:Name="staticIPAdrressTextBlock" HorizontalAlignment="Left" Margin="224,68,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontSize="10" Foreground="Red"/>
-                    <TextBlock x:Name="subnetMaskTextBlock" HorizontalAlignment="Left" Margin="224,138,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontSize="10" Foreground="Red"/>
-                    <TextBlock x:Name="defaultGatewayTextBlock" HorizontalAlignment="Left" Margin="224,208,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontSize="10" Foreground="Red"/>
-                    <TextBlock x:Name="macAdrressTextBlock" HorizontalAlignment="Left" Margin="224,278,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontSize="10" Foreground="Red"/>
-                    <TextBlock x:Name="dnsPrimaryAdrressTextBlock" HorizontalAlignment="Left" Margin="224,348,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontSize="10" Foreground="Red"/>
-                    <TextBlock x:Name="dnsSecondaryAdrressTextBlock" HorizontalAlignment="Left" Margin="224,418,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontSize="10" Foreground="Red"/>
-                </Grid>
+            <PivotItem Header="Network"
+                       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Margin="-12,0,0,0">
+                <RelativePanel Padding="30,30,0,0">
+                    <TextBox x:Name="staticIPAdrressTextBox" x:Uid="CU_StaticIPAdrressTextBox" Header="Static IP Address"                             
+                             TextWrapping="NoWrap" MaxLength="15" Text="{x:Bind ViewModel.StaticIPAdrress, Mode=TwoWay}" Style="{StaticResource AppTextBoxStyle}"
+                             RelativePanel.AlignTopWithPanel="True" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" TextChanged="IPAdrressTextBox_TextChanged" 
+                             Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}" IsEnabled="{Binding IsChecked, ElementName=dhcpEnableCheckBox, Converter={StaticResource BooleanInverterConverter} }" />
+                    <TextBlock x:Name="staticIPAdrressTextBlock" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="staticIPAdrressTextBox" RelativePanel.AlignBottomWith="staticIPAdrressTextBox" Margin="20,0,0,10"/>
+
+                    <TextBox x:Name="subnetMaskTextBox" x:Uid="CU_SubnetMaskTextBox" Header="Subnet Mask" Margin="0,20,0,0" TextWrapping="NoWrap" Style="{StaticResource AppTextBoxStyle}"
+                             RelativePanel.Below="staticIPAdrressTextBox" MaxLength="15" Text="{x:Bind ViewModel.SubnetMask, Mode=TwoWay}" Width="180" InputScope="Number" 
+                             PlaceholderText="###.###.###.###" TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" 
+                             KeyDown="{x:Bind IPAdrressTextBox_KeyDown}" IsEnabled="{Binding IsChecked, ElementName=dhcpEnableCheckBox, Converter={StaticResource BooleanInverterConverter} }"/>
+                    <TextBlock x:Name="subnetMaskTextBlock" TextWrapping="Wrap" Text=""  FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="subnetMaskTextBox" RelativePanel.AlignBottomWith="subnetMaskTextBox" Margin="20,0,0,10"/>
+                    
+                    <TextBox x:Name="defaultGatewayTextBox" x:Uid="CU_DefaultGatewayTextBox" Header="Default Gateway" TextWrapping="NoWrap" MaxLength="15"
+                             RelativePanel.Below="subnetMaskTextBox" Margin="0,20,0,0" Style="{StaticResource AppTextBoxStyle}"
+                             Text="{x:Bind ViewModel.DefaultGateway, Mode=TwoWay}" VerticalAlignment="Top" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" 
+                             TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}" 
+                             IsEnabled="{Binding IsChecked, ElementName=dhcpEnableCheckBox, Converter={StaticResource BooleanInverterConverter} }"/>
+                    <TextBlock x:Name="defaultGatewayTextBlock" TextWrapping="Wrap" Text="" FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="defaultGatewayTextBox" RelativePanel.AlignBottomWith="defaultGatewayTextBox" Margin="20,0,0,10"/>
+                    
+                    <TextBox x:Name="macAdrressTextBox" x:Uid="CU_MacAdrressTextBox" Header="MAC Address" TextWrapping="NoWrap" MaxLength="17" 
+                             Text="{x:Bind ViewModel.MACAdrress, Mode=TwoWay}" Width="180" PlaceholderText="##:##:##:##:##:##" TextChanged="macAdrressTextBox_TextChanged"
+                             RelativePanel.Below="defaultGatewayTextBox" Margin="0,20,0,0" Style="{StaticResource AppTextBoxStyle}"/>
+                    <TextBlock x:Name="macAdrressTextBlock" TextWrapping="Wrap" Text="" FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="macAdrressTextBox" RelativePanel.AlignBottomWith="macAdrressTextBox" Margin="20,0,0,10" />
+
+                    <TextBox x:Name="dnsPrimaryAdrressTextBox" x:Uid="CU_DnsPrimaryAdrressTextBox" Header="DNS Primary Address" TextWrapping="NoWrap" MaxLength="15" 
+                             Text="{x:Bind ViewModel.DNSPrimaryAdrress, Mode=TwoWay}" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" 
+                             TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}"
+                             RelativePanel.Below="macAdrressTextBox" Margin="0,20,0,0" Style="{StaticResource AppTextBoxStyle}"/>
+                    <TextBlock x:Name="dnsPrimaryAdrressTextBlock" TextWrapping="Wrap" Text="" FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="dnsPrimaryAdrressTextBox" RelativePanel.AlignBottomWith="dnsPrimaryAdrressTextBox" Margin="20,0,0,10"/>
+
+                    <TextBox x:Name="dnsSecondaryAdrressTextBox" x:Uid="CU_DnsSecondaryAdrressTextBox" Header="DNS Secondary Address" TextWrapping="NoWrap" MaxLength="15" 
+                             Text="{x:Bind ViewModel.DNSSecondaryAdrress, Mode=TwoWay}" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" 
+                             TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}"
+                             RelativePanel.Below="dnsPrimaryAdrressTextBox" Margin="0,20,0,0" Style="{StaticResource AppTextBoxStyle}"/>
+                    <TextBlock x:Name="dnsSecondaryAdrressTextBlock" TextWrapping="Wrap" Text="" FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="dnsSecondaryAdrressTextBox" RelativePanel.AlignBottomWith="dnsSecondaryAdrressTextBox" Margin="20,0,0,10"/>
+
+                    <CheckBox x:Name="dhcpEnableCheckBox" x:Uid="CU_DhcpEnableCheckBox" Content="Enable DHCP" IsChecked="{x:Bind ViewModel.DHCPEnable, Mode=TwoWay}"
+                              RelativePanel.Below="dnsSecondaryAdrressTextBox" Margin="0,20,0,0"/>
+                                                           
+                </RelativePanel>
             </PivotItem>
             <!-- wireless configuration -->
-            <PivotItem Header="Wireless">
+            <PivotItem Header="Wireless"
+                       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Margin="-12,0,0,0">
                 <Grid>
                     <ComboBox x:Name="authenticationComboBox" x:Uid="CU_AuthenticationComboBox" Header="Authentication" HorizontalAlignment="Left" VerticalAlignment="Top" Width="180" Margin="30,30,0,0" SelectedIndex="{x:Bind ViewModel.Authentication, Mode=TwoWay}">
                         <ComboBoxItem x:Uid="CU_NoneItem" Content="None"/>
@@ -128,7 +165,8 @@
             </PivotItem>
         </Pivot>
 
-        <CommandBar RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
+        <CommandBar RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True"
+                    Background="{ThemeResource LigtherAreaBrush}">
             <AppBarButton x:Name="updateAppBarButton" x:Uid="CU_updateAppBarButton" Label="Update" IsEnabled="{x:Bind ViewModel.UpdateButtonEnabled, Mode=OneWay}" Icon="Accept" Tapped="{x:Bind ViewModel.UpdateConfiguration, Mode=OneWay}"/>
         </CommandBar>
     </RelativePanel>

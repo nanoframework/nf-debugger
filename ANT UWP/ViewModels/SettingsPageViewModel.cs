@@ -1,27 +1,31 @@
+//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MFDeploy.Services.BusyService;
-using MFDeploy.Services.Dialog;
-using MFDeploy.Utilities;
+using NanoFramework.ANT.Services.BusyService;
+using NanoFramework.ANT.Services.Dialog;
+using NanoFramework.ANT.Services.SettingsServices;
+using NanoFramework.ANT.Utilities;
 using Microsoft.Practices.ServiceLocation;
-using Template10.Mvvm;
 using Template10.Services.NavigationService;
-using Template10.Services.SettingsService;
-using Windows.UI.Xaml;
 using Windows.UI.Xaml.Navigation;
+using Windows.Storage;
+using NanoFramework.ANT.Services.StorageService;
 
-namespace MFDeploy.ViewModels
+namespace NanoFramework.ANT.ViewModels
 {
     public class SettingsPageViewModel : MyViewModelBase
     {
         //private instance of Main to get general stuff
         private MainViewModel MainVM { get { return ServiceLocator.Current.GetInstance<MainViewModel>(); } }
 
-        public SettingsPageViewModel(IMyDialogService dlg, IBusyService busy)
+        public SettingsPageViewModel(IMyDialogService dlg, IBusyService busy, IAppSettingsService _appSettings, IStorageInterfaceService _storageInterfaceService)
         {
-            SettingsPartViewModel  = new SettingsPartViewModel(dlg, busy);
+            SettingsPartViewModel  = new SettingsPartViewModel(dlg, busy, _appSettings, _storageInterfaceService);
             AboutPartViewModel = new AboutPartViewModel(dlg, busy);
         }
         public SettingsPartViewModel SettingsPartViewModel { get; }
@@ -38,6 +42,8 @@ namespace MFDeploy.ViewModels
             await Task.CompletedTask;
 
             MainVM.PageHeader = Res.GetString("ST_PageHeader");
+
+            await SettingsPartViewModel.LoadDeployFolder();
         }
 
         public override async Task OnNavigatedFromAsync(IDictionary<string, object> suspensionState, bool suspending)
@@ -60,53 +66,43 @@ namespace MFDeploy.ViewModels
 
     public class SettingsPartViewModel : MyViewModelBase
     {
-        Services.SettingsServices.SettingsService _settings;
+        IAppSettingsService _settings;
 
-        public SettingsPartViewModel(IMyDialogService dlg, IBusyService busy)
+        public SettingsPartViewModel(IMyDialogService dlg, IBusyService busy, IAppSettingsService _appSettings, IStorageInterfaceService _storageInterfaceService)
         {
-            if (Windows.ApplicationModel.DesignMode.DesignModeEnabled)
-            {
-                // designtime
-            }
-            else
-            {
-                _settings = Services.SettingsServices.SettingsService.Instance;
-            }
             this.DialogSrv = dlg;
             this.BusySrv = busy;
+            this._settings = _appSettings;
+            this.StorageInterface = _storageInterfaceService;
         }
 
-        public bool UseShellBackButton
+        public bool AddTimestampToOutputButton
         {
-            get { return _settings.UseShellBackButton; }
-            set { _settings.UseShellBackButton = value; base.RaisePropertyChanged(); }
+            get { return _settings.AddTimestampToOutput; }
+            set { _settings.AddTimestampToOutput = value; }
         }
+        public string DeployFolderPath { get; set; }
 
-        public bool UseLightThemeButton
+        public async Task LoadDeployFolder()
         {
-            get { return _settings.AppTheme.Equals(ApplicationTheme.Light); }
-            set { _settings.AppTheme = value ? ApplicationTheme.Light : ApplicationTheme.Dark; base.RaisePropertyChanged(); }
-        }
+            StorageFolder folder = await StorageInterface.GetDeployFolder();
 
-        private string _BusyText = "Please wait...";
-        public string BusyText
-        {
-            get { return _BusyText; }
-            set
+            if (folder != null)
             {
-                Set(ref _BusyText, value);
-                _ShowBusyCommand.RaiseCanExecuteChanged();
+                DeployFolderPath = folder.Path;
+            }
+            else
+                DeployFolderPath = Res.GetString("ST_CurrentFolderPath");
+        }
+
+        public async Task PickDeployFolder()
+        {
+            string folderPath = await StorageInterface.PickDeployFolder();
+            if (folderPath != String.Empty)
+            {
+                DeployFolderPath = folderPath;
             }
         }
-
-        DelegateCommand _ShowBusyCommand;
-        public DelegateCommand ShowBusyCommand
-            => _ShowBusyCommand ?? (_ShowBusyCommand = new DelegateCommand(async () =>
-            {
-                BusySrv.ShowBusy(_BusyText);
-                await Task.Delay(5000);
-                BusySrv.HideBusy();
-            }, () => !string.IsNullOrEmpty(BusyText)));
     }
 
     public class AboutPartViewModel : MyViewModelBase
@@ -122,6 +118,14 @@ namespace MFDeploy.ViewModels
         public string DisplayName => Windows.ApplicationModel.Package.Current.DisplayName;
 
         public string Publisher => Windows.ApplicationModel.Package.Current.PublisherDisplayName;
+
+        public string Concept
+        {
+            get
+            {
+                return $"{Res.GetString("ST_Concept")} Eclo Solutions";
+            }
+        }
 
         public string Version
         {

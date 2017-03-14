@@ -1,12 +1,16 @@
-﻿using MFDeploy.Models;
-using MFDeploy.ViewModels;
+﻿//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+using NanoFramework.ANT.Models;
+using NanoFramework.ANT.ViewModels;
 using System;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
-namespace MFDeploy.Views
+namespace NanoFramework.ANT.Views
 {
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
@@ -27,10 +31,18 @@ namespace MFDeploy.Views
         {
             // stop selection changed event
             filesListView.SelectionChanged -= filesListView_SelectionChanged;
+            // default
+            ViewModel.AnyFileSelected = false;
             // select all item as default
-            filesListView.SelectRange(new ItemIndexRange(0, (uint)ViewModel.FilesList.Count));
-            // enable deploy button
-            ViewModel.AnyFileSelected = true;
+            for (int i = 0; i < filesListView.Items.Count; i++)
+            {
+                if (ViewModel.FilesList[i].Selected)
+                {
+                    filesListView.SelectedItems.Add(filesListView.Items[i]);
+                    // any item selected, enable deploy button
+                    ViewModel.AnyFileSelected = true;
+                }
+            }
             // back with selection changed event
             filesListView.SelectionChanged += filesListView_SelectionChanged;
         }

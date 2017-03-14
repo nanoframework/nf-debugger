@@ -1,17 +1,18 @@
+//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+using Microsoft.Practices.ServiceLocation;
+using NanoFramework.ANT.Services.BusyService;
+using NanoFramework.ANT.Services.Dialog;
+using NanoFramework.ANT.Utilities;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Template10.Services.NavigationService;
 using Windows.UI.Xaml.Navigation;
-using MFDeploy.Services.Dialog;
-using MFDeploy.Services.BusyService;
-using MFDeploy.Services.NetMicroFrameworkService;
-using Microsoft.NetMicroFramework.Tools.MFDeployTool.Engine;
-using System.Collections.ObjectModel;
-using MFDeploy.Utilities;
-using Microsoft.Practices.ServiceLocation;
 
-namespace MFDeploy.ViewModels
+namespace NanoFramework.ANT.ViewModels
 {
     public class MainPageViewModel : MyViewModelBase
     {

@@ -1,6 +1,10 @@
+//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
 using System.ComponentModel;
 using System.Linq;
-using MFDeploy.ViewModels;
+using NanoFramework.ANT.ViewModels;
 using Template10.Common;
 using Template10.Controls;
 using Template10.Services.NavigationService;
@@ -8,7 +12,7 @@ using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
-namespace MFDeploy.Views
+namespace NanoFramework.ANT.Views
 {
     public sealed partial class Shell : Page
     {

@@ -1,21 +1,19 @@
-using Windows.UI.Xaml;
-using System.Threading.Tasks;
-using MFDeploy.Services.SettingsServices;
-using Windows.ApplicationModel.Activation;
-using Template10.Controls;
-using Template10.Common;
-using System;
-using System.Linq;
-using Windows.UI.Xaml.Data;
-using MFDeploy.Views.Config;
-using Microsoft.NetMicroFramework.Tools.UsbDebug;
-using System.Diagnostics;
-using MFDeploy.Services.NetMicroFrameworkService;
-using GalaSoft.MvvmLight.Ioc;
-using MFDeploy.ViewModels;
+//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
 using Microsoft.Practices.ServiceLocation;
+using NanoFramework.ANT.Services.NanoFrameworkService;
+using NanoFramework.ANT.ViewModels;
+using NanoFramework.ANT.Views.Config;
+using NanoFramework.Tools.Debugger;
+using System.Threading.Tasks;
+using Template10.Controls;
+using Windows.ApplicationModel.Activation;
+using Windows.UI.Xaml;
+using Windows.UI.Xaml.Data;
 
-namespace MFDeploy
+namespace NanoFramework.ANT
 {
     /// Documentation on APIs used in this page:
     /// https://github.com/Windows-XAML/Template10/wiki
@@ -30,9 +28,9 @@ namespace MFDeploy
 
             #region App settings
 
-            var _settings = SettingsService.Instance;
-            RequestedTheme = _settings.AppTheme;
-            CacheMaxDuration = _settings.CacheMaxDuration;
+            //var _settings = SettingsService.Instance;
+            //RequestedTheme = _settings.AppTheme;
+            //CacheMaxDuration = _settings.CacheMaxDuration;
             //ShowShellBackButton = _settings.UseShellBackButton;
             ShowShellBackButton = false;
             #endregion
@@ -59,20 +57,33 @@ namespace MFDeploy
 
                 var usbClient = CreateUSBDebugClient();
                 ServiceLocator.Current.GetInstance<MainViewModel>().UsbDebugService = usbClient;
+
+                var serialClient = CreateSerialDebugClient();
+                ServiceLocator.Current.GetInstance<MainViewModel>().SerialDebugService = serialClient;
             }
             await Task.CompletedTask;
         }
-        private  INetMFUsbDebugClientService CreateUSBDebugClient()
+
+        private  INFUsbDebugClientService CreateUSBDebugClient()
         {
             // TODO: check app lifecycle
-            var usbDebugClient = new UsbDebugClient(App.Current);
-            return new NetMFUsbDebugClientService(usbDebugClient);
+            var usbDebugClient = PortBase.CreateInstanceForUsb("", App.Current);
+
+            return new NFUsbDebugClientService(usbDebugClient);
+        }
+
+        private INFSerialDebugClientService CreateSerialDebugClient()
+        {
+            // TODO: check app lifecycle
+            var serialDebugClient = PortBase.CreateInstanceForSerial("", App.Current);
+
+            return new NFSerialDebugClientService(serialDebugClient);
         }
 
         public override async Task OnStartAsync(StartKind startKind, IActivatedEventArgs args)
         {
-            // long-running startup tasks go here
-            await Task.Delay(1000);
+            //// long-running startup tasks go here
+            //await Task.Delay(1000);
 
             NavigationService.Navigate(Pages.MainPage);
             await Task.CompletedTask;

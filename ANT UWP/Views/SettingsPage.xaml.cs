@@ -1,9 +1,13 @@
+//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
 using System.Threading.Tasks;
-using MFDeploy.ViewModels;
+using NanoFramework.ANT.ViewModels;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 
-namespace MFDeploy.Views
+namespace NanoFramework.ANT.Views
 {
     public sealed partial class SettingsPage : Page
     {

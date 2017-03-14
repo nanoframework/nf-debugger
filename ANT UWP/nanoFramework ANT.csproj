@@ -8,7 +8,7 @@
     <OutputType>AppContainerExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>NanoFramework.ANT.UWP</RootNamespace>
-    <AssemblyName>nF-ANT</AssemblyName>
+    <AssemblyName>nanoFramework.ANT</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
     <TargetPlatformVersion>10.0.10586.0</TargetPlatformVersion>
@@ -17,7 +17,8 @@
     <EnableDotNetNativeCompatibleProfile>true</EnableDotNetNativeCompatibleProfile>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <PackageCertificateKeyFile>MFDeploy_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateKeyFile>nanoFramework ANT_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateThumbprint>98A9405BED4D6604A6F5DEA65172F3584B6F6E2E</PackageCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM'">
     <DebugSymbols>true</DebugSymbols>
@@ -91,7 +92,7 @@
   <ItemGroup>
     <!-- A reference to the entire .Net Framework and Windows SDK are automatically included -->
     <None Include="Design\projectGuides.guides" />
-    <None Include="MFDeploy_TemporaryKey.pfx" />
+    <None Include="nanoFramework ANT_TemporaryKey.pfx" />
     <None Include="project.json" />
     <PRIResource Include="Strings\en-US\Resources.resw" />
   </ItemGroup>
@@ -111,12 +112,16 @@
     <Compile Include="Services\Dialog\DialogHelper.cs" />
     <Compile Include="Services\Dialog\IMyDialogService.cs" />
     <Compile Include="Services\Dialog\MyDialogService.cs" />
-    <Compile Include="Services\NetMicroFrameworkService\INetMFDebugClientBaseService.cs" />
-    <Compile Include="Services\NetMicroFrameworkService\INetMFTcpIpDebugClientService.cs" />
-    <Compile Include="Services\NetMicroFrameworkService\INetMFUsbDebugClientService.cs" />
-    <Compile Include="Services\NetMicroFrameworkService\INetMFSerialDebugClientService.cs" />
-    <Compile Include="Services\NetMicroFrameworkService\NetMFUsbDebugClientService.cs" />
-    <Compile Include="Services\SettingsServices\SettingsService.cs" />
+    <Compile Include="Services\NanoFrameworkService\INFDebugClientBaseService.cs" />
+    <Compile Include="Services\NanoFrameworkService\INFTcpIpDebugClientService.cs" />
+    <Compile Include="Services\NanoFrameworkService\INFUsbDebugClientService.cs" />
+    <Compile Include="Services\NanoFrameworkService\INFSerialDebugClientService.cs" />
+    <Compile Include="Services\NanoFrameworkService\NFSerialDebugClientService.cs" />
+    <Compile Include="Services\NanoFrameworkService\NFUsbDebugClientService.cs" />
+    <Compile Include="Services\SettingsServices\IAppSettingsService.cs" />
+    <Compile Include="Services\SettingsServices\AppSettingsService.cs" />
+    <Compile Include="Services\StorageService\IStorageInterfaceService.cs" />
+    <Compile Include="Services\StorageService\StorageInterfaceService.cs" />
     <Compile Include="StateTriggers\IsFalseTrigger.cs" />
     <Compile Include="StateTriggers\ITriggerValue.cs" />
     <Compile Include="Utilities\EnumHelper.cs" />
@@ -168,6 +173,20 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\BadgeLogo.scale-100.png" />
+    <Content Include="Assets\BadgeLogo.scale-200.png" />
+    <Content Include="Assets\Square150x150Logo.scale-100.png" />
+    <Content Include="Assets\Square150x150Logo.scale-400.png" />
+    <Content Include="Assets\Square310x310Logo.scale-100.png" />
+    <Content Include="Assets\Square310x310Logo.scale-200.png" />
+    <Content Include="Assets\Square310x310Logo.scale-400.png" />
+    <Content Include="Assets\Square44x44Logo.scale-100.png" />
+    <Content Include="Assets\Square44x44Logo.scale-400.png" />
+    <Content Include="Assets\Square71x71Logo.scale-100.png" />
+    <Content Include="Assets\Square71x71Logo.scale-200.png" />
+    <Content Include="Assets\Square71x71Logo.scale-400.png" />
+    <Content Include="Assets\Wide310x150Logo.scale-100.png" />
+    <Content Include="Assets\Wide310x150Logo.scale-400.png" />
     <Content Include="FodyWeavers.xml" />
     <Content Include="Help.htm" />
     <Content Include="Properties\Default.rd.xml" />
@@ -234,6 +253,12 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Extensions\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\debugger-lib\UWP\Debug Library\nanoFramework Debug Library.csproj">
+      <Project>{970bdc72-755c-436b-b8ea-5810c990ad0d}</Project>
+      <Name>nanoFramework Debug Library</Name>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>

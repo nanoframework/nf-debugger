@@ -1,10 +1,14 @@
-﻿using System;
+﻿//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Windows.ApplicationModel.Resources;
 
-namespace MFDeploy.Utilities
+namespace NanoFramework.ANT.Utilities
 {
     public abstract class Res
     {

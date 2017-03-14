@@ -1,7 +1,12 @@
-﻿using MFDeploy.Utilities;
-using MFDeploy.ViewModels;
+﻿//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+using NanoFramework.ANT.Utilities;
+using NanoFramework.ANT.ViewModels;
 using System;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using Windows.UI.Xaml;
@@ -10,7 +15,7 @@ using Windows.UI.Xaml.Input;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
-namespace MFDeploy.Views
+namespace NanoFramework.ANT.Views
 {
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
@@ -82,7 +87,7 @@ namespace MFDeploy.Views
             }
         }
 
-        private async void IPAdrressTextBox_Paste(object sender, TextControlPasteEventArgs e)
+        private async Task IPAdrressTextBox_Paste(object sender, TextControlPasteEventArgs e)
         {
             TextBox tb = (sender as TextBox);
 
@@ -134,7 +139,7 @@ namespace MFDeploy.Views
             UpdateIsEnabledButtonState();
         }
 
-        private async void macAddressTextBox_Paste(object sender, TextControlPasteEventArgs e)
+        private async Task macAddressTextBox_Paste(object sender, TextControlPasteEventArgs e)
         {
             TextBox tb = (sender as TextBox);
 

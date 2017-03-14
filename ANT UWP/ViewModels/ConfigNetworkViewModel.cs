@@ -1,16 +1,22 @@
-﻿using System;
+﻿//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MFDeploy.Services.BusyService;
-using MFDeploy.Services.Dialog;
-using MFDeploy.Utilities;
+using GalaSoft.MvvmLight.Messaging;
+using NanoFramework.ANT.Services.BusyService;
+using NanoFramework.ANT.Services.Dialog;
+using NanoFramework.ANT.Utilities;
+using NanoFramework.ANT.Views.Config;
 using Microsoft.Practices.ServiceLocation;
 using Template10.Services.NavigationService;
 using Windows.UI.Xaml.Navigation;
 
-namespace MFDeploy.ViewModels
+namespace NanoFramework.ANT.ViewModels
 {
     public class ConfigNetworkViewModel : MyViewModelBase
     {
@@ -32,6 +38,9 @@ namespace MFDeploy.ViewModels
             {
                 //Value = suspensionState[nameof(Value)]?.ToString();
             }
+
+            MessengerInstance.Register<NotificationMessage>(this, MainViewModel.SELECTED_NULL_TOKEN, (message) => SelectedIsNullHandler());
+
             await Task.CompletedTask;
 
             MainVM.PageHeader = Res.GetString("CN_PageHeader");
@@ -43,6 +52,7 @@ namespace MFDeploy.ViewModels
             {
                 //suspensionState[nameof(Value)] = Value;
             }
+            MessengerInstance.Unregister(this);
             await Task.CompletedTask;
         }
 
@@ -53,6 +63,10 @@ namespace MFDeploy.ViewModels
         }
 
         #endregion
+        private void SelectedIsNullHandler()
+        {
+            this.NavigationService.Navigate(Pages.MainPage);
+        }
 
         private string _staticIPAdrress = "0.0.0.0";
 

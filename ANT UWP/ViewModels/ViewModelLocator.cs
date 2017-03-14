@@ -1,16 +1,19 @@
-﻿using System;
+﻿//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using GalaSoft.MvvmLight.Ioc;
-using MFDeploy.Services.BusyService;
-using MFDeploy.Services.Dialog;
-using MFDeploy.Services.NetMicroFrameworkService;
-using Microsoft.NetMicroFramework.Tools.UsbDebug;
+using NanoFramework.ANT.Services.BusyService;
+using NanoFramework.ANT.Services.Dialog;
+using NanoFramework.ANT.Services.SettingsServices;
 using Microsoft.Practices.ServiceLocation;
+using Template10.Services.SettingsService;
+using NanoFramework.ANT.Services.StorageService;
 
-namespace MFDeploy.ViewModels
+namespace NanoFramework.ANT.ViewModels
 {
     public class ViewModelLocator
     {
@@ -32,11 +35,16 @@ namespace MFDeploy.ViewModels
             #region services
             SimpleIoc.Default.Register<IBusyService, BusyService>();
             SimpleIoc.Default.Register<IMyDialogService, MyDialogService>();
-                       
+            SimpleIoc.Default.Register<IAppSettingsService, AppSettingsService>();
+            SimpleIoc.Default.Register<IStorageInterfaceService, StorageInterfaceService>();
+
+            // Template 10
+            SimpleIoc.Default.Register<ISettingsHelper, SettingsHelper>();
+
             #endregion
         }
 
-
+     
         #region view model properties        
         public MainViewModel MainViewModel { get { return ServiceLocator.Current.GetInstance<MainViewModel>(); } }
         public MainPageViewModel MainPageViewModel { get { return ServiceLocator.Current.GetInstance<MainPageViewModel>(); } }

@@ -4,39 +4,263 @@
 
     <x:Double x:Key="NarrowMinWidth">0</x:Double>
     <x:Double x:Key="NormalMinWidth">521</x:Double>
-    <x:Double x:Key="WideMinWidth">1200</x:Double>
+    <x:Double x:Key="WideMinWidth">2000</x:Double>
 
-    <!--<Color x:Key="SystemAccentColor">SteelBlue</Color>-->
-  
+    <Style x:Key="BaseAltTextBlockStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="TextTrimming" Value="None"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="LineStackingStrategy" Value="MaxHeight"/>
+        <Setter Property="TextLineBounds" Value="Full"/>
+    </Style>
+
+    <DataTemplate x:Key="PivotItemHeaderTemplate">
+        <TextBlock Text="{Binding}" Style="{StaticResource BaseTextBlockStyle}"/>
+    </DataTemplate>
+
+    <Style x:Key="AppTextBoxStyle" TargetType="TextBox">
+        <Setter Property="MinWidth" Value="{ThemeResource TextControlThemeMinWidth}"/>
+        <Setter Property="MinHeight" Value="{ThemeResource TextControlThemeMinHeight}"/>
+        <Setter Property="Foreground" Value="{ThemeResource SystemControlForegroundBaseHighBrush}"/>
+        <Setter Property="Background" Value="{ThemeResource LigtherAreaBrush}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="SelectionHighlightColor" Value="{ThemeResource SystemControlHighlightAccentBrush}"/>
+        <Setter Property="BorderThickness" Value="{ThemeResource TextControlBorderThemeThickness}"/>
+        <Setter Property="FontFamily" Value="{ThemeResource ContentControlThemeFontFamily}"/>
+        <Setter Property="FontSize" Value="{ThemeResource ControlContentThemeFontSize}"/>
+        <Setter Property="ScrollViewer.HorizontalScrollMode" Value="Auto"/>
+        <Setter Property="ScrollViewer.VerticalScrollMode" Value="Auto"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Hidden"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Hidden"/>
+        <Setter Property="ScrollViewer.IsDeferredScrollingEnabled" Value="False"/>
+        <Setter Property="Padding" Value="{ThemeResource TextControlThemePadding}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Grid>
+                        <Grid.Resources>
+                            <Style x:Name="DeleteButtonStyle" TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Grid x:Name="ButtonLayoutGrid" BorderBrush="{ThemeResource TextBoxButtonBorderThemeBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{ThemeResource TextBoxButtonBackgroundThemeBrush}">
+                                                <VisualStateManager.VisualStateGroups>
+                                                    <VisualStateGroup x:Name="CommonStates">
+                                                        <VisualState x:Name="Normal"/>
+                                                        <VisualState x:Name="PointerOver">
+                                                            <Storyboard>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground" Storyboard.TargetName="GlyphElement">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemControlHighlightAccentBrush}"/>
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="Pressed">
+                                                            <Storyboard>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Background" Storyboard.TargetName="ButtonLayoutGrid">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemControlHighlightAccentBrush}"/>
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground" Storyboard.TargetName="GlyphElement">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemControlHighlightAltChromeWhiteBrush}"/>
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="Disabled">
+                                                            <Storyboard>
+                                                                <DoubleAnimation Duration="0" To="0" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="ButtonLayoutGrid"/>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                    </VisualStateGroup>
+                                                </VisualStateManager.VisualStateGroups>
+                                                <TextBlock x:Name="GlyphElement" AutomationProperties.AccessibilityView="Raw" Foreground="{ThemeResource SystemControlForegroundChromeBlackMediumBrush}" FontStyle="Normal" FontSize="12" FontFamily="{ThemeResource SymbolThemeFontFamily}" HorizontalAlignment="Center" Text="&#xE10A;" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Grid.Resources>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Disabled" />
+                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="BorderBrush" Storyboard.TargetName="BorderElement">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemControlHighlightChromeAltLowBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Opacity" Storyboard.TargetName="BackgroundElement">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource TextControlBackgroundHoverOpacity}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Focused">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground" Storyboard.TargetName="PlaceholderTextContentPresenter">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemControlPageTextChromeBlackMediumLowBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Background" Storyboard.TargetName="BackgroundElement">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemControlBackgroundChromeWhiteBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Opacity" Storyboard.TargetName="BackgroundElement">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource TextControlBackgroundFocusedOpacity}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="BorderBrush" Storyboard.TargetName="BorderElement">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CustomColorBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground" Storyboard.TargetName="ContentElement">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemControlForegroundChromeBlackHighBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="RequestedTheme" Storyboard.TargetName="ContentElement">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Light"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="ButtonStates">
+                                <VisualState x:Name="ButtonVisible">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Storyboard.TargetName="DeleteButton">
+                                            <DiscreteObjectKeyFrame KeyTime="0">
+                                                <DiscreteObjectKeyFrame.Value>
+                                                    <Visibility>Visible</Visibility>
+                                                </DiscreteObjectKeyFrame.Value>
+                                            </DiscreteObjectKeyFrame>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="ButtonCollapsed"/>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Border x:Name="BackgroundElement" Background="{TemplateBinding Background}" Grid.ColumnSpan="2" Margin="{TemplateBinding BorderThickness}" Opacity="{ThemeResource TextControlBackgroundRestOpacity}" Grid.Row="1" Grid.RowSpan="1"/>
+                        <Border x:Name="BorderElement" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Grid.ColumnSpan="2" Grid.Row="1" Grid.RowSpan="1"/>
+                        <ContentPresenter x:Name="HeaderContentPresenter" Grid.ColumnSpan="2" ContentTemplate="{TemplateBinding HeaderTemplate}" Content="{TemplateBinding Header}" Foreground="{ThemeResource SystemControlForegroundBaseHighBrush}" FontWeight="Normal" Margin="0,0,0,8" Grid.Row="0" Visibility="Collapsed" x:DeferLoadStrategy="Lazy"/>
+                        <ScrollViewer x:Name="ContentElement" AutomationProperties.AccessibilityView="Raw" HorizontalScrollMode="{TemplateBinding ScrollViewer.HorizontalScrollMode}" HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}" IsTabStop="False" IsHorizontalRailEnabled="{TemplateBinding ScrollViewer.IsHorizontalRailEnabled}" IsVerticalRailEnabled="{TemplateBinding ScrollViewer.IsVerticalRailEnabled}" IsDeferredScrollingEnabled="{TemplateBinding ScrollViewer.IsDeferredScrollingEnabled}" Margin="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" Grid.Row="1" VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}" VerticalScrollMode="{TemplateBinding ScrollViewer.VerticalScrollMode}" ZoomMode="Disabled"/>
+                        <ContentControl x:Name="PlaceholderTextContentPresenter" Grid.ColumnSpan="2" Content="{TemplateBinding PlaceholderText}" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}" IsHitTestVisible="False" IsTabStop="False" Margin="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" Grid.Row="1"/>
+                        <Button x:Name="DeleteButton" BorderThickness="{TemplateBinding BorderThickness}" Grid.Column="1" FontSize="{TemplateBinding FontSize}" IsTabStop="False" Margin="{ThemeResource HelperButtonThemePadding}" MinWidth="34" Grid.Row="1" Style="{StaticResource DeleteButtonStyle}" Visibility="Collapsed" VerticalAlignment="Stretch"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AppButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource CustomColorBrush}"/>
+        <Setter Property="Foreground" Value="{ThemeResource ContrastColorBrush}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="8,4,8,4"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="FontFamily" Value="{ThemeResource ContentControlThemeFontFamily}"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontSize" Value="{ThemeResource ControlContentThemeFontSize}"/>
+        <Setter Property="UseSystemFocusVisuals" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid x:Name="RootGrid" Background="{TemplateBinding Background}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <Storyboard>
+                                        <PointerUpThemeAnimation Storyboard.TargetName="RootGrid"/>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="BorderBrush" Storyboard.TargetName="ContentPresenter">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ButtonOverBorderBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <PointerUpThemeAnimation Storyboard.TargetName="RootGrid"/>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Background" Storyboard.TargetName="RootGrid">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CustomColorDarkBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <PointerDownThemeAnimation Storyboard.TargetName="RootGrid"/>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Background" Storyboard.TargetName="RootGrid">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemControlBackgroundBaseLowBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground" Storyboard.TargetName="ContentPresenter">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemControlDisabledBaseMediumLowBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="BorderBrush" Storyboard.TargetName="ContentPresenter">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemControlDisabledTransparentBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter x:Name="ContentPresenter" AutomationProperties.AccessibilityView="Raw" 
+                                          BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" 
+                                          Content="{TemplateBinding Content}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                          Padding="{TemplateBinding Padding}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <ResourceDictionary.ThemeDictionaries>
 
         <ResourceDictionary x:Key="Light">
-            <SolidColorBrush x:Key="ExtendedSplashBackground" Color="SteelBlue" />
-            <SolidColorBrush x:Key="ExtendedSplashForeground" Color="White" />
+            <Color x:Key="SystemAccentColor">#00adef</Color>
 
-            <Color x:Key="CustomColor">SteelBlue</Color>
-            <SolidColorBrush x:Key="CustomColorBrush" Color="SteelBlue" />
-            
-            <Color x:Key="CustomColorAlpha">#7F4682B4</Color>
-            <SolidColorBrush x:Key="CustomColorAlphaBrush" Color="#7F4682B4" />
-            
-            <Color x:Key="CustomColorDarkColor">#30597C</Color>
-            <SolidColorBrush x:Key="CustomColorDarkBrush" Color="#30597C" />
+            <Color x:Key="CustomColor">#00adef</Color>
+            <SolidColorBrush x:Key="CustomColorBrush" Color="#00adef" />
 
-            <SolidColorBrush x:Key="CustomColorLightBrush" Color="#4B8CC2" />
-            <SolidColorBrush x:Key="CustomColorLightAlphaBrush" Color="#D85299D4" />
+            <Color x:Key="AppTextColor">#CA000000</Color>
+            <SolidColorBrush x:Key="AppTextColorBrush" Color="#CA000000" />
 
+            <Color x:Key="CustomColorAlpha">#8000adef</Color>
+            <SolidColorBrush x:Key="CustomColorAlphaBrush" Color="#8000adef" />
+
+            <Color x:Key="CustomColorDarkColor">#0082B2</Color>
+            <SolidColorBrush x:Key="CustomColorDarkBrush" Color="#0082B2" />
+
+            <Color x:Key="CustomColorLight">#92D6EF</Color>
+            <SolidColorBrush x:Key="CustomColorLightBrush" Color="#92D6EF" />
+
+            <Color x:Key="CustomColorLightAlpha">#3592D6EF</Color>
+            <SolidColorBrush x:Key="CustomColorLightAlphaBrush" Color="#3592D6EF" />
 
             <Color x:Key="ContrastColor">White</Color>
             <SolidColorBrush x:Key="ContrastColorBrush" Color="White" />
-
             <SolidColorBrush x:Key="ContrastColorAlphaBrush" Color="#0AFFFFFF" />
 
-            <SolidColorBrush x:Key="FlyoutForegroundBrush" Color="White" />
-            <SolidColorBrush x:Key="FlyoutBackgroundBrush" Color="#003333" />
-            <SolidColorBrush x:Key="FlyoutListOverBrush" Color="#B0696969" />
+            <SolidColorBrush x:Key="ExtendedSplashBackground" Color="{ThemeResource CustomColor}" />
+            <SolidColorBrush x:Key="ExtendedSplashForeground"  Color="{ThemeResource ContrastColor}" />
 
-            <SolidColorBrush x:Key="HamburgerBackgroundBrush" Color="{ThemeResource SystemAccentColor}" />
+            <Color x:Key="ApplicationPageBackgroundThemeColor">#DBDBDB</Color>
+            <SolidColorBrush x:Key="ApplicationPageBackgroundThemeBrush" Color="#DBDBDB" />
+            <SolidColorBrush x:Key="ButtonHeaderOverBrush" Color="#80BFBFBF" />
+            <SolidColorBrush x:Key="ButtonHeaderBusyBrush" Color="Black" />
+            <SolidColorBrush x:Key="LigtherAreaBrush" Color="#f2f2f2" />
+            <SolidColorBrush x:Key="ButtonOverBorderBrush" Color="#CA000000" />
+
+            <SolidColorBrush x:Key="GridViewItemBackgroundBrush"  Color="#FF939598"/>
+
+            <SolidColorBrush x:Key="FlyoutForegroundBrush" Color="{ThemeResource AppTextColor}" />
+            <SolidColorBrush x:Key="FlyoutBackgroundBrush" Color="{ThemeResource ApplicationPageBackgroundThemeColor}" />
+            <SolidColorBrush x:Key="FlyoutListOverBrush" Color="{ThemeResource CustomColorAlpha}" />
+
+            <SolidColorBrush x:Key="HamburgerBackgroundBrush" Color="{ThemeResource CustomColor}" />
             <SolidColorBrush x:Key="HamburgerForegroundBrush" Color="White" />
             <SolidColorBrush x:Key="NavAreaBackgroundBrush" Color="#FF2C2C2C" />
             <SolidColorBrush x:Key="NavButtonForegroundBrush" Color="White" />
@@ -46,24 +270,23 @@
             <SolidColorBrush x:Key="NavButtonPressedForegroundBrush" Color="White" />
             <SolidColorBrush x:Key="NavButtonPressedBackgroundBrush" Color="#FF848484" />
             <SolidColorBrush x:Key="NavButtonCheckedForegroundBrush" Color="White" />
-            <SolidColorBrush x:Key="NavButtonCheckedBackgroundBrush" Color="#FF2A4E6C" />
+            <SolidColorBrush x:Key="NavButtonCheckedBackgroundBrush" Color="{ThemeResource CustomColorDarkColor}" />
             <SolidColorBrush x:Key="NavButtonCheckedIndicatorBrush" Color="Transparent" />
 
             <Style TargetType="controls:HamburgerMenu">
-                <!--<Setter Property="AccentColor" Value="{StaticResource CustomColor}" />-->
-                <Setter Property="HamburgerBackground" Value="{StaticResource HamburgerBackgroundBrush}" />
-                <Setter Property="HamburgerForeground" Value="{StaticResource HamburgerForegroundBrush}" />
-                <Setter Property="NavAreaBackground" Value="{StaticResource NavAreaBackgroundBrush}" />
-                <Setter Property="NavButtonForeground" Value="{StaticResource NavButtonForegroundBrush}" />
-                <Setter Property="NavButtonBackground" Value="{StaticResource NavButtonBackgroundBrush}" />
-                <Setter Property="NavButtonHoverForeground" Value="{StaticResource NavButtonHoverForegroundBrush}" />
-                <Setter Property="NavButtonHoverBackground" Value="{StaticResource NavButtonHoverBackgroundBrush}" />
-                <Setter Property="NavButtonPressedForeground" Value="{StaticResource NavButtonPressedForegroundBrush}" />
-                <Setter Property="NavButtonPressedBackground" Value="{StaticResource NavButtonPressedBackgroundBrush}" />
-                <Setter Property="NavButtonCheckedForeground" Value="{StaticResource NavButtonCheckedForegroundBrush}" />
-                <Setter Property="NavButtonCheckedBackground" Value="{StaticResource NavButtonCheckedBackgroundBrush}" />
-                <Setter Property="NavButtonCheckedIndicatorBrush" Value="{StaticResource NavButtonCheckedIndicatorBrush}" />
-                
+                <Setter Property="HamburgerBackground" Value="{ThemeResource HamburgerBackgroundBrush}" />
+                <Setter Property="HamburgerForeground" Value="{ThemeResource HamburgerForegroundBrush}" />
+                <Setter Property="NavAreaBackground" Value="{ThemeResource NavAreaBackgroundBrush}" />
+                <Setter Property="NavButtonForeground" Value="{ThemeResource NavButtonForegroundBrush}" />
+                <Setter Property="NavButtonBackground" Value="{ThemeResource NavButtonBackgroundBrush}" />
+                <Setter Property="NavButtonHoverForeground" Value="{ThemeResource NavButtonHoverForegroundBrush}" />
+                <Setter Property="NavButtonHoverBackground" Value="{ThemeResource NavButtonHoverBackgroundBrush}" />
+                <Setter Property="NavButtonPressedForeground" Value="{ThemeResource NavButtonPressedForegroundBrush}" />
+                <Setter Property="NavButtonPressedBackground" Value="{ThemeResource NavButtonPressedBackgroundBrush}" />
+                <Setter Property="NavButtonCheckedForeground" Value="{ThemeResource NavButtonCheckedForegroundBrush}" />
+                <Setter Property="NavButtonCheckedBackground" Value="{ThemeResource NavButtonCheckedBackgroundBrush}" />
+                <Setter Property="NavButtonCheckedIndicatorBrush" Value="{ThemeResource NavButtonCheckedIndicatorBrush}" />
+
                 <Setter Property="VisualStateNarrowMinWidth" Value="{StaticResource NarrowMinWidth}" />
                 <Setter Property="VisualStateNormalMinWidth" Value="{StaticResource NormalMinWidth}" />
                 <Setter Property="VisualStateWideMinWidth" Value="{StaticResource WideMinWidth}" />
@@ -83,80 +306,6 @@
 
         </ResourceDictionary>
 
-        <ResourceDictionary x:Key="Default">
-
-            <SolidColorBrush x:Key="CustomColorBrush" Color="{StaticResource CustomColor}" />
-            <SolidColorBrush x:Key="ContrastColorBrush" Color="{StaticResource ContrastColor}" />
-            <SolidColorBrush x:Key="ExtendedSplashBackground" Color="{StaticResource CustomColor}" />
-            <SolidColorBrush x:Key="ExtendedSplashForeground" Color="{StaticResource ContrastColor}" />
-
-            <Style TargetType="controls:HamburgerMenu">
-               
-                <!--Windows 10 2015 (1511) Hamburger Menu Style
-                Simply replace AccentColor with the follow setters.-->
-
-                <!--<Setter Property="HamburgerBackground" Value="{StaticResource CustomColorBrush}" />
-                <Setter Property="HamburgerForeground" Value="White" />
-                <Setter Property="NavAreaBackground" Value="#FF2C2C2C" />
-                <Setter Property="NavButtonForeground" Value="White" />
-                <Setter Property="NavButtonBackground" Value="Transparent" />
-                <Setter Property="NavButtonHoverForeground" Value="White" />
-                <Setter Property="NavButtonHoverBackground" Value="#FF585858" />
-                <Setter Property="NavButtonPressedForeground" Value="White" />
-                <Setter Property="NavButtonPressedBackground" Value="#FF848484" />
-                <Setter Property="NavButtonCheckedForeground" Value="White" />
-                <Setter Property="NavButtonCheckedBackground" Value="#FF2A4E6C" />
-                <Setter Property="NavButtonCheckedIndicatorBrush" Value="Transparent" />-->
-
-                <Setter Property="AccentColor" Value="{StaticResource CustomColor}" />
-                
-                <Setter Property="VisualStateNarrowMinWidth" Value="{StaticResource NarrowMinWidth}" />
-                <Setter Property="VisualStateNormalMinWidth" Value="{StaticResource NormalMinWidth}" />
-                <Setter Property="VisualStateWideMinWidth" Value="{StaticResource WideMinWidth}" />
-            </Style>
-
-            <Style TargetType="controls:PageHeader">
-                <Setter Property="Background" Value="{ThemeResource CustomColorBrush}" />
-                <Setter Property="Foreground" Value="{ThemeResource ContrastColorBrush}" />
-                <Setter Property="VisualStateNarrowMinWidth" Value="{StaticResource NarrowMinWidth}" />
-                <Setter Property="VisualStateNormalMinWidth" Value="{StaticResource NormalMinWidth}" />
-            </Style>
-
-            <Style TargetType="controls:Resizer">
-                <Setter Property="GrabberBrush" Value="{ThemeResource CustomColorBrush}" />
-                <Setter Property="GrabberVisibility" Value="Visible" />
-            </Style>
-
-        </ResourceDictionary>
-
-        <ResourceDictionary x:Key="HighContrast">
-
-            <SolidColorBrush x:Key="ExtendedSplashBackground" Color="Black" />
-            <SolidColorBrush x:Key="ExtendedSplashForeground" Color="White" />
-
-            <Style TargetType="controls:HamburgerMenu">
-                <Setter Property="PaneBorderThickness" Value="0" />
-                <Setter Property="SecondarySeparator" Value="{ThemeResource SystemColorWindowTextColor}" />
-                <Setter Property="NavButtonBackground" Value="{ThemeResource SystemColorWindowColor}" />
-                <Setter Property="NavButtonForeground" Value="{ThemeResource SystemColorWindowTextColor}" />
-                <Setter Property="NavAreaBackground" Value="{ThemeResource SystemColorWindowColor}" />
-                <Setter Property="HamburgerForeground" Value="{ThemeResource SystemColorWindowColor}" />
-                <Setter Property="HamburgerBackground" Value="{ThemeResource SystemColorWindowTextColor}" />
-                <Setter Property="VisualStateNarrowMinWidth" Value="{ThemeResource NarrowMinWidth}" />
-                <Setter Property="VisualStateNormalMinWidth" Value="{ThemeResource NormalMinWidth}" />
-                <Setter Property="VisualStateWideMinWidth" Value="{ThemeResource WideMinWidth}" />
-            </Style>
-
-            <Style TargetType="controls:PageHeader">
-                <Setter Property="Background" Value="{ThemeResource SystemColorWindowColor}" />
-                <Setter Property="Foreground" Value="{ThemeResource SystemColorWindowTextColor}" />
-                <Setter Property="VisualStateNarrowMinWidth" Value="{ThemeResource NarrowMinWidth}" />
-                <Setter Property="VisualStateNormalMinWidth" Value="{ThemeResource NormalMinWidth}" />
-            </Style>
-
-        </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
 </ResourceDictionary>
-
-

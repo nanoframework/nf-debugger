@@ -1,12 +1,12 @@
 ﻿{
   "dependencies": {
-    "Microsoft.NETCore.UniversalWindowsPlatform": "5.1.0",
-    "Microsoft.NetMicroFramework.Tools.UsbDebugClient": "0.1.0-alpha10",
-    "Microsoft.Xaml.Behaviors.Uwp.Managed": "1.1.0",
+    "Microsoft.NETCore.UniversalWindowsPlatform": "5.2.2",
+    "Microsoft.Xaml.Behaviors.Uwp.Managed": "2.0.0",
     "MvvmLight": "5.3.0",
-    "Newtonsoft.Json": "8.0.3",
-    "PropertyChanged.Fody": "1.51.0",
-    "Template10": "1.1.11-preview-160428"
+    "Newtonsoft.Json": "9.0.1",
+    "PropertyChanged.Fody": "1.52.1",
+    "PropertyChanging.Fody": "1.27.2",
+    "Template10": "1.1.12"
   },
   "frameworks": {
     "uap10.0": {}

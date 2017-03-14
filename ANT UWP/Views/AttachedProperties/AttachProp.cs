@@ -1,4 +1,8 @@
-﻿using System;
+﻿//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +10,7 @@ using System.Threading.Tasks;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls.Primitives;
 
-namespace MFDeploy.Views
+namespace NanoFramework.ANT.Views
 {
     public static class AttachProp
     {

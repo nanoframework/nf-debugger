@@ -1,8 +1,8 @@
-<common:BootStrapper x:Class="MFDeploy.App"
+<common:BootStrapper x:Class="NanoFramework.ANT.App"
                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                      xmlns:common="using:Template10.Common"
-                     xmlns:vm="using:MFDeploy.ViewModels"
+                     xmlns:vm="using:NanoFramework.ANT.ViewModels"
                      RequestedTheme="Light">
 
     <Application.Resources>

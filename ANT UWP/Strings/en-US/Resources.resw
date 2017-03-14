@@ -237,4 +237,100 @@
 Please try again.</value>
     <comment>HC = Header Control</comment>
   </data>
+  <data name="ST_AddTimestampToOutputToggleSwitch.Header" xml:space="preserve">
+    <value>Add timestamp to output</value>
+  </data>
+  <data name="ST_AddTimestampToOutputToggleSwitch.OffContent" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="ST_AddTimestampToOutputToggleSwitch.OnContent" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="DC_CopyAppBarButton.Label" xml:space="preserve">
+    <value>Copy All</value>
+  </data>
+  <data name="DC_CopyCurrentAppBarButton.Label" xml:space="preserve">
+    <value>Copy Current</value>
+  </data>
+  <data name="DC_HardwarePivotItem.Header" xml:space="preserve">
+    <value>Hardware</value>
+  </data>
+  <data name="DC_MemoryMapPivotItem.Header" xml:space="preserve">
+    <value>Maps</value>
+  </data>
+  <data name="DC_SystemPivotItem.Header" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="DC_DeviceFlashSectorMapTitle.Text" xml:space="preserve">
+    <value>Flash Sector Map</value>
+  </data>
+  <data name="DC_DeviceMemoryMapTitle.Text" xml:space="preserve">
+    <value>Memory Map</value>
+  </data>
+  <data name="DC_DeviceDeploymentMapTitle.Text" xml:space="preserve">
+    <value>Deployment Map</value>
+  </data>
+  <data name="GettingDeviceInfoBusy" xml:space="preserve">
+    <value>Getting device info...</value>
+  </data>
+  <data name="MP_clearOutputAppBarButton.Label" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="MP_OutputHeader.Text" xml:space="preserve">
+    <value>Output</value>
+  </data>
+  <data name="ST_PrivacyPolicy.Text" xml:space="preserve">
+    <value>This application doesn't collect any personal, system or hardware information, at any time.</value>
+  </data>
+  <data name="MP_Output.Header" xml:space="preserve">
+    <value>Output</value>
+  </data>
+  <data name="DP_Pivot.Header" xml:space="preserve">
+    <value>Files</value>
+  </data>
+  <data name="ST_CurrentFolderPath" xml:space="preserve">
+    <value>No folder selected!</value>
+  </data>
+  <data name="ST_DeployFolderTextBox.Header" xml:space="preserve">
+    <value>Deployment files folder</value>
+  </data>
+  <data name="HC_NoDevices" xml:space="preserve">
+    <value>&lt; no devices available &gt;</value>
+  </data>
+  <data name="HC_SelectADevice" xml:space="preserve">
+    <value>&lt; select a device &gt;</value>
+  </data>
+  <data name="DP_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="DP_GoToSettings" xml:space="preserve">
+    <value>Go to settings...</value>
+  </data>
+  <data name="DP_CanOpenSigFile" xml:space="preserve">
+    <value>file {0}.sig could not be opened</value>
+  </data>
+  <data name="DP_CantDeploy" xml:space="preserve">
+    <value>file {0} could not be deployed</value>
+  </data>
+  <data name="DP_CantOpenFile" xml:space="preserve">
+    <value>file {0} could not be opened</value>
+  </data>
+  <data name="DP_ExecutingApp" xml:space="preserve">
+    <value>Executing Application...</value>
+  </data>
+  <data name="DP_NoFiles" xml:space="preserve">
+    <value>No files to deploy.</value>
+  </data>
+  <data name="DP_NoValidFiles" xml:space="preserve">
+    <value>No valid file(s) to deploy.</value>
+  </data>
+  <data name="DP_NoWorkerFolder" xml:space="preserve">
+    <value>Oops! You haven't defined the default folder for deploy files. Please choose a folder on Settings page.</value>
+  </data>
+  <data name="HC_Searching" xml:space="preserve">
+    <value>Searching...</value>
+  </data>
+  <data name="ST_Concept" xml:space="preserve">
+    <value>Concept &amp; design by</value>
+  </data>
 </root>

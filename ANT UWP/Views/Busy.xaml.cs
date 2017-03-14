@@ -1,3 +1,7 @@
+//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -6,7 +10,7 @@ using Template10.Controls;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
-namespace MFDeploy.Views
+namespace NanoFramework.ANT.Views
 {
     public sealed partial class Busy : UserControl
     {
@@ -38,10 +42,27 @@ namespace MFDeploy.Views
             {
                 var modal = Window.Current.Content as ModalDialog;
                 var view = modal.ModalContent as Busy;
+
                 if (view == null)
+                {
                     modal.ModalContent = view = new Busy();
+                }
                 modal.IsModal = view.IsBusy = busy;
                 view.BusyText = text;
+            });
+        }
+
+        public static void ChangeBusyText(string text)
+        {
+            WindowWrapper.Current().Dispatcher.Dispatch(() =>
+            {
+                var modal = Window.Current.Content as ModalDialog;
+                var view = modal.ModalContent as Busy;
+                if (view != null)
+                {
+                    view.BusyText = text;
+                }
+               
             });
         }
     }

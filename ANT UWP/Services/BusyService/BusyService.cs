@@ -1,11 +1,16 @@
-﻿using System;
+﻿//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Template10.Common;
 
-namespace MFDeploy.Services.BusyService
+namespace NanoFramework.ANT.Services.BusyService
 {
     public class BusyService : IBusyService
     {
@@ -24,7 +29,14 @@ namespace MFDeploy.Services.BusyService
             {
                 Views.Busy.SetBusy(false);
             });
+        }
 
+        public void ChangeBusyText(string newBusyText)
+        {
+            WindowWrapper.Current().Dispatcher.Dispatch(() =>
+            {
+                Views.Busy.ChangeBusyText(newBusyText);
+            });
         }
     }
 }

@@ -1,9 +1,13 @@
+//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
 using System;
 using Windows.ApplicationModel.Activation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
-namespace MFDeploy.Views
+namespace NanoFramework.ANT.Views
 {
     public sealed partial class Splash : UserControl
     {

@@ -1,8 +1,12 @@
-﻿using Windows.UI.Xaml;
+﻿//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Microsoft.SPOT.Debugger.WireProtocol;
+using NanoFramework.Tools.Debugger.WireProtocol;
 
-namespace MFDeploy.Utilities
+namespace NanoFramework.ANT.Utilities
 {
     public class TransportTypeTemplateSelector : DataTemplateSelector
     {
