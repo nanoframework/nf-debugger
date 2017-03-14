@@ -1,0 +1,207 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{970BDC72-755C-436B-B8EA-5810C990AD0D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>NanoFramework.Tools.Debugger</RootNamespace>
+    <AssemblyName>NanoFramework.Tools.Debugger</AssemblyName>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
+    <TargetPlatformVersion>10.0.14393.0</TargetPlatformVersion>
+    <TargetPlatformMinVersion>10.0.10240.0</TargetPlatformMinVersion>
+    <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <Optimize>true</Optimize>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM'">
+    <PlatformTarget>ARM</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\ARM\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>ARM</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|ARM'">
+    <PlatformTarget>ARM</PlatformTarget>
+    <OutputPath>bin\ARM\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <Optimize>true</Optimize>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>ARM</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <Optimize>true</Optimize>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- A reference to the entire .Net Framework and Windows SDK are automatically included -->
+    <Folder Include="Messaging\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CLRCapabilities.cs" />
+    <Compile Include="CRC32.cs" />
+    <Compile Include="DebuggerEventSource.cs" />
+    <Compile Include="Exceptions\CouldntOpenNanoFrameworkDeviceException.cs" />
+    <Compile Include="Exceptions\DebugSessionAlreadyOpenException.cs" />
+    <Compile Include="Extensions\CancellationTokenExtensions.cs" />
+    <Compile Include="Extensions\DeviceInformationExtensions.cs" />
+    <Compile Include="Extensions\OutputExtensions.cs" />
+    <Compile Include="Extensions\TypeExtensions.cs" />
+    <Compile Include="MFDeployTool\AssemblyInfoFromResolveAssembly.cs" />
+    <Compile Include="MFDeployTool\INanoFrameworkDeviceInfo.cs" />
+    <Compile Include="MFDeployTool\IAssemblyInfo.cs" />
+    <Compile Include="MFDeployTool\IAppDomainInfo.cs" />
+    <Compile Include="MFDeployTool\AppDomainInfo.cs" />
+    <Compile Include="MFDeployTool\EraseOptions.cs" />
+    <Compile Include="NFDevice\NanoDeviceBase.cs" />
+    <Compile Include="NFDevice\INanoDevice.cs" />
+    <Compile Include="NFDevice\NanoDevice.cs" />
+    <Compile Include="MFDeployTool\NanoFrameworkDeviceInfo.cs" />
+    <Compile Include="Exceptions\NanoFrameworkDeviceNoResponseException.cs" />
+    <Compile Include="Exceptions\NanoBooterConnectionFailureException.cs" />
+    <Compile Include="NFDevice\NanoSerialDevice.cs" />
+    <Compile Include="Exceptions\NanoUserExitException.cs" />
+    <Compile Include="NFDevice\ProgressReport.cs" />
+    <Compile Include="NFDevice\SrecParseResult.cs" />
+    <Compile Include="NFDevice\NanoUsbDevice.cs" />
+    <Compile Include="PortDefinitions\IPort.cs" />
+    <Compile Include="PortDefinitions\PortBase.cs" />
+    <Compile Include="PortSerial\EventHandlerForSerialDevice.cs" />
+    <Compile Include="PortSerial\SerialDeviceInformation.cs" />
+    <Compile Include="PortSerial\SerialDeviceProperties.cs" />
+    <Compile Include="PortSerial\SerialPort.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Runtime\ReflectionDefinition.cs" />
+    <Compile Include="Runtime\RunTimeValue.cs" />
+    <Compile Include="Runtime\RuntimeValue_Array.cs" />
+    <Compile Include="Runtime\RuntimeValue_ByRef.cs" />
+    <Compile Include="Runtime\RuntimeValue_Class.cs" />
+    <Compile Include="Runtime\RuntimeValue_Indirect.cs" />
+    <Compile Include="Runtime\RuntimeValue_Internal.cs" />
+    <Compile Include="Runtime\RuntimeValue_Object.cs" />
+    <Compile Include="Runtime\RuntimeValue_Primitive.cs" />
+    <Compile Include="Runtime\RuntimeValue_Reflection.cs" />
+    <Compile Include="Runtime\RuntimeValue_String.cs" />
+    <Compile Include="Runtime\RuntimeValue_ValueType.cs" />
+    <Compile Include="SRecordFile.cs" />
+    <Compile Include="SupportedUSBDevices\STM_Discovery4.cs" />
+    <Compile Include="PortUSB\EventHandlerForUsbDevice.cs" />
+    <Compile Include="PortUSB\UsbPort.cs" />
+    <Compile Include="PortUSB\UsbDeviceInformation.cs" />
+    <Compile Include="PortUSB\UsbDeviceProperties.cs" />
+    <Compile Include="PortUSB\UsbDeviceRequestType.cs" />
+    <Compile Include="WireProtocol\Commands.cs" />
+    <Compile Include="WireProtocol\ConnectionSource.cs" />
+    <Compile Include="WireProtocol\Controller.cs" />
+    <Compile Include="WireProtocol\ControllerBase.cs" />
+    <Compile Include="WireProtocol\Converter.cs" />
+    <Compile Include="WireProtocol\Engine.cs" />
+    <Compile Include="WireProtocol\FifoBuffer.cs" />
+    <Compile Include="WireProtocol\RebootTime.cs" />
+    <Compile Include="WireProtocol\PublicKeyIndex.cs" />
+    <Compile Include="WireProtocol\Flags.cs" />
+    <Compile Include="WireProtocol\IController.cs" />
+    <Compile Include="WireProtocol\IControllerHost.cs" />
+    <Compile Include="WireProtocol\IControllerHostLocal.cs" />
+    <Compile Include="WireProtocol\IControllerLocal.cs" />
+    <Compile Include="WireProtocol\IncomingMessage.cs" />
+    <Compile Include="WireProtocol\MessageBase.cs" />
+    <Compile Include="WireProtocol\MessageRaw.cs" />
+    <Compile Include="WireProtocol\MessageReassembler.cs" />
+    <Compile Include="WireProtocol\OutgoingMessage.cs" />
+    <Compile Include="WireProtocol\Packet.cs" />
+    <Compile Include="WireProtocol\PingConnectionType.cs" />
+    <Compile Include="WireProtocol\PortFilter.cs" />
+    <Compile Include="WireProtocol\RebootOption.cs" />
+    <Compile Include="WireProtocol\ReleaseInfo.cs" />
+    <Compile Include="WireProtocol\Request.cs" />
+    <Compile Include="WireProtocol\StringEventArgs.cs" />
+    <Compile Include="WireProtocol\ThreadStatus.cs" />
+    <Compile Include="WireProtocol\TransportType.cs" />
+    <Compile Include="WireProtocol\TypeSysLookup.cs" />
+    <Compile Include="WireProtocol\VersionStruct.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
+    <VisualStudioVersion>14.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
