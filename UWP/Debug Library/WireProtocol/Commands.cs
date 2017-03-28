@@ -62,8 +62,9 @@ namespace NanoFramework.Tools.Debugger.WireProtocol
 
             public struct FlashSectorData
             {
-                public uint m_address;
-                public uint m_size;
+                public uint m_StartAddress;
+                public uint m_NumBlocks;
+                public uint m_BytesPerBlock;
                 public uint m_flags;
             }
 
@@ -73,7 +74,7 @@ namespace NanoFramework.Tools.Debugger.WireProtocol
 
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
                 {
-                    int num = size / (3 * 4);  // size divided by size of FlashSectorData struct (3*sizeof(uint))
+                    int num = size / (4 * 4);  // size divided by size of FlashSectorData struct (3*sizeof(uint))
 
                     m_map = Enumerable.Range(0, num).Select(x => new FlashSectorData()).ToList();
                 }

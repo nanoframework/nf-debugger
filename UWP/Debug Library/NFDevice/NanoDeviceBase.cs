@@ -328,9 +328,9 @@ namespace NanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in eraseSectors)
             {
-                progress?.Report(new ProgressReport(value, total, string.Format("Erasing sector 0x{0:x08}", flashSectorData.m_address)));
+                progress?.Report(new ProgressReport(value, total, string.Format("Erasing sector 0x{0:x08}", flashSectorData.m_StartAddress)));
 
-                ret &= await DebugEngine.EraseMemoryAsync(flashSectorData.m_address, flashSectorData.m_size);
+                ret &= await DebugEngine.EraseMemoryAsync(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
 
                 value++;
             }
@@ -1077,7 +1077,7 @@ namespace NanoFramework.Tools.Debugger
             {
                 foreach (Commands.Monitor_FlashSectorMap.FlashSectorData sector in flasSectorsMap)
                 {
-                    if (sector.m_address == bl.address)
+                    if (sector.m_StartAddress == bl.address)
                     {
                         // only support writing with CLR to the deployment sector and RESERVED sector (for digi)
                         if (c_DeploySector == (c_SectorUsageMask & sector.m_flags))
