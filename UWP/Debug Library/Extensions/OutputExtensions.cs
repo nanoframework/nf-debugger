@@ -61,8 +61,8 @@ namespace NanoFramework.Tools.Debugger.Extensions
             {
                 if (range != null && range.Count > 0)
                 {
-                    output.AppendLine(" Sector    Start       Size        Usage");
-                    output.AppendLine("-----------------------------------------------");
+                    output.AppendLine("  Region     Start      Blocks   Bytes/Block    Usage");
+                    output.AppendLine("-----------------------------------------------------------");
 
                     int i = 0;
 
@@ -72,10 +72,10 @@ namespace NanoFramework.Tools.Debugger.Extensions
                         switch (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK)
                         {
                             case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP:
-                                usage = "Bootstrap";
+                                usage = "nanoBooter";
                                 break;
                             case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE:
-                                usage = "Code";
+                                usage = "nanoCLR";
                                 break;
                             case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG:
                                 usage = "Configuration";
@@ -103,7 +103,7 @@ namespace NanoFramework.Tools.Debugger.Extensions
                                 break;
                         }
 
-                        output.AppendLine(string.Format("{0,5}  {1,12}{2,12}   {3}", i++, string.Format("0x{0:x08}", item.m_address), string.Format("0x{0:x08}", item.m_size), usage));
+                        output.AppendLine($"{string.Format("{0,7}", i++)}    {string.Format("0x{0:x08}", item.m_StartAddress)}   {string.Format("{0,5}", item.m_NumBlocks)}      {string.Format("0x{0:x06}", item.m_BytesPerBlock)}     {usage}");
                     }
 
                     return output.ToString();
