@@ -109,15 +109,15 @@ namespace NanoFramework.Tools.Debugger
             }
         }
 
-        public struct SolutionInfoProperties
+        public struct TargetInfoProperties
         {
-            public readonly Version solutionVersion;
-            public readonly string solutionVendorInfo;
+            public readonly Version targetVersion;
+            public readonly string targetVendorInfo;
 
-            public SolutionInfoProperties(Version v, string i)
+            public TargetInfoProperties(Version v, string i)
             {
-                solutionVersion = v;
-                solutionVendorInfo = i;
+                targetVersion = v;
+                targetVendorInfo = i;
             }
         }
 
@@ -126,13 +126,13 @@ namespace NanoFramework.Tools.Debugger
         private SoftwareVersionProperties m_swVersion;
         private HalSystemInfoProperties m_halSystemInfo;
         private ClrInfoProperties m_clrInfo;
-        private SolutionInfoProperties m_solutionReleaseInfo;
+        private TargetInfoProperties m_targetReleaseInfo;
 
         private bool m_fUnknown;
 
         public CLRCapabilities()
             : this(Capability.None, new LCDCapabilities(), new SoftwareVersionProperties(),
-                new HalSystemInfoProperties(), new ClrInfoProperties(), new SolutionInfoProperties())
+                new HalSystemInfoProperties(), new ClrInfoProperties(), new TargetInfoProperties())
         {
         }
 
@@ -142,7 +142,7 @@ namespace NanoFramework.Tools.Debugger
             SoftwareVersionProperties ver,
             HalSystemInfoProperties halSystemInfo,
             ClrInfoProperties clrInfo,
-            SolutionInfoProperties solutionReleaseInfo
+            TargetInfoProperties solutionReleaseInfo
             )
         {
             m_fUnknown = (capability == Capability.None);
@@ -152,7 +152,7 @@ namespace NanoFramework.Tools.Debugger
 
             m_halSystemInfo = halSystemInfo;
             m_clrInfo = clrInfo;
-            m_solutionReleaseInfo = solutionReleaseInfo;
+            m_targetReleaseInfo = solutionReleaseInfo;
         }
 
         public HalSystemInfoProperties HalSystemInfo
@@ -173,12 +173,12 @@ namespace NanoFramework.Tools.Debugger
             }
         }
 
-        public SolutionInfoProperties SolutionReleaseInfo
+        public TargetInfoProperties SolutionReleaseInfo
         {
             get
             {
                 Debug.Assert(!m_fUnknown);
-                return m_solutionReleaseInfo;
+                return m_targetReleaseInfo;
             }
         }
 
