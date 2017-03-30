@@ -193,11 +193,11 @@ namespace NanoFramework.Tools.Debugger
                 }
             }
 
-            //if ((force || Capabilities.IsUnknown) && ConnectionSource == ConnectionSource.nanoCLR)
-            //{
-            //    Capabilities = await DiscoverCLRCapabilitiesAsync().ConfigureAwait(false);
-            //    m_ctrl.Capabilities = Capabilities;
-            //}
+            if ((force || Capabilities.IsUnknown) && ConnectionSource == ConnectionSource.NanoCLR)
+            {
+                Capabilities = await DiscoverCLRCapabilitiesAsync().ConfigureAwait(false);
+                m_ctrl.Capabilities = Capabilities;
+            }
 
             if (connectionSource != ConnectionSource.Unknown && connectionSource != ConnectionSource)
             {
@@ -2437,16 +2437,16 @@ namespace NanoFramework.Tools.Debugger
             return clrInfoProps;
         }
 
-        private async Task<CLRCapabilities.SolutionInfoProperties> DiscoverSolutionInfoPropertiesAsync()
+        private async Task<CLRCapabilities.TargetInfoProperties> DiscoverTargetInfoPropertiesAsync()
         {
             Debug.WriteLine("==============================");
-            Debug.WriteLine("DiscoverSolutionInfoProperties");
+            Debug.WriteLine("DiscoverTargetInfoProperties");
 
             IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilitySolutionReleaseInfo).ConfigureAwait(false);
 
-            ReleaseInfo solutionInfo = new ReleaseInfo();
+            ReleaseInfo targetInfo = new ReleaseInfo();
 
-            CLRCapabilities.SolutionInfoProperties solInfProps = new CLRCapabilities.SolutionInfoProperties();
+            CLRCapabilities.TargetInfoProperties targetInfoProps = new CLRCapabilities.TargetInfoProperties();
 
             if (reply != null)
             {
@@ -2454,13 +2454,13 @@ namespace NanoFramework.Tools.Debugger
 
                 if (cmdReply != null && cmdReply.m_data != null)
                 {
-                    new Converter().Deserialize(solutionInfo, cmdReply.m_data);
+                    new Converter().Deserialize(targetInfo, cmdReply.m_data);
 
-                    solInfProps = new CLRCapabilities.SolutionInfoProperties(solutionInfo.Version, solutionInfo.Info);
+                    targetInfoProps = new CLRCapabilities.TargetInfoProperties(targetInfo.Version, targetInfo.Info);
                 }
             }
 
-            return solInfProps;
+            return targetInfoProps;
         }
 
         private async Task<CLRCapabilities> DiscoverCLRCapabilitiesAsync()
@@ -2470,7 +2470,7 @@ namespace NanoFramework.Tools.Debugger
             var softwareVersion = await DiscoverSoftwareVersionPropertiesAsync().ConfigureAwait(false);
             var halSysInfo = await DiscoverHalSystemInfoPropertiesAsync().ConfigureAwait(false);
             var clrInfo = await DiscoverClrInfoPropertiesAsync().ConfigureAwait(false);
-            var solutionInfo = await DiscoverSolutionInfoPropertiesAsync().ConfigureAwait(false);
+            var solutionInfo = await DiscoverTargetInfoPropertiesAsync().ConfigureAwait(false);
 
             return new CLRCapabilities(clrFlags, clrLcd, softwareVersion, halSysInfo, clrInfo, solutionInfo);
         }

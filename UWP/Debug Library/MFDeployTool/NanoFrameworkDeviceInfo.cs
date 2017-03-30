@@ -138,12 +138,12 @@ namespace NanoFramework.Tools.Debugger
 
         public System.Version SolutionBuildVersion
         {
-            get { return Dbg.Capabilities.SolutionReleaseInfo.solutionVersion; }
+            get { return Dbg.Capabilities.SolutionReleaseInfo.targetVersion; }
         }
 
         public string SolutionBuildInfo
         {
-            get { return Dbg.Capabilities.SolutionReleaseInfo.solutionVendorInfo; }
+            get { return Dbg.Capabilities.SolutionReleaseInfo.targetVendorInfo; }
         }
 
         public IAppDomainInfo[] AppDomains

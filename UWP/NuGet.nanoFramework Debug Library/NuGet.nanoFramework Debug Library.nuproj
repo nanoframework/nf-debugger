@@ -22,7 +22,7 @@
   <Import Project="$(NuProjPath)\NuProj.props" Condition="Exists('$(NuProjPath)\NuProj.props')" />
   <PropertyGroup Label="Configuration">
     <Id>NanoFramework.Tools.Debugger</Id>
-    <Version>0.2.19-preview019</Version>
+    <Version>0.2.20-preview020</Version>
     <Title>nanoFramework debug library</Title>
     <Authors>nanoFramework project contributors</Authors>
     <Owners>nanoFramework project contributors</Owners>
