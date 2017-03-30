@@ -693,7 +693,7 @@ namespace NanoFramework.Tools.Debugger.WireProtocol
             }
             public class SoftwareVersion
             {
-                public byte[] m_buildDate = new byte[20];
+                public byte[] m_buildDate = new byte[22];
                 public uint m_compilerVersion;
             }
 

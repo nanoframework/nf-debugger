@@ -167,7 +167,7 @@ namespace NanoFramework.Tools.Debugger.WireProtocol
 
         private void Deserialize(Stream stream, object o)
         {
-            BinaryReader reader = new BinaryReader(stream, Encoding.Unicode);
+            BinaryReader reader = new BinaryReader(stream, Encoding.UTF8);
 
             InternalDeserializeFields(reader, o);
         }
