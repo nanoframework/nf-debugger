@@ -1,0 +1,173 @@
+﻿<Page
+    x:Class="NanoFramework.ANT.Views.ConfigNetworkPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:NanoFramework.ANT.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:Template10.Controls"
+    xmlns:conv10="using:Template10.Converters"
+    xmlns:vm="using:NanoFramework.ANT.ViewModels" mc:Ignorable="d"
+    DataContext="{Binding ConfigNetworkViewModel, Mode=OneWay, Source={StaticResource Locator}}"
+    >
+
+    <Page.Resources>
+        <conv10:ValueWhenConverter x:Key="BooleanInverterConverter">
+            <conv10:ValueWhenConverter.When>
+                <x:Boolean>True</x:Boolean>
+            </conv10:ValueWhenConverter.When>
+            <conv10:ValueWhenConverter.Value>
+                <x:Boolean>False</x:Boolean>
+            </conv10:ValueWhenConverter.Value>
+            <conv10:ValueWhenConverter.Otherwise>
+                <x:Boolean>True</x:Boolean>
+            </conv10:ValueWhenConverter.Otherwise>
+        </conv10:ValueWhenConverter>
+    </Page.Resources>
+
+    <RelativePanel Padding="0,48,0,0" Background="{ThemeResource LigtherAreaBrush}">
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="AdaptiveVisualStateGroup">
+                <VisualState x:Name="VisualStateNarrow">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="{StaticResource NarrowMinWidth}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <!--TODO: change properties for narrow view-->
+
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="VisualStateNormal">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="{StaticResource NormalMinWidth}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <!--TODO: change properties for normal view-->
+
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="VisualStateWide">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="{StaticResource WideMinWidth}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <!--TODO: change properties for wide view-->
+
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Pivot x:Name="mainPivot"  
+               RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignTopWithPanel="True"
+               RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True" 
+               HeaderTemplate="{StaticResource PivotItemHeaderTemplate}" >
+            <!-- general configuration -->
+            <PivotItem Header="Network"
+                       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Margin="-12,0,0,0">
+                <RelativePanel Padding="30,30,0,0">
+                    <TextBox x:Name="staticIPAdrressTextBox" x:Uid="CU_StaticIPAdrressTextBox" Header="Static IP Address"                             
+                             TextWrapping="NoWrap" MaxLength="15" Text="{x:Bind ViewModel.StaticIPAdrress, Mode=TwoWay}" Style="{StaticResource AppTextBoxStyle}"
+                             RelativePanel.AlignTopWithPanel="True" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" TextChanged="IPAdrressTextBox_TextChanged" 
+                             Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}" IsEnabled="{Binding IsChecked, ElementName=dhcpEnableCheckBox, Converter={StaticResource BooleanInverterConverter} }" />
+                    <TextBlock x:Name="staticIPAdrressTextBlock" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="staticIPAdrressTextBox" RelativePanel.AlignBottomWith="staticIPAdrressTextBox" Margin="20,0,0,10"/>
+
+                    <TextBox x:Name="subnetMaskTextBox" x:Uid="CU_SubnetMaskTextBox" Header="Subnet Mask" Margin="0,20,0,0" TextWrapping="NoWrap" Style="{StaticResource AppTextBoxStyle}"
+                             RelativePanel.Below="staticIPAdrressTextBox" MaxLength="15" Text="{x:Bind ViewModel.SubnetMask, Mode=TwoWay}" Width="180" InputScope="Number" 
+                             PlaceholderText="###.###.###.###" TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" 
+                             KeyDown="{x:Bind IPAdrressTextBox_KeyDown}" IsEnabled="{Binding IsChecked, ElementName=dhcpEnableCheckBox, Converter={StaticResource BooleanInverterConverter} }"/>
+                    <TextBlock x:Name="subnetMaskTextBlock" TextWrapping="Wrap" Text=""  FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="subnetMaskTextBox" RelativePanel.AlignBottomWith="subnetMaskTextBox" Margin="20,0,0,10"/>
+                    
+                    <TextBox x:Name="defaultGatewayTextBox" x:Uid="CU_DefaultGatewayTextBox" Header="Default Gateway" TextWrapping="NoWrap" MaxLength="15"
+                             RelativePanel.Below="subnetMaskTextBox" Margin="0,20,0,0" Style="{StaticResource AppTextBoxStyle}"
+                             Text="{x:Bind ViewModel.DefaultGateway, Mode=TwoWay}" VerticalAlignment="Top" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" 
+                             TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}" 
+                             IsEnabled="{Binding IsChecked, ElementName=dhcpEnableCheckBox, Converter={StaticResource BooleanInverterConverter} }"/>
+                    <TextBlock x:Name="defaultGatewayTextBlock" TextWrapping="Wrap" Text="" FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="defaultGatewayTextBox" RelativePanel.AlignBottomWith="defaultGatewayTextBox" Margin="20,0,0,10"/>
+                    
+                    <TextBox x:Name="macAdrressTextBox" x:Uid="CU_MacAdrressTextBox" Header="MAC Address" TextWrapping="NoWrap" MaxLength="17" 
+                             Text="{x:Bind ViewModel.MACAdrress, Mode=TwoWay}" Width="180" PlaceholderText="##:##:##:##:##:##" TextChanged="macAdrressTextBox_TextChanged"
+                             RelativePanel.Below="defaultGatewayTextBox" Margin="0,20,0,0" Style="{StaticResource AppTextBoxStyle}"/>
+                    <TextBlock x:Name="macAdrressTextBlock" TextWrapping="Wrap" Text="" FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="macAdrressTextBox" RelativePanel.AlignBottomWith="macAdrressTextBox" Margin="20,0,0,10" />
+
+                    <TextBox x:Name="dnsPrimaryAdrressTextBox" x:Uid="CU_DnsPrimaryAdrressTextBox" Header="DNS Primary Address" TextWrapping="NoWrap" MaxLength="15" 
+                             Text="{x:Bind ViewModel.DNSPrimaryAdrress, Mode=TwoWay}" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" 
+                             TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}"
+                             RelativePanel.Below="macAdrressTextBox" Margin="0,20,0,0" Style="{StaticResource AppTextBoxStyle}"/>
+                    <TextBlock x:Name="dnsPrimaryAdrressTextBlock" TextWrapping="Wrap" Text="" FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="dnsPrimaryAdrressTextBox" RelativePanel.AlignBottomWith="dnsPrimaryAdrressTextBox" Margin="20,0,0,10"/>
+
+                    <TextBox x:Name="dnsSecondaryAdrressTextBox" x:Uid="CU_DnsSecondaryAdrressTextBox" Header="DNS Secondary Address" TextWrapping="NoWrap" MaxLength="15" 
+                             Text="{x:Bind ViewModel.DNSSecondaryAdrress, Mode=TwoWay}" Width="180" InputScope="Number" PlaceholderText="###.###.###.###" 
+                             TextChanged="IPAdrressTextBox_TextChanged" Paste="{x:Bind IPAdrressTextBox_Paste}" KeyDown="{x:Bind IPAdrressTextBox_KeyDown}"
+                             RelativePanel.Below="dnsPrimaryAdrressTextBox" Margin="0,20,0,0" Style="{StaticResource AppTextBoxStyle}"/>
+                    <TextBlock x:Name="dnsSecondaryAdrressTextBlock" TextWrapping="Wrap" Text="" FontSize="10" Foreground="Red"
+                               RelativePanel.RightOf="dnsSecondaryAdrressTextBox" RelativePanel.AlignBottomWith="dnsSecondaryAdrressTextBox" Margin="20,0,0,10"/>
+
+                    <CheckBox x:Name="dhcpEnableCheckBox" x:Uid="CU_DhcpEnableCheckBox" Content="Enable DHCP" IsChecked="{x:Bind ViewModel.DHCPEnable, Mode=TwoWay}"
+                              RelativePanel.Below="dnsSecondaryAdrressTextBox" Margin="0,20,0,0"/>
+                                                           
+                </RelativePanel>
+            </PivotItem>
+            <!-- wireless configuration -->
+            <PivotItem Header="Wireless"
+                       Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Margin="-12,0,0,0">
+                <Grid>
+                    <ComboBox x:Name="authenticationComboBox" x:Uid="CU_AuthenticationComboBox" Header="Authentication" HorizontalAlignment="Left" VerticalAlignment="Top" Width="180" Margin="30,30,0,0" SelectedIndex="{x:Bind ViewModel.Authentication, Mode=TwoWay}">
+                        <ComboBoxItem x:Uid="CU_NoneItem" Content="None"/>
+                        <ComboBoxItem x:Name="EAPItem" Content="EAP"/>
+                        <ComboBoxItem x:Name="PEAPItem" Content="PEAP"/>
+                        <ComboBoxItem x:Name="WCNItem" Content="WCN"/>
+                        <ComboBoxItem x:Name="openItem" x:Uid="CU_OpenItem" Content="Open"/>
+                        <ComboBoxItem x:Name="sharedItem" x:Uid="CU_SharedItem" Content="Shared"/>
+                    </ComboBox>
+                    <ComboBox x:Name="encryptionComboBox" x:Uid="CU_EncryptionComboBox" Header="Encryption" HorizontalAlignment="Left" VerticalAlignment="Top" Width="180" Margin="30,100,0,0" SelectedIndex="{x:Bind ViewModel.Encryption, Mode=TwoWay}">
+                        <ComboBoxItem x:Uid="CU_NoneItem" Content="None"/>
+                        <ComboBoxItem x:Name="WEPItem" Content="WEP"/>
+                        <ComboBoxItem x:Name="WPAItem" Content="WPA"/>
+                        <ComboBoxItem x:Name="WPAPSKItem" Content="WPAPSK"/>
+                        <ComboBoxItem x:Name="CertificateItem" x:Uid="CU_CertificateItem" Content="Certificate"/>
+                    </ComboBox>
+                    <TextBlock x:Name="radioTextBlock" x:Uid="CU_RadioTextBlock" Text="Radio" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="30,170,0,0"/>
+                    <Grid Margin="30,190,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto"/>
+                            <RowDefinition Height="auto"/>
+                        </Grid.RowDefinitions>
+                        <RadioButton x:Name="radio80211aRadioButton" Content="802.11a" Grid.Column="0" Grid.Row="0" Checked="radio80211RadioButton_Checked"/>
+                        <RadioButton x:Name="radio80211gRadioButton" Content="802.11g" Grid.Column="0" Grid.Row="1" Checked="radio80211RadioButton_Checked"/>
+                        <RadioButton x:Name="radio80211bRadioButton" Content="802.11b" Grid.Column="1" Grid.Row="0" Checked="radio80211RadioButton_Checked"/>
+                        <RadioButton x:Name="radio80211nRadioButton" Content="802.11n" Grid.Column="1" Grid.Row="1" Checked="radio80211RadioButton_Checked"/>
+                    </Grid>
+                    <CheckBox x:Name="encryptConfigDataCheckBox" x:Uid="CU_EncryptConfigDataCheckBox" HorizontalAlignment="Left" Margin="30,260,0,0" Content="Encrypt Config Data" FlowDirection="RightToLeft" VerticalAlignment="Top" IsChecked="{x:Bind ViewModel.EncryptConfigData, Mode=TwoWay}"/>
+                    <TextBox x:Name="passPhraseTextBox" x:Uid="CU_PassPhraseTextBox" Header="Pass Phrase" HorizontalAlignment="Left" Margin="30,300,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="180" Text="{x:Bind ViewModel.PassPhrase, Mode=TwoWay}"/>
+                    <ComboBox x:Name="networkKeyComboBox" x:Uid="CU_NetworkKeyComboBox" Header="Network Key" HorizontalAlignment="Left" VerticalAlignment="Top" Width="90" Margin="30,370,0,0" SelectionChanged="networkKeyComboBox_SelectionChanged">
+                        <ComboBoxItem x:Name="format64Bit" Content="64-bit"/>
+                        <ComboBoxItem x:Name="format128Bit" Content="128-bit"/>
+                        <ComboBoxItem x:Name="format256Bit" Content="256-bit"/>
+                        <ComboBoxItem x:Name="format516Bit" Content="516-bit"/>
+                        <ComboBoxItem x:Name="format1024Bit" Content="1024-bit"/>
+                        <ComboBoxItem x:Name="format2048Bit" Content="2048-bit"/>
+                    </ComboBox>
+                    <TextBox x:Name="networkKeyTextBox" Header="" HorizontalAlignment="Left" Margin="125,398,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="180" Text="{x:Bind ViewModel.NetworkKey, Mode=TwoWay}"/>
+                    <TextBox x:Name="reKeyInternalTextBox" x:Uid="CU_ReKeyInternalTextBox" Header="ReKey Internal" HorizontalAlignment="Left" Margin="30,440,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="180" Text="{x:Bind ViewModel.ReKeyInternal, Mode=TwoWay}"/>
+                    <TextBox x:Name="ssidTextBox" Header="SSID" HorizontalAlignment="Left" Margin="30,510,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="180" Text="{x:Bind ViewModel.SSID, Mode=TwoWay}"/>
+                </Grid>
+            </PivotItem>
+        </Pivot>
+
+        <CommandBar RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True"
+                    Background="{ThemeResource LigtherAreaBrush}">
+            <AppBarButton x:Name="updateAppBarButton" x:Uid="CU_updateAppBarButton" Label="Update" IsEnabled="{x:Bind ViewModel.UpdateButtonEnabled, Mode=OneWay}" Icon="Accept" Tapped="{x:Bind ViewModel.UpdateConfiguration, Mode=OneWay}"/>
+        </CommandBar>
+    </RelativePanel>
+</Page>
