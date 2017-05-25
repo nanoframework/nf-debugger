@@ -8,8 +8,8 @@
     <ProjectGuid>{101D57AD-D22F-4905-A992-DE15E723F164}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>nanoFramework.Tools.DebugLibrary.Net</RootNamespace>
-    <AssemblyName>nanoFramework.Tools.DebugLibrary.Net</AssemblyName>
+    <RootNamespace>nanoFramework.Tools.Debugger</RootNamespace>
+    <AssemblyName>nanoFramework.Tools.Debugger</AssemblyName>
     <TargetPlatformVersion>10.0.14393.0</TargetPlatformVersion>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
