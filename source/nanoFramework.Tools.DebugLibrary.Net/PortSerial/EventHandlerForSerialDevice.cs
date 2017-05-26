@@ -45,14 +45,9 @@ namespace nanoFramework.Tools.Debugger.Serial
             appResumeEventHandler = new EventHandler(Current.OnAppResume);
 
             // This event is raised when the app is exited and when the app is suspended
-            _callerApp.Deactivated += _callerApp_Deactivated;
+            _callerApp.Deactivated += appSuspendEventHandler;
 
             _callerApp.Activated += appResumeEventHandler;
-        }
-
-        private void _callerApp_Deactivated(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
         }
 
         private void UnregisterFromAppEvents()
