@@ -208,7 +208,7 @@ namespace nanoFramework.Tools.Debugger
 
                 if (!fConnected)
                 {
-                    //Debug.WriteLine("Unable to connect to NanoBooter");
+                    ////Debug.WriteLine("Unable to connect to NanoBooter");
                 }
             }
             return ret;
@@ -598,7 +598,7 @@ namespace nanoFramework.Tools.Debugger
 
                     byte[] sig = null;
 
-                    //Debug.WriteLine(updateId);
+                    ////Debug.WriteLine(updateId);
 
                     handle = await DebugEngine.StartUpdateAsync("NetMF", 4, 4, updateId, 0, 0, (uint)fileInfo.Size, (uint)c_PacketSize, 0);
                     if (handle > -1)

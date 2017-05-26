@@ -116,7 +116,7 @@ namespace nanoFramework.Tools.Debugger
             IncomingMessage reply = null;
             var reassembler = new MessageReassembler(ctrl, this);
 
-            Debug.WriteLine("timeout is " + waitRetryTimeout.TotalMilliseconds + "ms");
+            //Debug.WriteLine("timeout is " + waitRetryTimeout.TotalMilliseconds + "ms");
 
             while (retryCounter++ <= retries)
             {
@@ -158,14 +158,14 @@ namespace nanoFramework.Tools.Debugger
                 else
                 {
                     // send failed
-                    Debug.WriteLine("SEND FAILED...");
+                    //Debug.WriteLine("SEND FAILED...");
                 }
 
                 // something went wrong, retry with a progressive back-off strategy
                 Task.Delay(200 * retryCounter).Wait();
             }
 
-            Debug.WriteLine("exceeded attempts count...");
+            //Debug.WriteLine("exceeded attempts count...");
 
             return null;
         }

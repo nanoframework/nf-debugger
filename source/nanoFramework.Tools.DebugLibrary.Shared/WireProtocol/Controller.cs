@@ -119,11 +119,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             // sanity check for anything to read
             if(bytesToRead == 0)
             {
-                //Debug.WriteLine("Nothing to read, leaving now");
+                ////Debug.WriteLine("Nothing to read, leaving now");
                 return 0;
             }
 
-            //Debug.WriteLine("Trying to read {0} bytes...", bytesToReadRequested);
+            ////Debug.WriteLine("Trying to read {0} bytes...", bytesToReadRequested);
 
             while (bytesToRead > 0)
             {
@@ -136,7 +136,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 // read next chunk of data async
                 var readResult = await App.ReadBufferAsync((uint)bytesToRead, waitTimeout, cancellationToken).ConfigureAwait(false);
 
-                //Debug.WriteLine("read {0} bytes", readResult.UnconsumedBufferLength);
+                ////Debug.WriteLine("read {0} bytes", readResult.UnconsumedBufferLength);
 
                 // any byte read?
                 if (readResult.UnconsumedBufferLength > 0)

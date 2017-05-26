@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
 using Windows.Foundation;
-using Windows.UI.Xaml;
 
 namespace nanoFramework.Tools.Debugger.Serial
 {
@@ -17,7 +16,7 @@ namespace nanoFramework.Tools.Debugger.Serial
     /// This class handles the required changes and operation of an SerialDevice when a specific app event
     /// is raised (app suspension and resume) or when the device is disconnected. The device watcher events are also handled here.
     /// </summary>
-    public class EventHandlerForSerialDevice
+    public partial class EventHandlerForSerialDevice
     {
         /// <summary>
         /// Allows for singleton EventHandlerForSerialEclo
@@ -36,11 +35,6 @@ namespace nanoFramework.Tools.Debugger.Serial
         private DeviceAccessInformation deviceAccessInformation;
         private SerialDevice device;
 
-        private SuspendingEventHandler appSuspendCallback;
-
-        private SuspendingEventHandler appSuspendEventHandler;
-        private EventHandler<object> appResumeEventHandler;
-
         private TypedEventHandler<EventHandlerForSerialDevice, DeviceInformation> deviceCloseCallback;
         private TypedEventHandler<EventHandlerForSerialDevice, DeviceInformation> deviceConnectedCallback;
 
@@ -53,14 +47,6 @@ namespace nanoFramework.Tools.Debugger.Serial
 
         private bool isBackgroundTask;
         private bool isEnabledAutoReconnect;
-
-        // A pointer back to the calling app.  This is needed to reach methods and events there 
-        private static Application _callerApp;
-        public static Application CallerApp
-        {
-            private get { return _callerApp; }
-            set { _callerApp = value; }
-        }
 
         /// <summary>
         /// Enforces the singleton pattern so that there is only one object handling app events
@@ -105,18 +91,6 @@ namespace nanoFramework.Tools.Debugger.Serial
             eventHandlerForNanoFrameworkDevice = new EventHandlerForSerialDevice(true);
         }
 
-        public SuspendingEventHandler OnAppSuspendCallback
-        {
-            get
-            {
-                return appSuspendCallback;
-            }
-
-            set
-            {
-                appSuspendCallback = value;
-            }
-        }
 
         public TypedEventHandler<EventHandlerForSerialDevice, DeviceInformation> OnDeviceClose
         {
@@ -239,7 +213,7 @@ namespace nanoFramework.Tools.Debugger.Serial
                     deviceInformation = deviceInfo;
                     this.deviceSelector = deviceSelector;
 
-                    Debug.WriteLine($"Device {deviceInformation.Id} opened");
+                    //Debug.WriteLine($"Device {deviceInformation.Id} opened");
 
                     // adjust settings for serial port
                     device.BaudRate = 115200;
@@ -295,18 +269,18 @@ namespace nanoFramework.Tools.Debugger.Serial
                     switch (deviceAccessStatus)
                     {
                         case DeviceAccessStatus.DeniedByUser:
-                            Debug.WriteLine($"Access to the device was blocked by the user : {deviceInfo.Id}");
+                            //Debug.WriteLine($"Access to the device was blocked by the user : {deviceInfo.Id}");
                             break;
 
                         case DeviceAccessStatus.DeniedBySystem:
                             // This status is most likely caused by app permissions (did not declare the device in the app's package.appxmanifest)
                             // This status does not cover the case where the device is already opened by another app.
-                            Debug.WriteLine($"Access to the device was blocked by the system : {deviceInfo.Id}");
+                            //Debug.WriteLine($"Access to the device was blocked by the system : {deviceInfo.Id}");
                             break;
 
                         default:
                             // Most likely the device is opened by another app, but cannot be sure
-                            Debug.WriteLine($"Unknown error, possibly opened by another app : {deviceInfo.Id}");
+                            //Debug.WriteLine($"Unknown error, possibly opened by another app : {deviceInfo.Id}");
                             break;
                     }
                 }
@@ -392,40 +366,13 @@ namespace nanoFramework.Tools.Debugger.Serial
                 // Notify callback that we're about to close the device
                 deviceCloseCallback?.Invoke(this, deviceInformation);
 
-                Debug.WriteLine($"Closing device {deviceInformation.Id}");
+                //Debug.WriteLine($"Closing device {deviceInformation.Id}");
 
                 // This closes the handle to the device
                 device?.Dispose();
 
                 device = null;
             }
-        }
-
-        /// <summary>
-        /// Register for app suspension/resume events. See the comments
-        /// for the event handlers for more information on what is being done to the device.
-        ///
-        /// We will also register for when the app exists so that we may close the device handle.
-        /// </summary>
-        private void RegisterForAppEvents()
-        {
-            appSuspendEventHandler = new SuspendingEventHandler(Current.OnAppSuspension);
-            appResumeEventHandler = new EventHandler<object>(Current.OnAppResume);
-
-            // This event is raised when the app is exited and when the app is suspended
-            _callerApp.Suspending += appSuspendEventHandler;
-
-            _callerApp.Resuming += appResumeEventHandler;
-        }
-
-        private void UnregisterFromAppEvents()
-        {
-            // This event is raised when the app is exited and when the app is suspended
-            _callerApp.Suspending -= appSuspendEventHandler;
-            appSuspendEventHandler = null;
-
-            _callerApp.Resuming -= appResumeEventHandler;
-            appResumeEventHandler = null;
         }
 
         /// <summary>
@@ -494,40 +441,6 @@ namespace nanoFramework.Tools.Debugger.Serial
             }
 
             watcherStarted = false;
-        }
-
-        /// <summary>
-        /// If a SerialDevice object has been instantiated (a handle to the device is opened), we must close it before the app 
-        /// goes into suspension because the API automatically closes it for us if we don't. When resuming, the API will
-        /// not reopen the device automatically, so we need to explicitly open the device in that situation.
-        ///
-        /// Since we have to reopen the device ourselves when the app resumes, it is good practice to explicitly call the close
-        /// in the app as well (For every open there is a close).
-        /// 
-        /// We must stop the DeviceWatcher because it will continue to raise events even if
-        /// the app is in suspension, which is not desired (drains battery). We resume the device watcher once the app resumes again.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="eventArgs"></param>
-        private void OnAppSuspension(object sender, Windows.ApplicationModel.SuspendingEventArgs args)
-        {
-            if (watcherStarted)
-            {
-                watcherSuspended = true;
-                StopDeviceWatcher();
-            }
-            else
-            {
-                watcherSuspended = false;
-            }
-
-            // Forward suspend event to registered callback function
-            if (appSuspendCallback != null)
-            {
-                appSuspendCallback(sender, args);
-            }
-
-            CloseCurrentlyConnectedDevice();
         }
 
         /// <summary>
