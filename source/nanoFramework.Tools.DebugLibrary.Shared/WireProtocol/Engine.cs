@@ -294,9 +294,9 @@ namespace nanoFramework.Tools.Debugger
 
             try
             {
-                //Debug.WriteLine("_________________________________________________________");
-                //Debug.WriteLine("Executing " + DebuggerEventSource.GetCommandName(command));
-                //Debug.WriteLine("_________________________________________________________");
+                ////Debug.WriteLine("_________________________________________________________");
+                ////Debug.WriteLine("Executing " + DebuggerEventSource.GetCommandName(command));
+                ////Debug.WriteLine("_________________________________________________________");
 
                 // create message
                 OutgoingMessage message = new OutgoingMessage(m_ctrl, CreateConverter(), command, flags, payload);
@@ -2328,14 +2328,14 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<CLRCapabilities.Capability> DiscoverCLRCapabilityFlagsAsync()
         {
-            Debug.WriteLine("DiscoverCLRCapability");
+            //Debug.WriteLine("DiscoverCLRCapability");
 
             return (CLRCapabilities.Capability) await DiscoverCLRCapabilityUintAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityFlags).ConfigureAwait(false);
         }
 
         private async Task<CLRCapabilities.SoftwareVersionProperties> DiscoverSoftwareVersionPropertiesAsync()
         {
-            Debug.WriteLine("DiscoverSoftwareVersionProperties");
+            //Debug.WriteLine("DiscoverSoftwareVersionProperties");
 
             IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilitySoftwareVersion).ConfigureAwait(false);
 
@@ -2360,7 +2360,7 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<CLRCapabilities.LCDCapabilities> DiscoverCLRCapabilityLCDAsync()
         {
-            Debug.WriteLine("DiscoverCLRCapabilityLCD");
+            //Debug.WriteLine("DiscoverCLRCapabilityLCD");
 
             IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityLCD).ConfigureAwait(false);
 
@@ -2385,7 +2385,7 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<CLRCapabilities.HalSystemInfoProperties> DiscoverHalSystemInfoPropertiesAsync()
         {
-            Debug.WriteLine("DiscoverHalSystemInfoProperties");
+            //Debug.WriteLine("DiscoverHalSystemInfoProperties");
 
             IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityHalSystemInfo).ConfigureAwait(false);
 
@@ -2414,7 +2414,7 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<CLRCapabilities.ClrInfoProperties> DiscoverClrInfoPropertiesAsync()
         {
-            Debug.WriteLine("DiscoverClrInfoProperties");
+            //Debug.WriteLine("DiscoverClrInfoProperties");
 
             IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityClrInfo).ConfigureAwait(false);
 
@@ -2439,8 +2439,8 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<CLRCapabilities.TargetInfoProperties> DiscoverTargetInfoPropertiesAsync()
         {
-            Debug.WriteLine("==============================");
-            Debug.WriteLine("DiscoverTargetInfoProperties");
+            //Debug.WriteLine("==============================");
+            //Debug.WriteLine("DiscoverTargetInfoProperties");
 
             IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilitySolutionReleaseInfo).ConfigureAwait(false);
 

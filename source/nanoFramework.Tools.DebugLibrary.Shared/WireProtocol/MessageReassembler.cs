@@ -75,7 +75,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         {
                             // cancellation requested
 
-                            Debug.WriteLine("cancel token");
+                            //Debug.WriteLine("cancel token");
 
                             return null;
                         }
@@ -95,7 +95,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case ReceiveState.WaitingForHeader:
                         count = m_raw.m_header.Length - m_rawPos;
 
-                        Debug.WriteLine("WaitingForHeader");
+                        //Debug.WriteLine("WaitingForHeader");
 
                         // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                         // because we have an external cancellation token and the above timeout cancellation token, need to combine both
@@ -138,7 +138,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case ReceiveState.ReadingHeader:
                         count = m_raw.m_header.Length - m_rawPos;
 
-                        Debug.WriteLine("ReadingHeader");
+                        //Debug.WriteLine("ReadingHeader");
 
                         // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                         // because we have an external cancellation token and the above timeout cancellation token, need to combine both
@@ -157,13 +157,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case ReceiveState.CompleteHeader:
                         try
                         {
-                            Debug.WriteLine("CompleteHeader");
+                            //Debug.WriteLine("CompleteHeader");
 
                             m_parent.CreateConverter().Deserialize(m_base.m_header, m_raw.m_header);
 
                             if (VerifyHeader() == true)
                             {
-                                Debug.WriteLine("CompleteHeader, header OK");
+                                //Debug.WriteLine("CompleteHeader, header OK");
 
                                 bool fReply = (m_base.m_header.m_flags & Flags.c_Reply) != 0;
 
@@ -187,7 +187,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                 }
                             }
 
-                            Debug.WriteLine("CompleteHeader, header not valid");
+                            //Debug.WriteLine("CompleteHeader, header not valid");
                         }
                         //catch (ThreadAbortException)
                         //{
@@ -195,7 +195,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         //}
                         catch (Exception e)
                         {
-                            Debug.WriteLine("Fault at payload deserialization:\n\n{0}", e.ToString());
+                            //Debug.WriteLine("Fault at payload deserialization:\n\n{0}", e.ToString());
                         }
 
                         m_state = ReceiveState.Initialize;
@@ -214,7 +214,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case ReceiveState.ReadingPayload:
                         count = m_raw.m_payload.Length - m_rawPos;
 
-                        Debug.WriteLine("ReadingPayload");
+                        //Debug.WriteLine("ReadingPayload");
 
                         // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                         // because we have an external cancellation token and the above timeout cancellation token, need to combine both
@@ -230,11 +230,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         goto case ReceiveState.CompletePayload;
 
                     case ReceiveState.CompletePayload:
-                        Debug.WriteLine("CompletePayload");
+                        //Debug.WriteLine("CompletePayload");
 
                         if (VerifyPayload() == true)
                         {
-                            Debug.WriteLine("CompletePayload payload OK");
+                            //Debug.WriteLine("CompletePayload payload OK");
 
                             try
                             {
@@ -249,7 +249,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                 {
                                     DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
 
-                                    //Debug.WriteLine("*** leaving reassembler");
+                                    ////Debug.WriteLine("*** leaving reassembler");
 
                                     return GetCompleteMessage();
                                 }
@@ -269,12 +269,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             //}
                             catch (Exception e)
                             {
-                                Debug.WriteLine("Fault at payload deserialization:\n\n{0}", e.ToString());
+                                //Debug.WriteLine("Fault at payload deserialization:\n\n{0}", e.ToString());
                             }
                         }
                         else
                         {
-                            Debug.WriteLine("CompletePayload payload not valid");
+                            //Debug.WriteLine("CompletePayload payload not valid");
                         }
 
                         m_state = ReceiveState.Initialize;
@@ -295,11 +295,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 m_state = ReceiveState.Initialize;
                 DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
-                Debug.WriteLine("*** EXCEPTION ***");
+                //Debug.WriteLine("*** EXCEPTION ***");
                 throw;
             }
 
-            Debug.WriteLine("??????? leaving reassembler");
+            //Debug.WriteLine("??????? leaving reassembler");
             return null;
         }
 

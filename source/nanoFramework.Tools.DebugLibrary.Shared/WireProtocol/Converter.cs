@@ -189,7 +189,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     if (!processedTypeFields.Contains(f.Name))
                     {
                         Type ft = f.FieldType;
-                        //Debug.WriteLine("Deserializing field " + f.Name + " of type " + ft.Name);
+                        ////Debug.WriteLine("Deserializing field " + f.Name + " of type " + ft.Name);
 
                         // add field name to list of processed fields
                         // see list declaration
@@ -204,7 +204,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     else
                     {
                         // skipping this field
-                        //Debug.WriteLine("Skipping " + f.Name );
+                        ////Debug.WriteLine("Skipping " + f.Name );
                     }
                 }
             }
@@ -235,7 +235,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 //This allows PrepareForDeserialize to subclass the expected type if appropriate
                 t = o.GetType();
 
-                //Debug.WriteLine("Deserializing instance " + t.Name);
+                ////Debug.WriteLine("Deserializing instance " + t.Name);
             }
 
             switch (Extensions.TypeExtensions.GetTypeCode(t))
@@ -276,8 +276,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                             //if(reader.BaseStream.Position >= reader.BaseStream.Length)
                             //{
-                            //    Debug.WriteLine("######################################################");
-                            //    Debug.WriteLine("################ trying to read after end of stream ");
+                            //    //Debug.WriteLine("######################################################");
+                            //    //Debug.WriteLine("################ trying to read after end of stream ");
                             //}
 
                             objValue = InternalDeserializeInstance(reader, objValue, t.GetElementType());

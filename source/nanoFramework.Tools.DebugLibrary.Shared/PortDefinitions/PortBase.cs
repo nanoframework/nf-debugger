@@ -7,7 +7,6 @@ using nanoFramework.Tools.Debugger.PortSerial;
 using nanoFramework.Tools.Debugger.Usb;
 using System;
 using System.Collections.ObjectModel;
-using Windows.UI.Xaml;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -49,15 +48,5 @@ namespace nanoFramework.Tools.Debugger
         public abstract event EventHandler DeviceEnumerationCompleted;
 
         public ObservableCollection<NanoDeviceBase> NanoFrameworkDevices { get; protected set; }
-
-        public static PortBase CreateInstanceForUsb(string displayName, Application callerApp)
-        {
-            return new UsbPort(callerApp);
-        }
-
-        public static PortBase CreateInstanceForSerial(string displayName, Application callerApp)
-        {
-            return new SerialPort(callerApp);
-        }
     }
 }

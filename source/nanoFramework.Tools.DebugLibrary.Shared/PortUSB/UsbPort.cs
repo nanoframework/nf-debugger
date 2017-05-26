@@ -206,7 +206,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             // search the device list for a device with a matching interface ID
             var usbMatch = FindDevice(deviceInformation.Id);
 
-            Debug.WriteLine("New USB device: " + deviceInformation.Id);
+            //Debug.WriteLine("New USB device: " + deviceInformation.Id);
 
             // Add the device if it's new
             if (usbMatch == null)
@@ -238,7 +238,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                         // the device description format is kept to maintain backwards compatibility
                         newNanoFrameworkDevice.Description = EventHandlerForUsbDevice.Current.DeviceInformation.Name + "_" + await GetDeviceDescriptor(5).ConfigureAwait(false);
 
-                        Debug.WriteLine("Add new nanoFramework device to list: " + newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
+                        //Debug.WriteLine("Add new nanoFramework device to list: " + newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
 
                         // done here, close device
                         EventHandlerForUsbDevice.Current.CloseDevice();
@@ -270,7 +270,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             // Removes the device entry from the internal list; therefore the UI
             var deviceEntry = FindDevice(deviceId);
 
-            Debug.WriteLine("USB device removed: " + deviceId);
+            //Debug.WriteLine("USB device removed: " + deviceId);
 
             UsbDevices.Remove(deviceEntry);
 
@@ -294,7 +294,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                         // yes, remove it from collection
                         NanoFrameworkDevices.Remove(device);
 
-                        Debug.WriteLine("Removing device " + device.Description);
+                        //Debug.WriteLine("Removing device " + device.Description);
 
                         device = null;
                     }
@@ -373,7 +373,7 @@ namespace nanoFramework.Tools.Debugger.Usb
 
             if (deviceWatchersCompletedCount == mapDeviceWatchersToDeviceSelector.Count)
             {
-                Debug.WriteLine($"USB device enumeration completed. Found { UsbDevices.Count } devices");
+                //Debug.WriteLine($"USB device enumeration completed. Found { UsbDevices.Count } devices");
 
                 // all watchers have completed enumeration
                 isAllDevicesEnumerated = true;
@@ -592,9 +592,9 @@ namespace nanoFramework.Tools.Debugger.Usb
 
                 Task<UInt32> loadAsyncTask;
 
-                //Debug.WriteLine("### waiting");
+                ////Debug.WriteLine("### waiting");
                 await semaphore.WaitAsync();
-                //Debug.WriteLine("### got it");
+                ////Debug.WriteLine("### got it");
 
                 try
                 {
@@ -618,7 +618,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                 finally
                 {
                     semaphore.Release();
-                    //Debug.WriteLine("### released");
+                    ////Debug.WriteLine("### released");
                 }
 
                 return reader;

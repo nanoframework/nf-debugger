@@ -238,7 +238,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                     deviceInformation = deviceInfo;
                     this.deviceSelector = deviceSelector;
 
-                    Debug.WriteLine($"Device {deviceInformation.Id} opened");
+                    //Debug.WriteLine($"Device {deviceInformation.Id} opened");
 
                     // Notify registered callback handle that the device has been opened
                     deviceConnectedCallback?.Invoke(this, deviceInformation);
@@ -281,18 +281,18 @@ namespace nanoFramework.Tools.Debugger.Usb
                     switch (deviceAccessStatus)
                     {
                         case DeviceAccessStatus.DeniedByUser:
-                            Debug.WriteLine($"Access to the device was blocked by the user : {deviceInfo.Id}");
+                            //Debug.WriteLine($"Access to the device was blocked by the user : {deviceInfo.Id}");
                             break;
 
                         case DeviceAccessStatus.DeniedBySystem:
                             // This status is most likely caused by app permissions (did not declare the device in the app's package.appxmanifest)
                             // This status does not cover the case where the device is already opened by another app.
-                            Debug.WriteLine($"Access to the device was blocked by the system : {deviceInfo.Id}");
+                            //Debug.WriteLine($"Access to the device was blocked by the system : {deviceInfo.Id}");
                             break;
 
                         default:
                             // Most likely the device is opened by another app, but cannot be sure
-                            Debug.WriteLine($"Unknown error, possibly opened by another app : {deviceInfo.Id}");
+                            //Debug.WriteLine($"Unknown error, possibly opened by another app : {deviceInfo.Id}");
                             break;
                     }
                 }
@@ -378,7 +378,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                 // Notify callback that we're about to close the device
                 deviceCloseCallback?.Invoke(this, deviceInformation);
 
-                Debug.WriteLine($"Closing device {deviceInformation.Id}");
+                //Debug.WriteLine($"Closing device {deviceInformation.Id}");
 
                 // This closes the handle to the device
                 device.Dispose();

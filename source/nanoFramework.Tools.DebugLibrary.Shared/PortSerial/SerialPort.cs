@@ -7,7 +7,6 @@ using nanoFramework.Tools.Debugger.Serial;
 using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -16,11 +15,10 @@ using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
 using Windows.Foundation;
 using Windows.Storage.Streams;
-using Windows.UI.Xaml;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
-    public class SerialPort : PortBase, IPort
+    public partial class SerialPort : PortBase, IPort
     {
         // dictionary with mapping between Serial device watcher and the device ID
         private Dictionary<DeviceWatcher, string> mapDeviceWatchersToDeviceSelector;
@@ -42,28 +40,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Internal list with the actual nF Serial devices
         /// </summary>
         List<SerialDeviceInformation> SerialDevices;
-
-        /// <summary>
-        /// Creates an Serial debug client
-        /// </summary>
-        public SerialPort(Application callerApp)
-        {
-            mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, String>();
-            NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
-            SerialDevices = new List<Serial.SerialDeviceInformation>();
-
-            // set caller app property
-            EventHandlerForSerialDevice.CallerApp = callerApp;
-
-            // init semaphore
-            semaphore = new SemaphoreSlim(1, 1);
-
-            Task.Factory.StartNew(() =>
-            {
-                StartSerialDeviceWatchers();
-            });
-        }
-
 
         #region Device watchers initialization
 
@@ -240,7 +216,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         // try opening the device to check for a valid nanoFramework device
                         if (await ConnectSerialDeviceAsync(newNanoFrameworkDevice.Device.DeviceInformation).ConfigureAwait(false))
                         {
-                            Debug.WriteLine("New Serial device: " + deviceInformation.Id);
+                            //Debug.WriteLine("New Serial device: " + deviceInformation.Id);
 
                             var name = EventHandlerForSerialDevice.Current.DeviceInformation?.Properties["System.ItemNameDisplay"] as string;
 
@@ -251,7 +227,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 newNanoFrameworkDevice.Description = name + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
 
 
-                                Debug.WriteLine("Add new nanoFramework device to list: " + newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
+                                //Debug.WriteLine("Add new nanoFramework device to list: " + newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
                             }
 
                             // done here, close the device
@@ -278,7 +254,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // Removes the device entry from the internal list; therefore the UI
             var deviceEntry = FindDevice(deviceId);
 
-            Debug.WriteLine("Serial device removed: " + deviceId);
+            //Debug.WriteLine("Serial device removed: " + deviceId);
 
             SerialDevices.Remove(deviceEntry);
 
@@ -302,7 +278,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         // yes, remove it from collection
                         NanoFrameworkDevices.Remove(device);
 
-                        Debug.WriteLine("Removing device " + device.Description);
+                        //Debug.WriteLine("Removing device " + device.Description);
 
                         device = null;
                     }
@@ -397,7 +373,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         }
                         else
                         {
-                            Debug.WriteLine($"New Serial device: {device.Description} {(((NanoDevice<NanoSerialDevice>)device).Device.DeviceInformation.DeviceInformation.Id)}");
+                            //Debug.WriteLine($"New Serial device: {device.Description} {(((NanoDevice<NanoSerialDevice>)device).Device.DeviceInformation.DeviceInformation.Id)}");
                         }
 
                         // done here, disconnect from the device now
@@ -417,7 +393,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // all watchers have completed enumeration
                 isAllDevicesEnumerated = true;
 
-                Debug.WriteLine($"Serial device enumeration completed. Found {NanoFrameworkDevices.Count} devices");
+                //Debug.WriteLine($"Serial device enumeration completed. Found {NanoFrameworkDevices.Count} devices");
 
                 // fire event that Serial enumeration is complete 
                 OnDeviceEnumerationCompleted();
@@ -585,9 +561,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 Task<UInt32> loadAsyncTask;
 
-                //Debug.WriteLine("### waiting");
+                ////Debug.WriteLine("### waiting");
                 await semaphore.WaitAsync();
-                //Debug.WriteLine("### got it");
+                ////Debug.WriteLine("### got it");
 
                 try
                 {
@@ -611,7 +587,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 finally
                 {
                     semaphore.Release();
-                    //Debug.WriteLine("### released");
+                    ////Debug.WriteLine("### released");
                 }
 
                 return reader;
