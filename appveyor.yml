@@ -10,6 +10,8 @@ nuget restore source\nanoFramework.Tools.Debugger.sln
 
 msbuild source\nanoFramework.Tools.Debugger.sln /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
+msbuild source\nanoFramework.Tools.Debugger.sln /t:pack /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+
 artifacts:
 - path: '**\bin\Release\*.nupkg'
   name: Nuget_Packages
