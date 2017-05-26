@@ -16,7 +16,7 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <PackageId>nanoFramework.Tools.Debugger.Net</PackageId>
-    <PackageVersion>0.3.0-preview003</PackageVersion>
+    <PackageVersion>0.3.0-preview004</PackageVersion>
     <Description>This .NET library provides a debug client for nanoFramework devices using USB or Serial connection to a board.</Description>
     <Authors>nanoFramework project contributors</Authors>
     <Title>nanoFramework debug library for .NET</Title>
@@ -48,6 +48,12 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationFramework" />
     <Reference Include="Microsoft.CSharp" />
@@ -66,6 +72,7 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="key.snk" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
