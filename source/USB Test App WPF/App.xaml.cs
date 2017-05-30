@@ -19,6 +19,8 @@ namespace USB_Test_App_WPF
     {
         ViewModelLocator vml;
 
+        internal static PortBase NanoFrameworkSerialDebugClient;
+
         public App()
         {
             this.Activated += App_Activated;

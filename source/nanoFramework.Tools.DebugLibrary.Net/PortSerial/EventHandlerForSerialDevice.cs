@@ -61,6 +61,15 @@ namespace nanoFramework.Tools.Debugger.Serial
         }
 
         /// <summary>
+        /// This is an empty method just to keep the workflow unchanged between UWP and Desktop version.
+        /// The DeviceAccessStatusChange is only available in UWP.
+        /// </summary>
+        private void RegisterForDeviceAccessStatusChange()
+        {
+
+        }
+
+        /// <summary>
         /// If a SerialDevice object has been instantiated (a handle to the device is opened), we must close it before the app 
         /// goes into suspension because the API automatically closes it for us if we don't. When resuming, the API will
         /// not reopen the device automatically, so we need to explicitly open the device in that situation.
