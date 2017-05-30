@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("nanoFramework Debug Library")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("nanoFramework")]
-[assembly: AssemblyProduct("Debug Library")]
-[assembly: AssemblyCopyright("Copyright (c) 2017 The nanoFramework project contributors")]
+[assembly: AssemblyCompany("The nanoFramework project contributors")]
+[assembly: AssemblyProduct("nanoFramework Debug Library")]
+[assembly: AssemblyCopyright("Copyright © 2017 nanoFramework project contributors")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -24,6 +24,6 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.2.*")]
-[assembly: AssemblyFileVersion("0.2.20.0")]
+[assembly: AssemblyVersion("0.3.*")]
+[assembly: AssemblyFileVersion("0.3.5.0")]
 [assembly: ComVisible(false)]

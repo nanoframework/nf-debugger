@@ -73,6 +73,21 @@ namespace nanoFramework.Tools.Debugger.Serial
         }
 
         /// <summary>
+        /// Listen for any changed in device access permission. The user can block access to the device while the device is in use.
+        /// If the user blocks access to the device while the device is opened, the device's handle will be closed automatically by
+        /// the system; it is still a good idea to close the device explicitly so that resources are cleaned up.
+        /// 
+        /// Note that by the time the AccessChanged event is raised, the device handle may already be closed by the system.
+        /// </summary>
+        private void RegisterForDeviceAccessStatusChange()
+        {
+            deviceAccessInformation = DeviceAccessInformation.CreateFromId(deviceInformation.Id);
+
+            deviceAccessEventHandler = new TypedEventHandler<DeviceAccessInformation, DeviceAccessChangedEventArgs>(OnDeviceAccessChanged);
+            deviceAccessInformation.AccessChanged += deviceAccessEventHandler;
+        }
+
+        /// <summary>
         /// If a SerialDevice object has been instantiated (a handle to the device is opened), we must close it before the app 
         /// goes into suspension because the API automatically closes it for us if we don't. When resuming, the API will
         /// not reopen the device automatically, so we need to explicitly open the device in that situation.
