@@ -25,7 +25,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         Converter CreateConverter();
 
-        Task<bool> QueueOutputAsync(MessageRaw raw);
+        Task<bool> QueueOutputAsync(MessageRaw raw, CancellationToken cancellationToken);
 
         Task<uint> SendRawBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken);
     }

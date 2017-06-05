@@ -15,6 +15,7 @@ using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
 using Windows.Foundation;
 using Windows.Storage.Streams;
+using System.Collections.ObjectModel;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
@@ -33,13 +34,44 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private int deviceWatchersCompletedCount = 0;
         private bool isAllDevicesEnumerated = false;
 
-        private object cancelIoLock = new object();
         private static SemaphoreSlim semaphore;
+
+        private DataReader inputStreamReader;
+        private DataWriter outputStreamWriter;
 
         /// <summary>
         /// Internal list with the actual nF Serial devices
         /// </summary>
         List<SerialDeviceInformation> SerialDevices;
+
+        /// <summary>
+        /// Creates an Serial debug client
+        /// </summary>
+        public SerialPort(object callerApp)
+        {
+            mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, String>();
+            NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
+            SerialDevices = new List<Serial.SerialDeviceInformation>();
+
+            // set caller app property, if any
+            if (callerApp != null)
+            {
+
+#if WINDOWS_UWP
+                EventHandlerForSerialDevice.CallerApp = callerApp as Windows.UI.Xaml.Application;
+#else
+                EventHandlerForSerialDevice.CallerApp = callerApp as System.Windows.Application;
+#endif
+            };
+
+            // init semaphore
+            semaphore = new SemaphoreSlim(1, 1);
+
+            Task.Factory.StartNew(() => {
+                StartSerialDeviceWatchers();
+            });
+        }
+
 
         #region Device watchers initialization
 
@@ -63,6 +95,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         }
 
         #endregion
+
 
         #region Device watcher management and host app status handling
 
@@ -176,6 +209,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         #endregion
 
+
         #region Methods to manage device list add, remove, etc
 
         /// <summary>
@@ -216,7 +250,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         // try opening the device to check for a valid nanoFramework device
                         if (await ConnectSerialDeviceAsync(newNanoFrameworkDevice.Device.DeviceInformation).ConfigureAwait(false))
                         {
-                            //Debug.WriteLine("New Serial device: " + deviceInformation.Id);
+                            Debug.WriteLine("New Serial device: " + deviceInformation.Id);
 
                             var name = EventHandlerForSerialDevice.Current.DeviceInformation?.Properties["System.ItemNameDisplay"] as string;
 
@@ -227,7 +261,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 newNanoFrameworkDevice.Description = name + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
 
 
-                                //Debug.WriteLine("Add new nanoFramework device to list: " + newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
+                                Debug.WriteLine("Add new nanoFramework device to list: " + newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
                             }
 
                             // done here, close the device
@@ -238,6 +272,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                         // couldn't open device better remove it from the collection right away
                         NanoFrameworkDevices.Remove(newNanoFrameworkDevice as NanoDeviceBase);
+
+                        // can't do anything with this one, better dispose it
+                        newNanoFrameworkDevice.Dispose();
                     }
                 }
                 else
@@ -254,7 +291,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // Removes the device entry from the internal list; therefore the UI
             var deviceEntry = FindDevice(deviceId);
 
-            //Debug.WriteLine("Serial device removed: " + deviceId);
+            Debug.WriteLine("Serial device removed: " + deviceId);
 
             SerialDevices.Remove(deviceEntry);
 
@@ -278,7 +315,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         // yes, remove it from collection
                         NanoFrameworkDevices.Remove(device);
 
-                        //Debug.WriteLine("Removing device " + device.Description);
+                        Debug.WriteLine("Removing device " + device.Description);
 
                         device = null;
                     }
@@ -324,7 +361,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return null;
         }
 
-
         /// <summary>
         /// Remove the device from the device list 
         /// </summary>
@@ -346,6 +382,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         }
 
         #endregion
+
 
         #region Handlers and events for Device Enumeration Complete 
 
@@ -370,10 +407,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         {
                             // mark this device for removal
                             devicesToRemove.Add(device);
+                            device.StartCountdownForDispose();
                         }
                         else
                         {
-                            //Debug.WriteLine($"New Serial device: {device.Description} {(((NanoDevice<NanoSerialDevice>)device).Device.DeviceInformation.DeviceInformation.Id)}");
+                            Debug.WriteLine($"New Serial device: {device.Description} {(((NanoDevice<NanoSerialDevice>)device).Device.DeviceInformation.DeviceInformation.Id)}");
                         }
 
                         // done here, disconnect from the device now
@@ -393,7 +431,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // all watchers have completed enumeration
                 isAllDevicesEnumerated = true;
 
-                //Debug.WriteLine($"Serial device enumeration completed. Found {NanoFrameworkDevices.Count} devices");
+                Debug.WriteLine($"Serial device enumeration completed. Found {NanoFrameworkDevices.Count} devices");
 
                 // fire event that Serial enumeration is complete 
                 OnDeviceEnumerationCompleted();
@@ -447,9 +485,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         #endregion
 
+
         public async Task<bool> ConnectDeviceAsync(NanoDeviceBase device)
         {
-            return await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation);
+            return await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).ConfigureAwait(false);
         }
 
         private async Task<bool> ConnectSerialDeviceAsync(SerialDeviceInformation serialDeviceInfo)
@@ -464,8 +503,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
             }
 
-            // Create an EventHandlerForDevice to watch for the device we are connecting to
-            EventHandlerForSerialDevice.CreateNewEventHandlerForDevice();
+            // access the Current in EventHandlerForDevice to create a watcher for the device we are connecting to
+            var isConnected = EventHandlerForSerialDevice.Current.IsDeviceConnected;
 
             return await EventHandlerForSerialDevice.Current.OpenDeviceAsync(serialDeviceInfo.DeviceInformation, serialDeviceInfo.DeviceSelector).ConfigureAwait(false);
         }
@@ -494,36 +533,26 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // device must be connected
             if (EventHandlerForSerialDevice.Current.IsDeviceConnected)
             {
-                // get data  writer for current serial device
-                var writer = new DataWriter(EventHandlerForSerialDevice.Current.Device.OutputStream);
-                
-                // write buffer to device
-                writer.WriteBytes(buffer);
+                // create a stream writer with serial device OutputStream, if there isn't one already
+                if (outputStreamWriter == null)
+                {
+                    outputStreamWriter = new DataWriter(EventHandlerForSerialDevice.Current.Device.OutputStream);
+                }
 
-                // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
-                var timeoutCancelatioToken = new CancellationTokenSource(waiTimeout).Token;
-
-                // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                var linkedCancelationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancelatioToken).Token;
-
-                Task<uint> storeAsyncTask;
+                // serial works as a "single channel" so we can only TX or RX, 
+                // meaning that access to the resource has to be protected with a semephore
+                await semaphore.WaitAsync().ConfigureAwait(false);
 
                 try
                 {
+                    // write buffer to device
+                    outputStreamWriter.WriteBytes(buffer);
 
-                    // Don't start any IO if the task has been canceled
-                    lock (cancelIoLock)
-                    {
-                        // set this makes sure that an exception is thrown when the cancellation token is set
-                        linkedCancelationToken.ThrowIfCancellationRequested();
+                    // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
+                    // because we have an external cancellation token and the above timeout cancellation token, need to combine both
+                    Task<uint> storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(cancellationToken.AddTimeout(waiTimeout));
 
-                        // Now the buffer data is actually flushed out to the device.
-                        // We should implement a cancellation Token here so we are able to stop the task operation explicitly if needed
-                        // The completion function should still be called so that we can properly handle a canceled task
-                        storeAsyncTask = writer.StoreAsync().AsTask(linkedCancelationToken);
-                    }
-
-                    bytesWritten = await storeAsyncTask;
+                    bytesWritten = await storeAsyncTask.ConfigureAwait(false);
 
                     if (bytesWritten > 0)
                     {
@@ -532,70 +561,78 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
                 catch (TaskCanceledException)
                 {
-                    // this is expected to happen, don't do anything with this 
+                    // this is expected to happen, don't do anything with this
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                }
+                finally
+                {
+                    semaphore.Release();
+                    outputStreamWriter.DetachBuffer();
                 }
             }
             else
             {
-                // FIXME 
                 // NotifyDeviceNotConnected
+                Debug.WriteLine("NotifyDeviceNotConnected");
             }
 
             return bytesWritten;
         }
 
-        public async Task<DataReader> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
             // device must be connected
             if (EventHandlerForSerialDevice.Current.IsDeviceConnected)
             {
-                // get data  reader for current serial device
-                DataReader reader = new DataReader(EventHandlerForSerialDevice.Current.Device.InputStream); ;
-                uint bytesRead = 0;
+                // serial works as a "single channel" so we can only TX or RX, 
+                // meaning that access to the resource has to be protected with a semephore
+                await semaphore.WaitAsync().ConfigureAwait(false);
 
-                // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
-                var timeoutCancelatioToken = new CancellationTokenSource(waiTimeout).Token;
-
-                // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                var linkedCancelationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancelatioToken).Token;
-
-                Task<UInt32> loadAsyncTask;
-
-                ////Debug.WriteLine("### waiting");
-                await semaphore.WaitAsync();
-                ////Debug.WriteLine("### got it");
+                // create a stream reader with serial device InputStream, if there isn't one already
+                if (inputStreamReader == null)
+                {
+                    inputStreamReader = new DataReader(EventHandlerForSerialDevice.Current.Device.InputStream);
+                }
 
                 try
                 {
-                    // Don't start any IO if the task has been canceled
-                    lock (cancelIoLock)
-                    {
-                        // set this makes sure that an exception is thrown when the cancellation token is set
-                        linkedCancelationToken.ThrowIfCancellationRequested();
+                    // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
+                    // because we have an external cancellation token and the above timeout cancellation token, need to combine both
+                    Task<UInt32> loadAsyncTask = inputStreamReader.LoadAsync(bytesToRead).AsTask(cancellationToken.AddTimeout(waiTimeout));
 
-                        // We should implement a cancellation Token here so we are able to stop the task operation explicitly if needed
-                        // The completion function should still be called so that we can properly handle a canceled task
-                        loadAsyncTask = reader.LoadAsync(bytesToRead).AsTask(linkedCancelationToken);
-                    }
+                    // get how many bytes are available to read
+                    uint bytesRead = await loadAsyncTask.ConfigureAwait(false);
 
-                    bytesRead = await loadAsyncTask;
+                    byte[] readBuffer = new byte[bytesToRead];
+                    inputStreamReader.ReadBytes(readBuffer);
+
+                    return readBuffer;
                 }
                 catch (TaskCanceledException)
                 {
-                    // this is expected to happen, don't do anything with this 
+                    // this is expected to happen, don't do anything with this
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
                 }
                 finally
                 {
+                    // relase serial device semaphore
                     semaphore.Release();
-                    ////Debug.WriteLine("### released");
-                }
 
-                return reader;
+                    // detach read buffer
+                    inputStreamReader.DetachBuffer();
+                }
             }
             else
             {
                 // FIXME 
                 // NotifyDeviceNotConnected
+                Debug.WriteLine("NotifyDeviceNotConnected");
             }
 
             return null;

@@ -4,23 +4,14 @@
 //
 
 using nanoFramework.Tools.Debugger.PortSerial;
-using nanoFramework.Tools.Debugger.Usb;
-using System;
-using System.Collections.ObjectModel;
-using System.Windows;
 
 namespace nanoFramework.Tools.Debugger
 {
     public abstract partial class PortBase
     {
-        public static PortBase CreateInstanceForSerial(string displayName, Application callerApp)
+        public static PortBase CreateInstanceForSerial(string displayName, object callerApp = null)
         {
             return new SerialPort(callerApp);
         }
-
-        //public static PortBase CreateInstanceForUsb(string displayName, Application callerApp)
-        //{
-        //    return new UsbPort(callerApp);
-        //}
     }
 }

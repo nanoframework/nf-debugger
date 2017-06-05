@@ -31,6 +31,8 @@ namespace nanoFramework.Tools.Debugger
                     // set kill flag
                     KillFlag = true;
 
+                    DebugEngine.Dispose();
+
                     Dispose(false);
                 });
 
@@ -56,6 +58,8 @@ namespace nanoFramework.Tools.Debugger
                     {
                         // release managed components
                         Disconnect();
+
+                        DebugEngine?.Dispose();
                     }
                     catch { }
                 }

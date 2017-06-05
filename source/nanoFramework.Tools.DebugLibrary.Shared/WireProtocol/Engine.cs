@@ -47,6 +47,8 @@ namespace nanoFramework.Tools.Debugger
         //ArrayList m_notifyQueue;
         FifoBuffer m_notifyNoise;
 
+        CancellationTokenSource noiseHandlingCancellation = new CancellationTokenSource();
+
         AutoResetEvent m_rpcEvent;
         //ArrayList m_rpcQueue;
         //ArrayList m_rpcEndPoints;
@@ -99,7 +101,14 @@ namespace nanoFramework.Tools.Debugger
 
                 while (true)
                 {
-                    m_notifyNoise.WaitHandle.WaitOne();
+                    m_notifyNoise.WaitHandle.WaitOne(250);
+
+                    // check for cancelation request
+                    if (noiseHandlingCancellation.IsCancellationRequested)
+                    {
+                        // cancellation requested
+                        return;
+                    }
 
                     while ((read = m_notifyNoise.Available) > 0)
                     {
@@ -114,7 +123,7 @@ namespace nanoFramework.Tools.Debugger
                     }
 
                 }
-            });
+            }, noiseHandlingCancellation.Token);
 
         }
 
@@ -195,7 +204,9 @@ namespace nanoFramework.Tools.Debugger
 
             if ((force || Capabilities.IsUnknown) && ConnectionSource == ConnectionSource.NanoCLR)
             {
-                Capabilities = await DiscoverCLRCapabilitiesAsync().ConfigureAwait(false);
+                CancellationTokenSource cancellationTSource = new CancellationTokenSource();
+
+                Capabilities = await DiscoverCLRCapabilitiesAsync(cancellationTSource.Token).ConfigureAwait(false);
                 m_ctrl.Capabilities = Capabilities;
             }
 
@@ -225,6 +236,8 @@ namespace nanoFramework.Tools.Debugger
 
                 // call disconnect at device level
                 Device.Disconnect();
+
+                Debug.WriteLine("Device disconnected");
             }
             catch { }
         }
@@ -252,6 +265,10 @@ namespace nanoFramework.Tools.Debugger
                 if (disposing)
                 {
                     // TODO: dispose managed state (managed objects).
+
+                    // kill listener for spurious chars task
+                    noiseHandlingCancellation.Cancel();
+
                     try
                     {
                         if (IsConnected)
@@ -290,45 +307,60 @@ namespace nanoFramework.Tools.Debugger
         {
             await semaphore.WaitAsync().ConfigureAwait(false);
 
-            IncomingMessage replyMessage;
+            //// check for cancelation request
+            //if (cancellationToken.IsCancellationRequested)
+            //{
+            //    // cancellation requested
+            //    Debug.WriteLine("cancelation requested");
+            //    return null;
+            //}
 
             try
             {
-                ////Debug.WriteLine("_________________________________________________________");
-                ////Debug.WriteLine("Executing " + DebuggerEventSource.GetCommandName(command));
-                ////Debug.WriteLine("_________________________________________________________");
+                //Debug.WriteLine("_________________________________________________________");
+                //Debug.WriteLine("Executing " + DebuggerEventSource.GetCommandName(command));
+                //Debug.WriteLine("_________________________________________________________");
 
                 // create message
                 OutgoingMessage message = new OutgoingMessage(m_ctrl, CreateConverter(), command, flags, payload);
 
                 // create request 
                 Request request = new Request(m_ctrl, message, retries, timeout, null);
-                replyMessage = await request.PerformRequestAsync(new CancellationToken()).ConfigureAwait(false);
+
+                return await request.PerformRequestAsync().ConfigureAwait(false);
             }
             finally
             {
                 semaphore.Release();
             }
-
-            return replyMessage;
         }
 
-        private async Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, int retries = 3, int timeout = 500)
+        private async Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int retries = 3, int timeout = 500)
         {
-            // create request 
-            Request request = new Request(m_ctrl, message, retries, timeout, null);
+            await semaphore.WaitAsync().ConfigureAwait(false);
 
-            return await request.PerformRequestAsync(new CancellationToken());
+            try
+            {
+
+                // create request 
+                Request request = new Request(m_ctrl, message, retries, timeout, null);
+
+                return await request.PerformRequestAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
         }
 
-        private async Task<List<IncomingMessage>> PerformRequestBatchAsync(List<OutgoingMessage> messages, int retries = 3, int timeout = 1000)
+        private async Task<List<IncomingMessage>> PerformRequestBatchAsync(List<OutgoingMessage> messages, CancellationToken cancellationToken, int retries = 3, int timeout = 1000)
         {
             List<IncomingMessage> replies = new List<IncomingMessage>();
             List<Request> requests = new List<Request>();
 
             foreach(OutgoingMessage message in messages)
             {
-                replies.Add(await PerformRequestAsync(message, retries, timeout));
+                replies.Add(await PerformRequestAsync(message, cancellationToken, retries, timeout).ConfigureAwait(false));
             }
 
             return replies;
@@ -336,6 +368,9 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<Commands.Monitor_Ping.Reply> GetConnectionSourceAsync()
         {
+            // TODO replace with token argument
+            CancellationTokenSource cancelTSource = new CancellationTokenSource();
+
             IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_Ping, 0, null, 2, 500).ConfigureAwait(false);
 
             if (reply != null)
@@ -373,7 +408,7 @@ namespace nanoFramework.Tools.Debugger
             throw new NotImplementedException();
         }
 
-        public async Task<DataReader> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
             return await m_portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken).ConfigureAwait(false);
         }
@@ -408,6 +443,9 @@ namespace nanoFramework.Tools.Debugger
         public async Task<List<Commands.Monitor_DeploymentMap.DeploymentData>> GetDeploymentMapAsync()
         {
             Commands.Monitor_DeploymentMap cmd = new Commands.Monitor_DeploymentMap();
+            
+            // TODO replace with token argument
+            CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
             IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_DeploymentMap, 0, cmd, 2, 10000).ConfigureAwait(false);
 
@@ -426,6 +464,9 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<Commands.Monitor_OemInfo.Reply> GetMonitorOemInfo()
         {
+            // TODO replace with token argument
+            CancellationTokenSource cancelTSource = new CancellationTokenSource();
+
             IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_OemInfo, 0, null, 2, 1000).ConfigureAwait(false);
 
             if (reply != null)
@@ -438,7 +479,10 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<List<Commands.Monitor_FlashSectorMap.FlashSectorData>> GetFlashSectorMapAsync()
         {
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_FlashSectorMap, 0, null, 1, 4000).ConfigureAwait(false);
+            // TODO replace with token argument
+            CancellationTokenSource cancelTSource = new CancellationTokenSource();
+
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_FlashSectorMap, 0, null,1, 4000).ConfigureAwait(false);
 
             if (reply != null)
             {
@@ -515,6 +559,9 @@ namespace nanoFramework.Tools.Debugger
             int count = length;
             int pos = offset;
 
+            // TODO replace with token argument
+            CancellationTokenSource cancelTSource = new CancellationTokenSource();
+
             while (count > 0)
             {
                 Commands.Monitor_WriteMemory cmd = new Commands.Monitor_WriteMemory();
@@ -546,6 +593,9 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<bool> CheckSignatureAsync(byte[] signature, uint keyIndex)
         {
+            // TODO replace with token argument
+            CancellationTokenSource cancelTSource = new CancellationTokenSource();
+
             Commands.Monitor_Signature cmd = new Commands.Monitor_Signature();
 
             cmd.PrepareForSend(signature, keyIndex);
@@ -557,6 +607,9 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<bool> EraseMemoryAsync(uint address, uint length)
         {
+            // TODO replace with token argument
+            CancellationTokenSource cancelTSource = new CancellationTokenSource();
+
             DebuggerEventSource.Log.EngineEraseMemory(address, length);
 
             var cmd = new Commands.Monitor_EraseMemory
@@ -832,6 +885,9 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<bool> CanUpgradeToSslAsync()
         {
+            // TODO replace with token argument
+            CancellationTokenSource cancelTSource = new CancellationTokenSource();
+
             Commands.Debugging_UpgradeToSsl cmd = new Commands.Debugging_UpgradeToSsl();
 
             cmd.m_flags = 0;
@@ -892,6 +948,9 @@ namespace nanoFramework.Tools.Debugger
             cmd.m_updateSubType = updateSubType;
             cmd.m_updateSize = updateSize;
             cmd.m_updatePacketSize = packetSize;
+
+            // TODO replace with token argument
+            CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
             IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_MFUpdate_Start, Flags.c_NoCaching, cmd, 2, 5000).ConfigureAwait(false);
 
@@ -1236,7 +1295,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<Commands.Debugging_TypeSys_Assemblies.Reply> GetAssembliesAsync()
+        public async Task<Commands.Debugging_TypeSys_Assemblies.Reply> GetAssembliesAsync(CancellationToken cancellationToken)
         {
             Commands.Debugging_TypeSys_Assemblies cmd = new Commands.Debugging_TypeSys_Assemblies();
 
@@ -1250,9 +1309,9 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<List<Commands.Debugging_Resolve_Assembly>> ResolveAllAssembliesAsync()
+        public async Task<List<Commands.Debugging_Resolve_Assembly>> ResolveAllAssembliesAsync(CancellationToken cancellationToken)
         {
-            Commands.Debugging_TypeSys_Assemblies.Reply assemblies = await GetAssembliesAsync().ConfigureAwait(false);
+            Commands.Debugging_TypeSys_Assemblies.Reply assemblies = await GetAssembliesAsync(cancellationToken).ConfigureAwait(false);
             List<Commands.Debugging_Resolve_Assembly> resolveAssemblies = new List<Commands.Debugging_Resolve_Assembly>();
 
             if (assemblies == null || assemblies.m_data == null)
@@ -1271,7 +1330,7 @@ namespace nanoFramework.Tools.Debugger
                     requests.Add(CreateMessage(Commands.c_Debugging_Resolve_Assembly, 0, cmd));
                 }
 
-                List<IncomingMessage> replies = await PerformRequestBatchAsync(requests).ConfigureAwait(false);
+                List<IncomingMessage> replies = await PerformRequestBatchAsync(requests, cancellationToken).ConfigureAwait(false);
 
                 foreach(IncomingMessage message in replies)
                 {
@@ -1398,11 +1457,11 @@ namespace nanoFramework.Tools.Debugger
             return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Value_ResizeScratchPad, 0, cmd).ConfigureAwait(false));
         }
 
-        public async Task<RuntimeValue> GetStackFrameValueAsync(uint pid, uint depth, StackValueKind kind, uint index)
+        public async Task<RuntimeValue> GetStackFrameValueAsync(uint pid, uint depth, StackValueKind kind, uint index, CancellationToken cancellationToken)
         {
             OutgoingMessage cmd = CreateMessage_GetValue_Stack(pid, depth, kind, index);
 
-            IncomingMessage reply = await PerformRequestAsync(cmd, 10, 200).ConfigureAwait(false);
+            IncomingMessage reply = await PerformRequestAsync(cmd, cancellationToken, 10, 200).ConfigureAwait(false);
 
             if (reply != null)
             {
@@ -1414,7 +1473,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<RuntimeValue[]> GetStackFrameValueAllAsync(uint pid, uint depth, uint cValues, StackValueKind kind)
+        public async Task<RuntimeValue[]> GetStackFrameValueAllAsync(uint pid, uint depth, uint cValues, StackValueKind kind, CancellationToken cancellationToken)
         {
             List<OutgoingMessage> cmds = new List<OutgoingMessage>();
             RuntimeValue[] vals = null;
@@ -1425,7 +1484,7 @@ namespace nanoFramework.Tools.Debugger
                 cmds.Add(CreateMessage_GetValue_Stack(pid, depth, kind, i));
             }
 
-            List<IncomingMessage> replies = await PerformRequestBatchAsync(cmds).ConfigureAwait(false);
+            List<IncomingMessage> replies = await PerformRequestBatchAsync(cmds, cancellationToken).ConfigureAwait(false);
 
             if (replies != null)
             {
@@ -1934,7 +1993,7 @@ namespace nanoFramework.Tools.Debugger
         /// <returns>Tuple with entrypoint, storageStart, storageLength and request success</returns>
         public async Task<Tuple<uint, uint, uint, bool>> DeploymentGetStatusWithResultAsync()
         {
-            Commands.Debugging_Deployment_Status.Reply status = await DeploymentGetStatusAsync();
+            Commands.Debugging_Deployment_Status.Reply status = await DeploymentGetStatusAsync().ConfigureAwait(false);
 
             if (status != null)
             {
@@ -1948,6 +2007,9 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<Commands.Debugging_Deployment_Status.Reply> DeploymentGetStatusAsync()
         {
+            // TODO replace with token argument
+            CancellationTokenSource cancelTSource = new CancellationTokenSource();
+
             Commands.Debugging_Deployment_Status cmd = new Commands.Debugging_Deployment_Status();
             Commands.Debugging_Deployment_Status.Reply cmdReply = null;
 
@@ -1974,7 +2036,7 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<bool> DeploymentExecuteIncrementalAsync(List<byte[]> assemblies, IProgress<string> progress)
         {
-            Commands.Debugging_Deployment_Status.ReplyEx status = await DeploymentGetStatusAsync() as Commands.Debugging_Deployment_Status.ReplyEx;
+            Commands.Debugging_Deployment_Status.ReplyEx status = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.Debugging_Deployment_Status.ReplyEx;
 
             if (status == null)
             {
@@ -2092,7 +2154,7 @@ namespace nanoFramework.Tools.Debugger
                     //Is the data not erased
                     if (sector.m_crc != Commands.Debugging_Deployment_Status.c_CRC_Erased_Sentinel)
                     {
-                        if (!await EraseMemoryAsync(sector.m_start, sector.m_length))
+                        if (!await EraseMemoryAsync(sector.m_start, sector.m_length).ConfigureAwait(false))
                         {
                             progress?.Report((string.Format("FAILED to erase device memory @0x{0:X8} with Length=0x{1:X8}", sector.m_start, sector.m_length)));
 
@@ -2100,7 +2162,7 @@ namespace nanoFramework.Tools.Debugger
                         }
 
 #if DEBUG
-                        Commands.Debugging_Deployment_Status.ReplyEx statusT = await DeploymentGetStatusAsync() as Commands.Debugging_Deployment_Status.ReplyEx;
+                        Commands.Debugging_Deployment_Status.ReplyEx statusT = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.Debugging_Deployment_Status.ReplyEx;
                         Debug.Assert(statusT != null);
                         Debug.Assert(statusT.m_data[iSector].m_crc == Commands.Debugging_Deployment_Status.c_CRC_Erased_Sentinel);
 #endif
@@ -2111,14 +2173,14 @@ namespace nanoFramework.Tools.Debugger
                     {
                         bytesDeployed += iSectorIndex;
 
-                        if (!await WriteMemoryAsync(sector.m_start, sectorData, 0, (int)iSectorIndex))
+                        if (!await WriteMemoryAsync(sector.m_start, sectorData, 0, (int)iSectorIndex).ConfigureAwait(false))
                         {
                             progress?.Report((string.Format("FAILED to write device memory @0x{0:X8} with Length={1:X8}", sector.m_start, (int)iSectorIndex)));
 
                             return false;
                         }
 #if DEBUG
-                        Commands.Debugging_Deployment_Status.ReplyEx statusT = await DeploymentGetStatusAsync() as Commands.Debugging_Deployment_Status.ReplyEx;
+                        Commands.Debugging_Deployment_Status.ReplyEx statusT = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.Debugging_Deployment_Status.ReplyEx;
                         Debug.Assert(statusT != null);
                         Debug.Assert(statusT.m_data[iSector].m_crc == crc);
                         //Assert the data we are deploying is not sentinel value
@@ -2149,7 +2211,7 @@ namespace nanoFramework.Tools.Debugger
             byte[] closeHeader = new byte[8];
 
             // perform request
-            var reply = await DeploymentGetStatusWithResultAsync();
+            var reply = await DeploymentGetStatusWithResultAsync().ConfigureAwait(false);
 
             // check if request was successfully executed
             if (!reply.Item4)
@@ -2181,7 +2243,7 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            if (!await EraseMemoryAsync(storageStart, deployLength))
+            if (!await EraseMemoryAsync(storageStart, deployLength).ConfigureAwait(false))
             {
                 return false;
             }
@@ -2196,7 +2258,7 @@ namespace nanoFramework.Tools.Debugger
                     return false;
                 }
 
-                if (!await WriteMemoryAsync(storageStart, assembly))
+                if (!await WriteMemoryAsync(storageStart, assembly).ConfigureAwait(false))
                 {
                     return false;
                 }
@@ -2204,7 +2266,7 @@ namespace nanoFramework.Tools.Debugger
                 storageStart += (uint)assembly.Length;
             }
 
-            if (!await WriteMemoryAsync(storageStart, closeHeader))
+            if (!await WriteMemoryAsync(storageStart, closeHeader).ConfigureAwait(false))
             {
                 return false;
             }
@@ -2221,7 +2283,7 @@ namespace nanoFramework.Tools.Debugger
         {
             bool fDeployedOK = false;
 
-            if (!await PauseExecutionAsync())
+            if (!await PauseExecutionAsync().ConfigureAwait(false))
             {
                 return false;
             }
@@ -2230,13 +2292,13 @@ namespace nanoFramework.Tools.Debugger
             {
                 progress?.Report("Incrementally deploying assemblies to device");
 
-                fDeployedOK = await DeploymentExecuteIncrementalAsync(assemblies, progress);
+                fDeployedOK = await DeploymentExecuteIncrementalAsync(assemblies, progress).ConfigureAwait(false);
             }
             else
             {
                 progress?.Report("Deploying assemblies to device");
 
-                fDeployedOK = await DeploymentExecuteFullAsync(assemblies, progress);
+                fDeployedOK = await DeploymentExecuteFullAsync(assemblies, progress).ConfigureAwait(false);
             }
 
             if (!fDeployedOK)
@@ -2252,7 +2314,7 @@ namespace nanoFramework.Tools.Debugger
 
                     progress?.Report("Rebooting device...");
 
-                    await RebootDeviceAsync(RebootOption.RebootClrOnly);
+                    await RebootDeviceAsync(RebootOption.RebootClrOnly).ConfigureAwait(false);
                 }
             }
 
@@ -2294,11 +2356,14 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<IncomingMessage> DiscoverCLRCapabilityAsync(uint caps)
         {
+            // TODO replace with token argument
+            CancellationTokenSource cancelTSource = new CancellationTokenSource();
+
             Commands.Debugging_Execution_QueryCLRCapabilities cmd = new Commands.Debugging_Execution_QueryCLRCapabilities();
 
             cmd.m_caps = caps;
 
-            return await PerformRequestAsync(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd, 5, 100).ConfigureAwait(false);
+            return await PerformRequestAsync(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd, 5, 1000).ConfigureAwait(false);
         }
 
         private async Task<uint> DiscoverCLRCapabilityUintAsync(uint caps)
@@ -2328,14 +2393,14 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<CLRCapabilities.Capability> DiscoverCLRCapabilityFlagsAsync()
         {
-            //Debug.WriteLine("DiscoverCLRCapability");
+            Debug.WriteLine("DiscoverCLRCapability");
 
             return (CLRCapabilities.Capability) await DiscoverCLRCapabilityUintAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityFlags).ConfigureAwait(false);
         }
 
         private async Task<CLRCapabilities.SoftwareVersionProperties> DiscoverSoftwareVersionPropertiesAsync()
         {
-            //Debug.WriteLine("DiscoverSoftwareVersionProperties");
+            Debug.WriteLine("DiscoverSoftwareVersionProperties");
 
             IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilitySoftwareVersion).ConfigureAwait(false);
 
@@ -2360,7 +2425,7 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<CLRCapabilities.LCDCapabilities> DiscoverCLRCapabilityLCDAsync()
         {
-            //Debug.WriteLine("DiscoverCLRCapabilityLCD");
+            Debug.WriteLine("DiscoverCLRCapabilityLCD");
 
             IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityLCD).ConfigureAwait(false);
 
@@ -2385,7 +2450,7 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<CLRCapabilities.HalSystemInfoProperties> DiscoverHalSystemInfoPropertiesAsync()
         {
-            //Debug.WriteLine("DiscoverHalSystemInfoProperties");
+            Debug.WriteLine("DiscoverHalSystemInfoProperties");
 
             IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityHalSystemInfo).ConfigureAwait(false);
 
@@ -2414,7 +2479,7 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<CLRCapabilities.ClrInfoProperties> DiscoverClrInfoPropertiesAsync()
         {
-            //Debug.WriteLine("DiscoverClrInfoProperties");
+            Debug.WriteLine("DiscoverClrInfoProperties");
 
             IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityClrInfo).ConfigureAwait(false);
 
@@ -2439,8 +2504,8 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<CLRCapabilities.TargetInfoProperties> DiscoverTargetInfoPropertiesAsync()
         {
-            //Debug.WriteLine("==============================");
-            //Debug.WriteLine("DiscoverTargetInfoProperties");
+            Debug.WriteLine("==============================");
+            Debug.WriteLine("DiscoverTargetInfoProperties");
 
             IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilitySolutionReleaseInfo).ConfigureAwait(false);
 
@@ -2463,14 +2528,61 @@ namespace nanoFramework.Tools.Debugger
             return targetInfoProps;
         }
 
-        private async Task<CLRCapabilities> DiscoverCLRCapabilitiesAsync()
+        private async Task<CLRCapabilities> DiscoverCLRCapabilitiesAsync(CancellationToken cancellationToken)
         {
             var clrFlags = await DiscoverCLRCapabilityFlagsAsync().ConfigureAwait(false);
+            // check for cancelation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancelation requested");
+                return null;
+            }
+
             var clrLcd = await DiscoverCLRCapabilityLCDAsync().ConfigureAwait(false);
+            // check for cancelation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancelation requested");
+                return null;
+            }
+
             var softwareVersion = await DiscoverSoftwareVersionPropertiesAsync().ConfigureAwait(false);
+            // check for cancelation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancelation requested");
+                return null;
+            }
+
             var halSysInfo = await DiscoverHalSystemInfoPropertiesAsync().ConfigureAwait(false);
+            // check for cancelation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancelation requested");
+                return null;
+            }
+
             var clrInfo = await DiscoverClrInfoPropertiesAsync().ConfigureAwait(false);
+            // check for cancelation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancelation requested");
+                return null;
+            }
+
             var solutionInfo = await DiscoverTargetInfoPropertiesAsync().ConfigureAwait(false);
+            // check for cancelation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancelation requested");
+                return null;
+            }
 
             return new CLRCapabilities(clrFlags, clrLcd, softwareVersion, halSysInfo, clrInfo, solutionInfo);
         }

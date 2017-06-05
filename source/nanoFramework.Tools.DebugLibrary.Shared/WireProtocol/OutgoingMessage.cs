@@ -6,6 +6,7 @@
 
 using nanoFramework.Tools;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace nanoFramework.Tools.Debugger.WireProtocol
 {
@@ -85,7 +86,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             m_raw.m_header = converter.Serialize(header);
         }
 
-        internal async Task<bool> SendAsync()
+        internal async Task<bool> SendAsync(CancellationToken cancellationToken)
         {
 
             DebuggerEventSource.Log.WireProtocolTxHeader(m_base.m_header.m_crcHeader
@@ -97,7 +98,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                                         , m_base.m_header.m_size
                                                         );
 
-            return await m_parent.QueueOutputAsync(m_raw).ConfigureAwait(false);
+            return await m_parent.QueueOutputAsync(m_raw, cancellationToken);
         }
     }
 }

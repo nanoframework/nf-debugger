@@ -109,19 +109,35 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        internal async Task<IncomingMessage> PerformRequestAsync(CancellationToken cancellationToken)
+        internal async Task<IncomingMessage> PerformRequestAsync()
         {
             int retryCounter = 0;
 
             IncomingMessage reply = null;
             var reassembler = new MessageReassembler(ctrl, this);
 
-            //Debug.WriteLine("timeout is " + waitRetryTimeout.TotalMilliseconds + "ms");
+
+            CancellationTokenSource cTSource = new CancellationTokenSource();
 
             while (retryCounter++ <= retries)
             {
+                //// TODO add cancel token argument here
+                //// check for cancelation request
+                //if (cancellationToken.IsCancellationRequested)
+                //{
+                //    // cancellation requested
+                //    Debug.WriteLine("cancelation requested");
+                //    return null;
+                //}
+
+                Debug.WriteLine($"Performing {retryCounter}/{retries} request attempt with {waitRetryTimeout.TotalMilliseconds}ms");
+
+                // create new cancelation token source
+                //cTSource = new CancellationTokenSource();
+
                 // send message
-                if (await outgoingMsg.SendAsync().ConfigureAwait(false))
+                // add a cancellation token to force cancel
+                if (await outgoingMsg.SendAsync(cTSource.Token.AddTimeout(waitRetryTimeout)).ConfigureAwait(false))
                 {
                     // if this request is for a reboot, we won't be able to receive the reply right away because the device is rebooting
                     if((outgoingMsg.Header.m_cmd == Commands.c_Monitor_Reboot) && retryCounter == 1)
@@ -130,24 +146,22 @@ namespace nanoFramework.Tools.Debugger
                         Task.Delay(2000).Wait();
                     }
 
-                    CancellationTokenSource source = new CancellationTokenSource();
-                    // add a cancellation token to force cancel
-                    var timeoutCancelatioToken = source.Token.AddTimeout(waitRetryTimeout);
+                    Debug.WriteLine($"Processing reply now...");
 
-                    // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                    var linkedCancelationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancelatioToken).Token;
-                    
                     try
                     {
                         // need to have a timeout to cancel the process task otherwise it may end up waiting forever for this to return
                         // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                        reply = await reassembler.ProcessAsync(linkedCancelationToken).ConfigureAwait(false);
+                        reply = await reassembler.ProcessAsync(cTSource.Token.AddTimeout(waitRetryTimeout)).ConfigureAwait(false);
                     }
-                    catch { }
+                    catch(Exception ex)
+                    {
+                        Debug.WriteLine($"Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                    }
                     finally
                     {
                         // ALWAYS cancel reassembler task
-                        source.Cancel();
+                        cTSource.Cancel();
                     }
 
                     if (reply != null)
@@ -158,14 +172,14 @@ namespace nanoFramework.Tools.Debugger
                 else
                 {
                     // send failed
-                    //Debug.WriteLine("SEND FAILED...");
+                    Debug.WriteLine("SEND FAILED...");
                 }
 
                 // something went wrong, retry with a progressive back-off strategy
                 Task.Delay(200 * retryCounter).Wait();
             }
 
-            //Debug.WriteLine("exceeded attempts count...");
+            Debug.WriteLine($"Performing request exceeded attempts count...");
 
             return null;
         }

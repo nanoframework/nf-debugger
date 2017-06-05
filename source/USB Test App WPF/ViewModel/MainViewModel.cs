@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace USB_Test_App_WPF.ViewModel
 {
@@ -53,8 +55,10 @@ namespace USB_Test_App_WPF.ViewModel
             SerialDebugService.SerialDebugClient.DeviceEnumerationCompleted -= SerialDebugClient_DeviceEnumerationCompleted;
             //WindowWrapper.Current().Dispatcher.Dispatch(() =>
             //{
+            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
                 SelectedTransportType = TransportType.Serial;
                 UpdateAvailableDevices();
+            }));
             //});
         }
 
@@ -66,15 +70,14 @@ namespace USB_Test_App_WPF.ViewModel
             {
                 case TransportType.Serial:
 
-                    //WindowWrapper.Current().Dispatcher.Dispatch(() =>
-                    //{
+                    Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
                         //BusySrv.ShowBusy(Res.GetString("HC_Searching"));
                         AvailableDevices = new ObservableCollection<NanoDeviceBase>(SerialDebugService.SerialDebugClient.NanoFrameworkDevices);
-                        SerialDebugService.SerialDebugClient.NanoFrameworkDevices.CollectionChanged += NanoFrameworkDevices_CollectionChanged;
-                        // if there's just one, select it
-                        SelectedDevice = (AvailableDevices.Count == 1) ? AvailableDevices.First() : null;
-                        //BusySrv.HideBusy();
-                    //});
+                                SerialDebugService.SerialDebugClient.NanoFrameworkDevices.CollectionChanged += NanoFrameworkDevices_CollectionChanged;
+                                // if there's just one, select it
+                                SelectedDevice = (AvailableDevices.Count == 1) ? AvailableDevices.First() : null;
+                            //BusySrv.HideBusy();
+                    }));
                     break;
 
                 case TransportType.Usb:
@@ -107,8 +110,7 @@ namespace USB_Test_App_WPF.ViewModel
 
         private void NanoFrameworkDevices_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            //WindowWrapper.Current().Dispatcher.Dispatch(() =>
-            //{
+            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
                 // handle this according to the selected device type 
                 switch (SelectedTransportType)
                 {
@@ -128,7 +130,7 @@ namespace USB_Test_App_WPF.ViewModel
                 // if there's just one, select it
                 SelectedDevice = (AvailableDevices.Count == 1) ? AvailableDevices.First() : null;
 
-            //});
+            }));
         }
 
         public NanoDeviceBase SelectedDevice { get; set; }

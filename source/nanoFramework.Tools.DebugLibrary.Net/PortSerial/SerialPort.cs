@@ -17,27 +17,33 @@ using System.Windows;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
-    public partial class SerialPort : PortBase, IPort
-    {
-        /// <summary>
-        /// Creates an Serial debug client
-        /// </summary>
-        public SerialPort(Application callerApp)
-        {
-            mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, String>();
-            NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
-            SerialDevices = new List<Serial.SerialDeviceInformation>();
+    //public partial class SerialPort : PortBase, IPort
+    //{
+        ///// <summary>
+        ///// Creates an Serial debug client
+        ///// </summary>
+        //public SerialPort(Application callerApp)
+        //{
+        //    mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, String>();
+        //    NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
+        //    SerialDevices = new List<Serial.SerialDeviceInformation>();
 
-            // set caller app property
-            EventHandlerForSerialDevice.CallerApp = callerApp;
+        //    // set caller app property
+        //    EventHandlerForSerialDevice.CallerApp = callerApp;
 
-            // init semaphore
-            semaphore = new SemaphoreSlim(1, 1);
+        //    // if callerApp is null means this a background task
+        //    if (callerApp == null)
+        //    {
+        //        IsRunningOnBackground = true;
+        //    }
 
-            Task.Factory.StartNew(() =>
-            {
-                StartSerialDeviceWatchers();
-            });
-        }
-    }
+        //    // init semaphore
+        //    semaphore = new SemaphoreSlim(1, 1);
+
+        //    Task.Factory.StartNew(() =>
+        //    {
+        //        StartSerialDeviceWatchers();
+        //    });
+        //}
+    //}
 }
