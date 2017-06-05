@@ -6,6 +6,7 @@
 
 using nanoFramework.Tools;
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,13 +66,24 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             Array.Copy(buf, 0, bp.m_signature, 0, buf.Length);
         }
 
-        public async Task<bool> QueueOutputAsync(MessageRaw raw)
+        public async Task<bool> QueueOutputAsync(MessageRaw raw, CancellationToken cancellationToken)
         {
-            await SendRawBufferAsync(raw.m_header, TimeSpan.FromMilliseconds(1000), new CancellationToken()).ConfigureAwait(false);
+            Debug.WriteLine("QueueOutputAsync 1");
+            await SendRawBufferAsync(raw.m_header, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
+
+            // check for cancelation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancelation requested");
+                return false;
+            }
 
             if (raw.m_payload != null)
             {
-                await SendRawBufferAsync(raw.m_payload, TimeSpan.FromMilliseconds(1000), new CancellationTokenSource().Token).ConfigureAwait(false);
+                Debug.WriteLine("QueueOutputAsync 2");
+
+                await SendRawBufferAsync(raw.m_payload, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
             }
 
             return true;
@@ -108,6 +120,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public async Task<uint> SendRawBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
+            Debug.WriteLine("SendRawBufferAsync");
+
             return await App.SendBufferAsync(buffer, waiTimeout, cancellationToken).ConfigureAwait(false);
         }
 
@@ -119,11 +133,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             // sanity check for anything to read
             if(bytesToRead == 0)
             {
-                ////Debug.WriteLine("Nothing to read, leaving now");
+                //Debug.WriteLine("Nothing to read, leaving now");
                 return 0;
             }
 
-            ////Debug.WriteLine("Trying to read {0} bytes...", bytesToReadRequested);
+            //Debug.WriteLine("Trying to read {0} bytes...", bytesToReadRequested);
 
             while (bytesToRead > 0)
             {
@@ -134,20 +148,16 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 }
 
                 // read next chunk of data async
-                var readResult = await App.ReadBufferAsync((uint)bytesToRead, waitTimeout, cancellationToken).ConfigureAwait(false);
+                var readResult = await App.ReadBufferAsync((uint)bytesToRead, waitTimeout, cancellationToken);
 
-                ////Debug.WriteLine("read {0} bytes", readResult.UnconsumedBufferLength);
-
+                //Debug.WriteLine("read {0} bytes", readResult.UnconsumedBufferLength);
                 // any byte read?
-                if (readResult.UnconsumedBufferLength > 0)
+                if (readResult.Length > 0)
                 {
-                    byte[] readBuffer = new byte[readResult.UnconsumedBufferLength];
-                    readResult.ReadBytes(readBuffer);
+                    Array.Copy(readResult, 0, buffer, offset, readResult.Length);
 
-                    Array.Copy(readBuffer, 0, buffer, offset, readBuffer.Length);
-
-                    offset += readBuffer.Length;
-                    bytesToRead -= readBuffer.Length;
+                    offset += readResult.Length;
+                    bytesToRead -= readResult.Length;
                 }
             }
 

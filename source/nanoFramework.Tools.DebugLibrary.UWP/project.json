@@ -2,7 +2,7 @@
   "supports": {},
   "dependencies": {
     "Microsoft.NETCore.UniversalWindowsPlatform": "5.3.3",
-    "NuGet.Build.Packaging": "0.1.276"
+    "NuGet.Build.Packaging": "0.1.306"
   },
   "frameworks": {
     "uap10.0": {}

@@ -19,6 +19,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
         public static CancellationToken AddTimeout(this CancellationToken cancellationToken, TimeSpan timeout)
         {
             var timeoutCancellatioToken = new CancellationTokenSource(timeout).Token;
+            timeoutCancellatioToken.ThrowIfCancellationRequested();
             return CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellatioToken).Token;
         }
     }

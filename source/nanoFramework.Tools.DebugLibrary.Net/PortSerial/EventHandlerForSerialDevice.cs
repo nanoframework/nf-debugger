@@ -25,14 +25,6 @@ namespace nanoFramework.Tools.Debugger.Serial
 
         private SuspendingEventHandler appSuspendCallback;
 
-        // A pointer back to the calling app.  This is needed to reach methods and events there 
-        private static System.Windows.Application _callerApp;
-        public static System.Windows.Application CallerApp
-        {
-            private get { return _callerApp; }
-            set { _callerApp = value; }
-        }
-
         /// <summary>
         /// Register for app suspension/resume events. See the comments
         /// for the event handlers for more information on what is being done to the device.
@@ -45,18 +37,18 @@ namespace nanoFramework.Tools.Debugger.Serial
             appResumeEventHandler = new EventHandler(Current.OnAppResume);
 
             // This event is raised when the app is exited and when the app is suspended
-            _callerApp.Deactivated += appSuspendEventHandler;
+            CallerApp.Deactivated += appSuspendEventHandler;
 
-            _callerApp.Activated += appResumeEventHandler;
+            CallerApp.Activated += appResumeEventHandler;
         }
 
         private void UnregisterFromAppEvents()
         {
             // This event is raised when the app is exited and when the app is suspended
-            _callerApp.Deactivated -= appSuspendEventHandler;
+            CallerApp.Deactivated -= appSuspendEventHandler;
             appSuspendEventHandler = null;
 
-            _callerApp.Activated -= appResumeEventHandler;
+            CallerApp.Activated -= appResumeEventHandler;
             appResumeEventHandler = null;
         }
 

@@ -48,6 +48,13 @@ namespace nanoFramework.Tools.Debugger.Serial
         private bool isBackgroundTask;
         private bool isEnabledAutoReconnect;
 
+        // A pointer back to the calling app.  This is needed to reach methods and events there 
+#if WINDOWS_UWP
+        public static Windows.UI.Xaml.Application CallerApp { get; set; }
+#else
+        public static System.Windows.Application CallerApp { get; set; }
+#endif
+
         /// <summary>
         /// Enforces the singleton pattern so that there is only one object handling app events
         /// as it relates to the SerialDevice because this app only supports communicating with one device at a time. 
@@ -66,7 +73,16 @@ namespace nanoFramework.Tools.Debugger.Serial
                 {
                     if (eventHandlerForNanoFrameworkDevice == null)
                     {
-                        CreateNewEventHandlerForDevice();
+                        if (CallerApp != null)
+                        {
+                            // there is a CallerApp set so assume this is NOT a background task
+                            CreateNewEventHandlerForDevice();
+                        }
+                        else
+                        {
+                            // there is NO CallerApp set so assume this IS a background task
+                            CreateNewEventHandlerForDeviceForBackgroundTasks();
+                        }
                     }
                 }
 
@@ -213,7 +229,7 @@ namespace nanoFramework.Tools.Debugger.Serial
                     deviceInformation = deviceInfo;
                     this.deviceSelector = deviceSelector;
 
-                    //Debug.WriteLine($"Device {deviceInformation.Id} opened");
+                    Debug.WriteLine($"Device {deviceInformation.Id} opened");
 
                     // adjust settings for serial port
                     device.BaudRate = 115200;
@@ -225,8 +241,9 @@ namespace nanoFramework.Tools.Debugger.Serial
                     /////////////////////////////////////////////////////////////
                     device.Parity = SerialParity.None;
 
-                    device.WriteTimeout = TimeSpan.FromSeconds(1);
-                    device.ReadTimeout = TimeSpan.FromSeconds(2);
+                    device.WriteTimeout = TimeSpan.FromMilliseconds(1000);
+                    device.ReadTimeout = TimeSpan.FromMilliseconds(1000);
+                    device.ErrorReceived += Device_ErrorReceived;
 
                     // Notify registered callback handle that the device has been opened
                     deviceConnectedCallback?.Invoke(this, deviceInformation);
@@ -269,18 +286,18 @@ namespace nanoFramework.Tools.Debugger.Serial
                     switch (deviceAccessStatus)
                     {
                         case DeviceAccessStatus.DeniedByUser:
-                            //Debug.WriteLine($"Access to the device was blocked by the user : {deviceInfo.Id}");
+                            Debug.WriteLine($"Access to the device was blocked by the user : {deviceInfo.Id}");
                             break;
 
                         case DeviceAccessStatus.DeniedBySystem:
                             // This status is most likely caused by app permissions (did not declare the device in the app's package.appxmanifest)
                             // This status does not cover the case where the device is already opened by another app.
-                            //Debug.WriteLine($"Access to the device was blocked by the system : {deviceInfo.Id}");
+                            Debug.WriteLine($"Access to the device was blocked by the system : {deviceInfo.Id}");
                             break;
 
                         default:
                             // Most likely the device is opened by another app, but cannot be sure
-                            //Debug.WriteLine($"Unknown error, possibly opened by another app : {deviceInfo.Id}");
+                            Debug.WriteLine($"Unknown error, possibly opened by another app : {deviceInfo.Id}");
                             break;
                     }
                 }
@@ -289,6 +306,11 @@ namespace nanoFramework.Tools.Debugger.Serial
             catch { }
 
             return successfullyOpenedDevice;
+        }
+
+        private void Device_ErrorReceived(SerialDevice sender, ErrorReceivedEventArgs args)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -321,7 +343,7 @@ namespace nanoFramework.Tools.Debugger.Serial
                 deviceAccessInformation = null;
             }
 
-            if (appSuspendEventHandler != null || appResumeEventHandler != null)
+            if(!isBackgroundTask && (appSuspendEventHandler != null || appResumeEventHandler != null))
             {
                 UnregisterFromAppEvents();
             }
@@ -366,12 +388,10 @@ namespace nanoFramework.Tools.Debugger.Serial
                 // Notify callback that we're about to close the device
                 deviceCloseCallback?.Invoke(this, deviceInformation);
 
-                //Debug.WriteLine($"Closing device {deviceInformation.Id}");
+                Debug.WriteLine($"Closing device {deviceInformation?.Id}");
 
                 // This closes the handle to the device
-                device?.Dispose();
-
-                device = null;
+                device.Dispose();
             }
         }
 

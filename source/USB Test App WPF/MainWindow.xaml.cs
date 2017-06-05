@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using USB_Test_App_WPF.ViewModel;
 
 namespace USB_Test_App_WPF
@@ -32,21 +33,66 @@ namespace USB_Test_App_WPF
             // disable button
             (sender as Button).IsEnabled = false;
 
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+             {
 
-            
-            bool connectResult = await (DataContext as MainViewModel).AvailableDevices[0].DebugEngine.ConnectAsync(3, 1000);
+                 bool connectResult = await (DataContext as MainViewModel).AvailableDevices[0].DebugEngine.ConnectAsync(3, 500);
 
-            //var di = await App.NETMFUsbDebugClient.MFDevices[0].GetDeviceInfoAsync();
+                 var di = await (DataContext as MainViewModel).AvailableDevices[0].GetDeviceInfoAsync();
 
-            Debug.WriteLine("");
-            Debug.WriteLine("");
-            //Debug.WriteLine(di.ToString());
-            Debug.WriteLine("");
-            Debug.WriteLine("");
+                 Debug.WriteLine("");
+                 Debug.WriteLine("");
+                 Debug.WriteLine(di.ToString());
+                 Debug.WriteLine("");
+                 Debug.WriteLine("");
+
+             }));
 
             // enable button
             (sender as Button).IsEnabled = true;
 
+        }
+
+        private async void PingButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () => {
+
+                var p = await (DataContext as MainViewModel).AvailableDevices[0].PingAsync();
+
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine("Ping response: " + p.ToString());
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+
+            }));
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+
+        }
+
+        private object await(MainViewModel mainViewModel)
+        {
+            throw new NotImplementedException();
+        }
+
+        private  void DisconnectDeviceButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action( () => {
+
+                (DataContext as MainViewModel).AvailableDevices[0].DebugEngine.Disconnect();
+
+            }));
+
+            // enable button
+            (sender as Button).IsEnabled = true;
         }
     }
 }

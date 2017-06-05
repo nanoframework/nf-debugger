@@ -14,7 +14,7 @@ namespace nanoFramework.Tools.Debugger
     {
         Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken);
 
-        Task<DataReader> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken);
+        Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken);
 
         Task<bool> ConnectDeviceAsync(NanoDeviceBase device);
 

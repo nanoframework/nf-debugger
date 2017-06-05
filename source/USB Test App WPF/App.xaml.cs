@@ -7,7 +7,6 @@ using System.Configuration;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using USB_Test_App_WPF.ViewModel;
 
 namespace USB_Test_App_WPF
@@ -15,11 +14,9 @@ namespace USB_Test_App_WPF
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application
+    public partial class App : System.Windows.Application
     {
-        ViewModelLocator vml;
-
-        internal static PortBase NanoFrameworkSerialDebugClient;
+        public ViewModelLocator vml;
 
         public App()
         {
@@ -44,8 +41,10 @@ namespace USB_Test_App_WPF
 
         private INFSerialDebugClientService CreateSerialDebugClient()
         {
+            //virtualApp = Windows.UI.Xaml.Application.Current;
+
             // TODO: check app lifecycle
-            var serialDebugClient = PortBase.CreateInstanceForSerial("", App.Current);
+            var serialDebugClient = PortBase.CreateInstanceForSerial("");
 
             return new NFSerialDebugClientService(serialDebugClient);
         }

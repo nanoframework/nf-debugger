@@ -137,47 +137,39 @@ namespace nanoFramework.Tools.Debugger
         [Event(1, Opcode = EventOpcode.Send)]
         public void WireProtocolTxHeader(uint crcHeader, uint crcData, uint cmd, uint flags, ushort seq, ushort seqReply, uint length)
         {
-            //Debug.WriteLine("TX: {0} flags=[{1}] hCRC: 0x{2:X08} pCRC: 0x{3:X08} seq: 0x{4:X04} replySeq: 0x{5:X04} len={6}"
-                                      //, GetCommandName(cmd)
-                                      //, (PacketFlags)flags
-                                      //, crcHeader
-                                      //, crcData
-                                      //, seq
-                                      //, seqReply
-                                      //, length
-                                      //);
+            Debug.WriteLine("TX: {0} flags=[{1}] hCRC: 0x{2:X08} pCRC: 0x{3:X08} seq: 0x{4:X04} replySeq: 0x{5:X04} len={6}"
+                                      , GetCommandName(cmd)
+                                      , (PacketFlags)flags
+                                      , crcHeader
+                                      , crcData
+                                      , seq
+                                      , seqReply
+                                      , length
+                                      );
         }
 
         [Event(2, Opcode = EventOpcode.Receive)]
         public void WireProtocolRxHeader(uint crcHeader, uint crcData, uint cmd, uint flags, ushort seq, ushort seqReply, uint length)
         {
-            //Debug.WriteLine("RX: {0} flags=[{1}] hCRC: 0x{2:X08} pCRC: 0x{3:X08} seq: 0x{4:X04} replySeq: 0x{5:X04} len={6}"
-                                  //, GetCommandName(cmd)
-                                  //, (PacketFlags)flags
-                                  //, crcHeader
-                                  //, crcData
-                                  //, seq
-                                  //, seqReply
-                                  //, length
-                                  //);
+            Debug.WriteLine($"RX: {GetCommandName(cmd)} flags=[{crcHeader}] hCRC: 0x{crcHeader.ToString("X08")} pCRC: 0x{crcData.ToString("X08")} seq: 0x{seq.ToString("X04")} replySeq: 0x{seqReply.ToString("X04")} len={length.ToString()}");
         }
 
         [Event(3)]
         public void WireProtocolReceiveState(MessageReassembler.ReceiveState state)
         {
-            //Debug.WriteLine("State machine: {0}", state.ToString());
+            Debug.WriteLine($"State machine: {state.ToString()}");
         }
 
         [Event(4)]
         public void EngineEraseMemory(uint address, uint length)
         {
-            //Debug.WriteLine("EraseMemory: @0x{0:X08}; LEN=0x{1:X08}", address, length);
+            Debug.WriteLine($"EraseMemory: @0x{address.ToString("X08")}; LEN=0x{length.ToString("X08")}");
         }
 
         [Event(5)]
         public void EngineWriteMemory(uint address, int length)
         {
-            //Debug.WriteLine("WriteMemory: @0x{0:X08}; LEN=0x{1:X08}", address, length);
+            Debug.WriteLine($"WriteMemory: @0x{address.ToString("X08")}; LEN=0x{length.ToString("X08")}");
         }
 
         private DebuggerEventSource()
