@@ -87,7 +87,18 @@ namespace USB_Test_App_WPF
 
             Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action( () => {
 
-                (DataContext as MainViewModel).AvailableDevices[0].DebugEngine.Disconnect();
+                try
+                {
+                    (DataContext as MainViewModel).AvailableDevices[0].DebugEngine.Disconnect();
+
+                    //Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+                    //    ConnectionStateResult = ConnectionState.Disconnected;
+                    //}));
+                }
+                catch (Exception ex)
+                {
+
+                }
 
             }));
 

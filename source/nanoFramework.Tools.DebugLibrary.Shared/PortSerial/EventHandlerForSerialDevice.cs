@@ -356,6 +356,9 @@ namespace nanoFramework.Tools.Debugger.Serial
             appSuspendCallback = null;
 
             isEnabledAutoReconnect = true;
+
+            Current.device?.Dispose();
+            Current.device = null;
         }
 
         /// <summary>

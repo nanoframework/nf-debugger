@@ -374,9 +374,6 @@ namespace nanoFramework.Tools.Debugger.Usb
                 deviceCloseCallback?.Invoke(this, deviceInformation);
 
                 Debug.WriteLine($"Closing device {deviceInformation.Id}");
-
-                // This closes the handle to the device
-                device.Dispose();
             }
         }
 
