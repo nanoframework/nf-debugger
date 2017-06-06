@@ -488,6 +488,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public async Task<bool> ConnectDeviceAsync(NanoDeviceBase device)
         {
+            inputStreamReader = null;
+            outputStreamWriter = null;
+
             return await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).ConfigureAwait(false);
         }
 
@@ -503,6 +506,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
             }
 
+            inputStreamReader = null;
+            outputStreamWriter = null;
+
             // access the Current in EventHandlerForDevice to create a watcher for the device we are connecting to
             var isConnected = EventHandlerForSerialDevice.Current.IsDeviceConnected;
 
@@ -514,6 +520,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             if (FindDevice(((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).DeviceInformation.Id) != null)
             {
                 EventHandlerForSerialDevice.Current.CloseDevice();
+
+                inputStreamReader?.DetachStream();
+                inputStreamReader?.DetachBuffer();
+                inputStreamReader?.Dispose();
+
+                outputStreamWriter?.DetachStream();
+                outputStreamWriter?.DetachBuffer();
+                outputStreamWriter?.Dispose();
             }
         }
 
