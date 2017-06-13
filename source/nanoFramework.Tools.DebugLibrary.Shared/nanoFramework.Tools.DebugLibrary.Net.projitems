@@ -15,6 +15,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\CouldntOpenNanoFrameworkDeviceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DebugSessionAlreadyOpenException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\CancellationTokenExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\DebuggerExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DeviceInformationExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\OutputExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\TypeExtensions.cs" />

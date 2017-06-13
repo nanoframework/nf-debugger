@@ -1117,11 +1117,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public class Debugging_Reply_Uint_Array : IConverter
         {
-            public uint[] m_data = null;
+            public uint[] Data = null;
 
             public void PrepareForDeserialize(int size, byte[] data, Converter converter)
             {
-                m_data = new uint[(size) / 4];
+                Data = new uint[(size) / 4];
             }
         }
 
@@ -1190,48 +1190,45 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        public class Debugging_Resolve_Assembly
+        public class DebuggingResolveAssembly
         {
-            public uint m_idx = 0;
+            public uint Idx = 0;
 
             [IgnoreDataMemberAttribute]
-            public Reply m_reply;
+            public Reply Result;
 
             public struct Version
             {
-                public ushort iMajorVersion;
-                public ushort iMinorVersion;
-                public ushort iBuildNumber;
-                public ushort iRevisionNumber;
+                public ushort MajorVersion;
+                public ushort MinorVersion;
+                public ushort BuildNumber;
+                public ushort RevisionNumber;
 
                 public override string ToString()
                 {
-                    return string.Format("{0}.{1}.{2}.{3}", iMajorVersion, iMinorVersion, iBuildNumber, iRevisionNumber);
+                    return string.Format("{0}.{1}.{2}.{3}", MajorVersion, MinorVersion, BuildNumber, RevisionNumber);
                 }
             }
 
             public class Reply
             {
-                public const uint c_Resolved = 0x00000001;
-                public const uint c_Patched = 0x00000002;
-                public const uint c_PreparedForExecution = 0x00000004;
-                public const uint c_Deployed = 0x00000008;
-                public const uint c_PreparingForExecution = 0x00000010;
-
-                public uint m_flags;
-                public Version m_version;
-                public byte[] m_nameBuffer = new byte[512]; // char
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                // the fields bellow have to be here AND follow the exact type and order so that the reply of the device can be properly parsed
+                public uint Flags;
+                public Version Version;
+                public byte[] NameBuffer = new byte[512]; // char
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                 [IgnoreDataMemberAttribute]
-                private string m_name;
+                private string _name;
                 [IgnoreDataMemberAttribute]
-                private string m_path;
+                private string _path;
 
                 private void EnsureName()
                 {
-                    if (m_name == null)
+                    if (_name == null)
                     {
-                        string name = Commands.GetZeroTerminatedString(m_nameBuffer, false);
+                        string name = Commands.GetZeroTerminatedString(NameBuffer, false);
                         string path = null;
 
                         int iComma = name.IndexOf(',');
@@ -1242,8 +1239,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             name = name.Substring(0, iComma);
                         }
 
-                        m_name = name;
-                        m_path = path;
+                        _name = name;
+                        _path = path;
                     }
                 }
 
@@ -1253,7 +1250,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     {
                         EnsureName();
 
-                        return m_name;
+                        return _name;
                     }
                 }
 
@@ -1263,7 +1260,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     {
                         EnsureName();
 
-                        return m_path;
+                        return _path;
                     }
                 }
             }
@@ -1564,7 +1561,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Debugging_Resolve_Type: return new Debugging_Resolve_Type.Reply();
                     case c_Debugging_Resolve_Field: return new Debugging_Resolve_Field.Reply();
                     case c_Debugging_Resolve_Method: return new Debugging_Resolve_Method.Reply();
-                    case c_Debugging_Resolve_Assembly: return new Debugging_Resolve_Assembly.Reply();
+                    case c_Debugging_Resolve_Assembly: return new DebuggingResolveAssembly.Reply();
                     case c_Debugging_Resolve_VirtualMethod: return new Debugging_Resolve_VirtualMethod.Reply();
                     case c_Debugging_Resolve_AppDomain: return new Debugging_Resolve_AppDomain.Reply();
 
@@ -1650,7 +1647,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Debugging_Resolve_Type: return new Debugging_Resolve_Type();
                     case c_Debugging_Resolve_Field: return new Debugging_Resolve_Field();
                     case c_Debugging_Resolve_Method: return new Debugging_Resolve_Method();
-                    case c_Debugging_Resolve_Assembly: return new Debugging_Resolve_Assembly();
+                    case c_Debugging_Resolve_Assembly: return new DebuggingResolveAssembly();
                     case c_Debugging_Resolve_VirtualMethod: return new Debugging_Resolve_VirtualMethod();
                     case c_Debugging_Resolve_AppDomain: return new Debugging_Resolve_AppDomain();
 

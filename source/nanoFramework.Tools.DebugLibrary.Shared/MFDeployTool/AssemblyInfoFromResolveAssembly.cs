@@ -11,43 +11,43 @@ namespace nanoFramework.Tools.Debugger
 {
     class AssemblyInfoFromResolveAssembly : IAssemblyInfo
     {
-        private Commands.Debugging_Resolve_Assembly m_dra;
-        private List<IAppDomainInfo> m_AppDomains = new List<IAppDomainInfo>();
+        private Commands.DebuggingResolveAssembly _dra;
+        private List<IAppDomainInfo> _appDomains = new List<IAppDomainInfo>();
 
-        public AssemblyInfoFromResolveAssembly(Commands.Debugging_Resolve_Assembly dra)
+        public AssemblyInfoFromResolveAssembly(Commands.DebuggingResolveAssembly dra)
         {
-            m_dra = dra;
+            _dra = dra;
         }
 
         public string Name
         {
-            get { return m_dra.m_reply.Name; }
+            get { return _dra.Result.Name; }
         }
 
         public System.Version Version
         {
             get
             {
-                Commands.Debugging_Resolve_Assembly.Version draver = m_dra.m_reply.m_version;
-                return new System.Version(draver.iMajorVersion, draver.iMinorVersion, draver.iBuildNumber, draver.iRevisionNumber);
+                Commands.DebuggingResolveAssembly.Version version = _dra.Result.Version;
+                return new System.Version(version.MajorVersion, version.MinorVersion, version.BuildNumber, version.RevisionNumber);
             }
         }
 
         public uint Index
         {
-            get { return m_dra.m_idx; }
+            get { return _dra.Idx; }
         }
 
         public List<IAppDomainInfo> InAppDomains
         {
-            get { return m_AppDomains; }
+            get { return _appDomains; }
         }
 
         public void AddDomain(IAppDomainInfo adi)
         {
             if (adi != null)
             {
-                m_AppDomains.Add(adi);
+                _appDomains.Add(adi);
             }
         }
     }

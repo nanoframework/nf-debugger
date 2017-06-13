@@ -8,7 +8,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class MessageBase
     {
-        public Packet m_header;
-        public object m_payload;
+        public Packet Header;
+        public object Payload;
     }
 }

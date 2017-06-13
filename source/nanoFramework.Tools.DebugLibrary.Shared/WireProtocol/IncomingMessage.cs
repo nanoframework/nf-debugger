@@ -52,7 +52,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             get
             {
-                return m_base.m_header;
+                return m_base.Header;
             }
         }
 
@@ -60,32 +60,32 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             get
             {
-                return m_base.m_payload;
+                return m_base.Payload;
             }
             set
             {
                 object payload = null;
 
-                if (m_raw.m_payload != null)
+                if (m_raw.Payload != null)
                 {
                     if (value != null)
                     {
-                        new Converter(m_parent.Capabilities).Deserialize(value, m_raw.m_payload);
+                        new Converter(m_parent.Capabilities).Deserialize(value, m_raw.Payload);
                         payload = value;
                     }
                     else
                     {
-                        payload = m_raw.m_payload.Clone();
+                        payload = m_raw.Payload.Clone();
                     }
                 }
 
-                m_base.m_payload = payload;
+                m_base.Payload = payload;
             }
         }
 
         static public bool IsPositiveAcknowledge(IncomingMessage reply)
         {
-            return reply != null && ((reply.Header.m_flags & WireProtocol.Flags.c_ACK) != 0);
+            return reply != null && ((reply.Header.Flags & WireProtocol.Flags.c_ACK) != 0);
         }
 
         static public async Task<bool> ReplyBadPacketAsync(IController ctrl, uint flags, CancellationToken cancellationToken)
