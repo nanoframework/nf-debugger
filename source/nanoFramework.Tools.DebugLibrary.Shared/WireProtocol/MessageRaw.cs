@@ -8,7 +8,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class MessageRaw
     {
-        public byte[] m_header;
-        public byte[] m_payload;
+        public byte[] Header;
+        public byte[] Payload;
     }
 }

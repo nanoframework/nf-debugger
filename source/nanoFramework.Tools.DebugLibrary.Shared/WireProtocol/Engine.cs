@@ -1309,23 +1309,25 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<List<Commands.Debugging_Resolve_Assembly>> ResolveAllAssembliesAsync(CancellationToken cancellationToken)
+        public async Task<List<Commands.DebuggingResolveAssembly>> ResolveAllAssembliesAsync(CancellationToken cancellationToken)
         {
             Commands.Debugging_TypeSys_Assemblies.Reply assemblies = await GetAssembliesAsync(cancellationToken).ConfigureAwait(false);
-            List<Commands.Debugging_Resolve_Assembly> resolveAssemblies = new List<Commands.Debugging_Resolve_Assembly>();
+            List<Commands.DebuggingResolveAssembly> resolveAssemblies = new List<Commands.DebuggingResolveAssembly>();
 
-            if (assemblies == null || assemblies.m_data == null)
+            if (assemblies == null || assemblies.Data == null)
             {
-                resolveAssemblies = new List<Commands.Debugging_Resolve_Assembly>();
+                resolveAssemblies = new List<Commands.DebuggingResolveAssembly>();
             }
             else
             {
                 List<OutgoingMessage> requests = new List<OutgoingMessage>();
 
-                foreach(uint iAssembly in assemblies.m_data)
+                foreach(uint iAssembly in assemblies.Data)
                 {
-                    Commands.Debugging_Resolve_Assembly cmd = new Commands.Debugging_Resolve_Assembly();
-                    cmd.m_idx = iAssembly;
+                    Commands.DebuggingResolveAssembly cmd = new Commands.DebuggingResolveAssembly()
+                    {
+                        Idx = iAssembly
+                    };
 
                     requests.Add(CreateMessage(Commands.c_Debugging_Resolve_Assembly, 0, cmd));
                 }
@@ -1335,25 +1337,25 @@ namespace nanoFramework.Tools.Debugger
                 foreach(IncomingMessage message in replies)
                 {
                     // reply is a match for request which m_seq is same as reply m_seqReply
-                    resolveAssemblies.Add(requests.Find(req => req.Header.m_seq == message.Header.m_seqReply).Payload as Commands.Debugging_Resolve_Assembly);
-                    resolveAssemblies[resolveAssemblies.Count - 1].m_reply = message.Payload as Commands.Debugging_Resolve_Assembly.Reply;
+                    resolveAssemblies.Add(requests.Find(req => req.Header.Seq == message.Header.SeqReply).Payload as Commands.DebuggingResolveAssembly);
+                    resolveAssemblies[resolveAssemblies.Count - 1].Result = message.Payload as Commands.DebuggingResolveAssembly.Reply;
                 }
             }
 
             return resolveAssemblies;
         }
 
-        public async Task<Commands.Debugging_Resolve_Assembly.Reply> ResolveAssemblyAsync(uint idx)
+        public async Task<Commands.DebuggingResolveAssembly.Reply> ResolveAssemblyAsync(uint idx)
         {
-            Commands.Debugging_Resolve_Assembly cmd = new Commands.Debugging_Resolve_Assembly();
+            Commands.DebuggingResolveAssembly cmd = new Commands.DebuggingResolveAssembly();
 
-            cmd.m_idx = idx;
+            cmd.Idx = idx;
 
             IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Resolve_Assembly, 0, cmd).ConfigureAwait(false);
 
             if (reply != null)
             {
-                return reply.Payload as Commands.Debugging_Resolve_Assembly.Reply;
+                return reply.Payload as Commands.DebuggingResolveAssembly.Reply;
             }
 
             return null;

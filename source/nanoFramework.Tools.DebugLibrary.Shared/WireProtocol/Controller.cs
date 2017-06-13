@@ -63,13 +63,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             byte[] buf = Encoding.UTF8.GetBytes(sig);
 
-            Array.Copy(buf, 0, bp.m_signature, 0, buf.Length);
+            Array.Copy(buf, 0, bp.Signature, 0, buf.Length);
         }
 
         public async Task<bool> QueueOutputAsync(MessageRaw raw, CancellationToken cancellationToken)
         {
             Debug.WriteLine("QueueOutputAsync 1");
-            await SendRawBufferAsync(raw.m_header, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
+            await SendRawBufferAsync(raw.Header, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
 
             // check for cancelation request
             if (cancellationToken.IsCancellationRequested)
@@ -79,11 +79,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 return false;
             }
 
-            if (raw.m_payload != null)
+            if (raw.Payload != null)
             {
                 Debug.WriteLine("QueueOutputAsync 2");
 
-                await SendRawBufferAsync(raw.m_payload, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
+                await SendRawBufferAsync(raw.Payload, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
             }
 
             return true;
@@ -98,7 +98,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             SetSignature(bp, marker);
 
-            bp.m_seq = (ushort)Interlocked.Increment(ref lastOutboundMessage);
+            bp.Seq = (ushort)Interlocked.Increment(ref lastOutboundMessage);
 
             return bp;
         }

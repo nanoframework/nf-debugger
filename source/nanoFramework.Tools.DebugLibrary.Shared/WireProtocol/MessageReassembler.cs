@@ -15,8 +15,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     internal class MessageReassembler
     {
-        internal byte[] marker_Debugger = Encoding.UTF8.GetBytes(Packet.MARKER_DEBUGGER_V1);
-        internal byte[] marker_Packet = Encoding.UTF8.GetBytes(Packet.MARKER_PACKET_V1);
+        internal byte[] markerDebugger = Encoding.UTF8.GetBytes(Packet.MARKER_DEBUGGER_V1);
+        internal byte[] markerPacket = Encoding.UTF8.GetBytes(Packet.MARKER_PACKET_V1);
 
         internal enum ReceiveState
         {
@@ -29,30 +29,30 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             CompletePayload = 6,
         }
 
-        Controller m_parent;
-        ReceiveState m_state;
+        Controller _parent;
+        ReceiveState _state;
 
-        MessageRaw m_raw;
-        int m_rawPos;
-        MessageBase m_base;
+        MessageRaw _messageRaw;
+        int _rawPos;
+        MessageBase _messageBase;
         private Request request;
 
         internal MessageReassembler(Controller parent)
         {
-            m_parent = parent;
-            m_state = ReceiveState.Initialize;
+            _parent = parent;
+            _state = ReceiveState.Initialize;
         }
 
         internal MessageReassembler(Controller parent, Request request)
         {
             this.request = request;
-            m_parent = parent;
-            m_state = ReceiveState.Initialize;
+            _parent = parent;
+            _state = ReceiveState.Initialize;
         }
 
         internal IncomingMessage GetCompleteMessage()
         {
-            return new IncomingMessage(m_parent, m_raw, m_base);
+            return new IncomingMessage(_parent, _messageRaw, _messageBase);
         }
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             try
             {
 
-                switch (m_state)
+                switch (_state)
                 {
                     case ReceiveState.Initialize:
 
@@ -80,47 +80,47 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             return null;
                         }
 
-                        m_rawPos = 0;
+                        _rawPos = 0;
 
-                        m_base = new MessageBase();
-                        m_base.m_header = new Packet();
+                        _messageBase = new MessageBase();
+                        _messageBase.Header = new Packet();
 
-                        m_raw = new MessageRaw();
-                        m_raw.m_header = m_parent.CreateConverter().Serialize(m_base.m_header);
+                        _messageRaw = new MessageRaw();
+                        _messageRaw.Header = _parent.CreateConverter().Serialize(_messageBase.Header);
 
-                        m_state = ReceiveState.WaitingForHeader;
-                        DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
+                        _state = ReceiveState.WaitingForHeader;
+                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
                         goto case ReceiveState.WaitingForHeader;
 
                     case ReceiveState.WaitingForHeader:
-                        count = m_raw.m_header.Length - m_rawPos;
+                        count = _messageRaw.Header.Length - _rawPos;
 
                         Debug.WriteLine("WaitingForHeader");
 
                         // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                         // because we have an external cancellation token and the above timeout cancellation token, need to combine both
 
-                        bytesRead = await m_parent.ReadBufferAsync(m_raw.m_header, m_rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout)).ConfigureAwait(false);
+                        bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout)).ConfigureAwait(false);
 
-                        m_rawPos += bytesRead;
+                        _rawPos += bytesRead;
 
                         // sanity check
                         if (bytesRead != 32)
                         {
                             // doesn't look like a header, better restart
-                            m_state = ReceiveState.Initialize;
+                            _state = ReceiveState.Initialize;
                             goto case ReceiveState.Initialize;
                         }
 
-                        while (m_rawPos > 0)
+                        while (_rawPos > 0)
                         {
-                            int flag_Debugger = ValidSignature(marker_Debugger);
-                            int flag_Packet = ValidSignature(marker_Packet);
+                            int flag_Debugger = ValidSignature(markerDebugger);
+                            int flag_Packet = ValidSignature(markerPacket);
 
                             if (flag_Debugger == 1 || flag_Packet == 1)
                             {
-                                m_state = ReceiveState.ReadingHeader;
-                                DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
+                                _state = ReceiveState.ReadingHeader;
+                                DebuggerEventSource.Log.WireProtocolReceiveState(_state);
                                 goto case ReceiveState.ReadingHeader;
                             }
 
@@ -129,28 +129,28 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                 break; // Partial match.
                             }
 
-                            m_parent.App.SpuriousCharacters(m_raw.m_header, 0, 1);
+                            _parent.App.SpuriousCharacters(_messageRaw.Header, 0, 1);
 
-                            Array.Copy(m_raw.m_header, 1, m_raw.m_header, 0, --m_rawPos);
+                            Array.Copy(_messageRaw.Header, 1, _messageRaw.Header, 0, --_rawPos);
                         }
                         break;
 
                     case ReceiveState.ReadingHeader:
-                        count = m_raw.m_header.Length - m_rawPos;
+                        count = _messageRaw.Header.Length - _rawPos;
 
                         Debug.WriteLine("ReadingHeader");
 
                         // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                         // because we have an external cancellation token and the above timeout cancellation token, need to combine both
 
-                        bytesRead = await m_parent.ReadBufferAsync(m_raw.m_header, m_rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout)).ConfigureAwait(false);
+                        bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout)).ConfigureAwait(false);
 
-                        m_rawPos += bytesRead;
+                        _rawPos += bytesRead;
 
                         if (bytesRead != count) break;
 
-                        m_state = ReceiveState.CompleteHeader;
-                        DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
+                        _state = ReceiveState.CompleteHeader;
+                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
                         goto case ReceiveState.CompleteHeader;
                     //break;
 
@@ -159,30 +159,30 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         {
                             Debug.WriteLine("CompleteHeader");
 
-                            m_parent.CreateConverter().Deserialize(m_base.m_header, m_raw.m_header);
+                            _parent.CreateConverter().Deserialize(_messageBase.Header, _messageRaw.Header);
 
                             if (VerifyHeader() == true)
                             {
                                 Debug.WriteLine("CompleteHeader, header OK");
 
-                                bool fReply = (m_base.m_header.m_flags & Flags.c_Reply) != 0;
+                                bool fReply = (_messageBase.Header.Flags & Flags.c_Reply) != 0;
 
-                                DebuggerEventSource.Log.WireProtocolRxHeader(m_base.m_header.m_crcHeader, m_base.m_header.m_crcData, m_base.m_header.m_cmd, m_base.m_header.m_flags, m_base.m_header.m_seq, m_base.m_header.m_seqReply, m_base.m_header.m_size);
+                                DebuggerEventSource.Log.WireProtocolRxHeader(_messageBase.Header.CrcHeader, _messageBase.Header.CrcData, _messageBase.Header.Cmd, _messageBase.Header.Flags, _messageBase.Header.Seq, _messageBase.Header.SeqReply, _messageBase.Header.Size);
 
-                                if (m_base.m_header.m_size != 0)
+                                if (_messageBase.Header.Size != 0)
                                 {
-                                    m_raw.m_payload = new byte[m_base.m_header.m_size];
+                                    _messageRaw.Payload = new byte[_messageBase.Header.Size];
                                     //reuse m_rawPos for position in header to read.
-                                    m_rawPos = 0;
+                                    _rawPos = 0;
 
-                                    m_state = ReceiveState.ReadingPayload;
-                                    DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
+                                    _state = ReceiveState.ReadingPayload;
+                                    DebuggerEventSource.Log.WireProtocolReceiveState(_state);
                                     goto case ReceiveState.ReadingPayload;
                                 }
                                 else
                                 {
-                                    m_state = ReceiveState.CompletePayload;
-                                    DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
+                                    _state = ReceiveState.CompletePayload;
+                                    DebuggerEventSource.Log.WireProtocolReceiveState(_state);
                                     goto case ReceiveState.CompletePayload;
                                 }
                             }
@@ -198,10 +198,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             Debug.WriteLine("Fault at payload deserialization:\n\n{0}", e.ToString());
                         }
 
-                        m_state = ReceiveState.Initialize;
-                        DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
+                        _state = ReceiveState.Initialize;
+                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
 
-                        if ((m_base.m_header.m_flags & Flags.c_NonCritical) == 0)
+                        if ((_messageBase.Header.Flags & Flags.c_NonCritical) == 0)
                         {
                             // FIXME 
                             // evaluate the purpose of this reply back to the NanoFramework device, the nanoCLR doesn't seem to have to handle this. In the end it looks like this does have any real purpose and will only be wasting CPU.
@@ -212,21 +212,21 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         break;
 
                     case ReceiveState.ReadingPayload:
-                        count = m_raw.m_payload.Length - m_rawPos;
+                        count = _messageRaw.Payload.Length - _rawPos;
 
                         Debug.WriteLine("ReadingPayload");
 
                         // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                         // because we have an external cancellation token and the above timeout cancellation token, need to combine both
 
-                        bytesRead = await m_parent.ReadBufferAsync(m_raw.m_payload, m_rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout)).ConfigureAwait(false);
+                        bytesRead = await _parent.ReadBufferAsync(_messageRaw.Payload, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout)).ConfigureAwait(false);
 
-                        m_rawPos += bytesRead;
+                        _rawPos += bytesRead;
 
                         if (bytesRead != count) break;
 
-                        m_state = ReceiveState.CompletePayload;
-                        DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
+                        _state = ReceiveState.CompletePayload;
+                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
                         goto case ReceiveState.CompletePayload;
 
                     case ReceiveState.CompletePayload:
@@ -238,16 +238,16 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                             try
                             {
-                                bool fReply = (m_base.m_header.m_flags & Flags.c_Reply) != 0;
+                                bool fReply = (_messageBase.Header.Flags & Flags.c_Reply) != 0;
 
-                                if ((m_base.m_header.m_flags & Flags.c_NACK) != 0)
+                                if ((_messageBase.Header.Flags & Flags.c_NACK) != 0)
                                 {
-                                    m_raw.m_payload = null;
+                                    _messageRaw.Payload = null;
                                 }
 
                                 if (await ProcessMessage(GetCompleteMessage(), fReply, cancellationToken).ConfigureAwait(false))
                                 {
-                                    DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
+                                    DebuggerEventSource.Log.WireProtocolReceiveState(_state);
 
                                     //Debug.WriteLine("*** leaving reassembler");
 
@@ -277,14 +277,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             Debug.WriteLine("CompletePayload payload not valid");
                         }
 
-                        m_state = ReceiveState.Initialize;
-                        DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
+                        _state = ReceiveState.Initialize;
+                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
 
-                        if ((m_base.m_header.m_flags & Flags.c_NonCritical) == 0)
+                        if ((_messageBase.Header.Flags & Flags.c_NonCritical) == 0)
                         {
                             // FIXME 
                             // evaluate the purpose of this reply back to the NanoFramework device, the nanoCLR doesn't seem to have to handle this. In the end it looks like this does have any real purpose and will only be wasting CPU.
-                            await IncomingMessage.ReplyBadPacketAsync(m_parent, Flags.c_BadPayload, cancellationToken).ConfigureAwait(false);
+                            await IncomingMessage.ReplyBadPacketAsync(_parent, Flags.c_BadPayload, cancellationToken).ConfigureAwait(false);
                             return null;
                         }
 
@@ -293,8 +293,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
             catch(Exception ex)
             {
-                m_state = ReceiveState.Initialize;
-                DebuggerEventSource.Log.WireProtocolReceiveState(m_state);
+                _state = ReceiveState.Initialize;
+                DebuggerEventSource.Log.WireProtocolReceiveState(_state);
                 Debug.WriteLine($"*** EXCEPTION IN STATE MACHINE***:\r\n{ex.Message} \r\n{ex.StackTrace}");
                 throw;
             }
@@ -307,49 +307,49 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             System.Diagnostics.Debug.Assert(sig != null && sig.Length == Packet.SIZE_OF_SIGNATURE);
             int markerSize = Packet.SIZE_OF_SIGNATURE;
-            int iMax = System.Math.Min(m_rawPos, markerSize);
+            int iMax = System.Math.Min(_rawPos, markerSize);
 
             for (int i = 0; i < iMax; i++)
             {
-                if (m_raw.m_header[i] != sig[i]) return -1;
+                if (_messageRaw.Header[i] != sig[i]) return -1;
             }
 
-            if (m_rawPos < markerSize) return 0;
+            if (_rawPos < markerSize) return 0;
 
             return 1;
         }
 
         private bool VerifyHeader()
         {
-            uint crc = m_base.m_header.m_crcHeader;
+            uint crc = _messageBase.Header.CrcHeader;
             bool fRes;
 
-            m_base.m_header.m_crcHeader = 0;
+            _messageBase.Header.CrcHeader = 0;
 
-            fRes = CRC.ComputeCRC(m_parent.CreateConverter().Serialize(m_base.m_header), 0) == crc;
+            fRes = CRC.ComputeCRC(_parent.CreateConverter().Serialize(_messageBase.Header), 0) == crc;
 
-            m_base.m_header.m_crcHeader = crc;
+            _messageBase.Header.CrcHeader = crc;
 
             return fRes;
         }
 
         private bool VerifyPayload()
         {
-            if (m_raw.m_payload == null)
+            if (_messageRaw.Payload == null)
             {
-                return (m_base.m_header.m_size == 0);
+                return (_messageBase.Header.Size == 0);
             }
             else
             {
-                if (m_base.m_header.m_size != m_raw.m_payload.Length) return false;
+                if (_messageBase.Header.Size != _messageRaw.Payload.Length) return false;
 
-                return CRC.ComputeCRC(m_raw.m_payload, 0) == m_base.m_header.m_crcData;
+                return CRC.ComputeCRC(_messageRaw.Payload, 0) == _messageBase.Header.CrcData;
             }
         }
 
         public async Task<bool> ProcessMessage(IncomingMessage msg, bool fReply, CancellationToken cancellationToken)
         {
-            msg.Payload = Commands.ResolveCommandToPayload(msg.Header.m_cmd, fReply, m_parent.Capabilities);
+            msg.Payload = Commands.ResolveCommandToPayload(msg.Header.Cmd, fReply, _parent.Capabilities);
 
             if (fReply == true)
             {
@@ -374,7 +374,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 Packet bp = msg.Header;
 
-                switch (bp.m_cmd)
+                switch (bp.Cmd)
                 {
                     case Commands.c_Monitor_Ping:
                         {
@@ -385,7 +385,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             // FIXME
                             //cmdReply.m_dbg_flags = (m_stopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
 
-                            await msg.ReplyAsync(m_parent.CreateConverter(), Flags.c_NonCritical, cmdReply, cancellationToken).ConfigureAwait(false);
+                            await msg.ReplyAsync(_parent.CreateConverter(), Flags.c_NonCritical, cmdReply, cancellationToken).ConfigureAwait(false);
 
                             //m_evtPing.Set();
 

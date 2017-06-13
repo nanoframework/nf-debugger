@@ -12,10 +12,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class OutgoingMessage
     {
-        internal IController m_parent;
+        internal IController _parent;
 
-        MessageRaw m_raw;
-        MessageBase m_base;
+        MessageRaw _raw;
+        MessageBase _base;
 
         public OutgoingMessage(IController parent, Converter converter, uint cmd, uint flags, object payload)
         {
@@ -26,10 +26,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         internal OutgoingMessage(IncomingMessage req, Converter converter, uint flags, object payload)
         {
-            InitializeForSend(req.Parent, converter, req.Header.m_cmd, flags, payload);
+            InitializeForSend(req.Parent, converter, req.Header.Cmd, flags, payload);
 
-            m_base.m_header.m_seqReply = req.Header.m_seq;
-            m_base.m_header.m_flags |= Flags.c_Reply;
+            _base.Header.SeqReply = req.Header.Seq;
+            _base.Header.Flags |= Flags.c_Reply;
 
             UpdateCRC(converter);
         }
@@ -38,7 +38,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             get
             {
-                return m_base.m_header;
+                return _base.Header;
             }
         }
 
@@ -46,7 +46,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             get
             {
-                return m_base.m_payload;
+                return _base.Payload;
             }
         }
 
@@ -54,51 +54,51 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             Packet header = parent.NewPacket();
 
-            header.m_cmd = cmd;
-            header.m_flags = flags;
+            header.Cmd = cmd;
+            header.Flags = flags;
 
-            m_parent = parent;
+            _parent = parent;
 
-            m_raw = new MessageRaw();
-            m_base = new MessageBase();
-            m_base.m_header = header;
-            m_base.m_payload = payload;
+            _raw = new MessageRaw();
+            _base = new MessageBase();
+            _base.Header = header;
+            _base.Payload = payload;
 
             if (payload != null)
             {
-                m_raw.m_payload = converter.Serialize(payload);
+                _raw.Payload = converter.Serialize(payload);
 
-                m_base.m_header.m_size = (uint)m_raw.m_payload.Length;
-                m_base.m_header.m_crcData = CRC.ComputeCRC(m_raw.m_payload, 0);
+                _base.Header.Size = (uint)_raw.Payload.Length;
+                _base.Header.CrcData = CRC.ComputeCRC(_raw.Payload, 0);
             }
         }
 
         private void UpdateCRC(Converter converter)
         {
-            Packet header = m_base.m_header;
+            Packet header = _base.Header;
 
             //
             // The CRC for the header is computed setting the CRC field to zero and then running the CRC algorithm.
             //
-            header.m_crcHeader = 0;
-            header.m_crcHeader = CRC.ComputeCRC(converter.Serialize(header), 0);
+            header.CrcHeader = 0;
+            header.CrcHeader = CRC.ComputeCRC(converter.Serialize(header), 0);
 
-            m_raw.m_header = converter.Serialize(header);
+            _raw.Header = converter.Serialize(header);
         }
 
         internal async Task<bool> SendAsync(CancellationToken cancellationToken)
         {
 
-            DebuggerEventSource.Log.WireProtocolTxHeader(m_base.m_header.m_crcHeader
-                                                        , m_base.m_header.m_crcData
-                                                        , m_base.m_header.m_cmd
-                                                        , m_base.m_header.m_flags
-                                                        , m_base.m_header.m_seq
-                                                        , m_base.m_header.m_seqReply
-                                                        , m_base.m_header.m_size
+            DebuggerEventSource.Log.WireProtocolTxHeader(_base.Header.CrcHeader
+                                                        , _base.Header.CrcData
+                                                        , _base.Header.Cmd
+                                                        , _base.Header.Flags
+                                                        , _base.Header.Seq
+                                                        , _base.Header.SeqReply
+                                                        , _base.Header.Size
                                                         );
 
-            return await m_parent.QueueOutputAsync(m_raw, cancellationToken);
+            return await _parent.QueueOutputAsync(_raw, cancellationToken);
         }
     }
 }

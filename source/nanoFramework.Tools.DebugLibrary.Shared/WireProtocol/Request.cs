@@ -56,8 +56,8 @@ namespace nanoFramework.Tools.Debugger
             Packet headerReq = outgoingMsg.Header;
             Packet headerRes = res.Header;
 
-            if (headerReq.m_cmd == headerRes.m_cmd &&
-               headerReq.m_seq == headerRes.m_seqReply)
+            if (headerReq.Cmd == headerRes.Cmd &&
+               headerReq.Seq == headerRes.SeqReply)
             {
                 return true;
             }
@@ -140,7 +140,7 @@ namespace nanoFramework.Tools.Debugger
                 if (await outgoingMsg.SendAsync(cTSource.Token.AddTimeout(waitRetryTimeout)).ConfigureAwait(false))
                 {
                     // if this request is for a reboot, we won't be able to receive the reply right away because the device is rebooting
-                    if((outgoingMsg.Header.m_cmd == Commands.c_Monitor_Reboot) && retryCounter == 1)
+                    if((outgoingMsg.Header.Cmd == Commands.c_Monitor_Reboot) && retryCounter == 1)
                     {
                         // wait here for 
                         Task.Delay(2000).Wait();

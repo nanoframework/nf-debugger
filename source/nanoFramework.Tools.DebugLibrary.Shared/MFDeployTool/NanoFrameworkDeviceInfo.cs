@@ -56,7 +56,7 @@ namespace nanoFramework.Tools.Debugger
 
                 if (domainsReply != null)
                 {
-                    foreach (uint id in domainsReply.m_data)
+                    foreach (uint id in domainsReply.Data)
                     {
                         Commands.Debugging_Resolve_AppDomain.Reply reply = await Dbg.ResolveAppDomainAsync(id);
                         // TODO add cancelation token code
@@ -71,10 +71,10 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task GetAssembliesAsync(CancellationToken cancellationToken)
         {
-            List<Commands.Debugging_Resolve_Assembly> reply = await Dbg.ResolveAllAssembliesAsync(cancellationToken);
+            List<Commands.DebuggingResolveAssembly> reply = await Dbg.ResolveAllAssembliesAsync(cancellationToken);
 
             if (reply != null)
-                foreach (Commands.Debugging_Resolve_Assembly resolvedAssm in reply)
+                foreach (Commands.DebuggingResolveAssembly resolvedAssm in reply)
                 {
                     AssemblyInfoFromResolveAssembly ai = new AssemblyInfoFromResolveAssembly(resolvedAssm);
 
