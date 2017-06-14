@@ -1162,6 +1162,22 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 }
             }
 
+            /// <summary>
+            /// Resolved status for a deployed assembly.
+            /// </summary>
+            [Flags]
+            public enum ResolvedStatus
+            {
+                //////////////////////////////////////////////////////////////////////////////////////////
+                // NEED TO KEEP THESE IN SYNC WITH native 'CLR_RT_Assembly' struct in nanoCLR_Runtime.h //
+                //////////////////////////////////////////////////////////////////////////////////////////
+                Resolved = 0x00000001,
+                Patched = 0x00000002,
+                PreparedForExecution = 0x00000004,
+                Deployed = 0x00000008,
+                PreparingForExecution = 0x00000010,
+            }
+
             public class Reply
             {
                 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
