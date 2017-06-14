@@ -17,7 +17,7 @@
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <PackageId>nanoFramework.Tools.Debugger.UWP</PackageId>
-    <PackageVersion>0.4.0-preview009</PackageVersion>
+    <PackageVersion>0.4.0-preview010</PackageVersion>
     <Description>This UWP library provides a debug client for nanoFramework devices using USB or Serial connection to a board.</Description>
     <Authors>nanoFramework project contributors</Authors>
     <Title>nanoFramework debug library for UWP</Title>
