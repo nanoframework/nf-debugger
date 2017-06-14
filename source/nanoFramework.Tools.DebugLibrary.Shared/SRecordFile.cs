@@ -25,11 +25,10 @@ namespace nanoFramework.Tools.Debugger
         {
             public uint address;
             public MemoryStream data;
-            public byte[] signature;
             public bool executable;
         }
 
-        static public async Task<Tuple<uint, List<Block>>> ParseAsync(StorageFile file, StorageFile signatureFile)
+        static public async Task<Tuple<uint, List<Block>>> ParseAsync(StorageFile file)
         {
             uint entrypoint = 0;
             List<Block> blocks = new List<Block>();
@@ -155,28 +154,6 @@ namespace nanoFramework.Tools.Debugger
 
                     if (bl != null)
                     {
-                        if (signatureFile != null)
-                        {
-                            IBuffer buffer = await FileIO.ReadBufferAsync(signatureFile);
-
-                            using (DataReader dataReader = DataReader.FromBuffer(buffer))
-                            {
-                                if (dataReader.UnconsumedBufferLength != 128)
-                                {
-                                    throw new ArgumentOutOfRangeException(String.Format("Signature is not 128 bytes long; it is {0} bytes long", dataReader.UnconsumedBufferLength));
-                                }
-
-                                byte[] signature = new byte[128];
-
-                                dataReader.ReadBytes(signature);
-                                bl.signature = signature;
-                            }
-                        }
-                        else
-                        {
-                            bl.signature = new byte[0];
-                        }
-
                         blocks.Add(bl);
                     }
                 }

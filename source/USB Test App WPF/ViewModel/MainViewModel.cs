@@ -9,7 +9,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 
-namespace USB_Test_App_WPF.ViewModel
+namespace Serial_Test_App_WPF.ViewModel
 {
     /// <summary>
     /// This class contains properties that the main View can data bind to.

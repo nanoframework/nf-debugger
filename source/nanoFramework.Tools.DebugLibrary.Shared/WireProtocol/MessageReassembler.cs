@@ -114,8 +114,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                         while (_rawPos > 0)
                         {
-                            int flag_Debugger = ValidSignature(markerDebugger);
-                            int flag_Packet = ValidSignature(markerPacket);
+                            int flag_Debugger = ValidMarker(markerDebugger);
+                            int flag_Packet = ValidMarker(markerPacket);
 
                             if (flag_Debugger == 1 || flag_Packet == 1)
                             {
@@ -303,15 +303,15 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             return null;
         }
 
-        private int ValidSignature(byte[] sig)
+        private int ValidMarker(byte[] marker)
         {
-            System.Diagnostics.Debug.Assert(sig != null && sig.Length == Packet.SIZE_OF_SIGNATURE);
-            int markerSize = Packet.SIZE_OF_SIGNATURE;
+            System.Diagnostics.Debug.Assert(marker != null && marker.Length == Packet.SIZE_OF_MARKER);
+            int markerSize = Packet.SIZE_OF_MARKER;
             int iMax = System.Math.Min(_rawPos, markerSize);
 
             for (int i = 0; i < iMax; i++)
             {
-                if (_messageRaw.Header[i] != sig[i]) return -1;
+                if (_messageRaw.Header[i] != marker[i]) return -1;
             }
 
             if (_rawPos < markerSize) return 0;

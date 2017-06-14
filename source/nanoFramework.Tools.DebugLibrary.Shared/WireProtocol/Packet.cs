@@ -10,9 +10,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     {
         public static string MARKER_DEBUGGER_V1 = "NFDBGV1\0"; // Used to identify the debugger at boot time.
         public static string MARKER_PACKET_V1 = "NFPKTV1\0"; // Used to identify the start of a packet.
-        public const int SIZE_OF_SIGNATURE = 8;
+        public const int SIZE_OF_MARKER = 8;
 
-        public byte[] Signature = new byte[SIZE_OF_SIGNATURE];
+        public byte[] Marker = new byte[SIZE_OF_MARKER];
         public uint CrcHeader = 0;
         public uint CrcData = 0;
 

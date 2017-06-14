@@ -1,7 +1,7 @@
 /*
   In App.xaml:
   <Application.Resources>
-      <vm:ViewModelLocator xmlns:vm="clr-namespace:USB_Test_App_WPF"
+      <vm:ViewModelLocator xmlns:vm="clr-namespace:Serial_Test_App_WPF"
                            x:Key="Locator" />
   </Application.Resources>
   
@@ -16,7 +16,7 @@ using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Ioc;
 using Microsoft.Practices.ServiceLocation;
 
-namespace USB_Test_App_WPF.ViewModel
+namespace Serial_Test_App_WPF.ViewModel
 {
     /// <summary>
     /// This class contains static references to all the view models in the
