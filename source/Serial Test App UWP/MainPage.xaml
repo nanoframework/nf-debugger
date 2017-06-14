@@ -16,5 +16,7 @@
         <Button x:Name="deployFileButton" Content="Deploy File" HorizontalAlignment="Left" Margin="82,417,0,0" VerticalAlignment="Top" Click="deployFileButton_Click" />
         <Button x:Name="disconnectButton" Content="Disconnect" HorizontalAlignment="Left" Margin="248,82,0,0" VerticalAlignment="Top" Click="disconnectButton_Click"/>
 
+        <Button x:Name="IsInitButton" Content="Is Initialized" HorizontalAlignment="Left" Margin="82,472,0,0" VerticalAlignment="Top" Click="IsInitButton_Click" />
+
     </Grid>
 </Page>
