@@ -1,15 +1,15 @@
-﻿using Microsoft.Practices.ServiceLocation;
+﻿//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+
+using Microsoft.Practices.ServiceLocation;
 using nanoFramework.ANT.Services.NanoFrameworkService;
 using nanoFramework.Tools.Debugger;
+using Serial_Test_App_WPF.ViewModel;
 using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
-using USB_Test_App_WPF.ViewModel;
 
-namespace USB_Test_App_WPF
+namespace Serial_Test_App_WPF
 {
     /// <summary>
     /// Interaction logic for App.xaml

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.12
+VisualStudioVersion = 15.0.26430.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "USB Test App UWP", "USB Test App UWP\USB Test App UWP.csproj", "{FE93C38E-DFDB-475F-BB5D-DC1288EA2D95}"
 EndProject
@@ -17,7 +17,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nanoFramework.Tools.DebugLi
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test Apps", "Test Apps", "{4BB47DB4-92A3-4DE9-81C0-462373258F49}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "USB Test App WPF", "USB Test App WPF\USB Test App WPF.csproj", "{654CCB72-B942-4FFA-AA2B-17F9F85310EE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serial Test App WPF", "USB Test App WPF\Serial Test App WPF.csproj", "{654CCB72-B942-4FFA-AA2B-17F9F85310EE}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution

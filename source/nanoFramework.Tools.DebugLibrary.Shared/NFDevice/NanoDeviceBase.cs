@@ -363,17 +363,14 @@ namespace nanoFramework.Tools.Debugger
         }
 
         /// <summary>
-        /// Attempts to deploy an SREC (.hex) file to the connected .Net Micro Framework device.  The 
-        /// signatureFile is used to validate the image once it has been deployed to the device.  If 
-        /// the signature does not match the image is erased.
+        /// Attempts to deploy an SREC (.hex) file to the connected nanoFramework device. 
         /// </summary>
         /// <param name="srecFile">Storage file with the SREC (.hex) file</param>
-        /// <param name="signatureFile">Storage file with the signature file (.sig) for the corresponding SREC file in the srecFile parameter</param>
         /// <param name="entrypoint">Out parameter that is set to the entry point address for the given SREC file</param>
         /// <returns>Returns false if the deployment fails, true otherwise
         /// Possible exceptions: MFFileNotFoundException, MFDeviceNoResponseException, MFUserExitException
         /// </returns>
-        public async Task<Tuple<uint, bool>> DeployAsync(StorageFile srecFile, StorageFile signatureFile, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
+        public async Task<Tuple<uint, bool>> DeployAsync(StorageFile srecFile, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
         {
             uint entryPoint = 0;
             List<SRecordFile.Block> blocks = new List<SRecordFile.Block>();
@@ -402,7 +399,7 @@ namespace nanoFramework.Tools.Debugger
 
             await DebugEngine.ConnectAsync(1, 1000, false, ConnectionSource.Unknown).ConfigureAwait(false);
 
-            var parseResult = await SRecordFile.ParseAsync(srecFile, signatureFile != null ? signatureFile : null).ConfigureAwait(false);
+            var parseResult = await SRecordFile.ParseAsync(srecFile).ConfigureAwait(false);
             entryPoint = parseResult.Item1;
             blocks = parseResult.Item2;
 
@@ -461,15 +458,6 @@ namespace nanoFramework.Tools.Debugger
                         len -= buflen;
 
                         progress?.Report(new ProgressReport(value, total, string.Format("Deploying {0}...", srecFile.Name)));
-                    }
-
-                    if (DebugEngine.ConnectionSource != ConnectionSource.NanoCLR)
-                    {
-                        byte[] emptySig = new byte[128];
-
-                        progress?.Report(new ProgressReport(value, total, "Checking Signature..."));
-
-                        //if (!await DebugEngine.CheckSignatureAsync(((block.signature == null || block.signature.Length == 0) ? emptySig : block.signature), 0)).ConfigureAwait(false) throw new MFSignatureFailureException(signatureFile);
                     }
                 }
             }

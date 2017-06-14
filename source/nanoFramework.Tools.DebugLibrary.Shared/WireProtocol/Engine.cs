@@ -150,7 +150,7 @@ namespace nanoFramework.Tools.Debugger
 
         public bool IsTargetBigEndian { get; internal set; }
 
-        public async Task<bool> ConnectAsync(int retries, int timeout, bool force = false, ConnectionSource connectionSource = ConnectionSource.Unknown)
+        public async ValueTask<bool> ConnectAsync(int retries, int timeout, bool force = false, ConnectionSource connectionSource = ConnectionSource.Unknown)
         {
             if (force || IsConnected == false)
             {
@@ -360,7 +360,15 @@ namespace nanoFramework.Tools.Debugger
 
             foreach(OutgoingMessage message in messages)
             {
-                replies.Add(await PerformRequestAsync(message, cancellationToken, retries, timeout).ConfigureAwait(false));
+                // continue execution only if cancelation was NOT request
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    replies.Add(await PerformRequestAsync(message, cancellationToken, retries, timeout).ConfigureAwait(false));
+                }
+                else
+                {
+                    break;
+                }
             }
 
             return replies;
@@ -497,23 +505,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<bool> UpdateSignatureKeyAsync(PublicKeyIndex keyIndex, byte[] oldPublicKeySignature, byte[] newPublicKey, byte[] reserveData)
-        {
-            Commands.Monitor_SignatureKeyUpdate keyUpdate = new Commands.Monitor_SignatureKeyUpdate();
-
-            // key must be 260 bytes
-            if (keyUpdate.m_newPublicKey.Length != newPublicKey.Length)
-                return false;
-
-            if (!keyUpdate.PrepareForSend((uint)keyIndex, oldPublicKeySignature, newPublicKey, reserveData))
-                return false;
-
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_SignatureKeyUpdate, 0, keyUpdate).ConfigureAwait(false);
-
-            return IncomingMessage.IsPositiveAcknowledge(reply);
-        }
-
-        private async Task<Tuple<byte[], bool>> ReadMemoryAsync(uint address, uint length, uint offset)
+        private async Task<(byte[] buffer, bool success)> ReadMemoryAsync(uint address, uint length, uint offset)
         {
             byte[] buffer = new byte[length];
 
@@ -527,14 +519,14 @@ namespace nanoFramework.Tools.Debugger
                 IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_ReadMemory, 0, cmd).ConfigureAwait(false);
                 if (reply == null)
                 {
-                    return new Tuple<byte[], bool>(new byte[0], false);
+                    return (new byte[0], false);
                 }
 
                 Commands.Monitor_ReadMemory.Reply cmdReply = reply.Payload as Commands.Monitor_ReadMemory.Reply;
 
                 if (cmdReply == null || cmdReply.m_data == null)
                 {
-                    return new Tuple<byte[], bool>(new byte[0], false);
+                    return (new byte[0], false);
                 }
 
                 uint actualLength = Math.Min((uint)cmdReply.m_data.Length, length);
@@ -546,10 +538,10 @@ namespace nanoFramework.Tools.Debugger
                 offset += actualLength;
             }
 
-            return new Tuple<byte[], bool>(new byte[0], true);
+            return (new byte[0], true);
         }
 
-        public async Task<Tuple<byte[], bool>> ReadMemoryAsync(uint address, uint length)
+        public async Task<(byte[] buffer, bool success)> ReadMemoryAsync(uint address, uint length)
         {
             return await ReadMemoryAsync(address, length, 0).ConfigureAwait(false);
         }
@@ -589,20 +581,6 @@ namespace nanoFramework.Tools.Debugger
         public async Task<bool> WriteMemoryAsync(uint address, byte[] buf)
         {
             return await WriteMemoryAsync(address, buf, 0, buf.Length).ConfigureAwait(false);
-        }
-
-        public async Task<bool> CheckSignatureAsync(byte[] signature, uint keyIndex)
-        {
-            // TODO replace with token argument
-            CancellationTokenSource cancelTSource = new CancellationTokenSource();
-
-            Commands.Monitor_Signature cmd = new Commands.Monitor_Signature();
-
-            cmd.PrepareForSend(signature, keyIndex);
-
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_CheckSignature, 0, cmd, 0, 600000).ConfigureAwait(false);
-
-            return IncomingMessage.IsPositiveAcknowledge(reply);
         }
 
         public async Task<bool> EraseMemoryAsync(uint address, uint length)
@@ -717,14 +695,12 @@ namespace nanoFramework.Tools.Debugger
             return 0;
         }
 
-        public async Task<Tuple<uint, bool>> SetExecutionModeAsync(uint iSet, uint iReset)
+        public async Task<(uint currentExecutionMode, bool success)> SetExecutionModeAsync(uint iSet, uint iReset)
         {
             Commands.Debugging_Execution_ChangeConditions cmd = new Commands.Debugging_Execution_ChangeConditions();
 
             cmd.m_set = iSet;
             cmd.m_reset = iReset;
-
-            uint iCurrent;
 
             IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd).ConfigureAwait(false);
             if (reply != null)
@@ -733,23 +709,16 @@ namespace nanoFramework.Tools.Debugger
 
                 if (cmdReply != null)
                 {
-                    return new Tuple<uint, bool>(cmdReply.m_current, true);
+                    return (cmdReply.m_current, true);
                 }
                 else
                 {
-                    return new Tuple<uint, bool>(0, true);
+                    return (0, true);
                 }
             }
 
-            return new Tuple<uint, bool>(0, false);
+            return (0, false);
         }
-
-        //public async Task<bool> SetExecutionModeAsync(uint iSet, uint iReset)
-        //{
-        //    uint iCurrent;
-
-        //    return SetExecutionMode(iSet, iReset, out iCurrent);
-        //}
 
         public async Task<bool> PauseExecutionAsync()
         {
@@ -819,7 +788,7 @@ namespace nanoFramework.Tools.Debugger
             return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Execution_Unlock, 0, cmd).ConfigureAwait(false));
         }
 
-        public async Task<Tuple<uint, bool>> AllocateMemoryAsync(uint size)
+        public async Task<(uint address, bool success)> AllocateMemoryAsync(uint size)
         {
             Commands.Debugging_Execution_Allocate cmd = new Commands.Debugging_Execution_Allocate();
 
@@ -832,11 +801,11 @@ namespace nanoFramework.Tools.Debugger
 
                 if (cmdReply != null)
                 {
-                    return new Tuple<uint, bool>(cmdReply.m_address, true);
+                    return (cmdReply.m_address, true);
                 }
             }
 
-            return new Tuple<uint, bool>(0, false);
+            return (0, false);
         }
 
         //public IAsyncResult UpgradeConnectionToSsl_Begin(X509Certificate2 cert, bool fRequireClientCert)
@@ -909,8 +878,7 @@ namespace nanoFramework.Tools.Debugger
         }
 
         Dictionary<int, uint[]> m_updateMissingPktTbl = new Dictionary<int, uint[]>();
-
-       
+      
 
         /// <summary>
         /// 
@@ -967,12 +935,14 @@ namespace nanoFramework.Tools.Debugger
             return -1;
         }
 
-        public async Task<Tuple<byte[], bool>> UpdateAuthCommandAsync(int updateHandle, uint authCommand, byte[] commandArgs)
+        public async Task<(byte[] response, bool success)> UpdateAuthCommandAsync(int updateHandle, uint authCommand, byte[] commandArgs)
         {
             Commands.Debugging_MFUpdate_AuthCommand cmd = new Commands.Debugging_MFUpdate_AuthCommand();
 
             if (commandArgs == null)
+            {
                 commandArgs = new byte[0];
+            }
 
             cmd.m_updateHandle = updateHandle;
             cmd.m_authCommand = authCommand;
@@ -992,12 +962,12 @@ namespace nanoFramework.Tools.Debugger
                         byte[] response = new byte[4];
                         Array.Copy(cmdReply.m_response, response, Math.Min(response.Length, (int)cmdReply.m_responseSize));
 
-                        return new Tuple<byte[], bool>(response, true);
+                        return (response, true);
                     }
                 }
             }
 
-            return new Tuple<byte[], bool>(new byte[4], true);
+            return (new byte[4], true);
         }
 
         public async Task<bool> UpdateAuthenticateAsync(int updateHandle, byte[] authenticationData)
@@ -1374,16 +1344,16 @@ namespace nanoFramework.Tools.Debugger
         /// <param name="pid"></param>
         /// <param name="depth"></param>
         /// <returns>Tuple with numOfArguments, numOfLocals, depthOfEvalStack and request success result.</returns>
-        public async Task<Tuple<uint, uint, uint, bool>> GetStackFrameInfoAsync(uint pid, uint depth)
+        public async Task<(uint numOfArguments, uint numOfLocals, uint depthOfEvalStack, bool success)> GetStackFrameInfoAsync(uint pid, uint depth)
         {
             Commands.Debugging_Stack_Info.Reply reply = await GetStackInfoAsync(pid, depth).ConfigureAwait(false);
 
             if (reply == null)
             {
-                return new Tuple<uint, uint, uint, bool>(0, 0, 0, false);
+                return (0, 0, 0, false);
             }
 
-            return new Tuple<uint, uint, uint, bool>(reply.m_numOfArguments, reply.m_numOfLocals, reply.m_depthOfEvalStack, true);
+            return (reply.m_numOfArguments, reply.m_numOfLocals, reply.m_depthOfEvalStack, true);
         }
 
         private async Task<RuntimeValue> GetRuntimeValueAsync(uint msg, object cmd)
@@ -1728,16 +1698,16 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         /// <param name="fd"></param>
         /// <returns>Tuple with field name, td and offset.</returns>
-        public async Task<Tuple<string, uint, uint>> GetFieldNameAsync(uint fd) 
+        public async Task<(string td, uint offset, uint success)> GetFieldNameAsync(uint fd) 
         {
             Commands.Debugging_Resolve_Field.Result resolvedField = await ResolveFieldAsync(fd).ConfigureAwait(false);
 
             if (resolvedField != null)
             {
-                return new Tuple<string, uint, uint>(resolvedField.m_name, resolvedField.m_td, resolvedField.m_offset);
+                return (resolvedField.m_name, resolvedField.m_td, resolvedField.m_offset);
             }
 
-            return new Tuple<string, uint, uint>(null, 0, 0);
+            return (null, 0, 0);
         }
 
         public async Task<uint> GetVirtualMethodAsync(uint md, RuntimeValue obj)
@@ -1766,7 +1736,7 @@ namespace nanoFramework.Tools.Debugger
         /// 
         /// </summary>
         /// <returns>Tuple with widthInWords, heightInPixels, buffer and request result success.</returns>
-        public async Task<Tuple<ushort, ushort, uint[], bool>> GetFrameBufferAsync()
+        public async Task<(ushort widthInWords, ushort heightInPixels, uint[] buf, bool success)> GetFrameBufferAsync()
         {
             IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Lcd_GetFrame, 0, null).ConfigureAwait(false);
             if (reply != null)
@@ -1775,11 +1745,11 @@ namespace nanoFramework.Tools.Debugger
 
                 if (cmdReply != null)
                 {
-                    return new Tuple<ushort, ushort, uint[], bool>(cmdReply.m_header.m_widthInWords, cmdReply.m_header.m_heightInPixels, cmdReply.m_data, true);
+                    return (cmdReply.m_header.m_widthInWords, cmdReply.m_header.m_heightInPixels, cmdReply.m_data, true);
                 }
             }
 
-            return new Tuple<ushort, ushort, uint[], bool>(0, 0, null, false);
+            return (0, 0, null, false);
         }
 
         //private void Adjust1bppOrientation(uint[] buf)
@@ -1993,17 +1963,17 @@ namespace nanoFramework.Tools.Debugger
         /// <param name="storageStart"></param>
         /// <param name="storageLength"></param>
         /// <returns>Tuple with entrypoint, storageStart, storageLength and request success</returns>
-        public async Task<Tuple<uint, uint, uint, bool>> DeploymentGetStatusWithResultAsync()
+        public async Task<(uint entrypoint, uint storageStart, uint storageLength, bool success)> DeploymentGetStatusWithResultAsync()
         {
             Commands.Debugging_Deployment_Status.Reply status = await DeploymentGetStatusAsync().ConfigureAwait(false);
 
             if (status != null)
             {
-                return new Tuple<uint, uint, uint, bool>(status.m_entryPoint, status.m_storageStart, status.m_storageLength, true);
+                return (status.m_entryPoint, status.m_storageStart, status.m_storageLength, true);
             }
             else
             {
-                return new Tuple<uint, uint, uint, bool>(0, 0, 0, false);
+                return (0, 0, 0, false);
             }
         }
 
@@ -2323,7 +2293,7 @@ namespace nanoFramework.Tools.Debugger
             return fDeployedOK;
         }
 
-        public async Task<Tuple<uint, bool>> SetProfilingModeAsync(uint iSet, uint iReset)
+        public async Task<(uint current, bool success)> SetProfilingModeAsync(uint iSet, uint iReset)
         {
             Commands.Profiling_Command cmd = new Commands.Profiling_Command();
             cmd.m_command = Commands.Profiling_Command.c_Command_ChangeConditions;
@@ -2337,15 +2307,15 @@ namespace nanoFramework.Tools.Debugger
 
                 if (cmdReply != null)
                 {
-                    return new Tuple<uint, bool>(cmdReply.m_raw, true);
+                    return (cmdReply.m_raw, true);
                 }
                 else
                 {
-                    return new Tuple<uint, bool>(0, true);
+                    return (0, true);
                 }
             }
 
-            return new Tuple<uint, bool>(0, false);
+            return (0, false);
         }
 
         public async Task<bool> FlushProfilingStreamAsync()

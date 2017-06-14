@@ -24,10 +24,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Monitor_Reboot = 0x00000007;
         public const uint c_Monitor_MemoryMap = 0x00000008;
         public const uint c_Monitor_ProgramExit = 0x00000009; // The payload is empty, this command is used to tell the PC of a program termination        
-        public const uint c_Monitor_CheckSignature = 0x0000000A;
         public const uint c_Monitor_DeploymentMap = 0x0000000B;
         public const uint c_Monitor_FlashSectorMap = 0x0000000C;
-        public const uint c_Monitor_SignatureKeyUpdate = 0x0000000D;
         public const uint c_Monitor_OemInfo = 0x0000000E;
 
         public class Monitor_Message //vvv : IConverter
@@ -221,52 +219,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint c_ClrWaitForDbg = 4;
 
             public uint m_flags = 0;
-        }
-
-        public class Monitor_SignatureKeyUpdate
-        {
-            public const uint c_SignatureSize = 128;
-            public const uint c_PublicKeySize = 260;
-
-            public uint m_keyIndex;
-            public byte[] m_newPublicKeySignature = new byte[128];
-            public byte[] m_newPublicKey = new byte[260];
-            public uint m_reserveLength = 0;
-            public byte[] m_reserveData;
-
-            public bool PrepareForSend(uint keyIndex, byte[] newPublicKeySig, byte[] newPublicKey, byte[] reserveData)
-            {
-                m_keyIndex = keyIndex;
-
-                if (newPublicKey.Length != m_newPublicKey.Length) return false;
-
-                if (newPublicKeySig != null)
-                {
-                    if (newPublicKeySig.Length != m_newPublicKeySignature.Length) return false;
-
-                    Array.Copy(newPublicKeySig, 0, m_newPublicKeySignature, 0, m_newPublicKeySignature.Length);
-                }
-
-                Array.Copy(newPublicKey, 0, m_newPublicKey, 0, m_newPublicKey.Length);
-
-                if (reserveData == null)
-                {
-                    m_reserveLength = 0;
-                    m_reserveData = new byte[0];
-                }
-                else
-                {
-                    m_reserveLength = (uint)reserveData.Length;
-                    m_reserveData = new byte[m_reserveLength];
-
-                    if (m_reserveLength > 0)
-                    {
-                        Array.Copy(reserveData, 0, m_reserveData, 0, (int)m_reserveLength);
-                    }
-                }
-
-                return true;
-            }
         }
 
         public class Monitor_DeploymentMap
@@ -1593,7 +1545,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_Reboot: return new Monitor_Reboot();
                     case c_Monitor_DeploymentMap: return new Monitor_DeploymentMap();
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap();
-                    case c_Monitor_SignatureKeyUpdate: return new Monitor_SignatureKeyUpdate();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr();
                     case c_Debugging_Execution_ChangeConditions: return new Debugging_Execution_ChangeConditions();

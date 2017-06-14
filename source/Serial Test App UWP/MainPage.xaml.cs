@@ -112,9 +112,8 @@ namespace Test_App_UWP
             StorageFolder storageFolder = await KnownFolders.GetFolderForUserAsync(null /* current user */, KnownFolderId.DocumentsLibrary);
 
             StorageFile srecFile = await storageFolder.TryGetItemAsync("ER_CONFIG") as StorageFile;
-            StorageFile sigFile = await storageFolder.TryGetItemAsync("ER_CONFIG.sig") as StorageFile;
 
-            var reply = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DeployAsync(srecFile, sigFile, CancellationToken.None, null);
+            var reply = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DeployAsync(srecFile, CancellationToken.None, null);
 
 
             // enable button

@@ -3,6 +3,8 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using System.Threading.Tasks;
+
 namespace nanoFramework.Tools.Debugger.Extensions
 {
     public static class DebuggerExtensions
@@ -12,21 +14,18 @@ namespace nanoFramework.Tools.Debugger.Extensions
         /// </summary>
         /// <param name="debugEngine"></param>
         /// <returns></returns>
-        public static async System.Threading.Tasks.Task<bool> IsDeviceInInitializeStateAsync(this Engine debugEngine)
+        public static async ValueTask<bool> IsDeviceInInitializeStateAsync(this Engine debugEngine)
         {
-            try
-            {
-                var result = await debugEngine.SetExecutionModeAsync(0, 0);
-                if (result.Item2)
-                {
-                    return ((result.Item1 & WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Mask) == WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Initialize);
-                }
-            }
-            catch
-            {
-            }
+            var result = await debugEngine.SetExecutionModeAsync(0, 0).ConfigureAwait(false);
 
-            return false;
+            if (result.success)
+            {
+                return ((result.currentExecutionMode & WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Mask) == WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Initialize);
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

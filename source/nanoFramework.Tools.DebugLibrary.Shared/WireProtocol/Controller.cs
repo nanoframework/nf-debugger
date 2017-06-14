@@ -59,11 +59,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             Capabilities = new CLRCapabilities();
         }
 
-        internal void SetSignature(Packet bp, string sig)
+        internal void SetMarker(Packet bp, string sig)
         {
             byte[] buf = Encoding.UTF8.GetBytes(sig);
 
-            Array.Copy(buf, 0, bp.Signature, 0, buf.Length);
+            Array.Copy(buf, 0, bp.Marker, 0, buf.Length);
         }
 
         public async Task<bool> QueueOutputAsync(MessageRaw raw, CancellationToken cancellationToken)
@@ -96,7 +96,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             Packet bp = new Packet();
 
-            SetSignature(bp, marker);
+            SetMarker(bp, marker);
 
             bp.Seq = (ushort)Interlocked.Increment(ref lastOutboundMessage);
 

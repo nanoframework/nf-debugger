@@ -1,24 +1,18 @@
-﻿using nanoFramework.Tools.Debugger.Extensions;
+﻿//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+
+using nanoFramework.Tools.Debugger.Extensions;
+using Serial_Test_App_WPF.ViewModel;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
-using USB_Test_App_WPF.ViewModel;
 
-namespace USB_Test_App_WPF
+namespace Serial_Test_App_WPF
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
