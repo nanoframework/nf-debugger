@@ -1231,6 +1231,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         return _path;
                     }
                 }
+
+                public ResolvedStatus Status
+                {
+                    get
+                    {
+                        return (ResolvedStatus)Enum.Parse(typeof(ResolvedStatus), Flags.ToString());
+                    }
+                }
             }
         }
 
