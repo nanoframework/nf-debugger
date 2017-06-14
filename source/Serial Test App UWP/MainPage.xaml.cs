@@ -147,5 +147,22 @@ namespace Test_App_UWP
             // enable button
             (sender as Button).IsEnabled = true;
         }
+
+        private async void IsInitButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            var result = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.IsDeviceInInitializeStateAsync();
+
+            Debug.WriteLine("");
+            Debug.WriteLine("");
+            Debug.WriteLine($">>> Device is in initialized state: {result} <<<<");
+            Debug.WriteLine("");
+            Debug.WriteLine("");
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
     }
 }
