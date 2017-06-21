@@ -1390,39 +1390,33 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        public class Debugging_Deployment_Status
+        public class DebuggingDeploymentStatus
         {
-            public const int c_CRC_Erased_Sentinel = 0x0;
-
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // the fields bellow have to be here AND follow the exact type and order so that the reply of the device can be properly parsed
             public struct FlashSector
             {
-                public uint m_start;
-                public uint m_length;
-                public uint m_crc;
+                public uint Start;
+                public uint Length;
             };
 
             public class Reply
             {
-                public uint m_entryPoint;
-                public uint m_storageStart;
-                public uint m_storageLength;
+                public uint EntryPoint;
+                public uint StorageStart;
+                public uint StorageLength;
             }
 
             public class ReplyEx : Reply, IConverter
             {
-                //Optional, for incremental deployment
-                public uint m_eraseWord;
-                public uint m_maxSectorErase_uSec;
-                public uint m_maxWordWrite_uSec;
-
-                public List<FlashSector> m_data;
+                public FlashSector[] SectorData;
 
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
                 {
-                    m_data = new List<FlashSector>();
-                    m_data = Enumerable.Range(0, (size - 6 * 4) / (3 * 4)).Select(x => new FlashSector()).ToList();
+                    SectorData = new FlashSector[(size - 3 * 4)];
                 }
             }
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         }
 
         public class Debugging_Info_SetJMC
@@ -1548,8 +1542,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Debugging_Messaging_Reply: return new Debugging_Messaging_Reply.Reply();
 
                     case c_Debugging_Deployment_Status:
-                        if (capabilities.IncrementalDeployment) return new Debugging_Deployment_Status.ReplyEx();
-                        else return new Debugging_Deployment_Status.Reply();
+                        if (capabilities.IncrementalDeployment) return new DebuggingDeploymentStatus.ReplyEx();
+                        else return new DebuggingDeploymentStatus.Reply();
 
                     case c_Profiling_Command: return new Profiling_Command.Reply();
                 }
@@ -1637,7 +1631,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Debugging_Messaging_Send: return new Debugging_Messaging_Send();
                     case c_Debugging_Messaging_Reply: return new Debugging_Messaging_Reply();
 
-                    case c_Debugging_Deployment_Status: return new Debugging_Deployment_Status();
+                    case c_Debugging_Deployment_Status: return new DebuggingDeploymentStatus();
 
                     case c_Debugging_Info_SetJMC: return new Debugging_Info_SetJMC();
 

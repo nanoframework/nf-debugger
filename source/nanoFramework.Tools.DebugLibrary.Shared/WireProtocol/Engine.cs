@@ -548,6 +548,8 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<bool> WriteMemoryAsync(uint address, byte[] buf, int offset, int length)
         {
+            Debug.WriteLine($"Write memory operation. Start address { address.ToString("X8") }, lenght {length}");
+
             int count = length;
             int pos = offset;
 
@@ -563,7 +565,9 @@ namespace nanoFramework.Tools.Debugger
 
                 DebuggerEventSource.Log.EngineWriteMemory(address, len);
 
-                IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_WriteMemory, 0, cmd, 0, 20000).ConfigureAwait(false);
+                Debug.WriteLine($"Sending {len} bytes to address { address.ToString("X8") }, {count} remaining...");
+
+                IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_WriteMemory, 0, cmd, 0, 2000).ConfigureAwait(false);
 
                 if (!IncomingMessage.IsPositiveAcknowledge(reply))
                 {
@@ -596,11 +600,39 @@ namespace nanoFramework.Tools.Debugger
                 m_length = length
             };
 
-            // Magic number multiplier here is somewhat arbitrary. Assuming a max 250ms per 1KB block erase time.
-            // (Given most chip erase times are measured in uSecs that's pretty generous 8^) )
-            // The idea is to extend the timeout based on the actual length of the area being erased
-            var timeout = (int)(length / 1024) * 250;
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_EraseMemory, 0, cmd, 2, timeout).ConfigureAwait(false);
+            // typical max Flash erase times for STM32 parts with PSIZE set to 16bits are:
+            // 16kB sector:  600ms  >> 38ms/kB
+            // 64kB sector:  1400ms >> 22ms/kB
+            // 128kB sector: 2600ms >> 21ms/kB
+
+            // the erase memory command isn't aware of the sector(s) size it will end up erasing so we have to do an educated guess on how long that will take
+            // considering the worst case timming which is the erase of the smallest sector.
+
+            // default timeout is 0ms
+            var timeout = 0;
+
+            if (length <= (16 * 1024))
+            {
+                // timeout for 16kB sector
+                timeout = 600 ;
+            }
+            else if (length <= (64 * 1024))
+            {
+                // timeout for 64kB sector
+                timeout = 1400;
+            }
+            else if (length <= (128 * 1024))
+            {
+                // timeout for 128kB sector
+                timeout = 2600;
+            }
+            else
+            {
+                // timeout for anything above 128kB (multiple sectors)
+                timeout = (int)(length / (16 * 1024)) * 600 + 500;
+            }
+
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_EraseMemory, 0, cmd, 0, timeout).ConfigureAwait(false);
 
             return IncomingMessage.IsPositiveAcknowledge(reply);
         }
@@ -1965,11 +1997,11 @@ namespace nanoFramework.Tools.Debugger
         /// <returns>Tuple with entrypoint, storageStart, storageLength and request success</returns>
         public async Task<(uint entrypoint, uint storageStart, uint storageLength, bool success)> DeploymentGetStatusWithResultAsync()
         {
-            Commands.Debugging_Deployment_Status.Reply status = await DeploymentGetStatusAsync().ConfigureAwait(false);
+            Commands.DebuggingDeploymentStatus.Reply status = await DeploymentGetStatusAsync().ConfigureAwait(false);
 
             if (status != null)
             {
-                return (status.m_entryPoint, status.m_storageStart, status.m_storageLength, true);
+                return (status.EntryPoint, status.StorageStart, status.StorageLength, true);
             }
             else
             {
@@ -1977,19 +2009,19 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public async Task<Commands.Debugging_Deployment_Status.Reply> DeploymentGetStatusAsync()
+        public async Task<Commands.DebuggingDeploymentStatus.Reply> DeploymentGetStatusAsync()
         {
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            Commands.Debugging_Deployment_Status cmd = new Commands.Debugging_Deployment_Status();
-            Commands.Debugging_Deployment_Status.Reply cmdReply = null;
+            Commands.DebuggingDeploymentStatus cmd = new Commands.DebuggingDeploymentStatus();
+            Commands.DebuggingDeploymentStatus.Reply cmdReply = null;
 
             IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Deployment_Status, Flags.c_NoCaching, cmd, 2, 10000).ConfigureAwait(false);
 
             if (reply != null)
             {
-                cmdReply = reply.Payload as Commands.Debugging_Deployment_Status.Reply;
+                cmdReply = reply.Payload as Commands.DebuggingDeploymentStatus.Reply;
             }
 
             return cmdReply;
@@ -2008,14 +2040,14 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<bool> DeploymentExecuteIncrementalAsync(List<byte[]> assemblies, IProgress<string> progress)
         {
-            Commands.Debugging_Deployment_Status.ReplyEx status = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.Debugging_Deployment_Status.ReplyEx;
+            Commands.DebuggingDeploymentStatus.ReplyEx status = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.DebuggingDeploymentStatus.ReplyEx;
 
             if (status == null)
             {
                 return false;
             }
 
-            List<Commands.Debugging_Deployment_Status.FlashSector> sectors = status.m_data;
+            Commands.DebuggingDeploymentStatus.FlashSector[] sectors = status.SectorData;
 
             int iAssembly = 0;
 
@@ -2029,9 +2061,9 @@ namespace nanoFramework.Tools.Debugger
                 deployLength += assembly.Length;
             }
 
-            if (deployLength > status.m_storageLength)
+            if (deployLength > status.StorageLength)
             {
-                progress?.Report(string.Format("Deployment storage (size: {0} bytes) was not large enough to fit deployment assemblies (size: {1} bytes)", status.m_storageLength, deployLength));
+                progress?.Report(string.Format("Deployment storage (size: {0} bytes) was not large enough to fit deployment assemblies (size: {1} bytes)", status.StorageLength, deployLength));
 
                 return false;
             }
@@ -2039,25 +2071,19 @@ namespace nanoFramework.Tools.Debugger
             //Compute maximum sector size
             uint maxSectorSize = 0;
 
-            for (int iSector = 0; iSector < sectors.Count; iSector++)
+            for (int iSector = 0; iSector < sectors.Length; iSector++)
             {
-                maxSectorSize = Math.Max(maxSectorSize, sectors[iSector].m_length);
+                maxSectorSize = Math.Max(maxSectorSize, sectors[iSector].Length);
             }
 
             //pre-allocate sector data, and a buffer to hold an empty sector's data
             byte[] sectorData = new byte[maxSectorSize];
             byte[] sectorDataErased = new byte[maxSectorSize];
 
-            Debug.Assert(status.m_eraseWord == 0 || status.m_eraseWord == 0xffffffff);
-
-            byte bErase = (status.m_eraseWord == 0) ? (byte)0 : (byte)0xff;
-            if (bErase != 0)
+            //Fill in data for what an empty sector looks like
+            for (int i = 0; i < maxSectorSize; i++)
             {
-                //Fill in data for what an empty sector looks like
-                for (int i = 0; i < maxSectorSize; i++)
-                {
-                    sectorDataErased[i] = bErase;
-                }
+                sectorDataErased[i] = 0xff;
             }
 
             int bytesDeployed = 0;
@@ -2069,11 +2095,11 @@ namespace nanoFramework.Tools.Debugger
             int iAssemblyIndex = 0;
 
             //deploy each sector, one at a time
-            for (int iSector = 0; iSector < sectors.Count; iSector++)
+            for (int iSector = 0; iSector < sectors.Length; iSector++)
             {
-                Commands.Debugging_Deployment_Status.FlashSector sector = sectors[iSector];
+                Commands.DebuggingDeploymentStatus.FlashSector sector = sectors[iSector];
 
-                int cBytesLeftInSector = (int)sector.m_length;
+                int cBytesLeftInSector = (int)sector.Length;
                 //byte index into the sector that we are deploying to.
                 int iSectorIndex = 0;
 
@@ -2102,7 +2128,7 @@ namespace nanoFramework.Tools.Debugger
 
                         //If there is enough room to waste the remainder of this sector, do so
                         //to allow for incremental deployment, if this assembly changes for next deployment
-                        if (deployLength + cBytesLeftInSector <= status.m_storageLength)
+                        if (deployLength + cBytesLeftInSector <= status.StorageLength)
                         {
                             deployLength += cBytesLeftInSector;
                             break;
@@ -2110,56 +2136,58 @@ namespace nanoFramework.Tools.Debugger
                     }
                 }
 
-                uint crc = Commands.Debugging_Deployment_Status.c_CRC_Erased_Sentinel;
 
-                if (iSectorIndex > 0)
-                {
-                    //Fill in the rest with erased value
-                    Array.Copy(sectorDataErased, iSectorIndex, sectorData, iSectorIndex, cBytesLeftInSector);
+                // TODO
+                //uint crc = Commands.DebuggingDeploymentStatus.c_CRC_Erased_Sentinel;
 
-                    crc = CRC.ComputeCRC(sectorData, 0, (int)sector.m_length, 0);
-                }
+                //if (iSectorIndex > 0)
+                //{
+                //    //Fill in the rest with erased value
+                //    Array.Copy(sectorDataErased, iSectorIndex, sectorData, iSectorIndex, cBytesLeftInSector);
 
-                //Has the data changed from what is in this sector
-                if (sector.m_crc != crc)
-                {
-                    //Is the data not erased
-                    if (sector.m_crc != Commands.Debugging_Deployment_Status.c_CRC_Erased_Sentinel)
-                    {
-                        if (!await EraseMemoryAsync(sector.m_start, sector.m_length).ConfigureAwait(false))
-                        {
-                            progress?.Report((string.Format("FAILED to erase device memory @0x{0:X8} with Length=0x{1:X8}", sector.m_start, sector.m_length)));
+                //    crc = CRC.ComputeCRC(sectorData, 0, (int)sector.Length, 0);
+                //}
 
-                            return false;
-                        }
+//                //Has the data changed from what is in this sector
+//                if (sector.m_crc != crc)
+//                {
+//                    //Is the data not erased
+//                    if (sector.m_crc != Commands.DebuggingDeploymentStatus.c_CRC_Erased_Sentinel)
+//                    {
+//                        if (!await EraseMemoryAsync(sector.Start, sector.Length).ConfigureAwait(false))
+//                        {
+//                            progress?.Report((string.Format("FAILED to erase device memory @0x{0:X8} with Length=0x{1:X8}", sector.Start, sector.Length)));
 
-#if DEBUG
-                        Commands.Debugging_Deployment_Status.ReplyEx statusT = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.Debugging_Deployment_Status.ReplyEx;
-                        Debug.Assert(statusT != null);
-                        Debug.Assert(statusT.m_data[iSector].m_crc == Commands.Debugging_Deployment_Status.c_CRC_Erased_Sentinel);
-#endif
-                    }
+//                            return false;
+//                        }
 
-                    //Is there anything to deploy
-                    if (iSectorIndex > 0)
-                    {
-                        bytesDeployed += iSectorIndex;
+//#if DEBUG
+//                        Commands.DebuggingDeploymentStatus.ReplyEx statusT = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.DebuggingDeploymentStatus.ReplyEx;
+//                        Debug.Assert(statusT != null);
+//                        Debug.Assert(statusT.SectorData[iSector].m_crc == Commands.DebuggingDeploymentStatus.c_CRC_Erased_Sentinel);
+//#endif
+//                    }
 
-                        if (!await WriteMemoryAsync(sector.m_start, sectorData, 0, (int)iSectorIndex).ConfigureAwait(false))
-                        {
-                            progress?.Report((string.Format("FAILED to write device memory @0x{0:X8} with Length={1:X8}", sector.m_start, (int)iSectorIndex)));
+//                    //Is there anything to deploy
+//                    if (iSectorIndex > 0)
+//                    {
+//                        bytesDeployed += iSectorIndex;
 
-                            return false;
-                        }
-#if DEBUG
-                        Commands.Debugging_Deployment_Status.ReplyEx statusT = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.Debugging_Deployment_Status.ReplyEx;
-                        Debug.Assert(statusT != null);
-                        Debug.Assert(statusT.m_data[iSector].m_crc == crc);
-                        //Assert the data we are deploying is not sentinel value
-                        Debug.Assert(crc != Commands.Debugging_Deployment_Status.c_CRC_Erased_Sentinel);
-#endif
-                    }
-                }
+//                        if (!await WriteMemoryAsync(sector.Start, sectorData, 0, (int)iSectorIndex).ConfigureAwait(false))
+//                        {
+//                            progress?.Report((string.Format("FAILED to write device memory @0x{0:X8} with Length={1:X8}", sector.Start, (int)iSectorIndex)));
+
+//                            return false;
+//                        }
+//#if DEBUG
+//                        Commands.DebuggingDeploymentStatus.ReplyEx statusT = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.DebuggingDeploymentStatus.ReplyEx;
+//                        Debug.Assert(statusT != null);
+//                        Debug.Assert(statusT.SectorData[iSector].m_crc == crc);
+//                        //Assert the data we are deploying is not sentinel value
+//                        Debug.Assert(crc != Commands.DebuggingDeploymentStatus.c_CRC_Erased_Sentinel);
+//#endif
+//                    }
+                //}
             }
 
             if (bytesDeployed == 0)
@@ -2176,9 +2204,7 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<bool> DeploymentExecuteFullAsync(List<byte[]> assemblies, IProgress<string> progress)
         {
-            uint entrypoint;
             uint storageStart;
-            uint storageLength;
             uint deployLength;
             byte[] closeHeader = new byte[8];
 
@@ -2186,17 +2212,15 @@ namespace nanoFramework.Tools.Debugger
             var reply = await DeploymentGetStatusWithResultAsync().ConfigureAwait(false);
 
             // check if request was successfully executed
-            if (!reply.Item4)
+            if (!reply.success)
             {
                 return false;
             }
 
             // fill in the local properties with the result
-            entrypoint = reply.Item1;
-            storageStart = reply.Item2;
-            storageLength = reply.Item3;
-
-            if (storageLength == 0)
+            storageStart = reply.storageStart;
+ 
+            if (reply.storageLength == 0)
             {
                 return false;
             }
@@ -2210,7 +2234,7 @@ namespace nanoFramework.Tools.Debugger
 
             progress?.Report(string.Format("Deploying assemblies for a total size of {0} bytes", deployLength));
 
-            if (deployLength > storageLength)
+            if (deployLength > reply.storageLength)
             {
                 return false;
             }

@@ -116,9 +116,6 @@ namespace nanoFramework.Tools.Debugger
             IncomingMessage reply = null;
             var reassembler = new MessageReassembler(ctrl, this);
 
-
-            CancellationTokenSource cTSource = new CancellationTokenSource();
-
             while (retryCounter++ <= retries)
             {
                 //// TODO add cancel token argument here
@@ -130,14 +127,14 @@ namespace nanoFramework.Tools.Debugger
                 //    return null;
                 //}
 
-                Debug.WriteLine($"Performing {retryCounter}/{retries} request attempt with {waitRetryTimeout.TotalMilliseconds}ms");
+                Debug.WriteLine($"Performing {retryCounter}/{ (retries+1) } request attempt with {waitRetryTimeout.TotalMilliseconds}ms");
 
                 // create new cancelation token source
-                //cTSource = new CancellationTokenSource();
+                CancellationTokenSource cTSource = new CancellationTokenSource();
 
                 // send message
-                // add a cancellation token to force cancel
-                if (await outgoingMsg.SendAsync(cTSource.Token.AddTimeout(waitRetryTimeout)).ConfigureAwait(false))
+                // add a cancellation token to force cancel, the send 
+                if (await outgoingMsg.SendAsync(cTSource.Token).ConfigureAwait(false))
                 {
                     // if this request is for a reboot, we won't be able to receive the reply right away because the device is rebooting
                     if((outgoingMsg.Header.Cmd == Commands.c_Monitor_Reboot) && retryCounter == 1)
@@ -148,6 +145,9 @@ namespace nanoFramework.Tools.Debugger
 
                     Debug.WriteLine($"Processing reply now...");
 
+                    // create new cancelation token for reply processor
+                    cTSource = new CancellationTokenSource();
+
                     try
                     {
                         // need to have a timeout to cancel the process task otherwise it may end up waiting forever for this to return
@@ -157,10 +157,8 @@ namespace nanoFramework.Tools.Debugger
                     catch(Exception ex)
                     {
                         Debug.WriteLine($"Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
-                    }
-                    finally
-                    {
-                        // ALWAYS cancel reassembler task
+                        
+                        // ALWAYS cancel reassembler task on exception
                         cTSource.Cancel();
                     }
 

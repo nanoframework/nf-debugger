@@ -4,8 +4,11 @@
 //
 using nanoFramework.Tools.Debugger.Extensions;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
+using Windows.ApplicationModel;
 using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -160,6 +163,47 @@ namespace Test_App_UWP
             Debug.WriteLine($">>> Device is in initialized state: {result} <<<<");
             Debug.WriteLine("");
             Debug.WriteLine("");
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private async void DeployTestButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+
+            List<byte[]> assemblies = new List<byte[]>();
+
+
+            try
+            {
+                string assemblyPath = @"assets\mscorlib.pe";
+
+                var file = await Package.Current.InstalledLocation.GetFileAsync("mscorlib.pe");
+                
+                using (var streamReader = await file.OpenStreamForReadAsync())
+                {
+                    Debug.WriteLine($"Adding pe file {assemblyPath} to deployment bundle");
+                    long length = (streamReader.Length + 3) / 4 * 4;
+                    byte[] buffer = new byte[length];
+
+                    streamReader.Read(buffer, 0, (int)streamReader.Length);
+                    assemblies.Add(buffer);
+                }
+
+                var result = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.DeploymentExecuteAsync(assemblies, false);
+
+                Debug.WriteLine("");
+                Debug.WriteLine($">>> Deployment result: {result} <<<<");
+                Debug.WriteLine("");
+
+            }
+            catch (Exception ex)
+            {
+
+            }
 
             // enable button
             (sender as Button).IsEnabled = true;
