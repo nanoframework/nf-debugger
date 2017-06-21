@@ -627,7 +627,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
                 catch (TaskCanceledException)
                 {
-                    // this is expected to happen, don't do anything with this
+                    // this is expected to happen, don't do anything with it
+                }
+                catch (NullReferenceException)
+                {
+                    // this is expected to happen when there is anything to read, don't do anything with it
                 }
                 catch (Exception ex)
                 {
@@ -649,7 +653,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 Debug.WriteLine("NotifyDeviceNotConnected");
             }
 
-            return null;
+            // return empty byte array
+            return new byte[0];
         }
 
         #endregion

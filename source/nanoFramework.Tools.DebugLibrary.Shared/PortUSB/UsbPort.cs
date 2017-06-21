@@ -660,7 +660,8 @@ namespace nanoFramework.Tools.Debugger.Usb
                 // NotifyDeviceNotConnected
             }
 
-            return null;
+            // return empty byte array
+            return new byte[0];
         }
 
         #endregion

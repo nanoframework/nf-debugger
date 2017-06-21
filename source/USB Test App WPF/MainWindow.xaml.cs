@@ -6,7 +6,9 @@
 using nanoFramework.Tools.Debugger.Extensions;
 using Serial_Test_App_WPF.ViewModel;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -162,6 +164,76 @@ namespace Serial_Test_App_WPF
                  }
 
              }));
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private async void DeployTestButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            List<byte[]> assemblies = new List<byte[]>();
+
+            try
+            {
+                string assemblyPath = @"..\..\..\packages\nanoFramework.CoreLibrary.1.0.0-preview020\lib\mscorlib.pe";
+
+                using (FileStream fs = File.Open(assemblyPath, FileMode.Open, FileAccess.Read))
+                {
+                    Debug.WriteLine($"Adding pe file {assemblyPath} to deployment bundle");
+                    long length = (fs.Length + 3) / 4 * 4;
+                    byte[] buffer = new byte[length];
+
+                    fs.Read(buffer, 0, (int)fs.Length);
+                    assemblies.Add(buffer);
+                }
+
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                {
+
+                    var result = await (DataContext as MainViewModel).AvailableDevices[0].DebugEngine.DeploymentExecuteAsync(assemblies, false);
+
+                    Debug.WriteLine($">>> Deployment result: {result} <<<<");
+
+                }));
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private async void FlashMapButton_Click(object sender, RoutedEventArgs e)
+        {  
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                {
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+
+                    var fm = await (DataContext as MainViewModel).AvailableDevices[0].DebugEngine.GetFlashSectorMapAsync();
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine(fm.ToStringForOutput());
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                }));
+            }
+            catch (Exception ex)
+            {
+
+            }
 
             // enable button
             (sender as Button).IsEnabled = true;
