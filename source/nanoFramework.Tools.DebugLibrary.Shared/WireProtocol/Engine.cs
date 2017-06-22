@@ -4,11 +4,13 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -2040,166 +2042,96 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<bool> DeploymentExecuteIncrementalAsync(List<byte[]> assemblies, IProgress<string> progress)
         {
-            Commands.DebuggingDeploymentStatus.ReplyEx status = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.DebuggingDeploymentStatus.ReplyEx;
+            // get flash sector map from device
+            var flashSectorMap = await GetFlashSectorMapAsync().ConfigureAwait(false);
 
-            if (status == null)
+            // check if we do have the map
+            if(flashSectorMap != null)
             {
-                return false;
-            }
+                // total size of assemblies to deploy 
+                int deployLength = assemblies.Sum(a => a.Length);
 
-            Commands.DebuggingDeploymentStatus.FlashSector[] sectors = status.SectorData;
+                // build the deployment blob from the flash sector map
+                var deploymentBlob = flashSectorMap.Select(s => s.ToDeploymentSector()).ToList();
 
-            int iAssembly = 0;
-
-            //The amount of bytes that the deployment will take
-            int deployLength = 0;
-
-            //Compute size of assemblies to deploy
-            for (iAssembly = 0; iAssembly < assemblies.Count; iAssembly++)
-            {
-                byte[] assembly = assemblies[iAssembly];
-                deployLength += assembly.Length;
-            }
-
-            if (deployLength > status.StorageLength)
-            {
-                progress?.Report(string.Format("Deployment storage (size: {0} bytes) was not large enough to fit deployment assemblies (size: {1} bytes)", status.StorageLength, deployLength));
-
-                return false;
-            }
-
-            //Compute maximum sector size
-            uint maxSectorSize = 0;
-
-            for (int iSector = 0; iSector < sectors.Length; iSector++)
-            {
-                maxSectorSize = Math.Max(maxSectorSize, sectors[iSector].Length);
-            }
-
-            //pre-allocate sector data, and a buffer to hold an empty sector's data
-            byte[] sectorData = new byte[maxSectorSize];
-            byte[] sectorDataErased = new byte[maxSectorSize];
-
-            //Fill in data for what an empty sector looks like
-            for (int i = 0; i < maxSectorSize; i++)
-            {
-                sectorDataErased[i] = 0xff;
-            }
-
-            int bytesDeployed = 0;
-
-            //The assembly we are using
-            iAssembly = 0;
-
-            //byte index into the assembly remaining to deploy
-            int iAssemblyIndex = 0;
-
-            //deploy each sector, one at a time
-            for (int iSector = 0; iSector < sectors.Length; iSector++)
-            {
-                Commands.DebuggingDeploymentStatus.FlashSector sector = sectors[iSector];
-
-                int cBytesLeftInSector = (int)sector.Length;
-                //byte index into the sector that we are deploying to.
-                int iSectorIndex = 0;
-
-                //fill sector with deployment data
-                while (cBytesLeftInSector > 0 && iAssembly < assemblies.Count)
+                while (assemblies.Count > 0)
                 {
-                    byte[] assembly = assemblies[iAssembly];
+                    int remainingBytes = assemblies.First().Length;
+                    int currentPosition = 0;
 
-                    int cBytesLeftInAssembly = assembly.Length - iAssemblyIndex;
-
-                    //number of bytes from current assembly to deploy in this sector
-                    int cBytes = Math.Min(cBytesLeftInSector, cBytesLeftInAssembly);
-
-                    Array.Copy(assembly, (int)iAssemblyIndex, sectorData, iSectorIndex, cBytes);
-
-                    cBytesLeftInSector -= cBytes;
-                    iAssemblyIndex += cBytes;
-                    iSectorIndex += cBytes;
-
-                    //Is assembly finished?
-                    if (iAssemblyIndex == assembly.Length)
+                    // find first block with available space
+                    while (remainingBytes > 0)
                     {
-                        //Next assembly
-                        iAssembly++;
-                        iAssemblyIndex = 0;
+                        // find the next sector with available space
+                        var sector = deploymentBlob.First(s => s.AvailableSpace > 0);
 
-                        //If there is enough room to waste the remainder of this sector, do so
-                        //to allow for incremental deployment, if this assembly changes for next deployment
-                        if (deployLength + cBytesLeftInSector <= status.StorageLength)
+                        int positionInSector = sector.Size - sector.AvailableSpace;
+                        int bytesToCopy = Math.Min(sector.AvailableSpace, remainingBytes);
+
+                        byte[] tempBuffer = new byte[bytesToCopy];
+
+                        Array.Copy(assemblies.First(), tempBuffer, bytesToCopy);
+                        sector.DeploymentData = tempBuffer;
+
+                        remainingBytes -= bytesToCopy;
+                        currentPosition += bytesToCopy;
+                    }
+
+                    if(remainingBytes == 0)
+                    {
+                        // asembly fully stored for deployment, remove it from the list
+                        assemblies.RemoveAt(0);
+                    }
+                    else
+                    {
+                        // couldn't find enough space to deploy assembly!!
+                        progress?.Report($"Deployment storage (total size: {deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size)} bytes) was not large enough to fit deployment assemblies (total size: {deployLength} bytes)");
+
+                        return false;
+                    }
+                }
+
+                // get the block list to deploy (not empty)
+                var blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
+
+                foreach(DeploymentBlock block in blocksToDeploy)
+                {
+
+                    if (!await EraseMemoryAsync((uint)block.StartAddress, 1).ConfigureAwait(false))
+                    {
+                        progress?.Report(($"FAILED to erase device memory @0x{block.StartAddress.ToString("X8")} with Length=0x{block.Size.ToString("X8")}"));
+
+                        return false;
+                    }
+
+                    foreach (byte[] assembly in assemblies)
+                    {
+                        //
+                        // Only word-aligned assemblies are allowed.
+                        //
+                        if (assembly.Length % 4 != 0)
                         {
-                            deployLength += cBytesLeftInSector;
-                            break;
+                            return false;
+                        }
+
+                        if (!await WriteMemoryAsync((uint)block.StartAddress, block.DeploymentData).ConfigureAwait(false))
+                        {
+                            progress?.Report(($"FAILED to write device memory @0x{block.StartAddress.ToString("X8")} with Length={block.Size.ToString("X8")}"));
+
+                            return false;
                         }
                     }
                 }
 
+                // deployment successfull
+                progress?.Report($"Deployed assemblies for a total size of {blocksToDeploy.Sum(b => b.Size)} bytes");
 
-                // TODO
-                //uint crc = Commands.DebuggingDeploymentStatus.c_CRC_Erased_Sentinel;
-
-                //if (iSectorIndex > 0)
-                //{
-                //    //Fill in the rest with erased value
-                //    Array.Copy(sectorDataErased, iSectorIndex, sectorData, iSectorIndex, cBytesLeftInSector);
-
-                //    crc = CRC.ComputeCRC(sectorData, 0, (int)sector.Length, 0);
-                //}
-
-//                //Has the data changed from what is in this sector
-//                if (sector.m_crc != crc)
-//                {
-//                    //Is the data not erased
-//                    if (sector.m_crc != Commands.DebuggingDeploymentStatus.c_CRC_Erased_Sentinel)
-//                    {
-//                        if (!await EraseMemoryAsync(sector.Start, sector.Length).ConfigureAwait(false))
-//                        {
-//                            progress?.Report((string.Format("FAILED to erase device memory @0x{0:X8} with Length=0x{1:X8}", sector.Start, sector.Length)));
-
-//                            return false;
-//                        }
-
-//#if DEBUG
-//                        Commands.DebuggingDeploymentStatus.ReplyEx statusT = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.DebuggingDeploymentStatus.ReplyEx;
-//                        Debug.Assert(statusT != null);
-//                        Debug.Assert(statusT.SectorData[iSector].m_crc == Commands.DebuggingDeploymentStatus.c_CRC_Erased_Sentinel);
-//#endif
-//                    }
-
-//                    //Is there anything to deploy
-//                    if (iSectorIndex > 0)
-//                    {
-//                        bytesDeployed += iSectorIndex;
-
-//                        if (!await WriteMemoryAsync(sector.Start, sectorData, 0, (int)iSectorIndex).ConfigureAwait(false))
-//                        {
-//                            progress?.Report((string.Format("FAILED to write device memory @0x{0:X8} with Length={1:X8}", sector.Start, (int)iSectorIndex)));
-
-//                            return false;
-//                        }
-//#if DEBUG
-//                        Commands.DebuggingDeploymentStatus.ReplyEx statusT = await DeploymentGetStatusAsync().ConfigureAwait(false) as Commands.DebuggingDeploymentStatus.ReplyEx;
-//                        Debug.Assert(statusT != null);
-//                        Debug.Assert(statusT.SectorData[iSector].m_crc == crc);
-//                        //Assert the data we are deploying is not sentinel value
-//                        Debug.Assert(crc != Commands.DebuggingDeploymentStatus.c_CRC_Erased_Sentinel);
-//#endif
-//                    }
-                //}
+                return true;
             }
 
-            if (bytesDeployed == 0)
-            {
-                progress?.Report("All assemblies on the device are up to date.  No assembly deployment was necessary.");
-            }
-            else
-            {
-                progress?.Report(string.Format("Deploying assemblies for a total size of {0} bytes", bytesDeployed));
-            }
-
-            return true;
+            // invalid flahs map
+            // TODO provide feedback to user
+            return false;
         }
 
         private async Task<bool> DeploymentExecuteFullAsync(List<byte[]> assemblies, IProgress<string> progress)
@@ -2292,9 +2224,10 @@ namespace nanoFramework.Tools.Debugger
             }
             else
             {
-                progress?.Report("Deploying assemblies to device");
+                throw new NotSupportedException("Current version only supports incremental deployment. Check the image source code for Debugging_Execution_QueryCLRCapabilities. The capabilities list has to include c_CapabilityFlags_IncrementalDeployment.");
+                //progress?.Report("Deploying assemblies to device");
 
-                fDeployedOK = await DeploymentExecuteFullAsync(assemblies, progress).ConfigureAwait(false);
+                //fDeployedOK = await DeploymentExecuteFullAsync(assemblies, progress).ConfigureAwait(false);
             }
 
             if (!fDeployedOK)

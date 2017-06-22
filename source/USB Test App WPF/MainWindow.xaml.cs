@@ -178,6 +178,7 @@ namespace Serial_Test_App_WPF
 
             try
             {
+                // add mscorlib
                 string assemblyPath = @"..\..\..\packages\nanoFramework.CoreLibrary.1.0.0-preview020\lib\mscorlib.pe";
 
                 using (FileStream fs = File.Open(assemblyPath, FileMode.Open, FileAccess.Read))

@@ -15,6 +15,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\CouldntOpenNanoFrameworkDeviceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DebugSessionAlreadyOpenException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\CancellationTokenExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\FlashSectorDataExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\DeploymentSectorExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DebuggerExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DeviceInformationExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\OutputExtensions.cs" />
@@ -66,8 +68,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Controller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\ControllerBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Converter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\DeploymentBlock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Engine.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\FifoBuffer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\DeploymentSector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\RebootTime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\PublicKeyIndex.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Flags.cs" />
