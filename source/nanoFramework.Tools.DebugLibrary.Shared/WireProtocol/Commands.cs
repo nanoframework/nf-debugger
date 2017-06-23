@@ -136,6 +136,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public uint m_length = 0;
             public byte[] m_data = null;
 
+            public class Reply
+            {
+                public uint ErrorCode;
+            };
+
             public void PrepareForSend(uint address, byte[] data, int offset, int length)
             {
                 m_address = address;
@@ -161,6 +166,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             public uint m_address = 0;
             public uint m_length = 0;
+
+            public class Reply
+            {
+                public uint ErrorCode;
+            };
         }
 
         public class Monitor_Execute
@@ -1485,7 +1495,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_Ping: return new Monitor_Ping.Reply();
                     case c_Monitor_OemInfo: return new Monitor_OemInfo.Reply();
                     case c_Monitor_ReadMemory: return new Monitor_ReadMemory.Reply();
+                    case c_Monitor_WriteMemory: return new Monitor_WriteMemory.Reply();
                     case c_Monitor_CheckMemory: return new Monitor_CheckMemory.Reply();
+                    case c_Monitor_EraseMemory: return new Monitor_EraseMemory.Reply();
                     case c_Monitor_MemoryMap: return new Monitor_MemoryMap.Reply();
                     case c_Monitor_DeploymentMap: return new Monitor_DeploymentMap.Reply();
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap.Reply();

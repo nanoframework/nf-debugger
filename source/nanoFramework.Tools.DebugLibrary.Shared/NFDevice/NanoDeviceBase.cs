@@ -330,7 +330,9 @@ namespace nanoFramework.Tools.Debugger
             {
                 progress?.Report(new ProgressReport(value, total, string.Format("Erasing sector 0x{0:x08}", flashSectorData.m_StartAddress)));
 
-                ret &= await DebugEngine.EraseMemoryAsync(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock)).ConfigureAwait(false);
+                var eraseResult = await DebugEngine.EraseMemoryAsync(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock)).ConfigureAwait(false);
+
+                ret &= eraseResult.success;
 
                 value++;
             }
@@ -430,7 +432,9 @@ namespace nanoFramework.Tools.Debugger
                     progress?.Report(new ProgressReport(0, total, string.Format("Erasing sector 0x{0:x08}", block.address)));
 
                     // the clr requires erase before writing
-                    if (!await DebugEngine.EraseMemoryAsync(block.address, (uint)len).ConfigureAwait(false))
+                    var eraseResult = await DebugEngine.EraseMemoryAsync(block.address, (uint)len).ConfigureAwait(false);
+
+                    if (!eraseResult.success)
                     {
                         return new Tuple<uint, bool>(0, false);
                     }
@@ -448,7 +452,8 @@ namespace nanoFramework.Tools.Debugger
                             return new Tuple<uint, bool>(0, false);
                         }
 
-                        if (!await DebugEngine.WriteMemoryAsync(addr, data).ConfigureAwait(false))
+                        var writeResult = await DebugEngine.WriteMemoryAsync(addr, data).ConfigureAwait(false);
+                        if (writeResult.success == false)
                         {
                             return new Tuple<uint, bool>(0, false);
                         }
