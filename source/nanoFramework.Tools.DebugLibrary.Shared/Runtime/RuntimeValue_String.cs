@@ -70,7 +70,8 @@ namespace nanoFramework.Tools.Debugger
                 throw new ArgumentException("String must have same length");
             }
 
-            if (await m_eng.WriteMemoryAsync(m_handle.m_charsInString, buf) == false)
+            var writeResult = await m_eng.WriteMemoryAsync(m_handle.m_charsInString, buf);
+            if (writeResult.success == false)
             {
                 throw new ArgumentException("Cannot write string");
             }

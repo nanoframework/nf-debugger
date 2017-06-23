@@ -548,7 +548,7 @@ namespace nanoFramework.Tools.Debugger
             return await ReadMemoryAsync(address, length, 0).ConfigureAwait(false);
         }
 
-        public async Task<bool> WriteMemoryAsync(uint address, byte[] buf, int offset, int length)
+        public async Task<(uint errorCode, bool success)> WriteMemoryAsync(uint address, byte[] buf, int offset, int length)
         {
             Debug.WriteLine($"Write memory operation. Start address { address.ToString("X8") }, lenght {length}");
 
@@ -571,9 +571,11 @@ namespace nanoFramework.Tools.Debugger
 
                 IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_WriteMemory, 0, cmd, 0, 2000).ConfigureAwait(false);
 
+                Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
+
                 if (!IncomingMessage.IsPositiveAcknowledge(reply))
                 {
-                    return false;
+                    return (cmdReply.ErrorCode, false);
                 }
 
                 address += (uint)len;
@@ -581,15 +583,15 @@ namespace nanoFramework.Tools.Debugger
                 pos += len;
             }
 
-            return true;
+            return (0, true);
         }
 
-        public async Task<bool> WriteMemoryAsync(uint address, byte[] buf)
+        public async Task<(uint errorCode, bool success)> WriteMemoryAsync(uint address, byte[] buf)
         {
             return await WriteMemoryAsync(address, buf, 0, buf.Length).ConfigureAwait(false);
         }
 
-        public async Task<bool> EraseMemoryAsync(uint address, uint length)
+        public async Task<(uint errorCode, bool success)> EraseMemoryAsync(uint address, uint length)
         {
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
@@ -636,7 +638,9 @@ namespace nanoFramework.Tools.Debugger
 
             IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_EraseMemory, 0, cmd, 0, timeout).ConfigureAwait(false);
 
-            return IncomingMessage.IsPositiveAcknowledge(reply);
+            Commands.Monitor_EraseMemory.Reply cmdReply = reply.Payload as Commands.Monitor_EraseMemory.Reply;
+
+            return (cmdReply.ErrorCode, IncomingMessage.IsPositiveAcknowledge(reply));
         }
 
         public async Task<bool> ExecuteMemoryAsync(uint address)
@@ -2096,8 +2100,9 @@ namespace nanoFramework.Tools.Debugger
 
                 foreach(DeploymentBlock block in blocksToDeploy)
                 {
+                    var eraseResult = await EraseMemoryAsync((uint)block.StartAddress, 1).ConfigureAwait(false);
 
-                    if (!await EraseMemoryAsync((uint)block.StartAddress, 1).ConfigureAwait(false))
+                    if (!eraseResult.success)
                     {
                         progress?.Report(($"FAILED to erase device memory @0x{block.StartAddress.ToString("X8")} with Length=0x{block.Size.ToString("X8")}"));
 
@@ -2114,7 +2119,8 @@ namespace nanoFramework.Tools.Debugger
                             return false;
                         }
 
-                        if (!await WriteMemoryAsync((uint)block.StartAddress, block.DeploymentData).ConfigureAwait(false))
+                        var writeResult = await WriteMemoryAsync((uint)block.StartAddress, block.DeploymentData).ConfigureAwait(false);
+                        if (!writeResult.success)
                         {
                             progress?.Report(($"FAILED to write device memory @0x{block.StartAddress.ToString("X8")} with Length={block.Size.ToString("X8")}"));
 
@@ -2171,7 +2177,9 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            if (!await EraseMemoryAsync(storageStart, deployLength).ConfigureAwait(false))
+            var eraseResult = await EraseMemoryAsync(storageStart, deployLength).ConfigureAwait(false);
+
+            if (!eraseResult.success)
             {
                 return false;
             }
@@ -2186,7 +2194,9 @@ namespace nanoFramework.Tools.Debugger
                     return false;
                 }
 
-                if (!await WriteMemoryAsync(storageStart, assembly).ConfigureAwait(false))
+                var writeResult1 = await WriteMemoryAsync(storageStart, assembly).ConfigureAwait(false);
+
+                if (!writeResult1.success)
                 {
                     return false;
                 }
@@ -2194,7 +2204,8 @@ namespace nanoFramework.Tools.Debugger
                 storageStart += (uint)assembly.Length;
             }
 
-            if (!await WriteMemoryAsync(storageStart, closeHeader).ConfigureAwait(false))
+            var writeResult2 = await WriteMemoryAsync(storageStart, closeHeader).ConfigureAwait(false);
+            if (!writeResult2.success)
             {
                 return false;
             }
