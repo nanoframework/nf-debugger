@@ -2056,7 +2056,8 @@ namespace nanoFramework.Tools.Debugger
                 int deployLength = assemblies.Sum(a => a.Length);
 
                 // build the deployment blob from the flash sector map
-                var deploymentBlob = flashSectorMap.Select(s => s.ToDeploymentSector()).ToList();
+                // apply a filter so that we take only the blocks flag for deployment 
+                var deploymentBlob = flashSectorMap.Where(s => ((s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)).Select(s => s.ToDeploymentSector()).ToList();
 
                 while (assemblies.Count > 0)
                 {
