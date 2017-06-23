@@ -69,7 +69,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public async Task<bool> QueueOutputAsync(MessageRaw raw, CancellationToken cancellationToken)
         {
             Debug.WriteLine("QueueOutputAsync 1");
-            await SendRawBufferAsync(raw.Header, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
+            await SendRawBufferAsync(raw.Header, TimeSpan.FromMilliseconds(1000), cancellationToken);
 
             // check for cancelation request
             if (cancellationToken.IsCancellationRequested)
@@ -83,7 +83,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 Debug.WriteLine("QueueOutputAsync 2");
 
-                await SendRawBufferAsync(raw.Payload, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
+                await SendRawBufferAsync(raw.Payload, TimeSpan.FromMilliseconds(1000), cancellationToken);
             }
 
             return true;
@@ -122,7 +122,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             Debug.WriteLine("SendRawBufferAsync");
 
-            return await App.SendBufferAsync(buffer, waiTimeout, cancellationToken).ConfigureAwait(false);
+            return await App.SendBufferAsync(buffer, waiTimeout, cancellationToken);
         }
 
         internal async Task<int> ReadBufferAsync(byte[] buffer, int offset, int bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)

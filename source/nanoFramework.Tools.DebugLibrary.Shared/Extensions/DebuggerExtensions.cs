@@ -16,7 +16,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
         /// <returns></returns>
         public static async ValueTask<bool> IsDeviceInInitializeStateAsync(this Engine debugEngine)
         {
-            var result = await debugEngine.SetExecutionModeAsync(0, 0).ConfigureAwait(false);
+            var result = await debugEngine.SetExecutionModeAsync(0, 0);
 
             if (result.success)
             {

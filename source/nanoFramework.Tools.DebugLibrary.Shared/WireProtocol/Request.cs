@@ -134,7 +134,7 @@ namespace nanoFramework.Tools.Debugger
 
                 // send message
                 // add a cancellation token to force cancel, the send 
-                if (await outgoingMsg.SendAsync(cTSource.Token).ConfigureAwait(false))
+                if (await outgoingMsg.SendAsync(cTSource.Token))
                 {
                     // if this request is for a reboot, we won't be able to receive the reply right away because the device is rebooting
                     if((outgoingMsg.Header.Cmd == Commands.c_Monitor_Reboot) && retryCounter == 1)
@@ -152,7 +152,7 @@ namespace nanoFramework.Tools.Debugger
                     {
                         // need to have a timeout to cancel the process task otherwise it may end up waiting forever for this to return
                         // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                        reply = await reassembler.ProcessAsync(cTSource.Token.AddTimeout(waitRetryTimeout)).ConfigureAwait(false);
+                        reply = await reassembler.ProcessAsync(cTSource.Token.AddTimeout(waitRetryTimeout));
                     }
                     catch(Exception ex)
                     {
