@@ -97,7 +97,7 @@ namespace nanoFramework.Tools.Debugger
             m_RebootTime = new RebootTime();
 
             // start task to tx spurious characters
-            Task.Factory.StartNew(() => 
+            Task.Factory.StartNew(() =>
             {
                 int read = 0;
 
@@ -118,7 +118,7 @@ namespace nanoFramework.Tools.Debugger
 
                         m_notifyNoise.Read(buffer, 0, buffer.Length);
 
-                        if(SpuriousCharactersReceived != null)
+                        if (SpuriousCharactersReceived != null)
                         {
                             SpuriousCharactersReceived.Invoke(this, new StringEventArgs(UTF8Encoding.UTF8.GetString(buffer, 0, buffer.Length)));
                         }
@@ -132,7 +132,7 @@ namespace nanoFramework.Tools.Debugger
         private void InitializeLocal(IPort pd, INanoDevice device)
         {
             m_portDefinition = pd;
-            m_ctrl = new Controller(Packet.MARKER_PACKET_V1, this) ;
+            m_ctrl = new Controller(Packet.MARKER_PACKET_V1, this);
 
             Device = device;
 
@@ -140,7 +140,7 @@ namespace nanoFramework.Tools.Debugger
         }
 
         public CLRCapabilities Capabilities { get; internal set; }
-        
+
         public bool IsConnected { get; internal set; }
 
         public ConnectionSource ConnectionSource { get; internal set; }
@@ -360,7 +360,7 @@ namespace nanoFramework.Tools.Debugger
             List<IncomingMessage> replies = new List<IncomingMessage>();
             List<Request> requests = new List<Request>();
 
-            foreach(OutgoingMessage message in messages)
+            foreach (OutgoingMessage message in messages)
             {
                 // continue execution only if cancelation was NOT request
                 if (!cancellationToken.IsCancellationRequested)
@@ -395,7 +395,7 @@ namespace nanoFramework.Tools.Debugger
         {
             return new Converter(Capabilities);
         }
-        
+
         public async Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
             return await m_portDefinition.SendBufferAsync(buffer, waiTimeout, cancellationToken);
@@ -453,7 +453,7 @@ namespace nanoFramework.Tools.Debugger
         public async Task<List<Commands.Monitor_DeploymentMap.DeploymentData>> GetDeploymentMapAsync()
         {
             Commands.Monitor_DeploymentMap cmd = new Commands.Monitor_DeploymentMap();
-            
+
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
@@ -492,7 +492,7 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_FlashSectorMap, 0, null,1, 4000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_FlashSectorMap, 0, null, 1, 4000);
 
             if (reply != null)
             {
@@ -618,7 +618,7 @@ namespace nanoFramework.Tools.Debugger
             if (length <= (16 * 1024))
             {
                 // timeout for 16kB sector
-                timeout = 600 ;
+                timeout = 600;
             }
             else if (length <= (64 * 1024))
             {
@@ -916,7 +916,7 @@ namespace nanoFramework.Tools.Debugger
         }
 
         Dictionary<int, uint[]> m_updateMissingPktTbl = new Dictionary<int, uint[]>();
-      
+
 
         /// <summary>
         /// 
@@ -1330,7 +1330,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 List<OutgoingMessage> requests = new List<OutgoingMessage>();
 
-                foreach(uint iAssembly in assemblies.Data)
+                foreach (uint iAssembly in assemblies.Data)
                 {
                     Commands.DebuggingResolveAssembly cmd = new Commands.DebuggingResolveAssembly()
                     {
@@ -1342,7 +1342,7 @@ namespace nanoFramework.Tools.Debugger
 
                 List<IncomingMessage> replies = await PerformRequestBatchAsync(requests, cancellationToken);
 
-                foreach(IncomingMessage message in replies)
+                foreach (IncomingMessage message in replies)
                 {
                     // reply is a match for request which m_seq is same as reply m_seqReply
                     resolveAssemblies.Add(requests.Find(req => req.Header.Seq == message.Header.SeqReply).Payload as Commands.DebuggingResolveAssembly);
@@ -1500,7 +1500,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 vals = new RuntimeValue[cValues];
 
-                foreach(IncomingMessage message in replies)
+                foreach (IncomingMessage message in replies)
                 {
                     Commands.Debugging_Value_Reply reply = message.Payload as Commands.Debugging_Value_Reply;
                     if (reply != null)
@@ -1736,7 +1736,7 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         /// <param name="fd"></param>
         /// <returns>Tuple with field name, td and offset.</returns>
-        public async Task<(string td, uint offset, uint success)> GetFieldNameAsync(uint fd) 
+        public async Task<(string td, uint offset, uint success)> GetFieldNameAsync(uint fd)
         {
             Commands.Debugging_Resolve_Field.Result resolvedField = await ResolveFieldAsync(fd);
 
@@ -2050,16 +2050,28 @@ namespace nanoFramework.Tools.Debugger
             var flashSectorMap = await GetFlashSectorMapAsync();
 
             // check if we do have the map
-            if(flashSectorMap != null)
+            if (flashSectorMap != null)
             {
                 // total size of assemblies to deploy 
                 int deployLength = assemblies.Sum(a => a.Length);
 
                 // build the deployment blob from the flash sector map
-                var deploymentBlob = flashSectorMap.Select(s => s.ToDeploymentSector()).ToList();
+                // apply a filter so that we take only the blocks flag for deployment 
+                var deploymentBlob = flashSectorMap.Where(s => ((s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)).Select(s => s.ToDeploymentSector()).ToList();
 
                 while (assemblies.Count > 0)
                 {
+                    //
+                    // Only word-aligned assemblies are allowed.
+                    //
+                    if (assemblies.First().Length % 4 != 0)
+                    {
+                        progress?.Report($"It's only possible to deploy word aligned assemblies. Failed to deploy assembly with {assemblies.First().Length} bytes.");
+
+                        return false;
+                    }
+
+                    // setup counters
                     int remainingBytes = assemblies.First().Length;
                     int currentPosition = 0;
 
@@ -2081,7 +2093,7 @@ namespace nanoFramework.Tools.Debugger
                         currentPosition += bytesToCopy;
                     }
 
-                    if(remainingBytes == 0)
+                    if (remainingBytes == 0)
                     {
                         // asembly fully stored for deployment, remove it from the list
                         assemblies.RemoveAt(0);
@@ -2089,7 +2101,7 @@ namespace nanoFramework.Tools.Debugger
                     else
                     {
                         // couldn't find enough space to deploy assembly!!
-                        progress?.Report($"Deployment storage (total size: {deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size)} bytes) was not large enough to fit deployment assemblies (total size: {deployLength} bytes)");
+                        progress?.Report($"Deployment storage (total size: {deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size)} bytes) was not large enough to fit assemblies to deploy (total size: {deployLength} bytes)");
 
                         return false;
                     }
@@ -2098,10 +2110,9 @@ namespace nanoFramework.Tools.Debugger
                 // get the block list to deploy (not empty)
                 var blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
 
-                foreach(DeploymentBlock block in blocksToDeploy)
+                foreach (DeploymentBlock block in blocksToDeploy)
                 {
                     var eraseResult = await EraseMemoryAsync((uint)block.StartAddress, 1);
-
                     if (!eraseResult.success)
                     {
                         progress?.Report(($"FAILED to erase device memory @0x{block.StartAddress.ToString("X8")} with Length=0x{block.Size.ToString("X8")}"));
@@ -2109,29 +2120,19 @@ namespace nanoFramework.Tools.Debugger
                         return false;
                     }
 
-                    foreach (byte[] assembly in assemblies)
+                    var writeResult = await WriteMemoryAsync((uint)block.StartAddress, block.DeploymentData);
+                    if (!writeResult.success)
                     {
-                        //
-                        // Only word-aligned assemblies are allowed.
-                        //
-                        if (assembly.Length % 4 != 0)
-                        {
-                            return false;
-                        }
+                        progress?.Report(($"FAILED to write device memory @0x{block.StartAddress.ToString("X8")} with Length={block.Size.ToString("X8")}"));
 
-                        var writeResult = await WriteMemoryAsync((uint)block.StartAddress, block.DeploymentData);
-                        if (!writeResult.success)
-                        {
-                            progress?.Report(($"FAILED to write device memory @0x{block.StartAddress.ToString("X8")} with Length={block.Size.ToString("X8")}"));
-
-                            return false;
-                        }
+                        return false;
                     }
+
+                    // report progress
+                    // progress?.Report($"Deployed assemblies for a total size of {blocksToDeploy.Sum(b => b.Size)} bytes");
                 }
 
                 // deployment successfull
-                progress?.Report($"Deployed assemblies for a total size of {blocksToDeploy.Sum(b => b.Size)} bytes");
-
                 return true;
             }
 
@@ -2157,7 +2158,7 @@ namespace nanoFramework.Tools.Debugger
 
             // fill in the local properties with the result
             storageStart = reply.storageStart;
- 
+
             if (reply.storageLength == 0)
             {
                 return false;
@@ -2335,7 +2336,7 @@ namespace nanoFramework.Tools.Debugger
         {
             Debug.WriteLine("DiscoverCLRCapability");
 
-            return (CLRCapabilities.Capability) await DiscoverCLRCapabilityUintAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityFlags);
+            return (CLRCapabilities.Capability)await DiscoverCLRCapabilityUintAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityFlags);
         }
 
         private async Task<CLRCapabilities.SoftwareVersionProperties> DiscoverSoftwareVersionPropertiesAsync()
