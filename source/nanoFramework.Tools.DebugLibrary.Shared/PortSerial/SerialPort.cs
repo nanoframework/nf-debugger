@@ -248,7 +248,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     if (isAllDevicesEnumerated)
                     {
                         // try opening the device to check for a valid nanoFramework device
-                        if (await ConnectSerialDeviceAsync(newNanoFrameworkDevice.Device.DeviceInformation).ConfigureAwait(false))
+                        if (await ConnectSerialDeviceAsync(newNanoFrameworkDevice.Device.DeviceInformation))
                         {
                             Debug.WriteLine("New Serial device: " + deviceInformation.Id);
 
@@ -491,7 +491,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             inputStreamReader = null;
             outputStreamWriter = null;
 
-            return await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).ConfigureAwait(false);
+            return await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation);
         }
 
         private async Task<bool> ConnectSerialDeviceAsync(SerialDeviceInformation serialDeviceInfo)
@@ -512,7 +512,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // access the Current in EventHandlerForDevice to create a watcher for the device we are connecting to
             var isConnected = EventHandlerForSerialDevice.Current.IsDeviceConnected;
 
-            return await EventHandlerForSerialDevice.Current.OpenDeviceAsync(serialDeviceInfo.DeviceInformation, serialDeviceInfo.DeviceSelector).ConfigureAwait(false);
+            return await EventHandlerForSerialDevice.Current.OpenDeviceAsync(serialDeviceInfo.DeviceInformation, serialDeviceInfo.DeviceSelector);
         }
 
         public void DisconnectDevice(NanoDeviceBase device)
@@ -555,7 +555,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 // serial works as a "single channel" so we can only TX or RX, 
                 // meaning that access to the resource has to be protected with a semephore
-                await semaphore.WaitAsync().ConfigureAwait(false);
+                await semaphore.WaitAsync();
 
                 try
                 {
@@ -566,7 +566,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // because we have an external cancellation token and the above timeout cancellation token, need to combine both
                     Task<uint> storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(cancellationToken.AddTimeout(waiTimeout));
 
-                    bytesWritten = await storeAsyncTask.ConfigureAwait(false);
+                    bytesWritten = await storeAsyncTask;
 
                     if (bytesWritten > 0)
                     {
@@ -603,7 +603,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 // serial works as a "single channel" so we can only TX or RX, 
                 // meaning that access to the resource has to be protected with a semephore
-                await semaphore.WaitAsync().ConfigureAwait(false);
+                await semaphore.WaitAsync();
 
                 // create a stream reader with serial device InputStream, if there isn't one already
                 if (inputStreamReader == null)
@@ -618,7 +618,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     Task<UInt32> loadAsyncTask = inputStreamReader.LoadAsync(bytesToRead).AsTask(cancellationToken.AddTimeout(waiTimeout));
 
                     // get how many bytes are available to read
-                    uint bytesRead = await loadAsyncTask.ConfigureAwait(false);
+                    uint bytesRead = await loadAsyncTask;
 
                     byte[] readBuffer = new byte[bytesToRead];
                     inputStreamReader.ReadBytes(readBuffer);
