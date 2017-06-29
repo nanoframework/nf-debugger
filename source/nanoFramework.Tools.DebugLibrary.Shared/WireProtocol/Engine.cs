@@ -606,8 +606,16 @@ namespace nanoFramework.Tools.Debugger
 
             // typical max Flash erase times for STM32 parts with PSIZE set to 16bits are:
             // 16kB sector:  600ms  >> 38ms/kB
+            const int eraseTimeout16kSector = 600;
+
             // 64kB sector:  1400ms >> 22ms/kB
+            const int eraseTimeout64kSector = 1400;
+
             // 128kB sector: 2600ms >> 21ms/kB
+            const int eraseTimeout128kSector = 2600;
+
+            // this extra timeout is to account comm times and execution operation on the AccessMemory funtion
+            const int extraTimeoutForErase = 800;
 
             // the erase memory command isn't aware of the sector(s) size it will end up erasing so we have to do an educated guess on how long that will take
             // considering the worst case timming which is the erase of the smallest sector.
@@ -618,29 +626,29 @@ namespace nanoFramework.Tools.Debugger
             if (length <= (16 * 1024))
             {
                 // timeout for 16kB sector
-                timeout = 600;
+                timeout = eraseTimeout16kSector + extraTimeoutForErase;
             }
             else if (length <= (64 * 1024))
             {
                 // timeout for 64kB sector
-                timeout = 1400;
+                timeout = eraseTimeout64kSector + extraTimeoutForErase;
             }
             else if (length <= (128 * 1024))
             {
                 // timeout for 128kB sector
-                timeout = 2600;
+                timeout = eraseTimeout128kSector + extraTimeoutForErase;
             }
             else
             {
                 // timeout for anything above 128kB (multiple sectors)
-                timeout = (int)(length / (16 * 1024)) * 600 + 500;
+                timeout = (int)(length / (16 * 1024)) * eraseTimeout16kSector + 2 * extraTimeoutForErase;
             }
 
             IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_EraseMemory, 0, cmd, 0, timeout);
 
             Commands.Monitor_EraseMemory.Reply cmdReply = reply.Payload as Commands.Monitor_EraseMemory.Reply;
 
-            return (cmdReply.ErrorCode, IncomingMessage.IsPositiveAcknowledge(reply));
+            return (cmdReply?.ErrorCode ?? 0, IncomingMessage.IsPositiveAcknowledge(reply));
         }
 
         public async Task<bool> ExecuteMemoryAsync(uint address)

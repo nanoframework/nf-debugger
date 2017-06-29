@@ -179,7 +179,7 @@ namespace nanoFramework.Tools.Debugger
 
             Debug.WriteLine($"Performing request exceeded attempts count...");
 
-            return null;
+            return reply;
         }
     }
 }
