@@ -74,7 +74,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                         Debug.WriteLine("cancel token");
 
-                        return null;
+                        return GetCompleteMessage();
                     }
 
                     switch (_state)
@@ -207,7 +207,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                 // FIXME 
                                 // evaluate the purpose of this reply back to the NanoFramework device, the nanoCLR doesn't seem to have to handle this. In the end it looks like this does have any real purpose and will only be wasting CPU.
                                 //await IncomingMessage.ReplyBadPacketAsync(m_parent, Flags.c_BadHeader);
-                                return null;
+                                return GetCompleteMessage();
                             }
 
                             break;
@@ -286,7 +286,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                 // FIXME 
                                 // evaluate the purpose of this reply back to the NanoFramework device, the nanoCLR doesn't seem to have to handle this. In the end it looks like this does have any real purpose and will only be wasting CPU.
                                 await IncomingMessage.ReplyBadPacketAsync(_parent, Flags.c_BadPayload, cancellationToken);
-                                return null;
+                                return GetCompleteMessage();
                             }
 
                             break;
@@ -302,7 +302,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
 
             Debug.WriteLine("??????? leaving reassembler");
-            return null;
+            return GetCompleteMessage();
         }
 
         private int ValidMarker(byte[] marker)

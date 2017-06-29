@@ -179,7 +179,7 @@ namespace Serial_Test_App_WPF
             try
             {
                 // add mscorlib
-                string assemblyPath = @"..\..\..\packages\nanoFramework.CoreLibrary.1.0.0-preview020\lib\mscorlib.pe";
+                string assemblyPath = @"..\..\..\packages\nanoFramework.CoreLibrary.1.0.0-preview022\lib\mscorlib.pe";
 
                 using (FileStream fs = File.Open(assemblyPath, FileMode.Open, FileAccess.Read))
                 {
@@ -226,6 +226,36 @@ namespace Serial_Test_App_WPF
                     Debug.WriteLine("");
                     Debug.WriteLine("");
                     Debug.WriteLine(fm.ToStringForOutput());
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                }));
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+        private async void ResumeExecutionButton_Click(object sender, RoutedEventArgs e)
+        {  
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                {
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+
+                    var result = await (DataContext as MainViewModel).AvailableDevices[0].DebugEngine.ResumeExecutionAsync();
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"resume execution: {result}");
                     Debug.WriteLine("");
                     Debug.WriteLine("");
 
