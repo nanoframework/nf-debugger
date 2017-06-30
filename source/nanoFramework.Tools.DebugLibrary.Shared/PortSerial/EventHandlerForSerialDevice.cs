@@ -215,6 +215,8 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
         public async Task<bool> OpenDeviceAsync(DeviceInformation deviceInfo, string deviceSelector)
         {
+            await Task.Delay(250);
+
             device = await SerialDevice.FromIdAsync(deviceInfo.Id);
 
             bool successfullyOpenedDevice = false;
@@ -303,7 +305,9 @@ namespace nanoFramework.Tools.Debugger.Serial
                 }
             }
             // catch all because the device open might fail for a number of reasons
-            catch { }
+            catch(Exception ex)
+            {
+            }
 
             return successfullyOpenedDevice;
         }

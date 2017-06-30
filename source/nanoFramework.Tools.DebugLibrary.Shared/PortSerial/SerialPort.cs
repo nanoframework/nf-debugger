@@ -252,23 +252,24 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         {
                             Debug.WriteLine("New Serial device: " + deviceInformation.Id);
 
-                            var name = EventHandlerForSerialDevice.Current.DeviceInformation?.Properties["System.ItemNameDisplay"] as string;
-
-                            // acceptable names
-                            if (name == "STM32 STLink")
+                            if(CheckValidNanoFrameworkSerialDevice())
                             {
-                                // now fill in the description
-                                newNanoFrameworkDevice.Description = name + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
+                                // done here, close the device
+                                EventHandlerForSerialDevice.Current.CloseDevice();
 
+                                // remove it from collection... 
+                                NanoFrameworkDevices.Remove(newNanoFrameworkDevice as NanoDeviceBase);
+
+                                //... and add it again, otherwise the bindings might fail
+                                NanoFrameworkDevices.Add(newNanoFrameworkDevice as NanoDeviceBase);
 
                                 Debug.WriteLine("Add new nanoFramework device to list: " + newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
+
+                                return;
                             }
-
-                            // done here, close the device
-                            EventHandlerForSerialDevice.Current.CloseDevice();
-
-                            return;
                         }
+
+                        Debug.WriteLine($"Removing { deviceInformation.Id } from collection...");
 
                         // couldn't open device better remove it from the collection right away
                         NanoFrameworkDevices.Remove(newNanoFrameworkDevice as NanoDeviceBase);
@@ -453,7 +454,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                )
             {
                 // fill in description for this device
-                FindNanoFrameworkDevice(EventHandlerForSerialDevice.Current.DeviceInformation.Id).Description = name + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
+                var device = FindNanoFrameworkDevice(EventHandlerForSerialDevice.Current.DeviceInformation.Id);
+                device.Description = name + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
 
                 // should be a valid nanoFramework device, done here
                 return true;
@@ -462,11 +464,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 if(serialNumber.Contains("NANO_"))
                 {
-                    FindNanoFrameworkDevice(EventHandlerForSerialDevice.Current.DeviceInformation.Id).Description = serialNumber + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
-                }
+                    var device = FindNanoFrameworkDevice(EventHandlerForSerialDevice.Current.DeviceInformation.Id);
+                    device.Description = serialNumber + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
 
-                // should be a valid nanoFramework device, done here
-                return true;
+                    // should be a valid nanoFramework device, done here
+                    return true;
+                }
             }
 
             // default to false
