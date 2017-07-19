@@ -61,6 +61,8 @@ namespace nanoFramework.Tools.Debugger.Extensions
             {
                 if (range != null && range.Count > 0)
                 {
+                    // output in list format, ordered by region
+
                     output.AppendLine("  Region     Start      Blocks   Bytes/Block    Usage");
                     output.AppendLine("-----------------------------------------------------------");
 
@@ -68,43 +70,32 @@ namespace nanoFramework.Tools.Debugger.Extensions
 
                     foreach (Commands.Monitor_FlashSectorMap.FlashSectorData item in range)
                     {
-                        string usage = "";
-                        switch (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK)
-                        {
-                            case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP:
-                                usage = "nanoBooter";
-                                break;
-                            case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE:
-                                usage = "nanoCLR";
-                                break;
-                            case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG:
-                                usage = "Configuration";
-                                break;
-                            case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT:
-                                usage = "Deployment";
-                                break;
-                            case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_UPDATE:
-                                usage = "Update Storage";
-                                break;
-                            case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_FS:
-                                usage = "File System";
-                                break;
-                            case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_SIMPLE_A:
-                                usage = "Simple Storage (A)";
-                                break;
-                            case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_SIMPLE_B:
-                                usage = "Simple Storage (B)";
-                                break;
-                            case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_STORAGE_A:
-                                usage = "EWR Storage (A)";
-                                break;
-                            case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_STORAGE_B:
-                                usage = "EWR Storage (B)";
-                                break;
-                        }
-
-                        output.AppendLine($"{string.Format("{0,7}", i++)}    {string.Format("0x{0:x08}", item.m_StartAddress)}   {string.Format("{0,5}", item.m_NumBlocks)}      {string.Format("0x{0:x06}", item.m_BytesPerBlock)}     {usage}");
+                        output.AppendLine($"{string.Format("{0,7}", i++)}    {string.Format("0x{0:X08}", item.m_StartAddress)}   {string.Format("{0,5}", item.m_NumBlocks)}      {string.Format("0x{0:X06}", item.m_BytesPerBlock)}     {item.UsageAsString()}");
                     }
+
+                    output.AppendLine();
+                    output.AppendLine();
+
+                    // output in list format, ordered by deployment usage
+
+                    output.AppendLine(" Start        Size (kB)           Usage");
+                    output.AppendLine("--------------------------------------------");
+
+                    output.AppendLine(
+                        $" {string.Format("0x{0:X08}", range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).m_StartAddress)}" +
+                        $"   {string.Format("0x{0:X06}", range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock))}" +
+                        $" {range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock).ToMemorySizeFormart()}" +
+                        $"   {range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).UsageAsString()}");
+                    output.AppendLine(
+                        $" {string.Format("0x{0:X08}", range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).m_StartAddress)}" +
+                        $"   {string.Format("0x{0:X06}", range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock))}" +
+                        $" {range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock).ToMemorySizeFormart()}" +
+                        $"   {range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).UsageAsString()}");
+                    output.AppendLine(
+                        $" {string.Format("0x{0:X08}", range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT).m_StartAddress)}" +
+                        $"   {string.Format("0x{0:X06}", range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock))}" +
+                        $" {range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock).ToMemorySizeFormart()}" +
+                        $"   {range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT).UsageAsString()}");
 
                     return output.ToString();
                 }
@@ -142,6 +133,21 @@ namespace nanoFramework.Tools.Debugger.Extensions
             catch { }
 
             return "Invalid or empty map data.";
+        }
+
+        private static string ToMemorySizeFormart(this long value)
+        {
+            // divide by 1kB size (binary)
+            uint sizeInkB = (uint)value / 1024;
+
+            string output;
+
+            // value is in the kB range
+            output = $"({sizeInkB.ToString()}kB)";
+
+            // output width has to be '(0000kB)'
+            string spacer = new string(new char[8 - output.Length]);
+            return (output + spacer.Replace('\0', ' '));
         }
     }
 }
