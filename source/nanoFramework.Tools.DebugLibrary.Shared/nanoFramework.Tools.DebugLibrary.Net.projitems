@@ -19,6 +19,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DeploymentSectorExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DebuggerExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DeviceInformationExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\MonitorFlashSectorMapExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\OutputExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\TypeExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MFDeployTool\AssemblyInfoFromResolveAssembly.cs" />
