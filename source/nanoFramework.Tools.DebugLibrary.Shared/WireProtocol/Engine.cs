@@ -684,7 +684,9 @@ namespace nanoFramework.Tools.Debugger
             {
                 m_evtPing.Reset();
 
-                await PerformRequestAsync(Commands.c_Monitor_Reboot, 0, cmd);
+                await PerformRequestAsync(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 0, 100);
+
+                Disconnect();
 
                 if (option != RebootOption.NoReconnect)
                 {
