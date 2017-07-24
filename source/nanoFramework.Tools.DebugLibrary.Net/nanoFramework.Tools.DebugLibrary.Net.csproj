@@ -16,7 +16,7 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <PackageId>nanoFramework.Tools.Debugger.Net</PackageId>
-    <PackageVersion>0.4.0-preview019</PackageVersion>
+    <PackageVersion>0.4.0-preview020</PackageVersion>
     <Description>This .NET library provides a debug client for nanoFramework devices using USB or Serial connection to a board.</Description>
     <Authors>nanoFramework project contributors</Authors>
     <Title>nanoFramework debug library for .NET</Title>

@@ -137,10 +137,10 @@ namespace nanoFramework.Tools.Debugger
                 if (await outgoingMsg.SendAsync(cTSource.Token))
                 {
                     // if this request is for a reboot, we won't be able to receive the reply right away because the device is rebooting
-                    if((outgoingMsg.Header.Cmd == Commands.c_Monitor_Reboot) && retryCounter == 1)
+                    if(outgoingMsg.Header.Cmd == Commands.c_Monitor_Reboot)
                     {
-                        // wait here for 
-                        Task.Delay(2000).Wait();
+                        // done here, no reply will come
+                        return reply;
                     }
 
                     Debug.WriteLine($"Processing reply now...");

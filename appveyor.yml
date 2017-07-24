@@ -1,4 +1,4 @@
-version: 0.19.{build}
+version: 0.20.{build}
 
 # temporary fix for nuget connectivity issues 
 hosts: 
