@@ -167,11 +167,8 @@ namespace nanoFramework.Tools.Debugger
 
                     IncomingMessage msg = await PerformRequestAsync(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, retries, timeout);
 
-                    if (msg == null)
+                    if (msg.Payload == null)
                     {
-                        // disconnect device
-                        Device.Disconnect();
-
                         // update flag
                         IsConnected = false;
 
@@ -214,9 +211,6 @@ namespace nanoFramework.Tools.Debugger
 
             if (connectionSource != ConnectionSource.Unknown && connectionSource != ConnectionSource)
             {
-                // disconnect device
-                Device.Disconnect();
-
                 // update flag
                 IsConnected = false;
 
