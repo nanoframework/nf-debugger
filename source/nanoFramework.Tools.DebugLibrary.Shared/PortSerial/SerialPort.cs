@@ -252,7 +252,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         {
                             Debug.WriteLine("New Serial device: " + deviceInformation.Id);
 
-                            if(CheckValidNanoFrameworkSerialDevice())
+                            if(await CheckValidNanoFrameworkSerialDeviceAsync())
                             {
                                 // done here, close the device
                                 EventHandlerForSerialDevice.Current.CloseDevice();
@@ -404,7 +404,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                     if (connectTask.Result)
                     {
-                        if(!CheckValidNanoFrameworkSerialDevice())
+
+                        var checkValidNFDeviceTask = CheckValidNanoFrameworkSerialDeviceAsync();
+
+                        if (!checkValidNFDeviceTask.Result)
                         {
                             // mark this device for removal
                             devicesToRemove.Add(device);
@@ -439,7 +442,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
         }
 
-        private bool CheckValidNanoFrameworkSerialDevice()
+        private async Task<bool> CheckValidNanoFrameworkSerialDeviceAsync()
         {
             // get name
             var name = EventHandlerForSerialDevice.Current.DeviceInformation?.Properties["System.ItemNameDisplay"] as string;
@@ -453,16 +456,35 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 (name == "STM32 STLink")
                )
             {
+                // need an extra check on this because this can be 'just' a regular COM port without any nanoFramework device behind
+
                 // fill in description for this device
                 var device = FindNanoFrameworkDevice(EventHandlerForSerialDevice.Current.DeviceInformation.Id);
-                device.Description = name + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
 
-                // should be a valid nanoFramework device, done here
-                return true;
+                // need an extra check on this because this can be 'just' a regular COM port without any nanoFramework device behind
+                var connectionResult = await device.DebugEngine.ConnectAsync(1, 500, false);
+
+                if (connectionResult)
+                {
+                    // should be a valid nanoFramework device
+                    device.Description = name + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
+
+                    // disconnect now
+                    device.DebugEngine.Disconnect();
+
+                    // done here
+                    return true;
+                }
+                else
+                {
+                    // doesn't look like a nanoFramework device
+                    return false;
+                }
+
             }
-            else if(serialNumber != null)
+            else if (serialNumber != null)
             {
-                if(serialNumber.Contains("NANO_"))
+                if (serialNumber.Contains("NANO_"))
                 {
                     var device = FindNanoFrameworkDevice(EventHandlerForSerialDevice.Current.DeviceInformation.Id);
                     device.Description = serialNumber + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
