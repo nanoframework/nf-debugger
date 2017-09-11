@@ -1230,25 +1230,25 @@ namespace nanoFramework.Tools.Debugger
             return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Thread_Resume, 0, cmd));
         }
 
-        public async Task<RuntimeValue> GetThreadException(uint pid)
+        public Task<RuntimeValue> GetThreadExceptionAsync(uint pid)
         {
             Commands.Debugging_Thread_GetException cmd = new Commands.Debugging_Thread_GetException();
 
             cmd.m_pid = pid;
 
-            return await GetRuntimeValueAsync(Commands.c_Debugging_Thread_GetException, cmd);
+            return GetRuntimeValueAsync(Commands.c_Debugging_Thread_GetException, cmd);
         }
 
-        public async Task<RuntimeValue> GetThreadAsync(uint pid)
+        public Task<RuntimeValue> GetThreadAsync(uint pid)
         {
             Commands.Debugging_Thread_Get cmd = new Commands.Debugging_Thread_Get();
 
             cmd.m_pid = pid;
 
-            return await GetRuntimeValueAsync(Commands.c_Debugging_Thread_Get, cmd);
+            return GetRuntimeValueAsync(Commands.c_Debugging_Thread_Get, cmd);
         }
 
-        public async Task<bool> UnwindThreadAsync(uint pid, uint depth)
+        public Task<bool> UnwindThreadAsync(uint pid, uint depth)
         {
             Commands.Debugging_Thread_Unwind cmd = new Commands.Debugging_Thread_Unwind();
 
@@ -1547,23 +1547,23 @@ namespace nanoFramework.Tools.Debugger
             return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Value_SetArray, 0, cmd));
         }
 
-        public async Task<RuntimeValue> GetScratchPadValue(int index)
+        public Task<RuntimeValue> GetScratchPadValueAsync(int index)
         {
             Commands.Debugging_Value_GetScratchPad cmd = new Commands.Debugging_Value_GetScratchPad();
 
             cmd.m_index = index;
 
-            return await GetRuntimeValueAsync(Commands.c_Debugging_Value_GetScratchPad, cmd);
+            return GetRuntimeValueAsync(Commands.c_Debugging_Value_GetScratchPad, cmd);
         }
 
-        public async Task<RuntimeValue> AllocateObjectAsync(int scratchPadLocation, uint td)
+        public Task<RuntimeValue> AllocateObjectAsync(int scratchPadLocation, uint td)
         {
             Commands.Debugging_Value_AllocateObject cmd = new Commands.Debugging_Value_AllocateObject();
 
             cmd.m_index = scratchPadLocation;
             cmd.m_td = td;
 
-            return await GetRuntimeValueAsync(Commands.c_Debugging_Value_AllocateObject, cmd);
+            return GetRuntimeValueAsync(Commands.c_Debugging_Value_AllocateObject, cmd);
         }
 
         public async Task<RuntimeValue> AllocateStringAsync(int scratchPadLocation, string val)
@@ -1583,7 +1583,7 @@ namespace nanoFramework.Tools.Debugger
             return rtv;
         }
 
-        public async Task<RuntimeValue> AllocateArrayAsync(int scratchPadLocation, uint td, int depth, int numOfElements)
+        public Task<RuntimeValue> AllocateArrayAsync(int scratchPadLocation, uint td, int depth, int numOfElements)
         {
             Commands.Debugging_Value_AllocateArray cmd = new Commands.Debugging_Value_AllocateArray();
 
@@ -1592,7 +1592,7 @@ namespace nanoFramework.Tools.Debugger
             cmd.m_depth = (uint)depth;
             cmd.m_numOfElements = (uint)numOfElements;
 
-            return await GetRuntimeValueAsync(Commands.c_Debugging_Value_AllocateArray, cmd);
+            return GetRuntimeValueAsync(Commands.c_Debugging_Value_AllocateArray, cmd);
         }
 
         public async Task<Commands.Debugging_Resolve_Type.Result> ResolveTypeAsync(uint td)
@@ -1628,7 +1628,6 @@ namespace nanoFramework.Tools.Debugger
         public async Task<Commands.Debugging_Resolve_Method.Result> ResolveMethodAsync(uint md)
         {
             Commands.Debugging_Resolve_Method.Result result = (Commands.Debugging_Resolve_Method.Result)m_typeSysLookup.Lookup(TypeSysLookup.Type.Method, md);
-            ;
 
             if (result == null)
             {
@@ -1660,7 +1659,6 @@ namespace nanoFramework.Tools.Debugger
         public async Task<Commands.Debugging_Resolve_Field.Result> ResolveFieldAsync(uint fd)
         {
             Commands.Debugging_Resolve_Field.Result result = (Commands.Debugging_Resolve_Field.Result)m_typeSysLookup.Lookup(TypeSysLookup.Type.Field, fd);
-            ;
 
             if (result == null)
             {
@@ -1952,14 +1950,14 @@ namespace nanoFramework.Tools.Debugger
         //    //return bmp;
         //}
 
-        public async Task InjectButtonsAsync(uint pressed, uint released)
+        public Task InjectButtonsAsync(uint pressed, uint released)
         {
             Commands.Debugging_Button_Inject cmd = new Commands.Debugging_Button_Inject();
 
             cmd.m_pressed = pressed;
             cmd.m_released = released;
 
-            await PerformRequestAsync(Commands.c_Debugging_Button_Inject, 0, cmd);
+            return PerformRequestAsync(Commands.c_Debugging_Button_Inject, 0, cmd);
         }
 
         public async Task<List<ThreadStatus>> GetThreadsAsync()
@@ -2037,7 +2035,7 @@ namespace nanoFramework.Tools.Debugger
             return cmdReply;
         }
 
-        public async Task<bool> Info_SetJMCAsyn(bool fJMC, ReflectionDefinition.Kind kind, uint index)
+        public async Task<bool> Info_SetJMCAsync(bool fJMC, ReflectionDefinition.Kind kind, uint index)
         {
             Commands.Debugging_Info_SetJMC cmd = new Commands.Debugging_Info_SetJMC();
 
