@@ -44,7 +44,7 @@ namespace nanoFramework.Tools.Debugger
         public struct SoftwareVersionProperties
         {
             public readonly string BuildDate;
-            public readonly uint CompilerVersion;
+            public readonly Version CompilerVersion;
 
             public SoftwareVersionProperties(byte[] buildDate, uint compVersion)
             {
@@ -55,7 +55,21 @@ namespace nanoFramework.Tools.Debugger
                     chars[i] = (char)buildDate[i];
                 }
                 BuildDate = new string(chars, 0, i);
-                CompilerVersion = compVersion;
+
+                // this is the compiler version in coded format: MAJOR x 10000 + MINOR x 100 + PATCH
+                // example: v6.3.1 shows as 6 x 10000 + 3 x 100 + 1 = 60301
+                // invalid version is -1
+                try
+                {
+                    int major = (int)compVersion / 10000;
+                    int minor = ((int)compVersion - (major * 10000)) / 100;
+                    int patch = ((int)compVersion - (major * 10000) - (minor * 100));
+                    CompilerVersion = new Version(major, minor, patch);
+                }
+                catch
+                {
+                    CompilerVersion = new Version(0, 0, 0);
+                };
             }
         }
 
