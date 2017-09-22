@@ -9,13 +9,11 @@ build_script:
 
    nuget restore source\nanoFramework.Tools.Debugger.sln
 
-       msbuild source\nanoFramework.Tools.Debugger.sln /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+   msbuild source\nanoFramework.Tools.Debugger.sln /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
    msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
-   # for some reason the build environment in AppVeyor is not being able to properly restore the Nuget packages for projects with project.json
-   # leave this here to be solved later, see https://github.com/nanoframework/nf-debugger/issues/9
-   # msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+   msbuild /t:pack /tv:15.0 /p:VisualStudioVersion=15.0 source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 artifacts:
 - path: '**\bin\Release\*.nupkg'
@@ -25,4 +23,3 @@ deploy:
   api_key:
     secure: NSRDXbS8tmzOy4wStGuO3yQMKI8Sk10vF8iQtz9ZDXEnHfwnuDdnXbr/Kno3MMvY
   skip_symbols: true
-  
