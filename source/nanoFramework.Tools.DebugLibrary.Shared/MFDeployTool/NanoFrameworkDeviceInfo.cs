@@ -164,6 +164,10 @@ namespace nanoFramework.Tools.Debugger
             get { return m_AssemblyInfos.ToArray(); }
         }
 
+        public string ImageBuildDate => Dbg.Capabilities.SoftwareVersion.BuildDate;
+
+        public Version ImageCompilerVersion => Dbg.Capabilities.SoftwareVersion.CompilerVersion;
+
         public override string ToString()
         {
             if (m_fValid)
@@ -173,6 +177,7 @@ namespace nanoFramework.Tools.Debugger
                     StringBuilder output = new StringBuilder();
 
                     output.AppendLine(String.Format("HAL build info: {0}, {1}", HalBuildVersion?.ToString(), HalBuildInfo?.TrimEnd('\0')));
+                    output.AppendLine(String.Format($"Image build @ {ImageBuildDate.TrimEnd('\0')} GNU ARM GCC v{ ImageCompilerVersion.ToString() }"));
                     output.AppendLine(String.Format("OEM Product codes (vendor, model, SKU): {0}, {1}, {2}", OEM.ToString(), Model.ToString(), SKU.ToString()));
                     output.AppendLine("Serial Numbers (module, system):");
                     output.AppendLine("  " + ModuleSerialNumber?.TrimEnd('\0'));

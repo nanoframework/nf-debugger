@@ -1248,7 +1248,7 @@ namespace nanoFramework.Tools.Debugger
             return GetRuntimeValueAsync(Commands.c_Debugging_Thread_Get, cmd);
         }
 
-        public Task<bool> UnwindThreadAsync(uint pid, uint depth)
+        public async Task<bool> UnwindThreadAsync(uint pid, uint depth)
         {
             Commands.Debugging_Thread_Unwind cmd = new Commands.Debugging_Thread_Unwind();
 
