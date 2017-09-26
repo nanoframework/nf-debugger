@@ -247,7 +247,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
                 {
-                    int num = (size - 4) / (3 * 4);  // size - sizof(m_count) divided by size of deplpoymentdata struct (3*sizeof(uint))
+                    int num = (size - 4) / (3 * 4);  // size - sizof(m_count) divided by size of deployment data struct (3*sizeof(uint))
 
                     m_map = Enumerable.Range(0, num).Select(x => new DeploymentData()).ToList();
 
