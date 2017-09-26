@@ -753,7 +753,7 @@ namespace nanoFramework.Tools.Debugger
                 }
                 else
                 {
-                    return (0, true);
+                    return (0, false);
                 }
             }
 
