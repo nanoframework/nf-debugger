@@ -108,10 +108,16 @@ namespace nanoFramework.Tools.Debugger
             SuicideTimer.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
-        public async Task<INanoFrameworkDeviceInfo> GetDeviceInfoAsync()
+        /// <summary>
+        /// Get <see cref="INanoFrameworkDeviceInfo"/> from device.
+        /// If the device information has been retrieved before this method returns the cached data, unless the force argument is true.
+        /// </summary>
+        /// <param name="force">Force retrieving the information from the device.</param>
+        /// <returns>Return the <see cref="INanoFrameworkDeviceInfo"/> for this device.</returns>
+        public async Task<INanoFrameworkDeviceInfo> GetDeviceInfoAsync(bool force = true)
         {
             // start by checking if we already have this available
-            if (!DeviceInfo.Valid)
+            if (!DeviceInfo.Valid || force)
             {
                 // seems to be invalid so get it from device
                 var mfDeviceInfo = new NanoFrameworkDeviceInfo(this);
