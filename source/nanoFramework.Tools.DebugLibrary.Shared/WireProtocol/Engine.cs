@@ -686,8 +686,6 @@ namespace nanoFramework.Tools.Debugger
 
                 await PerformRequestAsync(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 0, 100);
 
-                Disconnect();
-
                 if (option != RebootOption.NoReconnect)
                 {
                     //int timeout = 1000;

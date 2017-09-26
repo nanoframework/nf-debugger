@@ -16,7 +16,6 @@ namespace nanoFramework.Tools.Debugger
     class NanoFrameworkDeviceInfo : INanoFrameworkDeviceInfo
     {
         private NanoDeviceBase m_self;
-        private bool m_fValid;
 
         private List<IAppDomainInfo> m_Domains = new List<IAppDomainInfo>();
         private List<IAssemblyInfo> m_AssemblyInfos = new List<IAssemblyInfo>();
@@ -25,7 +24,7 @@ namespace nanoFramework.Tools.Debugger
         {
             m_self = device;
 
-            m_fValid = false;
+            Valid = false;
         }
 
         public async Task<bool> GetDeviceInfo()
@@ -42,7 +41,7 @@ namespace nanoFramework.Tools.Debugger
             // get assemblies from device
             await GetAssembliesAsync(cancelTSource.Token);
 
-            m_fValid = true;
+            Valid = true;
 
             return true;
         }
@@ -52,14 +51,14 @@ namespace nanoFramework.Tools.Debugger
             if (Dbg.Capabilities.AppDomains)
             {
                 Commands.Debugging_TypeSys_AppDomains.Reply domainsReply = await Dbg.GetAppDomainsAsync();
-                // TODO add cancelation token code
+                // TODO add cancellation token code
 
                 if (domainsReply != null)
                 {
                     foreach (uint id in domainsReply.Data)
                     {
                         Commands.Debugging_Resolve_AppDomain.Reply reply = await Dbg.ResolveAppDomainAsync(id);
-                        // TODO add cancelation token code
+                        // TODO add cancellation token code
                         if (reply != null)
                         {
                             m_Domains.Add(new AppDomainInfo(id, reply));
@@ -92,7 +91,7 @@ namespace nanoFramework.Tools.Debugger
 
         private Engine Dbg { get { return m_self.DebugEngine; } }
 
-        public bool Valid { get { return m_fValid; } }
+        public bool Valid { get; internal set; }
 
         public System.Version HalBuildVersion
         {
@@ -170,7 +169,7 @@ namespace nanoFramework.Tools.Debugger
 
         public override string ToString()
         {
-            if (m_fValid)
+            if (Valid)
             {
                 try
                 {
