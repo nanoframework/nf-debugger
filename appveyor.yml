@@ -10,7 +10,7 @@ install:
 #- cmd: nuget restore source\nanoFramework.Tools.Debugger.sln
 build_script:
 - ps: >-
-   nuget restore -source https://ci.appveyor.com/nuget/nugetizer3000
+   .source\nuget restore -source "https://ci.appveyor.com/nuget/nugetizer3000;https://www.nuget.org/api/v2;https://www.myget.org/F/nuget"
 
    msbuild /t:restore /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
