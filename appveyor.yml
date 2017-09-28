@@ -5,7 +5,7 @@ pull_requests:
 image: Visual Studio 2017
 clone_depth: 1
 before_build:
-- cmd: appveyor DownloadFile "https://dist.nuget.org/win-x86-commandline/v4.3.0/nuget.exe"
+#- cmd: appveyor DownloadFile "https://dist.nuget.org/win-x86-commandline/v4.3.0/nuget.exe"
 - cmd: nuget restore source\nanoFramework.Tools.Debugger.sln
 build_script:
 - ps: >-
@@ -15,7 +15,7 @@ build_script:
 
    # for some reason the build environment in AppVeyor is not being able to properly restore the Nuget packages for projects with project.json
    # leave this here to be solved later, see https://github.com/nanoframework/nf-debugger/issues/9
-    msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+- cmd: msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 artifacts:
 - path: '**\bin\Release\*.nupkg'

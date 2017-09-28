@@ -122,6 +122,9 @@ For .NET look for the respective Nuget package.</PackageReleaseNotes>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <TargetFrameworks>netstandard1.4;net462;netcoreapp1.0</TargetFrameworks>
+  </PropertyGroup>
   <ItemGroup>
     <None Include="key.snk" />
     <None Include="project.json" />
