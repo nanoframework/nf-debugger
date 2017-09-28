@@ -4,8 +4,24 @@ pull_requests:
   do_not_increment_build_number: true
 image: Visual Studio 2017
 clone_depth: 1
+install:
+- ps: >- 
+$vsixPath = "$($env:USERPROFILE)\nanoFramework.Tools.VS2017.Extension.vsix"
+
+(New-Object Net.WebClient).DownloadFile('http://bit.ly/nugetizer-2017', $vsixPath)
+
+"`"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VSIXInstaller.exe`" /q /a $vsixPath" | out-file ".\install-vsix.cmd" -Encoding ASCII & .\install-vsix.cmd
+#- cmd: appveyor DownloadFile "https://dist.nuget.org/win-x86-commandline/v4.3.0/nuget.exe"
+#- cmd: nuget restore source\nanoFramework.Tools.Debugger.sln
 build_script:
 - ps: >-
+#   msbuild source\nanoFramework.Tools.Debugger.sln /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+
+#   msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+
+   # for some reason the build environment in AppVeyor is not being able to properly restore the Nuget packages for projects with project.json
+   # leave this here to be solved later, see https://github.com/nanoframework/nf-debugger/issues/9
+  
    msbuild /t:restore /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 artifacts:

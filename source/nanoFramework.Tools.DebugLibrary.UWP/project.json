@@ -1,13 +1,8 @@
 ﻿{
   "supports": {},
   "dependencies": {
-    "Microsoft.Build.Framework": "15.3.409",
-    "Microsoft.Build.Tasks.Core": "15.3.409",
-    "Microsoft.Build.Utilities.Core": "15.3.409",
     "Microsoft.NETCore.UniversalWindowsPlatform": "5.4.0",
     "NuGet.Build.Packaging": "0.2.0",
-    "NuGet.Build.Tasks": "4.3.0",
-    "NuGet.Build.Tasks.Pack": "4.3.0",
     "System.Threading.Tasks.Extensions": "4.4.0",
     "System.ValueTuple": "4.4.0"
   },
