@@ -135,7 +135,10 @@ For .NET look for the respective Nuget package.</PackageReleaseNotes>
     <Compile Include="PortSerial\SerialPort.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <PackageReference Include="NuGet.Build.Tasks" Version="4.3.0" />
+    <PackageReference Include="NuGet.Build.Tasks.Pack" Version="4.3.0" />
+  </ItemGroup>
   <Import Project="..\nanoFramework.Tools.DebugLibrary.Shared\nanoFramework.Tools.DebugLibrary.Net.projitems" Label="Shared" />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
