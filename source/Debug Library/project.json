@@ -2,10 +2,9 @@
   "supports": {},
   "dependencies": {
     "Microsoft.NETCore.UniversalWindowsPlatform": "5.3.3",
-    "NuGet.Build.Packaging": "0.1.276",
-    "NuGet.Build.Tasks.Pack": "4.3.0"
+    "NuGet.Build.Packaging": "0.1.276"
   },
   "frameworks": {
-    "uap10.0.10240": {}
+    "uap10.0": {}
   }
 }
