@@ -6,11 +6,10 @@ image: Visual Studio 2017
 clone_depth: 1
 install:
 - ps: .\install-vsix-NuGetizer3000.ps1
-#- cmd: appveyor DownloadFile "https://dist.nuget.org/win-x86-commandline/v4.3.0/nuget.exe"
-#- cmd: nuget restore source\nanoFramework.Tools.Debugger.sln
+- cmd: appveyor DownloadFile "https://dist.nuget.org/win-x86-commandline/v4.3.0/nuget.exe"
 build_script:
 - ps: >-
-   .source\nuget restore -source "https://ci.appveyor.com/nuget/nugetizer3000;https://www.nuget.org/api/v2;https://www.myget.org/F/nuget"
+   nuget restore source\nanoFramework.Tools.Debugger.sln -source "https://ci.appveyor.com/nuget/nugetizer3000;https://www.nuget.org/api/v2;https://www.myget.org/F/nuget"
 
    msbuild /t:restore /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
