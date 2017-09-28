@@ -14,13 +14,14 @@ namespace nanoFramework.Tools.Debugger.Extensions
         /// </summary>
         /// <param name="debugEngine"></param>
         /// <returns></returns>
-        public static async ValueTask<bool> IsDeviceInInitializeStateAsync(this Engine debugEngine)
+        public static async Task<bool> IsDeviceInInitializeStateAsync(this Engine debugEngine)
         {
             var result = await debugEngine.SetExecutionModeAsync(0, 0);
 
             if (result.success)
             {
-                return ((result.currentExecutionMode & WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Mask) == WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Initialize);
+                var currentState = (result.currentExecutionMode & WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Mask);
+                return (currentState != WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_ProgramRunning);
             }
             else
             {
