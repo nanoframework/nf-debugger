@@ -11,7 +11,7 @@ install:
 build_script:
 - ps: >-
  
-   msbuild /t:restore /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+   msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 artifacts:
 - path: '**\bin\Release\*.nupkg'
