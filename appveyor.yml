@@ -1,19 +1,74 @@
-version: 0.26.{build}
-
 pull_requests:
   do_not_increment_build_number: true
 image: Visual Studio 2017
-clone_depth: 1
+#clone_depth: 1
+
+# Do not build on tags
+skip_tags: false
+
+# Skipping commits affecting specific files
+skip_commits:
+  files:
+  - '**\AssemblyInfo.*'
+  - 'CHANGELOG.md'
+  - 'README.md'
+
+cache:
+  - source\packages -> **source\packages.config
+  - C:\ProgramData\chocolatey\bin -> appveyor.yml
+  - C:\ProgramData\chocolatey\lib -> appveyor.yml
+  - vendor/bundle
+
+environment:
+  APPVEYOR_SAVE_CACHE_ON_ERROR: true
+  matrix:
+    - RUBY_VERSION: 24
+  GitHubUserName:
+    secure: 7OBtVAMTodMWK20wg6pGnQ==
+  GitHubUserEmail:
+    secure: HeABB68Sn/Lhbd69C2cUcfWv0ab/rMDEcOLvcxf8gGw=
+  GitHubToken:
+    secure: WOqlCsnwTzfDPJFoNV/h8mEESIpG/9uFn1u6oE8hGZtXwIQQlsY+NyyLt9Y5xoFn
+
+init:
+  - git config --global core.autocrlf true
+  - git config --global credential.helper store
+  - ps: Add-Content "$env:USERPROFILE\.git-credentials" "https://$($env:GitHubToken):x-oauth-basic@github.com`n"
+  - git config --global user.email "%GitHubUserEmail%"
+  - git config --global user.name "%GitHubUserName%"
+
+install:
+  - set PATH=C:\Ruby%RUBY_VERSION%\bin;%PATH%
+  - bundle config --local path vendor/bundle
+  - gem install bundler --quiet --no-ri --no-rdoc
+  - gem install github_changelog_generator --quiet --no-ri --no-rdoc
+  # - bundle install
+  - choco install gitversion.portable -pre -y
+
+before_build:
+- ps: >-
+
+    nuget restore source\nanoFramework.Tools.Debugger.sln
+    
+    gitversion /l console /output buildserver /updateAssemblyInfo /ensureassemblyinfo
+
 build_script:
 - ps: >-
 
-   nuget restore source\nanoFramework.Tools.Debugger.sln
+    msbuild source\nanoFramework.Tools.Debugger.sln /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
-   msbuild source\nanoFramework.Tools.Debugger.sln /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
-   msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
-   msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+# scripts to run before deployment
+before_deploy:
+# need this to keep ruby happy
+- ps: md c:\tmp
+- bundle exec github_changelog_generator --token %GitHubToken%
+# add here the updated changelog and the updated assembly info files
+- git add .
+- git commit --amend --no-edit
 
 artifacts:
 - path: '**\bin\Release\*.nupkg'
@@ -23,6 +78,17 @@ deploy:
   api_key:
     secure: NSRDXbS8tmzOy4wStGuO3yQMKI8Sk10vF8iQtz9ZDXEnHfwnuDdnXbr/Kno3MMvY
   skip_symbols: true
+- provider: GitHub
+  tag: v$(gitversion_nugetversionv2)
+  release: nanoFramework Debugger Library v$(gitversion_semver)
+  description: '[CHANGELOG.md](https://github.com/nanoframework/nf-debugger/blob/master/CHANGELOG.md)\n\n## Install from NuGet\n\nThe following NuGet packages are available for download from this release\n\n:package: [.NET](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/$(gitversion_nugetversionv2)) v$(gitversion_nugetversionv2)\n\n:package: [UWP](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.UWP/$(gitversion_nugetversionv2)) v$(gitversion_nugetversionv2)'
+  auth_token:
+    secure: DNixoFFE+pGlwyhj7McfZoln42vOmj0iY1iNV9zXEr3y0NpXlOIgL8k5ehzlFM1S
+  artifact: Nuget_Packages
+  draft: true
+  prerelease: true
+  force_update: true
+
 notifications:
 - provider: Slack
   auth_token:
@@ -30,4 +96,9 @@ notifications:
   channel: '#build-monitor'
   on_build_status_changed: true
   on_build_success: false
-  on_build_failure: false 
+  on_build_failure: false
+
+#- provider: GitHubPullRequest
+#  on_build_status_changed: false
+#  on_build_success: true
+#  on_build_failure: false

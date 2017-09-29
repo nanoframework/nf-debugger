@@ -1,0 +1,20 @@
+next-version: 0.5.0
+assembly-versioning-scheme: MajorMinorPatch
+build-metadata-padding: 3
+legacy-semver-padding: 3
+assembly-informational-format: '{LegacySemVerPadded}'
+major-version-bump-message: '\+semver:\s?(breaking|major)'
+minor-version-bump-message: '\+semver:\s?(feature|minor)'
+patch-version-bump-message: '\+semver:\s?(fix|patch)'
+commit-message-incrementing: MergeMessageOnly
+branches:
+  master:
+    mode: ContinuousDeployment
+    tag: preview
+    increment: Minor
+  release:
+    tag: rc
+  (pull|pull\-requests|pr)[/-]:
+    tag: test
+ignore:
+  sha: []

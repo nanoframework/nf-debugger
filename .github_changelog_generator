@@ -1,0 +1,6 @@
+user=nanoframework
+project=nf-debugger
+filter-by-milestone=false
+pr-wo-labels=false
+exclude-labels=area-Infrastructure-and-Organization
+author=false
