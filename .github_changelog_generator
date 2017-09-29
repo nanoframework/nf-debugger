@@ -1,0 +1,6 @@
+-u nanoframework 
+-p nf-debugger 
+--no-filter-by-milestone 
+--no-pr-wo-labels 
+--exclude-labels area-Infrastructure-and-Organization 
+--no-author

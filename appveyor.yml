@@ -3,17 +3,80 @@ version: 0.26.{build}
 pull_requests:
   do_not_increment_build_number: true
 image: Visual Studio 2017
-clone_depth: 1
+#clone_depth: 1
+
+# Skipping commits affecting specific files
+
+skip_commits:
+  files:
+  - '**\AssemblyInfo.*'
+  - 'CHANGELOG.md'
+  - 'README.md'
+
+init:
+  - git config --global core.autocrlf true
+
+install:
+  - choco install gitversion.portable -pre -y
+
+before_build:
+- ps: >-
+
+    nuget restore source\nanoFramework.Tools.Debugger.sln
+    
+    gitversion /l console /output buildserver /updateAssemblyInfo /ensureassemblyinfo
+
 build_script:
 - ps: >-
 
-   nuget restore source\nanoFramework.Tools.Debugger.sln
+    msbuild source\nanoFramework.Tools.Debugger.sln /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
-   msbuild source\nanoFramework.Tools.Debugger.sln /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
-   msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
-   msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+# scripts to run before deployment
+before_deploy:
+- ps: >-
+    $fileContent = "-----BEGIN RSA PRIVATE KEY-----`n";
+    $fileContent += $env:priv_key.Replace(' ', "`n");
+    $fileContent += "`n-----END RSA PRIVATE KEY-----`n";
+    Set-Content "$env:USERPROFILE\.ssh\id_rsa" "$($fileContent)";
+    Set-Content "$env:USERPROFILE\.git-credentials" "https://$($env:auth_token):x-oauth-basic@github.com`n";
+
+- git config --global credential.helper store
+- git config --global user.email "%github_email%"
+- git config --global user.name "%github_user%"
+- git checkout -b Appveyor "%APPVEYOR_REPO_BRANCH%"
+- SET PATH=C:\Ruby23-x64\bin;%PATH%
+
+# Print version and location for pre-installed ruby
+- ruby --version
+- where ruby
+
+# Install latest version of RubyGems
+- gem update --system --no-document --no-post-install-message
+- gem --version
+- where gem
+
+# Print version and location for pre-installed bundler
+#- bundler --version
+#- where bundler
+
+# Install ruby dependencies
+- gem install bundler
+- bundle install
+#- bundle install --retry 3
+- bundle exec github_changelog_generator
+
+- git add "CHANGELOG.md"
+#- git add "source/nanoFramework.Tools.DebugLibrary.Net/Properties/AssemblyInfo.cs"
+- git commit -m "%APPVEYOR_REPO_TAG_NAME%"
+- git checkout "%APPVEYOR_REPO_BRANCH%"
+- git merge Appveyor
+- git branch -d Appveyor
+- git pull "origin" "%APPVEYOR_REPO_BRANCH%"
+- git push "origin" "%APPVEYOR_REPO_BRANCH%"
 
 artifacts:
 - path: '**\bin\Release\*.nupkg'
@@ -23,6 +86,17 @@ deploy:
   api_key:
     secure: NSRDXbS8tmzOy4wStGuO3yQMKI8Sk10vF8iQtz9ZDXEnHfwnuDdnXbr/Kno3MMvY
   skip_symbols: true
+- provider: GitHub
+  tag: v$(appveyor_build_version)
+  release: nanoFramework Debugger Library v$(gitversion_semver)
+  description: '[CHANGELOG.md](https://github.com/nanoframework/nf-debugger/blob/master/CHANGELOG.md)'
+  auth_token:
+    secure: DNixoFFE+pGlwyhj7McfZoln42vOmj0iY1iNV9zXEr3y0NpXlOIgL8k5ehzlFM1S
+  artifact: Nuget_Packages
+  draft: true
+  prerelease: true
+  force_update: true
+
 notifications:
 - provider: Slack
   auth_token:
@@ -30,4 +104,9 @@ notifications:
   channel: '#build-monitor'
   on_build_status_changed: true
   on_build_success: false
-  on_build_failure: false 
+  on_build_failure: false
+
+#- provider: GitHubPullRequest
+#  on_build_status_changed: false
+#  on_build_success: true
+#  on_build_failure: false
