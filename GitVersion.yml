@@ -9,9 +9,17 @@ patch-version-bump-message: '\+semver:\s?(fix|patch)'
 commit-message-incrementing: MergeMessageOnly
 branches:
   master:
+    mode:  ContinuousDelivery
+    tag:
+    increment: Patch
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+  develop:
     mode: ContinuousDeployment
     tag: preview
     increment: Minor
+    prevent-increment-of-merged-branch-version: false
+    track-merge-target: true
   release:
     tag: rc
   (pull|pull\-requests|pr)[/-]:
