@@ -80,9 +80,9 @@
       secure: NSRDXbS8tmzOy4wStGuO3yQMKI8Sk10vF8iQtz9ZDXEnHfwnuDdnXbr/Kno3MMvY
     skip_symbols: true
   - provider: GitHub
-    tag: v$(gitversion_nugetversionv2)
+    tag: v$(GitVersion_NuGetVersionV2)
     release: nanoFramework Debugger Library v$(gitversion_semver)
-    description: '[CHANGELOG.md](https://github.com/nanoframework/nf-debugger/blob/master/CHANGELOG.md)\n\n## Install from NuGet\n\nThe following NuGet packages are available for download from this release\n\n:package: [.NET](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/$(gitversion_nugetversionv2)) v$(gitversion_nugetversionv2)\n\n:package: [UWP](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.UWP/$(gitversion_nugetversionv2)) v$(gitversion_nugetversionv2)'
+    description: '[CHANGELOG.md](https://github.com/nanoframework/nf-debugger/blob/master/CHANGELOG.md)\n\n## Install from NuGet\n\nThe following NuGet packages are available for download from this release\n\n:package: [.NET](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/$(GitVersion_NuGetVersionV2)) v$(GitVersion_NuGetVersionV2)\n\n:package: [UWP](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.UWP/$(GitVersion_NuGetVersionV2)) v$(GitVersion_NuGetVersionV2)'
     auth_token:
       secure: DNixoFFE+pGlwyhj7McfZoln42vOmj0iY1iNV9zXEr3y0NpXlOIgL8k5ehzlFM1S
     artifact: Nuget_Packages
@@ -121,6 +121,9 @@
   skip_tags: false
 
   test: off
+  
+  pull_requests:
+    do_not_increment_build_number: true
 
   # Skipping commits affecting specific files
   skip_commits:
@@ -133,16 +136,6 @@
 
   build:
     verbosity: minimal
-
-  environment:
-    matrix:
-      - RUBY_VERSION: 24
-    GitHubUserName:
-      secure: 7OBtVAMTodMWK20wg6pGnQ==
-    GitHubUserEmail:
-      secure: HeABB68Sn/Lhbd69C2cUcfWv0ab/rMDEcOLvcxf8gGw=
-    GitHubToken:
-      secure: WOqlCsnwTzfDPJFoNV/h8mEESIpG/9uFn1u6oE8hGZtXwIQQlsY+NyyLt9Y5xoFn
 
   install:
     - choco install gitversion.portable -pre -y
@@ -162,6 +155,11 @@
       msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
       msbuild /t:pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+
+  on_success:
+  # for this environment variable to work here it has to be set in AppVeyor UI
+  - nuget push source\nanoFramework.Tools.DebugLibrary.Net\bin\Release\nanoFramework.Tools.Debugger.Net.%GitVersion_NuGetVersionV2%.nupkg %MyGetToken% -Source https://www.myget.org/F/nanoframework-dev/api/v2/package
+  - nuget push source\nanoFramework.Tools.DebugLibrary.UWP\bin\Release\nanoFramework.Tools.Debugger.UWP.%GitVersion_NuGetVersionV2%.nupkg %MyGetToken% -Source https://www.myget.org/F/nanoframework-dev/api/v2/package
 
   artifacts:
   - path: '**\bin\Release\*.nupkg'
@@ -188,7 +186,6 @@
     - source\packages -> **source\packages.config
     - C:\ProgramData\chocolatey\bin -> appveyor.yml
     - C:\ProgramData\chocolatey\lib -> appveyor.yml
-    - vendor/bundle
 
 ############################################
 # configuration for release candidate branch
@@ -278,9 +275,9 @@
     skip_symbols: true
 
   - provider: GitHub
-    tag: v$(gitversion_nugetversionv2)
+    tag: v$(GitVersion_NuGetVersionV2)
     release: nanoFramework Debugger Library v$(gitversion_semver)
-    description: '[CHANGELOG.md](https://github.com/nanoframework/nf-debugger/blob/master/CHANGELOG.md)\n\n## Install from NuGet\n\nThe following NuGet packages are available for download from this release\n\n:package: [.NET](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/$(gitversion_nugetversionv2)) v$(gitversion_nugetversionv2)\n\n:package: [UWP](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.UWP/$(gitversion_nugetversionv2)) v$(gitversion_nugetversionv2)'
+    description: '[CHANGELOG.md](https://github.com/nanoframework/nf-debugger/blob/master/CHANGELOG.md)\n\n## Install from NuGet\n\nThe following NuGet packages are available for download from this release\n\n:package: [.NET](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/$(GitVersion_NuGetVersionV2)) v$(GitVersion_NuGetVersionV2)\n\n:package: [UWP](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.UWP/$(GitVersion_NuGetVersionV2)) v$(GitVersion_NuGetVersionV2)'
     auth_token:
       secure: DNixoFFE+pGlwyhj7McfZoln42vOmj0iY1iNV9zXEr3y0NpXlOIgL8k5ehzlFM1S
     artifact: Nuget_Packages
