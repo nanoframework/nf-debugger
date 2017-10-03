@@ -23,6 +23,6 @@ branches:
   release:
     tag: rc
   (pull|pull\-requests|pr)[/-]:
-    tag: test
+    tag: alpha
 ignore:
   sha: []
