@@ -271,7 +271,69 @@ namespace Serial_Test_App_WPF
             (sender as Button).IsEnabled = true;
         }
 
+        private async void StopExecutionButton_Click(object sender, RoutedEventArgs e)
+        {  
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                {
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+
+                    var result = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.SetExecutionModeAsync(0, 0);
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("execution stopped");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                }));
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
         private async void RebootDeviceButton_Click(object sender, RoutedEventArgs e)
+        {  
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                {
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+
+                    await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDeviceAsync(nanoFramework.Tools.Debugger.RebootOption.RebootClrOnly);
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"CLR reboot");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                }));
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private async void SoftRebootDeviceButton_Click(object sender, RoutedEventArgs e)
         {  
             // disable button
             (sender as Button).IsEnabled = false;
@@ -287,7 +349,38 @@ namespace Serial_Test_App_WPF
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
-                    Debug.WriteLine($"reboot");
+                    Debug.WriteLine($"soft reboot");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                }));
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private async void GetDeploymentMapButton_Click(object sender, RoutedEventArgs e)
+        {  
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                {
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+
+                    var dm = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetDeploymentMapAsync();
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine(dm?.ToStringForOutput());
                     Debug.WriteLine("");
                     Debug.WriteLine("");
 
