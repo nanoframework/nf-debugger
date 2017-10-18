@@ -547,7 +547,7 @@ namespace nanoFramework.Tools.Debugger
             Debug.WriteLine($"Write memory operation. Start address { address.ToString("X8") }, lenght {length}");
 
             int count = length;
-            int pos = offset;
+            int position = offset;
 
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
@@ -555,13 +555,20 @@ namespace nanoFramework.Tools.Debugger
             while (count > 0)
             {
                 Commands.Monitor_WriteMemory cmd = new Commands.Monitor_WriteMemory();
-                int len = Math.Min(1024, count);
+                int packetLength = Math.Min(1024, count);
 
-                cmd.PrepareForSend(address, buf, pos, len);
+                // sanity check for length because TXing a packet with less than 64 bytes seems to be causing issues
+                if ((count - packetLength) < 64 && count > 64)
+                {
+                    // need to adjust this length so that 64 bytes are left for the last packet
+                    packetLength = (count - 64);
+                }
 
-                DebuggerEventSource.Log.EngineWriteMemory(address, len);
+                cmd.PrepareForSend(address, buf, position, packetLength);
 
-                Debug.WriteLine($"Sending {len} bytes to address { address.ToString("X8") }, {count} remaining...");
+                DebuggerEventSource.Log.EngineWriteMemory(address, packetLength);
+
+                Debug.WriteLine($"Sending {packetLength} bytes to address { address.ToString("X8") }, {count} remaining...");
 
                 IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_WriteMemory, 0, cmd, 0, 2000);
 
@@ -572,9 +579,9 @@ namespace nanoFramework.Tools.Debugger
                     return (cmdReply.ErrorCode, false);
                 }
 
-                address += (uint)len;
-                count -= len;
-                pos += len;
+                address += (uint)packetLength;
+                count -= packetLength;
+                position += packetLength;
             }
 
             return (0, true);
