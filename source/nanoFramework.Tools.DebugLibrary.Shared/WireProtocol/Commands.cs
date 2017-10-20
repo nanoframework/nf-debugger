@@ -221,14 +221,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        public class Monitor_Reboot
+        public class MonitorReboot
         {
-            public const uint c_NormalReboot = 0;
-            public const uint c_EnterBootloader = 1;
-            public const uint c_ClrRebootOnly = 2;
-            public const uint c_ClrWaitForDbg = 4;
+            public const uint NormalReboot = 0;
+            public const uint EnterBootloader = 1;
+            public const uint ClrRebootOnly = 2;
+            public const uint ClrWaitForDbg = 4;
 
-            public uint m_flags = 0;
+            public uint flags = 0;
         }
 
         public class Monitor_DeploymentMap
@@ -1572,7 +1572,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_EraseMemory: return new Monitor_EraseMemory();
                     case c_Monitor_Execute: return new Monitor_Execute();
                     case c_Monitor_MemoryMap: return new Monitor_MemoryMap();
-                    case c_Monitor_Reboot: return new Monitor_Reboot();
+                    case c_Monitor_Reboot: return new MonitorReboot();
                     case c_Monitor_DeploymentMap: return new Monitor_DeploymentMap();
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap();
 
