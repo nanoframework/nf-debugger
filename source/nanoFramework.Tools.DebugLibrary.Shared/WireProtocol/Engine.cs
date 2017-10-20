@@ -665,25 +665,28 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task RebootDeviceAsync(RebootOption option = RebootOption.NormalReboot)
         {
-            Commands.Monitor_Reboot cmd = new Commands.Monitor_Reboot();
+            Commands.MonitorReboot cmd = new Commands.MonitorReboot();
 
             bool fThrowOnCommunicationFailureSav = m_fThrowOnCommunicationFailure;
+            bool disconnectRequired = false;
 
             m_fThrowOnCommunicationFailure = false;
 
             switch (option)
             {
                 case RebootOption.EnterBootloader:
-                    cmd.m_flags = Commands.Monitor_Reboot.c_EnterBootloader;
+                    cmd.flags = Commands.MonitorReboot.EnterBootloader;
+                    disconnectRequired = true;
                     break;
                 case RebootOption.RebootClrOnly:
-                    cmd.m_flags = Capabilities.SoftReboot ? Commands.Monitor_Reboot.c_ClrRebootOnly : Commands.Monitor_Reboot.c_NormalReboot;
+                    cmd.flags = Capabilities.SoftReboot ? Commands.MonitorReboot.ClrRebootOnly : Commands.MonitorReboot.NormalReboot;
                     break;
                 case RebootOption.RebootClrWaitForDebugger:
-                    cmd.m_flags = Capabilities.SoftReboot ? Commands.Monitor_Reboot.c_ClrWaitForDbg : Commands.Monitor_Reboot.c_NormalReboot;
+                    cmd.flags = Capabilities.SoftReboot ? Commands.MonitorReboot.ClrWaitForDbg : Commands.MonitorReboot.NormalReboot;
                     break;
                 default:
-                    cmd.m_flags = Commands.Monitor_Reboot.c_NormalReboot;
+                    cmd.flags = Commands.MonitorReboot.NormalReboot;
+                    disconnectRequired = true;
                     break;
             }
 
@@ -693,8 +696,8 @@ namespace nanoFramework.Tools.Debugger
 
                 await PerformRequestAsync(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 0, 100);
 
-                // need to disconnect from the device if this is normal reboot
-                if ((cmd.m_flags & Commands.Monitor_Reboot.c_NormalReboot) == Commands.Monitor_Reboot.c_NormalReboot)
+                // need to disconnect from the device?
+                if (disconnectRequired)
                 {
                     Device.Disconnect();
                 }
