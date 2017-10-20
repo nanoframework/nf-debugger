@@ -23,20 +23,6 @@ namespace nanoFramework.Tools.Debugger
             {
                 Transport = TransportType.Usb;
             }
-
-            SuicideTimer = new Timer((state) =>
-            {
-                Task.Factory.StartNew(() => 
-                {
-                    // set kill flag
-                    KillFlag = true;
-
-                    DebugEngine.Dispose();
-
-                    Dispose(false);
-                });
-
-            }, null, Timeout.Infinite, Timeout.Infinite);
         }
 
         #region Disposable implementation

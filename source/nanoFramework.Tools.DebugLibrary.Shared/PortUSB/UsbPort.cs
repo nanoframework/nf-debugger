@@ -257,13 +257,6 @@ namespace nanoFramework.Tools.Debugger.Usb
                 else
                 {
                     // this NanoFramework device is already on the list
-                    // stop the dispose countdown!
-                    nanoFrameworkDeviceMatch.StopCountdownForDispose();
-
-                    // set port parent
-                    //(mfDeviceMatch as MFDevice<MFUsbDevice>).Device.Parent = this;
-                    //// instantiate a debug engine
-                    //(mfDeviceMatch as MFDevice<MFUsbDevice>).Device.DebugEngine = new Engine(this, (mfDeviceMatch as MFDevice<MFUsbDevice>));
                 }
             }
         }
@@ -276,33 +269,11 @@ namespace nanoFramework.Tools.Debugger.Usb
             Debug.WriteLine("USB device removed: " + deviceId);
 
             UsbDevices.Remove(deviceEntry);
-
-            // start thread to dispose and remove device from collection if it doesn't enumerate again in 2 seconds
-            Task.Factory.StartNew(() =>
-            {
-                // get device
-                var device = FindNanoFrameworkDevice(deviceId);
-
-                if (device != null)
-                {
-                    // set device to dispose if it doesn't come back in 2 seconds
-                    device.StartCountdownForDispose();
-
-                    // hold here for the same time as the default timer of the dispose timer
-                    new ManualResetEvent(false).WaitOne(TimeSpan.FromSeconds(2.5));
-
-                    // check is object was disposed
-                    if((device as NanoDevice<NanoUsbDevice>).KillFlag)
-                    {
-                        // yes, remove it from collection
-                        NanoFrameworkDevices.Remove(device);
-
-                        Debug.WriteLine("Removing device " + device.Description);
-
-                        device = null;
-                    }
-                }
-            });
+            // get device
+            var device = FindNanoFrameworkDevice(deviceId);
+            // yes, remove it from collection
+            NanoFrameworkDevices.Remove(device);
+            device = null;
         }
 
         private void ClearDeviceEntries()

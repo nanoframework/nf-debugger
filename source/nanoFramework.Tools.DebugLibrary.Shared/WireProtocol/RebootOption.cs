@@ -11,7 +11,6 @@ namespace nanoFramework.Tools.Debugger
         EnterBootloader,
         RebootClrOnly,
         NormalReboot,
-        NoReconnect,
         RebootClrWaitForDebugger,
     };
 }

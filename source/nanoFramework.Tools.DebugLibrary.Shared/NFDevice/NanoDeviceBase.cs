@@ -45,11 +45,6 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public INanoFrameworkDeviceInfo DeviceInfo { get; internal set; }
 
-        public bool KillFlag { get; protected set; } = false;
-
-        // timer to "suicide" NanoFramework device after the hardware instance has been removed or detected as inactive by the port where it was connected
-        protected Timer SuicideTimer;
-
         private object m_serverCert = null;
         private Dictionary<uint, string> m_execSrecHash = new Dictionary<uint, string>();
         private Dictionary<uint, int> m_srecHash = new Dictionary<uint, int>();
@@ -82,31 +77,6 @@ namespace nanoFramework.Tools.Debugger
         }
 
         public object OnProgress { get; private set; }
-
-        /// <summary>
-        /// Start count down to dispose NanoFramework device. The dispose will occur after 2 seconds.
-        /// </summary>
-        public void StartCountdownForDispose()
-        {
-            StartCountdownForDispose(TimeSpan.FromSeconds(2));
-        }
-
-        /// <summary>
-        /// Start count down to dispose NanoFramework device. The dispose will occur after the timeToDispose argument is elapsed.
-        /// </summary>
-        /// <param name="timeToDispose">Time to wait before the device is disposed</param>
-        public void StartCountdownForDispose(TimeSpan timeToDispose)
-        {
-            SuicideTimer.Change(timeToDispose, TimeSpan.FromMilliseconds(-1));
-        }
-
-        /// <summary>
-        /// Stop the dispose countdown.
-        /// </summary>
-        public void StopCountdownForDispose()
-        {
-            SuicideTimer.Change(Timeout.Infinite, Timeout.Infinite);
-        }
 
         /// <summary>
         /// Get <see cref="INanoFrameworkDeviceInfo"/> from device.
