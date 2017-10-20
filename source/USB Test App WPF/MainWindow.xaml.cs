@@ -70,7 +70,6 @@ namespace Serial_Test_App_WPF
 
             // enable button
             (sender as Button).IsEnabled = true;
-
         }
 
         private object await(MainViewModel mainViewModel)

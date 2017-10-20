@@ -278,12 +278,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         newNanoFrameworkDevice.Dispose();
                     }
                 }
-                else
-                {
-                    // this NanoFramework device is already on the list
-                    // stop the dispose countdown!
-                    nanoFrameworkDeviceMatch.StopCountdownForDispose();
-                }
             }
         }
 
@@ -296,32 +290,50 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             SerialDevices.Remove(deviceEntry);
 
-            // start thread to dispose and remove device from collection if it doesn't enumerate again in 2 seconds
-            Task.Factory.StartNew(() =>
-            {
-                // get device
-                var device = FindNanoFrameworkDevice(deviceId);
+            // get device
+            var device = FindNanoFrameworkDevice(deviceId);
+            // yes, remove it from collection
+            NanoFrameworkDevices.Remove(device);
 
-                if (device != null)
-                {
-                    // set device to dispose if it doesn't come back in 2 seconds
-                    device.StartCountdownForDispose();
+            device = null;
 
-                    // hold here for the same time as the default timer of the dispose timer
-                    new ManualResetEvent(false).WaitOne(TimeSpan.FromSeconds(2.5));
+            //// start thread to dispose and remove device from collection if it doesn't enumerate again in 2 seconds
+            //Task.Factory.StartNew(() =>
+            //{
+            //    // get device
+            //    var device = FindNanoFrameworkDevice(deviceId);
 
-                    // check is object was disposed
-                    if ((device as NanoDevice<NanoSerialDevice>).KillFlag)
-                    {
-                        // yes, remove it from collection
-                        NanoFrameworkDevices.Remove(device);
+            //    if (device != null)
+            //    {
+            //        // set device to dispose if it doesn't come back in 2.5 seconds
+            //        device.StartCountdownForDispose();
 
-                        Debug.WriteLine("Removing device " + device.Description);
+            //        // hold here for the same time as the default timer of the dispose timer
+            //        new ManualResetEvent(false).WaitOne(TimeSpan.FromSeconds(4));
 
-                        device = null;
-                    }
-                }
-            });
+
+            //        // try to find device
+            //        var newDevice = FindNanoFrameworkDevice(deviceId);
+
+
+            //        // check is object was disposed
+            //        if ((newDevice as NanoDevice<NanoSerialDevice>).KillFlag)
+            //        {
+            //            // yes, remove it from collection
+            //            NanoFrameworkDevices.Remove(newDevice);
+
+            //            Debug.WriteLine("Removing device " + newDevice.Description);
+
+            //            newDevice = null;
+            //        }
+            //        else
+            //        {
+            //            // add it again to serial devices collection
+            //            deviceEntry = FindDevice(deviceId);
+            //            SerialDevices.Add(deviceEntry);
+            //        }
+            //    }
+            //});
         }
 
         private void ClearDeviceEntries()
@@ -411,7 +423,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         {
                             // mark this device for removal
                             devicesToRemove.Add(device);
-                            device.StartCountdownForDispose();
                         }
                         else
                         {

@@ -693,23 +693,16 @@ namespace nanoFramework.Tools.Debugger
 
                 await PerformRequestAsync(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 0, 100);
 
-                if (option != RebootOption.NoReconnect)
+                // need to disconnect from the device if this is normal reboot
+                if ((cmd.m_flags & Commands.Monitor_Reboot.c_NormalReboot) == Commands.Monitor_Reboot.c_NormalReboot)
                 {
-                    //int timeout = 1000;
-
-                    //if (m_portDefinition is PortDefinition_Tcp)
-                    //{
-                    //    timeout = 2000;
-                    //}
-
-                    //Thread.Sleep(timeout);
+                    Device.Disconnect();
                 }
             }
             finally
             {
                 m_fThrowOnCommunicationFailure = fThrowOnCommunicationFailureSav;
             }
-
         }
 
         public async Task<bool> ReconnectAsync(bool fSoftReboot)
