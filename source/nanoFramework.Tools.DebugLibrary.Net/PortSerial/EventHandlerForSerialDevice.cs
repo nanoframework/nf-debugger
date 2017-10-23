@@ -94,5 +94,98 @@ namespace nanoFramework.Tools.Debugger.Serial
 
             CloseCurrentlyConnectedDevice();
         }
+
+        /// <summary>
+        /// This method opens the device using the WinRT Serial API. After the device is opened, save the device
+        /// so that it can be used across scenarios.
+        ///
+        /// It is important that the FromIdAsync call is made on the UI thread because the consent prompt can only be displayed
+        /// on the UI thread.
+        /// 
+        /// This method is used to reopen the device after the device reconnects to the computer and when the app resumes.
+        /// </summary>
+        /// <param name="deviceInfo">Device information of the device to be opened</param>
+        /// <param name="deviceSelector">The AQS used to find this device</param>
+        /// <returns>True if the device was successfully opened, false if the device could not be opened for well known reasons.
+        /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
+        public async Task<bool> OpenDeviceAsync(DeviceInformation deviceInfo, string deviceSelector)
+        {
+            await Task.Delay(250);
+
+            device = await SerialDevice.FromIdAsync(deviceInfo.Id);
+
+            bool successfullyOpenedDevice = false;
+
+            try
+            {
+                // Device could have been blocked by user or the device has already been opened by another app.
+                if (device != null)
+                {
+                    successfullyOpenedDevice = true;
+
+                    deviceInformation = deviceInfo;
+                    this.deviceSelector = deviceSelector;
+
+                    Debug.WriteLine($"Device {deviceInformation.Id} opened");
+
+                    // adjust settings for serial port
+                    device.BaudRate = 115200;
+
+                    /////////////////////////////////////////////////////////////
+                    // need to FORCE the parity setting to _NONE_ because        
+                    // the default on the current ST Link is different causing 
+                    // the communication to fail
+                    /////////////////////////////////////////////////////////////
+                    device.Parity = SerialParity.None;
+
+                    device.WriteTimeout = TimeSpan.FromMilliseconds(1000);
+                    device.ReadTimeout = TimeSpan.FromMilliseconds(1000);
+                    device.ErrorReceived += Device_ErrorReceived;
+
+                    // Notify registered callback handle that the device has been opened
+                    deviceConnectedCallback?.Invoke(this, deviceInformation);
+
+                    // Background tasks are not part of the app, so app events will not have an affect on the device
+                    if (!isBackgroundTask && (appSuspendEventHandler == null || appResumeEventHandler == null))
+                    {
+                        RegisterForAppEvents();
+                    }
+
+                    // User can block the device after it has been opened in the Settings charm. We can detect this by registering for the 
+                    // DeviceAccessInformation.AccessChanged event
+                    if (deviceAccessEventHandler == null)
+                    {
+                        RegisterForDeviceAccessStatusChange();
+                    }
+
+                    // Create and register device watcher events for the device to be opened unless we're reopening the device
+                    if (deviceWatcher == null)
+                    {
+                        deviceWatcher = DeviceInformation.CreateWatcher(deviceSelector);
+
+                        RegisterForDeviceWatcherEvents();
+                    }
+
+                    if (!watcherStarted)
+                    {
+                        // Start the device watcher after we made sure that the device is opened.
+                        StartDeviceWatcher();
+                    }
+                }
+                else
+                {
+                    successfullyOpenedDevice = false;
+
+                    // Most likely the device is opened by another app, but cannot be sure
+                    Debug.WriteLine($"Unknown error, possibly opened by another app : {deviceInfo.Id}");
+                }
+            }
+            // catch all because the device open might fail for a number of reasons
+            catch (Exception ex)
+            {
+            }
+
+            return successfullyOpenedDevice;
+        }
     }
 }
