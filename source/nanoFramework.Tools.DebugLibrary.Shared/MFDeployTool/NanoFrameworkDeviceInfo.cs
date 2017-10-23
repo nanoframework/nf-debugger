@@ -36,10 +36,10 @@ namespace nanoFramework.Tools.Debugger
             if (!Dbg.IsConnectedTonanoCLR) return false;
 
             // get app domains from device
-            await GetAppDomainsAsync(cancelTSource.Token);
+            await GetAppDomainsAsync(cancelTSource.Token).ConfigureAwait(false);
 
             // get assemblies from device
-            await GetAssembliesAsync(cancelTSource.Token);
+            await GetAssembliesAsync(cancelTSource.Token).ConfigureAwait(false);
 
             Valid = true;
 
@@ -50,14 +50,14 @@ namespace nanoFramework.Tools.Debugger
         {
             if (Dbg.Capabilities.AppDomains)
             {
-                Commands.Debugging_TypeSys_AppDomains.Reply domainsReply = await Dbg.GetAppDomainsAsync();
+                Commands.Debugging_TypeSys_AppDomains.Reply domainsReply = await Dbg.GetAppDomainsAsync().ConfigureAwait(false);
                 // TODO add cancellation token code
 
                 if (domainsReply != null)
                 {
                     foreach (uint id in domainsReply.Data)
                     {
-                        Commands.Debugging_Resolve_AppDomain.Reply reply = await Dbg.ResolveAppDomainAsync(id);
+                        Commands.Debugging_Resolve_AppDomain.Reply reply = await Dbg.ResolveAppDomainAsync(id).ConfigureAwait(false);
                         // TODO add cancellation token code
                         if (reply != null)
                         {
@@ -70,7 +70,7 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task GetAssembliesAsync(CancellationToken cancellationToken)
         {
-            List<Commands.DebuggingResolveAssembly> reply = await Dbg.ResolveAllAssembliesAsync(cancellationToken);
+            List<Commands.DebuggingResolveAssembly> reply = await Dbg.ResolveAllAssembliesAsync(cancellationToken).ConfigureAwait(false);
 
             if (reply != null)
                 foreach (Commands.DebuggingResolveAssembly resolvedAssm in reply)

@@ -8,7 +8,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     public enum ConnectionSource
     {
         Unknown = 0,
-        NanoBooter,
-        NanoCLR,
+        nanoBooter,
+        nanoCLR,
     };
 }

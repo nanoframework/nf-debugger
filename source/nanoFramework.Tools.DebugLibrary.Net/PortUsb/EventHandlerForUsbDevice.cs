@@ -27,10 +27,10 @@ namespace nanoFramework.Tools.Debugger.Usb
         /// </summary>
         private void RegisterForDeviceAccessStatusChange()
         {
-            deviceAccessInformation = DeviceAccessInformation.CreateFromId(deviceInformation.Id);
+            //deviceAccessInformation = DeviceAccessInformation.CreateFromId(deviceInformation.Id);
 
-            deviceAccessEventHandler = new TypedEventHandler<DeviceAccessInformation, DeviceAccessChangedEventArgs>(OnDeviceAccessChanged);
-            deviceAccessInformation.AccessChanged += deviceAccessEventHandler;
+            //deviceAccessEventHandler = new TypedEventHandler<DeviceAccessInformation, DeviceAccessChangedEventArgs>(OnDeviceAccessChanged);
+            //deviceAccessInformation.AccessChanged += deviceAccessEventHandler;
         }
 
         /// <summary>
@@ -48,7 +48,9 @@ namespace nanoFramework.Tools.Debugger.Usb
         /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
         public async Task<bool> OpenDeviceAsync(DeviceInformation deviceInfo, String deviceSelector)
         {
+#pragma warning disable ConfigureAwaitChecker // CAC001
             device = await Windows.Devices.Usb.UsbDevice.FromIdAsync(deviceInfo.Id);
+#pragma warning restore ConfigureAwaitChecker // CAC001
 
             bool successfullyOpenedDevice = false;
 

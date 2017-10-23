@@ -24,7 +24,7 @@ namespace nanoFramework.Tools.Debugger
 
         public override async Task<RuntimeValue> GetElementAsync(uint index)
         {
-            return await m_eng.GetArrayElementAsync(m_handle.m_referenceID, index);
+            return await m_eng.GetArrayElementAsync(m_handle.m_referenceID, index).ConfigureAwait(false);
         }
 
         public override uint Length { get { return m_handle.m_array_numOfElements; } }

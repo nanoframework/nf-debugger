@@ -84,6 +84,7 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Analyzer Include="..\packages\ConfigureAwaitChecker.Analyzer.1.0.0\analyzers\dotnet\cs\ConfigureAwaitChecker.dll" />
     <Analyzer Include="..\packages\UwpDesktop.10.0.14393.3\analyzers\dotnet\UwpDesktopAnalyzer.dll" />
   </ItemGroup>
   <Import Project="..\nanoFramework.Tools.DebugLibrary.Shared\nanoFramework.Tools.DebugLibrary.Net.projitems" Label="Shared" />

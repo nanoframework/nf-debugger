@@ -110,9 +110,9 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
         public async Task<bool> OpenDeviceAsync(DeviceInformation deviceInfo, string deviceSelector)
         {
-            await Task.Delay(250);
-
+#pragma warning disable ConfigureAwaitChecker // CAC001
             device = await SerialDevice.FromIdAsync(deviceInfo.Id);
+#pragma warning restore ConfigureAwaitChecker // CAC001
 
             bool successfullyOpenedDevice = false;
 

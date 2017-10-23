@@ -69,7 +69,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public async Task<bool> QueueOutputAsync(MessageRaw raw, CancellationToken cancellationToken)
         {
             Debug.WriteLine("QueueOutputAsync 1");
-            await SendRawBufferAsync(raw.Header, TimeSpan.FromMilliseconds(1000), cancellationToken);
+            await SendRawBufferAsync(raw.Header, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
 
             // check for cancelation request
             if (cancellationToken.IsCancellationRequested)
@@ -83,7 +83,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 Debug.WriteLine("QueueOutputAsync 2");
 
-                await SendRawBufferAsync(raw.Payload, TimeSpan.FromMilliseconds(1000), cancellationToken);
+                await SendRawBufferAsync(raw.Payload, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
             }
 
             return true;
@@ -122,7 +122,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             Debug.WriteLine("SendRawBufferAsync");
 
-            return await App.SendBufferAsync(buffer, waiTimeout, cancellationToken);
+            return await App.SendBufferAsync(buffer, waiTimeout, cancellationToken).ConfigureAwait(false);
         }
 
         internal async Task<int> ReadBufferAsync(byte[] buffer, int offset, int bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
@@ -148,7 +148,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 }
 
                 // read next chunk of data async
-                var readResult = await App.ReadBufferAsync((uint)bytesToRead, waitTimeout, cancellationToken);
+                var readResult = await App.ReadBufferAsync((uint)bytesToRead, waitTimeout, cancellationToken).ConfigureAwait(false);
 
                 Debug.WriteLine("read {0} bytes", readResult.Length);
                 // any byte read?
