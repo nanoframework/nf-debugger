@@ -7,63 +7,17 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
-using Windows.Devices.SerialCommunication;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 
-namespace nanoFramework.Tools.Debugger.Serial
+namespace nanoFramework.Tools.Debugger.Usb
 {
     /// <summary>
-    /// This class handles the required changes and operation of an SerialDevice when a specific app event
+    /// This class handles the required changes and operation of an UsbDevice when a specific app event
     /// is raised (app suspension and resume) or when the device is disconnected. The device watcher events are also handled here.
     /// </summary>
-    public partial class EventHandlerForSerialDevice
+    public partial class EventHandlerForUsbDevice
     {
-        private SuspendingEventHandler appSuspendEventHandler;
-        private EventHandler<object> appResumeEventHandler;
-
-        private SuspendingEventHandler appSuspendCallback;
-
-        public SuspendingEventHandler OnAppSuspendCallback
-        {
-            get
-            {
-                return appSuspendCallback;
-            }
-
-            set
-            {
-                appSuspendCallback = value;
-            }
-        }
-
-        /// <summary>
-        /// Register for app suspension/resume events. See the comments
-        /// for the event handlers for more information on what is being done to the device.
-        ///
-        /// We will also register for when the app exists so that we may close the device handle.
-        /// </summary>
-        private void RegisterForAppEvents()
-        {
-            appSuspendEventHandler = new SuspendingEventHandler(Current.OnAppSuspension);
-            appResumeEventHandler = new EventHandler<object>(Current.OnAppResume);
-
-            // This event is raised when the app is exited and when the app is suspended
-            CallerApp.Suspending += appSuspendEventHandler;
-
-            CallerApp.Resuming += appResumeEventHandler;
-        }
-
-        private void UnregisterFromAppEvents()
-        {
-            // This event is raised when the app is exited and when the app is suspended
-            CallerApp.Suspending -= appSuspendEventHandler;
-            appSuspendEventHandler = null;
-
-            CallerApp.Resuming -= appResumeEventHandler;
-            appResumeEventHandler = null;
-        }
-
         /// <summary>
         /// Listen for any changed in device access permission. The user can block access to the device while the device is in use.
         /// If the user blocks access to the device while the device is opened, the device's handle will be closed automatically by
@@ -80,41 +34,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         }
 
         /// <summary>
-        /// If a SerialDevice object has been instantiated (a handle to the device is opened), we must close it before the app 
-        /// goes into suspension because the API automatically closes it for us if we don't. When resuming, the API will
-        /// not reopen the device automatically, so we need to explicitly open the device in that situation.
-        ///
-        /// Since we have to reopen the device ourselves when the app resumes, it is good practice to explicitly call the close
-        /// in the app as well (For every open there is a close).
-        /// 
-        /// We must stop the DeviceWatcher because it will continue to raise events even if
-        /// the app is in suspension, which is not desired (drains battery). We resume the device watcher once the app resumes again.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="eventArgs"></param>
-        private void OnAppSuspension(object sender, Windows.ApplicationModel.SuspendingEventArgs args)
-        {
-            if (watcherStarted)
-            {
-                watcherSuspended = true;
-                StopDeviceWatcher();
-            }
-            else
-            {
-                watcherSuspended = false;
-            }
-
-            // Forward suspend event to registered callback function
-            if (appSuspendCallback != null)
-            {
-                appSuspendCallback(sender, args);
-            }
-
-            CloseCurrentlyConnectedDevice();
-        }
-
-        /// <summary>
-        /// This method opens the device using the WinRT Serial API. After the device is opened, save the device
+        /// This method opens the device using the WinRT Usb API. After the device is opened, save the device
         /// so that it can be used across scenarios.
         ///
         /// It is important that the FromIdAsync call is made on the UI thread because the consent prompt can only be displayed
@@ -126,11 +46,9 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// <param name="deviceSelector">The AQS used to find this device</param>
         /// <returns>True if the device was successfully opened, false if the device could not be opened for well known reasons.
         /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
-        public async Task<bool> OpenDeviceAsync(DeviceInformation deviceInfo, string deviceSelector)
+        public async Task<bool> OpenDeviceAsync(DeviceInformation deviceInfo, String deviceSelector)
         {
-            await Task.Delay(250);
-
-            device = await SerialDevice.FromIdAsync(deviceInfo.Id);
+            device = await Windows.Devices.Usb.UsbDevice.FromIdAsync(deviceInfo.Id);
 
             bool successfullyOpenedDevice = false;
 
@@ -145,20 +63,6 @@ namespace nanoFramework.Tools.Debugger.Serial
                     this.deviceSelector = deviceSelector;
 
                     Debug.WriteLine($"Device {deviceInformation.Id} opened");
-
-                    // adjust settings for serial port
-                    device.BaudRate = 115200;
-
-                    /////////////////////////////////////////////////////////////
-                    // need to FORCE the parity setting to _NONE_ because        
-                    // the default on the current ST Link is different causing 
-                    // the communication to fail
-                    /////////////////////////////////////////////////////////////
-                    device.Parity = SerialParity.None;
-
-                    device.WriteTimeout = TimeSpan.FromMilliseconds(1000);
-                    device.ReadTimeout = TimeSpan.FromMilliseconds(1000);
-                    device.ErrorReceived += Device_ErrorReceived;
 
                     // Notify registered callback handle that the device has been opened
                     deviceConnectedCallback?.Invoke(this, deviceInformation);
@@ -218,9 +122,7 @@ namespace nanoFramework.Tools.Debugger.Serial
                 }
             }
             // catch all because the device open might fail for a number of reasons
-            catch (Exception ex)
-            {
-            }
+            catch { }
 
             return successfullyOpenedDevice;
         }

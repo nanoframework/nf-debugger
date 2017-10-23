@@ -75,6 +75,7 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
   <ItemGroup>
     <Compile Include="PortDefinitions\PortBase.cs" />
     <Compile Include="PortSerial\EventHandlerForSerialDevice.cs" />
+    <Compile Include="PortUsb\EventHandlerForUsbDevice.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
