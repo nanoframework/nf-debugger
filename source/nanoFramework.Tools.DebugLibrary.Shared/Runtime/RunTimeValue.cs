@@ -354,11 +354,11 @@ namespace nanoFramework.Tools.Debugger
 
             if (IsArrayReference)
             {
-                fRes = await m_eng.SetArrayElementAsync(m_handle.m_arrayref_referenceID, m_handle.m_arrayref_index, data);
+                fRes = await m_eng.SetArrayElementAsync(m_handle.m_arrayref_referenceID, m_handle.m_arrayref_index, data).ConfigureAwait(false);
             }
             else
             {
-                fRes = await m_eng.SetBlockAsync(m_handle.m_referenceID, dt, data);
+                fRes = await m_eng.SetBlockAsync(m_handle.m_referenceID, dt, data).ConfigureAwait(false);
             }
 
             return fRes;
@@ -375,7 +375,7 @@ namespace nanoFramework.Tools.Debugger
             // referenceIdDirect is the data pointer for the CLR_RT_HeapBlock.  We subtract 4 to point to the id 
             // portion of the heapblock.  For the second parameter we need to use the direct reference because
             // ReferenceId will return null in this case since the value has not been assigned yet.
-            return await m_eng.AssignRuntimeValueAsync(referenceIdDirect - 4, ReferenceIdDirect - 4);
+            return await m_eng.AssignRuntimeValueAsync(referenceIdDirect - 4, ReferenceIdDirect - 4).ConfigureAwait(false);
         }
 
         public async Task<RuntimeValue> AssignAsync(RuntimeValue val)
@@ -393,7 +393,7 @@ namespace nanoFramework.Tools.Debugger
                     Array.Copy(val.m_handle.m_builtinValue, data, data.Length);
                 }
 
-                if (await SetBlockAsync(dt, data))
+                if (await SetBlockAsync(dt, data).ConfigureAwait(false))
                 {
                     retval = this;
                 }
@@ -416,7 +416,7 @@ namespace nanoFramework.Tools.Debugger
                     throw new InvalidCastException("The two runtime values are incompatible");
                 }
 
-                retval = await AssignAsync(val != null ? val.ReferenceIdDirect : 0);
+                retval = await AssignAsync(val != null ? val.ReferenceIdDirect : 0).ConfigureAwait(false);
             }
 
             return retval;

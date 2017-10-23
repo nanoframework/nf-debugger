@@ -233,10 +233,10 @@ namespace nanoFramework.Tools.Debugger.Usb
 
                     // now fill in the description
                     // try opening the device to read the descriptor
-                    if (await ConnectUsbDeviceAsync(newNanoFrameworkDevice.Device.DeviceInformation))
+                    if (await ConnectUsbDeviceAsync(newNanoFrameworkDevice.Device.DeviceInformation).ConfigureAwait(false))
                     {
                         // the device description format is kept to maintain backwards compatibility
-                        newNanoFrameworkDevice.Description = EventHandlerForUsbDevice.Current.DeviceInformation.Name + "_" + await GetDeviceDescriptor(5);
+                        newNanoFrameworkDevice.Description = EventHandlerForUsbDevice.Current.DeviceInformation.Name + "_" + await GetDeviceDescriptor(5).ConfigureAwait(false);
 
                         Debug.WriteLine("Add new nanoFramework device to list: " + newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
 
@@ -387,7 +387,9 @@ namespace nanoFramework.Tools.Debugger.Usb
                 };
 
                 // send control to device
+#pragma warning disable ConfigureAwaitChecker // CAC001
                 IBuffer responseBuffer = await EventHandlerForUsbDevice.Current.Device.SendControlInTransferAsync(setupPacket, buffer);
+#pragma warning restore ConfigureAwaitChecker // CAC001
 
                 // read from a buffer with a data reader
                 DataReader reader = DataReader.FromBuffer(responseBuffer);
@@ -435,7 +437,7 @@ namespace nanoFramework.Tools.Debugger.Usb
 
         public async Task<bool> ConnectDeviceAsync(NanoDeviceBase device)
         {
-            return await ConnectUsbDeviceAsync((device as NanoDevice<NanoUsbDevice>).Device.DeviceInformation as UsbDeviceInformation);
+            return await ConnectUsbDeviceAsync((device as NanoDevice<NanoUsbDevice>).Device.DeviceInformation as UsbDeviceInformation).ConfigureAwait(false);
         }
 
         private async Task<bool> ConnectUsbDeviceAsync(UsbDeviceInformation usbDeviceInfo)
@@ -453,7 +455,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             // Create an EventHandlerForDevice to watch for the device we are connecting to
             EventHandlerForUsbDevice.CreateNewEventHandlerForDevice();
 
-            return await EventHandlerForUsbDevice.Current.OpenDeviceAsync(usbDeviceInfo.DeviceInformation, usbDeviceInfo.DeviceSelector);
+            return await EventHandlerForUsbDevice.Current.OpenDeviceAsync(usbDeviceInfo.DeviceInformation, usbDeviceInfo.DeviceSelector).ConfigureAwait(false);
         }
 
         public void DisconnectDevice(NanoDeviceBase device)
@@ -519,7 +521,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                         storeAsyncTask = writer.StoreAsync().AsTask(linkedCancelationToken);
                     }
 
-                    bytesWritten = await storeAsyncTask;
+                    bytesWritten = await storeAsyncTask.ConfigureAwait(false);
 
                     if (bytesWritten > 0)
                     {
@@ -567,7 +569,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                 Task<UInt32> loadAsyncTask;
 
                 //Debug.WriteLine("### waiting");
-                await semaphore.WaitAsync();
+                await semaphore.WaitAsync().ConfigureAwait(false);
                 //Debug.WriteLine("### got it");
 
                 try
@@ -596,7 +598,9 @@ namespace nanoFramework.Tools.Debugger.Usb
                         if (readCount > 0 &&
                             bytesToRead > 0)
                         {
+#pragma warning disable ConfigureAwaitChecker // CAC001
                             await reader.LoadAsync(readCount);
+#pragma warning restore ConfigureAwaitChecker // CAC001
 
                             byte[] readBuffer = new byte[bytesToRead];
                             reader.ReadBytes(readBuffer);

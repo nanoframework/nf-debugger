@@ -81,17 +81,17 @@ namespace nanoFramework.Tools.Debugger
         {
             if (m_value == null) throw new NotImplementedException();
 
-            await m_value.SetStringValueAsync(val);
+            await m_value.SetStringValueAsync(val).ConfigureAwait(false);
         }
 
         public override async Task<RuntimeValue> GetFieldAsync(uint offset, uint fd)
         {
-            return (m_value == null) ? null : await m_value.GetFieldAsync(offset, fd);
+            return (m_value == null) ? null : await m_value.GetFieldAsync(offset, fd).ConfigureAwait(false);
         }
 
         public override async Task<RuntimeValue> GetElementAsync(uint index)
         {
-            return (m_value == null) ? null : await m_value.GetElementAsync(index);
+            return (m_value == null) ? null : await m_value.GetElementAsync(index).ConfigureAwait(false);
         }
     }
 }
