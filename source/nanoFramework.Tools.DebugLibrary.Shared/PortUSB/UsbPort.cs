@@ -33,7 +33,6 @@ namespace nanoFramework.Tools.Debugger.Usb
 
         // counter of device watchers completed
         private int deviceWatchersCompletedCount = 0;
-        private bool isAllDevicesEnumerated = false;
 
         private object cancelIoLock = new object();
         private static SemaphoreSlim semaphore;
@@ -42,6 +41,11 @@ namespace nanoFramework.Tools.Debugger.Usb
         /// Internal list with the actual nF USB devices
         /// </summary>
         List<UsbDeviceInformation> UsbDevices;
+
+        /// <summary>
+        /// Flag to signal that devices enumeration is complete.
+        /// </summary>
+        public bool DevicesEnumerationComplete { get; internal set; } = false;
 
         /// <summary>
         /// Creates an USB debug client
@@ -128,7 +132,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             // Start all device watchers
             watchersStarted = true;
             deviceWatchersCompletedCount = 0;
-            isAllDevicesEnumerated = false;
+            DevicesEnumerationComplete = false;
 
             foreach (DeviceWatcher deviceWatcher in mapDeviceWatchersToDeviceSelector.Keys)
             {
@@ -350,7 +354,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                 Debug.WriteLine($"USB device enumeration completed. Found { UsbDevices.Count } devices");
 
                 // all watchers have completed enumeration
-                isAllDevicesEnumerated = true;
+                DevicesEnumerationComplete = true;
 
                 // fire event that USB enumeration is complete 
                 OnDeviceEnumerationCompleted();
