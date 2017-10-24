@@ -44,11 +44,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         List<SerialDeviceInformation> SerialDevices;
 
         /// <summary>
-        /// Flag to signal that devices enumeration is complete.
-        /// </summary>
-        public bool DevicesEnumerationComplete { get; internal set; } = false;
-
-        /// <summary>
         /// Creates an Serial debug client
         /// </summary>
         public SerialPort(object callerApp)
@@ -147,7 +142,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // Start all device watchers
             watchersStarted = true;
             deviceWatchersCompletedCount = 0;
-            DevicesEnumerationComplete = false;
+            IsDevicesEnumerationComplete = false;
 
             foreach (DeviceWatcher deviceWatcher in mapDeviceWatchersToDeviceSelector.Keys)
             {
@@ -249,7 +244,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     NanoFrameworkDevices.Add(newNanoFrameworkDevice as NanoDeviceBase);
 
                     // perform check for valid nanoFramework device is this is not the initial enumeration
-                    if (DevicesEnumerationComplete)
+                    if (IsDevicesEnumerationComplete)
                     {
                         // try opening the device to check for a valid nanoFramework device
                         if (await ConnectSerialDeviceAsync(newNanoFrameworkDevice.Device.DeviceInformation).ConfigureAwait(false))
@@ -448,7 +443,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 devicesToRemove.Select(d => NanoFrameworkDevices.Remove(d)).Count();
 
                 // all watchers have completed enumeration
-                DevicesEnumerationComplete = true;
+                IsDevicesEnumerationComplete = true;
 
                 Debug.WriteLine($"Serial device enumeration completed. Found {NanoFrameworkDevices.Count} devices");
 
