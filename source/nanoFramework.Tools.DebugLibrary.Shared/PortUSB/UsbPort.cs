@@ -43,11 +43,6 @@ namespace nanoFramework.Tools.Debugger.Usb
         List<UsbDeviceInformation> UsbDevices;
 
         /// <summary>
-        /// Flag to signal that devices enumeration is complete.
-        /// </summary>
-        public bool DevicesEnumerationComplete { get; internal set; } = false;
-
-        /// <summary>
         /// Creates an USB debug client
         /// </summary>
         public UsbPort(Application callerApp)
@@ -132,7 +127,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             // Start all device watchers
             watchersStarted = true;
             deviceWatchersCompletedCount = 0;
-            DevicesEnumerationComplete = false;
+            IsDevicesEnumerationComplete = false;
 
             foreach (DeviceWatcher deviceWatcher in mapDeviceWatchersToDeviceSelector.Keys)
             {
@@ -354,7 +349,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                 Debug.WriteLine($"USB device enumeration completed. Found { UsbDevices.Count } devices");
 
                 // all watchers have completed enumeration
-                DevicesEnumerationComplete = true;
+                IsDevicesEnumerationComplete = true;
 
                 // fire event that USB enumeration is complete 
                 OnDeviceEnumerationCompleted();
