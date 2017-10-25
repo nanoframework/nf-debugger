@@ -27,20 +27,6 @@ namespace nanoFramework.Tools.Debugger
             ThreadCreateEx = 0x00000400,
         }
 
-        public struct LCDCapabilities
-        {
-            public readonly uint Width;
-            public readonly uint Height;
-            public readonly uint BitsPerPixel;
-
-            public LCDCapabilities(uint width, uint height, uint bitsPerPixel)
-            {
-                Width = width;
-                Height = height;
-                BitsPerPixel = bitsPerPixel;
-            }
-        }
-
         public struct SoftwareVersionProperties
         {
             public readonly string BuildDate;
@@ -136,7 +122,6 @@ namespace nanoFramework.Tools.Debugger
         }
 
         private Capability m_capabilities;
-        private LCDCapabilities m_lcd;
         private SoftwareVersionProperties m_swVersion;
         private HalSystemInfoProperties m_halSystemInfo;
         private ClrInfoProperties m_clrInfo;
@@ -145,14 +130,13 @@ namespace nanoFramework.Tools.Debugger
         private bool m_fUnknown;
 
         public CLRCapabilities()
-            : this(Capability.None, new LCDCapabilities(), new SoftwareVersionProperties(),
+            : this(Capability.None, new SoftwareVersionProperties(),
                 new HalSystemInfoProperties(), new ClrInfoProperties(), new TargetInfoProperties())
         {
         }
 
         public CLRCapabilities(
             Capability capability,
-            LCDCapabilities lcd,
             SoftwareVersionProperties ver,
             HalSystemInfoProperties halSystemInfo,
             ClrInfoProperties clrInfo,
@@ -161,7 +145,6 @@ namespace nanoFramework.Tools.Debugger
         {
             m_fUnknown = (capability == Capability.None);
             m_capabilities = capability;
-            m_lcd = lcd;
             m_swVersion = ver;
 
             m_halSystemInfo = halSystemInfo;
@@ -229,15 +212,6 @@ namespace nanoFramework.Tools.Debugger
             {
                 Debug.Assert(!m_fUnknown);
                 return (m_capabilities & Capability.ThreadCreateEx) != 0;
-            }
-        }
-
-        public LCDCapabilities LCD
-        {
-            get
-            {
-                Debug.Assert(!m_fUnknown);
-                return m_lcd;
             }
         }
 
