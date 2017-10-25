@@ -2377,31 +2377,6 @@ namespace nanoFramework.Tools.Debugger
             return verCaps;
         }
 
-        private async Task<CLRCapabilities.LCDCapabilities> DiscoverCLRCapabilityLCDAsync()
-        {
-            Debug.WriteLine("DiscoverCLRCapabilityLCD");
-
-            IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityLCD);
-
-            Commands.Debugging_Execution_QueryCLRCapabilities.LCD lcd = new Commands.Debugging_Execution_QueryCLRCapabilities.LCD();
-
-            CLRCapabilities.LCDCapabilities lcdCaps = new CLRCapabilities.LCDCapabilities();
-
-            if (reply != null)
-            {
-                Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
-
-                if (cmdReply != null && cmdReply.m_data != null)
-                {
-                    new Converter().Deserialize(lcd, cmdReply.m_data);
-
-                    lcdCaps = new CLRCapabilities.LCDCapabilities(lcd.m_width, lcd.m_height, lcd.m_bpp);
-                }
-            }
-
-            return lcdCaps;
-        }
-
         private async Task<CLRCapabilities.HalSystemInfoProperties> DiscoverHalSystemInfoPropertiesAsync()
         {
             Debug.WriteLine("DiscoverHalSystemInfoProperties");
@@ -2493,15 +2468,6 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            var clrLcd = await DiscoverCLRCapabilityLCDAsync();
-            // check for cancellation request
-            if (cancellationToken.IsCancellationRequested)
-            {
-                // cancellation requested
-                Debug.WriteLine("cancellation requested");
-                return null;
-            }
-
             var softwareVersion = await DiscoverSoftwareVersionPropertiesAsync();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
@@ -2538,7 +2504,7 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            return new CLRCapabilities(clrFlags, clrLcd, softwareVersion, halSysInfo, clrInfo, solutionInfo);
+            return new CLRCapabilities(clrFlags, softwareVersion, halSysInfo, clrInfo, solutionInfo);
         }
 
         #endregion
