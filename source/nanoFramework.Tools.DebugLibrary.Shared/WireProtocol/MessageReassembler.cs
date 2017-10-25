@@ -64,6 +64,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             int count;
             int bytesRead;
 
+            // compute operation timeout here to ease reuse on calls bellow
+            TimeSpan operationTimeout = request != null ? request.waitRetryTimeout : new TimeSpan(500);
+
             try
             {
                 while (true)
@@ -71,17 +74,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     if (cancellationToken.IsCancellationRequested)
                     {
                         // cancellation requested
-
-                        Debug.WriteLine("cancel token");
-
                         return GetCompleteMessage();
                     }
 
                     switch (_state)
                     {
                         case ReceiveState.Initialize:
-
-
                             _rawPos = 0;
 
                             _messageBase = new MessageBase();
@@ -97,12 +95,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         case ReceiveState.WaitingForHeader:
                             count = _messageRaw.Header.Length - _rawPos;
 
-                            Debug.WriteLine("WaitingForHeader");
-
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
 
-                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout));
+                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, operationTimeout, cancellationToken.AddTimeout(operationTimeout));
 
                             _rawPos += bytesRead;
 
@@ -140,12 +136,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         case ReceiveState.ReadingHeader:
                             count = _messageRaw.Header.Length - _rawPos;
 
-                            Debug.WriteLine("ReadingHeader");
-
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
 
-                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout));
+                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, operationTimeout, cancellationToken.AddTimeout(operationTimeout));
 
                             _rawPos += bytesRead;
 
@@ -158,14 +152,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         case ReceiveState.CompleteHeader:
                             try
                             {
-                                Debug.WriteLine("CompleteHeader");
-
                                 _parent.CreateConverter().Deserialize(_messageBase.Header, _messageRaw.Header);
 
                                 if (VerifyHeader() == true)
                                 {
-                                    Debug.WriteLine("CompleteHeader, header OK");
-
                                     bool fReply = (_messageBase.Header.Flags & Flags.c_Reply) != 0;
 
                                     DebuggerEventSource.Log.WireProtocolRxHeader(_messageBase.Header.CrcHeader, _messageBase.Header.CrcData, _messageBase.Header.Cmd, _messageBase.Header.Flags, _messageBase.Header.Seq, _messageBase.Header.SeqReply, _messageBase.Header.Size);
@@ -187,13 +177,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                         break;
                                     }
                                 }
-
-                                Debug.WriteLine("CompleteHeader, header not valid");
                             }
-                            //catch (ThreadAbortException)
-                            //{
-                            //    throw;
-                            //}
                             catch (Exception e)
                             {
                                 Debug.WriteLine("Fault at payload deserialization:\n\n{0}", e.ToString());
@@ -215,12 +199,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         case ReceiveState.ReadingPayload:
                             count = _messageRaw.Payload.Length - _rawPos;
 
-                            Debug.WriteLine("ReadingPayload");
-
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
 
-                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Payload, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout));
+                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Payload, _rawPos, count, operationTimeout, cancellationToken.AddTimeout(operationTimeout));
 
                             _rawPos += bytesRead;
 
@@ -231,12 +213,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             break;
 
                         case ReceiveState.CompletePayload:
-                            Debug.WriteLine("CompletePayload");
-
                             if (VerifyPayload() == true)
                             {
-                                Debug.WriteLine("CompletePayload payload OK");
-
                                 try
                                 {
                                     bool fReply = (_messageBase.Header.Flags & Flags.c_Reply) != 0;
@@ -250,32 +228,22 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                     {
                                         DebuggerEventSource.Log.WireProtocolReceiveState(_state);
 
-                                        //Debug.WriteLine("*** leaving reassembler");
-
                                         return GetCompleteMessage();
                                     }
                                     else
                                     {
-                                        // this is not the message we were waiting 
-                                        // FIXME
+                                        // this is not the message we were waiting
+                                        _parent.App.ProcessMessage(GetCompleteMessage(), fReply);
                                     }
-                                    //m_parent.App.ProcessMessage(this.GetCompleteMessage(), fReply);
 
-                                    //m_state = ReceiveState.Initialize;
-                                    //return;
+                                    _state = ReceiveState.Initialize;
+                                    DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+                                    break;
                                 }
-                                //catch (ThreadAbortException)
-                                //{
-                                //    throw;
-                                //}
                                 catch (Exception e)
                                 {
                                     Debug.WriteLine("Fault at payload deserialization:\n\n{0}", e.ToString());
                                 }
-                            }
-                            else
-                            {
-                                Debug.WriteLine("CompletePayload payload not valid");
                             }
 
                             _state = ReceiveState.Initialize;
@@ -300,9 +268,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 Debug.WriteLine($"*** EXCEPTION IN STATE MACHINE***:\r\n{ex.Message} \r\n{ex.StackTrace}");
                 throw;
             }
-
-            Debug.WriteLine("??????? leaving reassembler");
-            return GetCompleteMessage();
         }
 
         private int ValidMarker(byte[] marker)
@@ -353,8 +318,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             msg.Payload = Commands.ResolveCommandToPayload(msg.Header.Cmd, fReply, _parent.Capabilities);
 
-            if (fReply == true)
+            if (request != null || fReply == true)
             {
+                // we are processing a message flagged as a reply
+                // OR we this is a reply to an explicit request
+
                 Request reply = null;
 
                 if (request.MatchesReply(msg))
@@ -364,7 +332,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     // FIXME: check if this return can happen here without the QueueNotify call bellow
                     return true;
                 }
-                else
+
                 if (reply != null)
                 {
                     // FIXME
@@ -435,6 +403,5 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             return false;
         }
-
     }
 }
