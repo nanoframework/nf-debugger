@@ -28,7 +28,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Monitor_FlashSectorMap = 0x0000000C;
         public const uint c_Monitor_OemInfo = 0x0000000E;
 
-        public class Monitor_Message //vvv : IConverter
+        public class Monitor_Message : IConverter
         {
             public byte[] m_data = null;
 
