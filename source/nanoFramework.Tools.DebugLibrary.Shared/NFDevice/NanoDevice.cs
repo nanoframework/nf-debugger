@@ -74,11 +74,11 @@ namespace nanoFramework.Tools.Debugger
         {
             if (Device is NanoUsbDevice)
             {
-                return await Parent.ConnectDeviceAsync(this as NanoDeviceBase).ConfigureAwait(false);
+                return await Parent.ConnectDeviceAsync(this as NanoDeviceBase);
             }
             else if (Device is NanoSerialDevice)
             {
-                return await Parent.ConnectDeviceAsync(this as NanoDeviceBase).ConfigureAwait(false);
+                return await Parent.ConnectDeviceAsync(this as NanoDeviceBase);
             }
 
             return false;

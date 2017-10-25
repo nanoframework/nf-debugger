@@ -247,11 +247,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     if (IsDevicesEnumerationComplete)
                     {
                         // try opening the device to check for a valid nanoFramework device
-                        if (await ConnectSerialDeviceAsync(newNanoFrameworkDevice.Device.DeviceInformation).ConfigureAwait(false))
+                        if (await ConnectSerialDeviceAsync(newNanoFrameworkDevice.Device.DeviceInformation))
                         {
                             Debug.WriteLine("New Serial device: " + deviceInformation.Id);
 
-                            if(await CheckValidNanoFrameworkSerialDeviceAsync().ConfigureAwait(false))
+                            if (await CheckValidNanoFrameworkSerialDeviceAsync())
                             {
                                 // done here, close the device
                                 EventHandlerForSerialDevice.Current.CloseDevice();
@@ -295,44 +295,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             NanoFrameworkDevices.Remove(device);
 
             device = null;
-
-            //// start thread to dispose and remove device from collection if it doesn't enumerate again in 2 seconds
-            //Task.Factory.StartNew(() =>
-            //{
-            //    // get device
-            //    var device = FindNanoFrameworkDevice(deviceId);
-
-            //    if (device != null)
-            //    {
-            //        // set device to dispose if it doesn't come back in 2.5 seconds
-            //        device.StartCountdownForDispose();
-
-            //        // hold here for the same time as the default timer of the dispose timer
-            //        new ManualResetEvent(false).WaitOne(TimeSpan.FromSeconds(4));
-
-
-            //        // try to find device
-            //        var newDevice = FindNanoFrameworkDevice(deviceId);
-
-
-            //        // check is object was disposed
-            //        if ((newDevice as NanoDevice<NanoSerialDevice>).KillFlag)
-            //        {
-            //            // yes, remove it from collection
-            //            NanoFrameworkDevices.Remove(newDevice);
-
-            //            Debug.WriteLine("Removing device " + newDevice.Description);
-
-            //            newDevice = null;
-            //        }
-            //        else
-            //        {
-            //            // add it again to serial devices collection
-            //            deviceEntry = FindDevice(deviceId);
-            //            SerialDevices.Add(deviceEntry);
-            //        }
-            //    }
-            //});
         }
 
         private void ClearDeviceEntries()
@@ -472,7 +434,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 var device = FindNanoFrameworkDevice(EventHandlerForSerialDevice.Current.DeviceInformation.Id);
 
                 // need an extra check on this because this can be 'just' a regular COM port without any nanoFramework device behind
-                var connectionResult = await device.DebugEngine.ConnectAsync(1, 500, false).ConfigureAwait(false);
+                var connectionResult = await device.DebugEngine.ConnectAsync(1, 1000, true);
 
                 if (connectionResult)
                 {
@@ -521,15 +483,15 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         #endregion
 
 
-        public async Task<bool> ConnectDeviceAsync(NanoDeviceBase device)
+        public Task<bool> ConnectDeviceAsync(NanoDeviceBase device)
         {
             inputStreamReader = null;
             outputStreamWriter = null;
 
-            return await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).ConfigureAwait(false);
+            return ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation);
         }
 
-        private async Task<bool> ConnectSerialDeviceAsync(SerialDeviceInformation serialDeviceInfo)
+        private Task<bool> ConnectSerialDeviceAsync(SerialDeviceInformation serialDeviceInfo)
         {
             // try to determine if we already have this device opened.
             if (EventHandlerForSerialDevice.Current != null)
@@ -537,7 +499,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // device matches
                 if (EventHandlerForSerialDevice.Current.DeviceInformation == serialDeviceInfo.DeviceInformation)
                 {
-                    return true;
+                    return Task.FromResult(true);
                 }
             }
 
@@ -547,7 +509,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // access the Current in EventHandlerForDevice to create a watcher for the device we are connecting to
             var isConnected = EventHandlerForSerialDevice.Current.IsDeviceConnected;
 
-            return await EventHandlerForSerialDevice.Current.OpenDeviceAsync(serialDeviceInfo.DeviceInformation, serialDeviceInfo.DeviceSelector).ConfigureAwait(false);
+            return EventHandlerForSerialDevice.Current.OpenDeviceAsync(serialDeviceInfo.DeviceInformation, serialDeviceInfo.DeviceSelector);
         }
 
         public void DisconnectDevice(NanoDeviceBase device)
@@ -589,37 +551,40 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
 
                 // serial works as a "single channel" so we can only TX or RX, 
-                // meaning that access to the resource has to be protected with a semephore
-                await semaphore.WaitAsync().ConfigureAwait(false);
+                // meaning that access to the resource has to be protected with a semaphore
+                var semaphoreEntered = await semaphore.WaitAsync(1000, cancellationToken);
 
-                try
+                if (semaphoreEntered)
                 {
-                    // write buffer to device
-                    outputStreamWriter.WriteBytes(buffer);
-
-                    // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
-                    // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                    Task<uint> storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(cancellationToken.AddTimeout(waiTimeout));
-
-                    bytesWritten = await storeAsyncTask.ConfigureAwait(false);
-
-                    if (bytesWritten > 0)
+                    try
                     {
-                        LastActivity = DateTime.Now;
+                        // write buffer to device
+                        outputStreamWriter.WriteBytes(buffer);
+
+                        // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
+                        // because we have an external cancellation token and the above timeout cancellation token, need to combine both
+                        Task<uint> storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(cancellationToken.AddTimeout(waiTimeout));
+
+                        bytesWritten = await storeAsyncTask;
+
+                        if (bytesWritten > 0)
+                        {
+                            LastActivity = DateTime.Now;
+                        }
                     }
-                }
-                catch (TaskCanceledException)
-                {
-                    // this is expected to happen, don't do anything with this
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
-                }
-                finally
-                {
-                    semaphore.Release();
-                    outputStreamWriter.DetachBuffer();
+                    catch (TaskCanceledException)
+                    {
+                        // this is expected to happen, don't do anything with this
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                        outputStreamWriter?.DetachBuffer();
+                    }
                 }
             }
             else
@@ -637,48 +602,51 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             if (EventHandlerForSerialDevice.Current.IsDeviceConnected)
             {
                 // serial works as a "single channel" so we can only TX or RX, 
-                // meaning that access to the resource has to be protected with a semephore
-                await semaphore.WaitAsync().ConfigureAwait(false);
+                // meaning that access to the resource has to be protected with a semaphore
+                var semaphoreEntered = await semaphore.WaitAsync(1000, cancellationToken);
 
-                // create a stream reader with serial device InputStream, if there isn't one already
-                if (inputStreamReader == null)
+                if (semaphoreEntered)
                 {
-                    inputStreamReader = new DataReader(EventHandlerForSerialDevice.Current.Device.InputStream);
-                }
+                    // create a stream reader with serial device InputStream, if there isn't one already
+                    if (inputStreamReader == null)
+                    {
+                        inputStreamReader = new DataReader(EventHandlerForSerialDevice.Current.Device.InputStream);
+                    }
 
-                try
-                {
-                    // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
-                    // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                    Task<UInt32> loadAsyncTask = inputStreamReader.LoadAsync(bytesToRead).AsTask(cancellationToken.AddTimeout(waiTimeout));
+                    try
+                    {
+                        // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
+                        // because we have an external cancellation token and the above timeout cancellation token, need to combine both
+                        Task<UInt32> loadAsyncTask = inputStreamReader.LoadAsync(bytesToRead).AsTask(cancellationToken.AddTimeout(waiTimeout));
 
-                    // get how many bytes are available to read
-                    uint bytesRead = await loadAsyncTask.ConfigureAwait(false);
+                        // get how many bytes are available to read
+                        uint bytesRead = await loadAsyncTask;
 
-                    byte[] readBuffer = new byte[bytesToRead];
-                    inputStreamReader.ReadBytes(readBuffer);
+                        byte[] readBuffer = new byte[bytesToRead];
+                        inputStreamReader.ReadBytes(readBuffer);
 
-                    return readBuffer;
-                }
-                catch (TaskCanceledException)
-                {
-                    // this is expected to happen, don't do anything with it
-                }
-                catch (NullReferenceException)
-                {
-                    // this is expected to happen when there is anything to read, don't do anything with it
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
-                }
-                finally
-                {
-                    // relase serial device semaphore
-                    semaphore.Release();
+                        return readBuffer;
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        // this is expected to happen, don't do anything with it
+                    }
+                    catch (NullReferenceException)
+                    {
+                        // this is expected to happen when there is anything to read, don't do anything with it
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                    }
+                    finally
+                    {
+                        // release serial device semaphore
+                        semaphore.Release();
 
-                    // detach read buffer
-                    inputStreamReader.DetachBuffer();
+                        // detach read buffer
+                        inputStreamReader.DetachBuffer();
+                    }
                 }
             }
             else

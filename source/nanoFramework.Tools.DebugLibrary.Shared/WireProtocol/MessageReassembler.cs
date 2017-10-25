@@ -102,7 +102,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
 
-                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout)).ConfigureAwait(false);
+                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout));
 
                             _rawPos += bytesRead;
 
@@ -145,7 +145,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
 
-                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout)).ConfigureAwait(false);
+                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout));
 
                             _rawPos += bytesRead;
 
@@ -220,7 +220,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
 
-                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Payload, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout)).ConfigureAwait(false);
+                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Payload, _rawPos, count, request.waitRetryTimeout, cancellationToken.AddTimeout(request.waitRetryTimeout));
 
                             _rawPos += bytesRead;
 
@@ -246,7 +246,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                         _messageRaw.Payload = null;
                                     }
 
-                                    if (await ProcessMessage(GetCompleteMessage(), fReply, cancellationToken).ConfigureAwait(false))
+                                    if (await ProcessMessage(GetCompleteMessage(), fReply, cancellationToken))
                                     {
                                         DebuggerEventSource.Log.WireProtocolReceiveState(_state);
 
@@ -285,7 +285,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             {
                                 // FIXME 
                                 // evaluate the purpose of this reply back to the NanoFramework device, the nanoCLR doesn't seem to have to handle this. In the end it looks like this does have any real purpose and will only be wasting CPU.
-                                await IncomingMessage.ReplyBadPacketAsync(_parent, Flags.c_BadPayload, cancellationToken).ConfigureAwait(false);
+                                await IncomingMessage.ReplyBadPacketAsync(_parent, Flags.c_BadPayload, cancellationToken);
                                 return GetCompleteMessage();
                             }
 

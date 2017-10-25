@@ -115,29 +115,29 @@ namespace nanoFramework.Tools.Debugger
 
             IncomingMessage reply = null;
             var reassembler = new MessageReassembler(ctrl, this);
-
-            while (retryCounter++ <= retries)
+            
+            do
             {
                 //// TODO add cancel token argument here
-                //// check for cancelation request
+                //// check for cancellation request
                 //if (cancellationToken.IsCancellationRequested)
                 //{
                 //    // cancellation requested
-                //    Debug.WriteLine("cancelation requested");
+                //    Debug.WriteLine("cancellation requested");
                 //    return null;
                 //}
 
-                Debug.WriteLine($"Performing {retryCounter}/{ (retries+1) } request attempt with {waitRetryTimeout.TotalMilliseconds}ms");
+                Debug.WriteLine($"Performing {retryCounter}/{ retries } request attempt with {waitRetryTimeout.TotalMilliseconds}ms");
 
-                // create new cancelation token source
+                // create new cancellation token source
                 CancellationTokenSource cTSource = new CancellationTokenSource();
 
                 // send message
                 // add a cancellation token to force cancel, the send 
-                if (await outgoingMsg.SendAsync(cTSource.Token).ConfigureAwait(false))
+                if (await outgoingMsg.SendAsync(cTSource.Token))
                 {
                     // if this request is for a reboot, we won't be able to receive the reply right away because the device is rebooting
-                    if(outgoingMsg.Header.Cmd == Commands.c_Monitor_Reboot)
+                    if (outgoingMsg.Header.Cmd == Commands.c_Monitor_Reboot)
                     {
                         // done here, no reply will come
                         return reply;
@@ -145,19 +145,22 @@ namespace nanoFramework.Tools.Debugger
 
                     Debug.WriteLine($"Processing reply now...");
 
-                    // create new cancelation token for reply processor
+                    // ALWAYS cancel token before issuing a new one
+                    cTSource.Cancel();
+
+                    // create new cancellation token for reply processor
                     cTSource = new CancellationTokenSource();
 
                     try
                     {
                         // need to have a timeout to cancel the process task otherwise it may end up waiting forever for this to return
                         // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                        reply = await reassembler.ProcessAsync(cTSource.Token.AddTimeout(waitRetryTimeout)).ConfigureAwait(false);
+                        reply = await reassembler.ProcessAsync(cTSource.Token.AddTimeout(waitRetryTimeout));
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         Debug.WriteLine($"Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
-                        
+
                         // ALWAYS cancel reassembler task on exception
                         cTSource.Cancel();
                     }
@@ -175,7 +178,8 @@ namespace nanoFramework.Tools.Debugger
 
                 // something went wrong, retry with a progressive back-off strategy
                 Task.Delay(200 * retryCounter).Wait();
-            }
+
+            } while (++retryCounter < retries);
 
             Debug.WriteLine($"Performing request exceeded attempts count...");
 
