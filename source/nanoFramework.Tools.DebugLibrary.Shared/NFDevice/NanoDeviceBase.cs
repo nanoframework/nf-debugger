@@ -112,10 +112,10 @@ namespace nanoFramework.Tools.Debugger
                 switch (reply.m_source)
                 {
                     case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
-                        return PingConnectionType.NanoCLR;
+                        return PingConnectionType.nanoCLR;
 
                     case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
-                        return PingConnectionType.NanoBooter;
+                        return PingConnectionType.nanoBooter;
                 }
             }
 
@@ -213,7 +213,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (!IsClrDebuggerEnabled || 0 != (options & EraseOptions.Firmware))
             {
-                fReset = (await PingAsync() == PingConnectionType.NanoCLR);
+                fReset = (await PingAsync() == PingConnectionType.nanoCLR);
 
                 if (!await ConnectToNanoBooterAsync(cancellationToken))
                 {
