@@ -91,7 +91,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 // seems to be invalid so get it from device
                 var mfDeviceInfo = new NanoFrameworkDeviceInfo(this);
-                await mfDeviceInfo.GetDeviceInfo().ConfigureAwait(false);
+                await mfDeviceInfo.GetDeviceInfo();
 
                 DeviceInfo = mfDeviceInfo;
             }
@@ -105,7 +105,7 @@ namespace nanoFramework.Tools.Debugger
         /// <returns></returns>
         public async Task<PingConnectionType> PingAsync()
         {
-            var reply = await DebugEngine.GetConnectionSourceAsync().ConfigureAwait(false);
+            var reply = await DebugEngine.GetConnectionSourceAsync();
 
             if (reply != null)
             {
@@ -130,13 +130,13 @@ namespace nanoFramework.Tools.Debugger
         {
             bool ret = false;
 
-            if (!await DebugEngine.ConnectAsync(2, 500, true).ConfigureAwait(false)) return false;
+            if (!await DebugEngine.ConnectAsync(1, 1000, true)) return false;
 
             if (DebugEngine != null)
             {
                 if (DebugEngine.ConnectionSource == ConnectionSource.nanoBooter) return true;
 
-                await DebugEngine.RebootDeviceAsync(RebootOption.EnterBootloader).ConfigureAwait(false);
+                await DebugEngine.RebootDeviceAsync(RebootOption.EnterBootloader);
 
                 /////////////////////////////////////////
                 // FIXME
@@ -172,9 +172,9 @@ namespace nanoFramework.Tools.Debugger
                     // check if cancellation was requested 
                     if (cancellationToken.IsCancellationRequested) return false;
 
-                    if (fConnected = await DebugEngine.ConnectAsync(1, 1000, true, ConnectionSource.Unknown).ConfigureAwait(false))
+                    if (fConnected = await DebugEngine.ConnectAsync(1, 1000, true, ConnectionSource.Unknown))
                     {
-                        Commands.Monitor_Ping.Reply reply = await DebugEngine.GetConnectionSourceAsync().ConfigureAwait(false);
+                        Commands.Monitor_Ping.Reply reply = await DebugEngine.GetConnectionSourceAsync();
 
                         ret = (reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter);
 
@@ -206,26 +206,26 @@ namespace nanoFramework.Tools.Debugger
 
             if (DebugEngine == null) throw new NanoFrameworkDeviceNoResponseException();
 
-            if (!await DebugEngine.ConnectAsync(2, 500, true).ConfigureAwait(false))
+            if (!await DebugEngine.ConnectAsync(2, 500, true))
             {
                 throw new NanoFrameworkDeviceNoResponseException();
             }
 
             if (!IsClrDebuggerEnabled || 0 != (options & EraseOptions.Firmware))
             {
-                fReset = (await PingAsync().ConfigureAwait(false) == PingConnectionType.NanoCLR);
+                fReset = (await PingAsync() == PingConnectionType.NanoCLR);
 
-                if (!await ConnectToNanoBooterAsync(cancellationToken).ConfigureAwait(false))
+                if (!await ConnectToNanoBooterAsync(cancellationToken))
                 {
                     throw new NanoBooterConnectionFailureException();
                 }
             }
 
-            var reply = await DebugEngine.GetFlashSectorMapAsync().ConfigureAwait(false);
+            var reply = await DebugEngine.GetFlashSectorMapAsync();
 
             if (reply == null) throw new NanoFrameworkDeviceNoResponseException();
 
-            Commands.Monitor_Ping.Reply ping = await DebugEngine.GetConnectionSourceAsync().ConfigureAwait(false);
+            Commands.Monitor_Ping.Reply ping = await DebugEngine.GetConnectionSourceAsync();
 
             ret = true;
 
@@ -237,7 +237,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (isConnectedToCLR)
             {
-                await DebugEngine.PauseExecutionAsync().ConfigureAwait(false);
+                await DebugEngine.PauseExecutionAsync();
             }
 
             List<Commands.Monitor_FlashSectorMap.FlashSectorData> eraseSectors = new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
@@ -306,7 +306,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 progress?.Report(new ProgressReport(value, total, string.Format("Erasing sector 0x{0:x08}", flashSectorData.m_StartAddress)));
 
-                var eraseResult = await DebugEngine.EraseMemoryAsync(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock)).ConfigureAwait(false);
+                var eraseResult = await DebugEngine.EraseMemoryAsync(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
 
                 ret &= eraseResult.success;
 
@@ -316,7 +316,7 @@ namespace nanoFramework.Tools.Debugger
             // reset if we specifically entered tinybooter for the erase
             if (fReset)
             {
-                await DebugEngine.ExecuteMemoryAsync(0).ConfigureAwait(false);
+                await DebugEngine.ExecuteMemoryAsync(0);
             }
 
             // reboot if we are talking to the clr
@@ -324,7 +324,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 progress?.Report(new ProgressReport(0, 0, "Rebooting..."));
 
-                await DebugEngine.RebootDeviceAsync(RebootOption.RebootClrOnly).ConfigureAwait(false);
+                await DebugEngine.RebootDeviceAsync(RebootOption.RebootClrOnly);
             }
 
             return ret;
@@ -334,7 +334,7 @@ namespace nanoFramework.Tools.Debugger
         {
             if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
             {
-                if (await DeployMFUpdateAsync(comprFilePath, cancellationToken, progress).ConfigureAwait(false)) return true;
+                if (await DeployMFUpdateAsync(comprFilePath, cancellationToken, progress)) return true;
             }
 
             return false;
@@ -358,9 +358,9 @@ namespace nanoFramework.Tools.Debugger
             if (DebugEngine == null) throw new NanoFrameworkDeviceNoResponseException();
 
             // make sure we know who we are talking to
-            if (await CheckForMicroBooterAsync(cancellationToken).ConfigureAwait(false))
+            if (await CheckForMicroBooterAsync(cancellationToken))
             {
-                var reply = await DeploySRECAsync(srecFile, cancellationToken).ConfigureAwait(false);
+                var reply = await DeploySRECAsync(srecFile, cancellationToken);
 
                 // check if request was successful
                 if (reply.Item2)
@@ -375,9 +375,9 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            await DebugEngine.ConnectAsync(1, 1000, false, ConnectionSource.Unknown).ConfigureAwait(false);
+            await DebugEngine.ConnectAsync(1, 1000, false, ConnectionSource.Unknown);
 
-            var parseResult = await SRecordFile.ParseAsync(srecFile).ConfigureAwait(false);
+            var parseResult = await SRecordFile.ParseAsync(srecFile);
             entryPoint = parseResult.Item1;
             blocks = parseResult.Item2;
 
@@ -391,7 +391,7 @@ namespace nanoFramework.Tools.Debugger
                     total += (blocks[i] as SRecordFile.Block).data.Length;
                 }
 
-                await PrepareForDeployAsync(blocks, cancellationToken, progress).ConfigureAwait(false);
+                await PrepareForDeployAsync(blocks, cancellationToken, progress);
 
 
 
@@ -408,7 +408,7 @@ namespace nanoFramework.Tools.Debugger
                     progress?.Report(new ProgressReport(0, total, string.Format("Erasing sector 0x{0:x08}", block.address)));
 
                     // the clr requires erase before writing
-                    var eraseResult = await DebugEngine.EraseMemoryAsync(block.address, (uint)len).ConfigureAwait(false);
+                    var eraseResult = await DebugEngine.EraseMemoryAsync(block.address, (uint)len);
 
                     if (!eraseResult.success)
                     {
@@ -428,7 +428,7 @@ namespace nanoFramework.Tools.Debugger
                             return new Tuple<uint, bool>(0, false);
                         }
 
-                        var writeResult = await DebugEngine.WriteMemoryAsync(addr, data).ConfigureAwait(false);
+                        var writeResult = await DebugEngine.WriteMemoryAsync(addr, data);
                         if (writeResult.success == false)
                         {
                             return new Tuple<uint, bool>(0, false);
@@ -459,7 +459,7 @@ namespace nanoFramework.Tools.Debugger
         {
             if (DebugEngine == null) throw new NanoFrameworkDeviceNoResponseException();
 
-            if (await CheckForMicroBooterAsync(cancellationToken).ConfigureAwait(false))
+            if (await CheckForMicroBooterAsync(cancellationToken))
             {
                 // check if cancellation was requested 
                 if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
@@ -474,12 +474,12 @@ namespace nanoFramework.Tools.Debugger
                         // check if cancellation was requested 
                         if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
 
-                        await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
+                        await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
                         // check if cancellation was requested 
                         if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
 
-                        await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
+                        await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
                         // check if cancellation was requested 
                         if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
@@ -497,18 +497,18 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            Commands.Monitor_Ping.Reply reply = await DebugEngine.GetConnectionSourceAsync().ConfigureAwait(false);
+            Commands.Monitor_Ping.Reply reply = await DebugEngine.GetConnectionSourceAsync();
 
             if (reply == null) throw new NanoFrameworkDeviceNoResponseException();
 
             // only execute if we are talking to the nanoBooter, otherwise reboot
             if (reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter)
             {
-                return await DebugEngine.ExecuteMemoryAsync(entryPoint).ConfigureAwait(false);
+                return await DebugEngine.ExecuteMemoryAsync(entryPoint);
             }
             else // if we are talking to the CLR then we simply did a deployment update, so reboot
             {
-                await DebugEngine.RebootDeviceAsync(RebootOption.RebootClrOnly).ConfigureAwait(false);
+                await DebugEngine.RebootDeviceAsync(RebootOption.RebootClrOnly);
             }
 
             return true;
@@ -528,7 +528,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     if (cancellationToken.IsCancellationRequested) return false;
 
-                    await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("xx\n"), TimeSpan.FromMilliseconds(5000), cancellationToken).ConfigureAwait(false);
+                    await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("xx\n"), TimeSpan.FromMilliseconds(5000), cancellationToken);
 
                     if (m_evtMicroBooterError.WaitOne(100))
                     {
@@ -556,10 +556,7 @@ namespace nanoFramework.Tools.Debugger
                     int handle = -1;
                     int idx = 0;
 
-#pragma warning disable ConfigureAwaitChecker // CAC001
                     var fileInfo = await zipFile.GetBasicPropertiesAsync();
-#pragma warning restore ConfigureAwaitChecker // CAC001
-
                     int numPkts = ((int)fileInfo.Size + c_PacketSize - 1) / c_PacketSize;
 
                     byte[] hashData = UTF8Encoding.UTF8.GetBytes(zipFile.Name + fileInfo.DateModified.ToString());
@@ -571,14 +568,14 @@ namespace nanoFramework.Tools.Debugger
 
                     //Debug.WriteLine(updateId);
 
-                    handle = await DebugEngine.StartUpdateAsync("NetMF", 4, 4, updateId, 0, 0, (uint)fileInfo.Size, (uint)c_PacketSize, 0).ConfigureAwait(false);
+                    handle = await DebugEngine.StartUpdateAsync("NetMF", 4, 4, updateId, 0, 0, (uint)fileInfo.Size, (uint)c_PacketSize, 0);
                     if (handle > -1)
                     {
                         uint authType;
                         IAsyncResult iar = null;
 
                         // perform request
-                        var resp = await DebugEngine.UpdateAuthCommandAsync(handle, 1, null).ConfigureAwait(false);
+                        var resp = await DebugEngine.UpdateAuthCommandAsync(handle, 1, null);
 
                         // check result
                         if (!resp.Item2 || resp.Item1.Length < 4) return false;
@@ -605,7 +602,7 @@ namespace nanoFramework.Tools.Debugger
                         //    }
                         //}
 
-                        if (!await DebugEngine.UpdateAuthenticateAsync(handle, pubKey).ConfigureAwait(false))
+                        if (!await DebugEngine.UpdateAuthenticateAsync(handle, pubKey))
                         {
                             return false;
                         }
@@ -659,16 +656,14 @@ namespace nanoFramework.Tools.Debugger
                         {
                         }
 
-#pragma warning disable ConfigureAwaitChecker // CAC001
                         IBuffer buffer = await FileIO.ReadBufferAsync(zipFile);
-#pragma warning restore ConfigureAwaitChecker // CAC001
                         using (DataReader dataReader = DataReader.FromBuffer(buffer))
                         {
                             dataReader.ReadBytes(packet);
 
                             uint crc = CRC.ComputeCRC(packet, 0, packet.Length, 0);
 
-                            if (!await DebugEngine.AddPacketAsync(handle, (uint)idx++, packet, CRC.ComputeCRC(packet, 0, packet.Length, 0)).ConfigureAwait(false)) return false;
+                            if (!await DebugEngine.AddPacketAsync(handle, (uint)idx++, packet, CRC.ComputeCRC(packet, 0, packet.Length, 0))) return false;
 
                             imageCRC = CRC.ComputeCRC(packet, 0, packet.Length, imageCRC);
 
@@ -677,9 +672,7 @@ namespace nanoFramework.Tools.Debugger
 
                         if (hash != null)
                         {
-#pragma warning disable ConfigureAwaitChecker // CAC001
                             buffer = await FileIO.ReadBufferAsync(zipFile);
-#pragma warning restore ConfigureAwaitChecker // CAC001
                                              // hash it
                             IBuffer hashed = hash.HashData(buffer);
                             CryptographicBuffer.CopyToByteArray(hashed, out sig);
@@ -700,7 +693,7 @@ namespace nanoFramework.Tools.Debugger
                             }
                         }
 
-                        if (await DebugEngine.InstallUpdateAsync(handle, sig).ConfigureAwait(false))
+                        if (await DebugEngine.InstallUpdateAsync(handle, sig))
                         {
                             return true;
                         }
@@ -720,9 +713,7 @@ namespace nanoFramework.Tools.Debugger
             m_execSrecHash.Clear();
 
             // create .EXT file for SREC file
-#pragma warning disable ConfigureAwaitChecker // CAC001
             var folder = await srecFile.GetParentAsync();
-#pragma warning restore ConfigureAwaitChecker // CAC001
 
             int m_totalSrecs = 0;
             uint m_minSrecAddr = uint.MaxValue;
@@ -731,27 +722,21 @@ namespace nanoFramework.Tools.Debugger
             if (srecFile.IsAvailable)
             {
                 // check is EXT file exists, if yes delete it
-#pragma warning disable ConfigureAwaitChecker // CAC001
                 var srecExtFile = await folder.TryGetItemAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext") as StorageFile;
-#pragma warning restore ConfigureAwaitChecker // CAC001
                 if (srecExtFile != null)
                 {
-#pragma warning disable ConfigureAwaitChecker // CAC001
                     await srecExtFile.DeleteAsync();
-#pragma warning restore ConfigureAwaitChecker // CAC001
                 }
 
-                if (await PreProcesSrecAsync(srecFile).ConfigureAwait(false))
+                if (await PreProcesSrecAsync(srecFile))
                 {
-#pragma warning disable ConfigureAwaitChecker // CAC001
                     srecExtFile = await folder.TryGetItemAsync(srecFile.Name.Replace(srecFile.FileType, "") + ".ext") as StorageFile;
-#pragma warning restore ConfigureAwaitChecker // CAC001
                 }
 
                 // check if cancellation was requested 
                 if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
 
-                var parsedFile = await ParseSrecFileAsync(srecExtFile).ConfigureAwait(false);
+                var parsedFile = await ParseSrecFileAsync(srecExtFile);
 
                 try
                 {
@@ -795,11 +780,11 @@ namespace nanoFramework.Tools.Debugger
                                 continue;
                             }
 
-                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
+                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
-                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes(parsedFile.Records[key]), TimeSpan.FromMilliseconds(20000), cancellationToken).ConfigureAwait(false);
+                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes(parsedFile.Records[key]), TimeSpan.FromMilliseconds(20000), cancellationToken);
 
-                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
+                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
                             if (pipe-- <= 0)
                             {
@@ -844,13 +829,9 @@ namespace nanoFramework.Tools.Debugger
                             symdefFilePath = Path.GetDirectoryName(srecFile.Path) + "\\" + basefile + ".symdefs";
                         }
 
-#pragma warning disable ConfigureAwaitChecker // CAC001
                         var binFile = await folder.TryGetItemAsync(binFilePath) as StorageFile;
-#pragma warning restore ConfigureAwaitChecker // CAC001
 
-#pragma warning disable ConfigureAwaitChecker // CAC001
                         var symdefFile = await folder.TryGetItemAsync(symdefFilePath) as StorageFile;
-#pragma warning restore ConfigureAwaitChecker // CAC001
 
                         // check if cancellation was requested 
                         if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
@@ -858,16 +839,12 @@ namespace nanoFramework.Tools.Debugger
                         // send image crc
                         if (binFile != null && symdefFile != null)
                         {
-#pragma warning disable ConfigureAwaitChecker // CAC001
                             var fileInfo = await binFile.GetBasicPropertiesAsync();
-#pragma warning restore ConfigureAwaitChecker // CAC001
 
                             UInt32 imageCRC = 0;
 
                             // read lines from SREC file
-#pragma warning disable ConfigureAwaitChecker // CAC001
                             var textLines = await FileIO.ReadLinesAsync(symdefFile);
-#pragma warning restore ConfigureAwaitChecker // CAC001
 
                             foreach (string line in textLines)
                             {
@@ -939,20 +916,14 @@ namespace nanoFramework.Tools.Debugger
             if (!srecFile.IsAvailable) return false;
 
             // create .EXT file for SREC file
-#pragma warning disable ConfigureAwaitChecker // CAC001
             var folder = await srecFile.GetParentAsync();
-#pragma warning restore ConfigureAwaitChecker // CAC001
 
             try
             {
                 // read lines from SREC file
-#pragma warning disable ConfigureAwaitChecker // CAC001
                 var textLines = await FileIO.ReadLinesAsync(srecFile);
-#pragma warning restore ConfigureAwaitChecker // CAC001
 
-#pragma warning disable ConfigureAwaitChecker // CAC001
                 StorageFile srecExtFile = await folder.CreateFileAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext", CreationCollisionOption.ReplaceExisting);
-#pragma warning restore ConfigureAwaitChecker // CAC001
 
                 const int c_MaxRecords = 8;
                 int iRecord = 0;
@@ -1009,9 +980,7 @@ namespace nanoFramework.Tools.Debugger
                         // write crc
                         sb.Append(string.Format("{0:X02}", (0xFF - (0xFF & currentCRC))));
 
-#pragma warning disable ConfigureAwaitChecker // CAC001
                         await FileIO.WriteTextAsync(srecExtFile, sb.ToString());
-#pragma warning restore ConfigureAwaitChecker // CAC001
 
                         currentCRC = 0;
                         iRecord = 0;
@@ -1031,29 +1000,21 @@ namespace nanoFramework.Tools.Debugger
                     // write crc
                     sb.Append(string.Format("{0:X02}", (0xFF - (0xFF & currentCRC))));
 
-#pragma warning disable ConfigureAwaitChecker // CAC001
                     await FileIO.WriteTextAsync(srecExtFile, sb.ToString());
-#pragma warning restore ConfigureAwaitChecker // CAC001
                 }
 
                 if (s7rec != "")
                 {
-#pragma warning disable ConfigureAwaitChecker // CAC001
                     await FileIO.WriteTextAsync(srecExtFile, s7rec);
-#pragma warning restore ConfigureAwaitChecker // CAC001
                 }
             }
             catch
             {
-#pragma warning disable ConfigureAwaitChecker // CAC001
                 var thisFile = await folder.TryGetItemAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext") as StorageFile;
-#pragma warning restore ConfigureAwaitChecker // CAC001
 
                 if (thisFile != null)
                 {
-#pragma warning disable ConfigureAwaitChecker // CAC001
                     await thisFile.DeleteAsync();
-#pragma warning restore ConfigureAwaitChecker // CAC001
                 }
 
                 return false;
@@ -1075,10 +1036,13 @@ namespace nanoFramework.Tools.Debugger
                 progress?.Report(new ProgressReport(0, 1, "Connecting to TinyBooter..."));
 
                 // only check for signature file if we are uploading firmware
-                if (!await ConnectToNanoBooterAsync(cancellationToken).ConfigureAwait(false)) throw new NanoFrameworkDeviceNoResponseException();
+                if (!await ConnectToNanoBooterAsync(cancellationToken))
+                {
+                    throw new NanoFrameworkDeviceNoResponseException();
+                }
             }
 
-           var flasSectorsMap = await DebugEngine.GetFlashSectorMapAsync().ConfigureAwait(false);
+            var flasSectorsMap = await DebugEngine.GetFlashSectorMapAsync();
 
             if (flasSectorsMap == null || flasSectorsMap.Count == 0) throw new NanoFrameworkDeviceNoResponseException();
 
@@ -1100,7 +1064,10 @@ namespace nanoFramework.Tools.Debugger
                                 progress?.Report(new ProgressReport(0, 1, "Connecting to nanoBooter..."));
 
                                 // only check for signature file if we are uploading firmware
-                                if (!await ConnectToNanoBooterAsync(cancellationToken).ConfigureAwait(false)) throw new NanoFrameworkDeviceNoResponseException();
+                                if (!await ConnectToNanoBooterAsync(cancellationToken))
+                                {
+                                    throw new NanoFrameworkDeviceNoResponseException();
+                                }
                             }
                         }
                         break;
@@ -1109,16 +1076,16 @@ namespace nanoFramework.Tools.Debugger
             }
             if (fEraseDeployment)
             {
-                await EraseAsync(EraseOptions.Deployment, cancellationToken, progress).ConfigureAwait(false);
+                await EraseAsync(EraseOptions.Deployment, cancellationToken, progress);
             }
             else if (DebugEngine.ConnectionSource != ConnectionSource.nanoBooter)
             {
                 //if we are not writing to the deployment sector then assure that we are talking with nanoBooter
-                await ConnectToNanoBooterAsync(cancellationToken).ConfigureAwait(false);
+                await ConnectToNanoBooterAsync(cancellationToken);
             }
             if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
             {
-                await DebugEngine.PauseExecutionAsync().ConfigureAwait(false);
+                await DebugEngine.PauseExecutionAsync();
             }
         }
     }

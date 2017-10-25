@@ -93,7 +93,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             //What is this for? Nack + Ping?  What can the nanoCLR possibly do with this information?
             OutgoingMessage msg = new OutgoingMessage(ctrl, new WireProtocol.Converter(), Commands.c_Monitor_Ping, Flags.c_NonCritical | Flags.c_NACK | flags, null);
 
-            return await msg.SendAsync(cancellationToken).ConfigureAwait(false);
+            return await msg.SendAsync(cancellationToken);
         }
 
         public async Task<bool> ReplyAsync(Converter converter, uint flags, object payload, CancellationToken cancellationToken)
@@ -101,7 +101,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             OutgoingMessage msgReply = new OutgoingMessage(this, converter, flags, payload);
 
-            return await msgReply.SendAsync(cancellationToken).ConfigureAwait(false);
+            return await msgReply.SendAsync(cancellationToken);
         }
     }
 }

@@ -38,9 +38,7 @@ namespace nanoFramework.Tools.Debugger
                 throw new System.IO.FileNotFoundException(String.Format("Cannot find {0}", file));
             }
 
-#pragma warning disable ConfigureAwaitChecker // CAC001
             var textLines = await FileIO.ReadLinesAsync(file);
-#pragma warning restore ConfigureAwaitChecker // CAC001
 
             foreach (string line in textLines)
             {

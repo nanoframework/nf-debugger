@@ -69,24 +69,48 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public async Task<bool> QueueOutputAsync(MessageRaw raw, CancellationToken cancellationToken)
         {
             Debug.WriteLine("QueueOutputAsync 1");
-            await SendRawBufferAsync(raw.Header, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
+            // TX header
+            var sendHeaderCount = await SendRawBufferAsync(raw.Header, TimeSpan.FromMilliseconds(1000), cancellationToken);
 
-            // check for cancelation request
+            // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
             {
                 // cancellation requested
-                Debug.WriteLine("cancelation requested");
+                Debug.WriteLine("cancellation requested");
                 return false;
             }
 
             if (raw.Payload != null)
             {
-                Debug.WriteLine("QueueOutputAsync 2");
+                // we have a payload to TX
+                if (sendHeaderCount == raw.Header.Length)
+                {
+                    Debug.WriteLine("QueueOutputAsync 2");
 
-                await SendRawBufferAsync(raw.Payload, TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(false);
+                    var sendPayloadCount = await SendRawBufferAsync(raw.Payload, TimeSpan.FromMilliseconds(1000), cancellationToken);
+
+                    if (sendPayloadCount == raw.Payload.Length)
+                    {
+                        // payload TX OK
+                        return true;
+                    }
+                    else
+                    {
+                        // failed TX the payload
+                        return false;
+                    }
+                }
+                else
+                {
+                    // already failed to TX header so don't bother with the payload
+                    return false;
+                }
             }
-
-            return true;
+            else
+            {
+                // no payload, header TX OK, we are good
+                return true;
+            }
         }
 
         public Packet NewPacket()
@@ -118,11 +142,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             throw new NotImplementedException();
         }
 
-        public async Task<uint> SendRawBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        public Task<uint> SendRawBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
             Debug.WriteLine("SendRawBufferAsync");
 
-            return await App.SendBufferAsync(buffer, waiTimeout, cancellationToken).ConfigureAwait(false);
+            return App.SendBufferAsync(buffer, waiTimeout, cancellationToken);
         }
 
         internal async Task<int> ReadBufferAsync(byte[] buffer, int offset, int bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
@@ -131,7 +155,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             int bytesToReadRequested = bytesToRead;
 
             // sanity check for anything to read
-            if(bytesToRead == 0)
+            if (bytesToRead == 0)
             {
                 //Debug.WriteLine("Nothing to read, leaving now");
                 return 0;
@@ -141,14 +165,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             while (bytesToRead > 0)
             {
-                if(cancellationToken.IsCancellationRequested)
+                if (cancellationToken.IsCancellationRequested)
                 {
                     // cancellation requested
                     break;
                 }
 
                 // read next chunk of data async
-                var readResult = await App.ReadBufferAsync((uint)bytesToRead, waitTimeout, cancellationToken).ConfigureAwait(false);
+                var readResult = await App.ReadBufferAsync((uint)bytesToRead, waitTimeout, cancellationToken);
 
                 Debug.WriteLine("read {0} bytes", readResult.Length);
                 // any byte read?

@@ -98,7 +98,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                                         , _base.Header.Size
                                                         );
 
-            return await _parent.QueueOutputAsync(_raw, cancellationToken).ConfigureAwait(false);
+            return await _parent.QueueOutputAsync(_raw, cancellationToken);
         }
     }
 }
