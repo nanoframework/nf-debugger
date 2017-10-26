@@ -34,7 +34,7 @@ namespace Serial_Test_App_WPF
             await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
              {
 
-                 bool connectResult = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.ConnectAsync(3, 500);
+                 bool connectResult = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.ConnectAsync(3, 1000, true);
 
                  var di = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfoAsync();
 
@@ -345,6 +345,9 @@ namespace Serial_Test_App_WPF
                     (sender as Button).IsEnabled = true;
 
                     await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDeviceAsync(nanoFramework.Tools.Debugger.RebootOption.NormalReboot);
+
+                    // need to disconnect from device too
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Disconnect();
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");

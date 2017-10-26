@@ -97,7 +97,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-
                             bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, operationTimeout, cancellationToken.AddTimeout(operationTimeout));
 
                             _rawPos += bytesRead;
@@ -138,7 +137,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-
                             bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, operationTimeout, cancellationToken.AddTimeout(operationTimeout));
 
                             _rawPos += bytesRead;
@@ -189,8 +187,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             if ((_messageBase.Header.Flags & Flags.c_NonCritical) == 0)
                             {
                                 // FIXME 
-                                // evaluate the purpose of this reply back to the NanoFramework device, the nanoCLR doesn't seem to have to handle this. In the end it looks like this does have any real purpose and will only be wasting CPU.
-                                //await IncomingMessage.ReplyBadPacketAsync(m_parent, Flags.c_BadHeader);
+                                // evaluate the purpose of this reply back to the nanoFramework device, the nanoCLR doesn't seem to have to handle this. In the end it looks like this does have any real purpose and will only be wasting CPU.
+                                await IncomingMessage.ReplyBadPacketAsync(_parent, Flags.c_BadHeader, cancellationToken);
                                 return GetCompleteMessage();
                             }
 
@@ -201,7 +199,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-
                             bytesRead = await _parent.ReadBufferAsync(_messageRaw.Payload, _rawPos, count, operationTimeout, cancellationToken.AddTimeout(operationTimeout));
 
                             _rawPos += bytesRead;
@@ -233,7 +230,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                     else
                                     {
                                         // this is not the message we were waiting
-                                        _parent.App.ProcessMessage(GetCompleteMessage(), fReply);
+                                        // no need to wait for execution just throw it
+                                        _parent.App.ProcessMessageAsync(GetCompleteMessage(), fReply).GetAwaiter();
                                     }
 
                                     _state = ReceiveState.Initialize;
@@ -252,7 +250,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             if ((_messageBase.Header.Flags & Flags.c_NonCritical) == 0)
                             {
                                 // FIXME 
-                                // evaluate the purpose of this reply back to the NanoFramework device, the nanoCLR doesn't seem to have to handle this. In the end it looks like this does have any real purpose and will only be wasting CPU.
+                                // evaluate the purpose of this reply back to the nanoFramework device, the nanoCLR doesn't seem to have to handle this. In the end it looks like this does have any real purpose and will only be wasting CPU.
                                 await IncomingMessage.ReplyBadPacketAsync(_parent, Flags.c_BadPayload, cancellationToken);
                                 return GetCompleteMessage();
                             }
