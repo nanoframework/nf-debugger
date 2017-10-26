@@ -7,6 +7,7 @@
 using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -18,7 +19,10 @@ using Windows.Storage.Streams;
 
 namespace nanoFramework.Tools.Debugger
 {
-    public class Engine : IDisposable, IControllerHostLocal
+    public delegate void MessageEventHandler(IncomingMessage message, string text);
+    public delegate void CommandEventHandler(IncomingMessage message, bool fReply);
+
+    public partial class Engine : IDisposable, IControllerHostLocal
     {
         private const int RETRIES_DEFAULT = 4;
         private const int TIMEOUT_DEFAULT = 5000;
@@ -36,8 +40,8 @@ namespace nanoFramework.Tools.Debugger
         public event EventHandler<StringEventArgs> SpuriousCharactersReceived;
 
         //event NoiseEventHandler m_eventNoise;
-        //event MessageEventHandler m_eventMessage;
-        //event CommandEventHandler m_eventCommand;
+        event MessageEventHandler _eventMessage;
+        event CommandEventHandler _eventCommand;
         //event EventHandler m_eventProcessExit;
 
         /// <summary>
@@ -51,9 +55,11 @@ namespace nanoFramework.Tools.Debugger
 
         CancellationTokenSource noiseHandlingCancellation = new CancellationTokenSource();
 
-        AutoResetEvent m_rpcEvent;
+        CancellationTokenSource backgroundProcessorCancellation = new CancellationTokenSource();
+
+        AutoResetEvent _rpcEvent;
         //ArrayList m_rpcQueue;
-        //ArrayList m_rpcEndPoints;
+        ArrayList _rpcEndPoints;
 
         ManualResetEvent m_evtShutdown;
         ManualResetEvent m_evtPing;
@@ -74,7 +80,7 @@ namespace nanoFramework.Tools.Debugger
         private void Initialize()
         {
             m_notifyEvent = new AutoResetEvent(false);
-            m_rpcEvent = new AutoResetEvent(false);
+            _rpcEvent = new AutoResetEvent(false);
             m_evtShutdown = new ManualResetEvent(false);
             m_evtPing = new ManualResetEvent(false);
 
@@ -188,6 +194,8 @@ namespace nanoFramework.Tools.Debugger
 
                     ConnectionSource = (reply == null || reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR) ? ConnectionSource.nanoCLR : ConnectionSource.nanoBooter;
 
+                    Start();
+
                     if (m_silent)
                     {
                         await SetExecutionModeAsync(Commands.Debugging_Execution_ChangeConditions.c_fDebugger_Quiet, 0);
@@ -227,6 +235,9 @@ namespace nanoFramework.Tools.Debugger
             // operation can be successful
             try
             {
+                // cancel background processor
+                backgroundProcessorCancellation.Cancel();
+
                 // update flag
                 IsConnected = false;
 
@@ -249,6 +260,36 @@ namespace nanoFramework.Tools.Debugger
 
             set { }
         }
+
+        #region Events 
+
+        public event MessageEventHandler OnMessage
+        {
+            add
+            {
+                _eventMessage += value;
+            }
+
+            remove
+            {
+                _eventMessage -= value;
+            }
+        }
+
+        public event CommandEventHandler OnCommand
+        {
+            add
+            {
+                _eventCommand += value;
+            }
+
+            remove
+            {
+                _eventCommand -= value;
+            }
+        }
+
+        #endregion
 
         #region IDisposable Support
 
@@ -405,9 +446,68 @@ namespace nanoFramework.Tools.Debugger
             return await m_portDefinition.SendBufferAsync(buffer, waiTimeout, cancellationToken);
         }
 
-        public bool ProcessMessage(IncomingMessage msg, bool fReply)
+        public async Task ProcessMessageAsync(IncomingMessage message, bool isReply)
         {
-            throw new NotImplementedException();
+            Packet packet = message.Header;
+
+            switch (packet.Cmd)
+            {
+                case Commands.c_Monitor_Ping:
+                    //need to send a Ping back to the device
+                    Commands.Monitor_Ping.Reply cmdReply = new Commands.Monitor_Ping.Reply();
+
+                    cmdReply.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
+                    cmdReply.m_dbg_flags = (m_stopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
+
+                    // no need for the context, using ConfigureAwait
+                    await message.ReplyAsync(CreateConverter(), Flags.c_NonCritical, cmdReply, new CancellationToken()).ConfigureAwait(false);
+
+                    // FIXME
+                    //m_evtPing.Set();
+
+                    break;
+
+                case Commands.c_Monitor_Message:
+                    Commands.Monitor_Message payloadMessage = message.Payload as Commands.Monitor_Message;
+
+                    Debug.Assert(payloadMessage != null);
+
+                    if (payloadMessage != null && _eventMessage != null)
+                    {
+                        _eventMessage(message, payloadMessage.ToString());
+                    }
+
+                    break;
+
+                case Commands.c_Debugging_Messaging_Query:
+                case Commands.c_Debugging_Messaging_Reply:
+                case Commands.c_Debugging_Messaging_Send:
+                    Debug.Assert(message.Payload != null);
+
+                    if (message.Payload != null)
+                    {
+                        object payload = message.Payload;
+
+                        switch (message.Header.Cmd)
+                        {
+                            case Commands.c_Debugging_Messaging_Query:
+                                await RpcReceiveQueryAsync(message, (Commands.Debugging_Messaging_Query)payload).ConfigureAwait(false);
+                                break;
+                            case Commands.c_Debugging_Messaging_Send:
+                                // FIXME RpcReceiveSend(message, (Commands.Debugging_Messaging_Send)payload);
+                                break;
+                            case Commands.c_Debugging_Messaging_Reply:
+                                // FIXME RpcReceiveReply(message, (Commands.Debugging_Messaging_Reply)payload);
+                                break;
+                            default:
+                                await IncomingMessage.ReplyBadPacketAsync(message.Parent, 0, new CancellationToken()).ConfigureAwait(false);
+                                break;
+                        }
+                    }
+                    break;
+            }
+
+            _eventCommand?.Invoke(message, isReply);
         }
 
         public void SpuriousCharacters(byte[] buf, int offset, int count)
@@ -432,6 +532,52 @@ namespace nanoFramework.Tools.Debugger
             return new OutgoingMessage(m_ctrl, CreateConverter(), cmd, flags, payload);
         }
 
+        public async void Start()
+        {
+            var reassembler = new MessageReassembler(m_ctrl);
+
+            while (true)
+            {
+                var semaphoreEntered = await semaphore.WaitAsync(500);
+
+                if (semaphoreEntered)
+                {
+                    // check for cancellation request
+                    if (backgroundProcessorCancellation.IsCancellationRequested)
+                    {
+                        // cancellation requested
+                        return;
+                    }
+
+                    try
+                    {
+                        var message = await reassembler.ProcessAsync(backgroundProcessorCancellation.Token.AddTimeout(new TimeSpan(0, 0, 0, 500)));
+
+                        if(message != null)
+                        {
+                            // there was a message, throw it to Processor, no need to wait for execution
+                            ProcessMessageAsync(message, false).GetAwaiter();
+                        }
+                    }
+                    catch (OperationCanceledException) { }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }
+
+                // no need to rush into the next attempt, wait here
+                await Task.Delay(500);
+            }
+        }
+
+        //private bool IsRunning
+        //{
+        //    get
+        //    {
+        //        return !m_fProcessExited && _state.IsRunning;
+        //    }
+        //}
 
         #region Commands implementation
 
@@ -2308,16 +2454,13 @@ namespace nanoFramework.Tools.Debugger
             return true;
         }
 
-        private async Task<IncomingMessage> DiscoverCLRCapabilityAsync(uint caps)
+        private Task<IncomingMessage> DiscoverCLRCapabilityAsync(uint capabilities)
         {
-            // TODO replace with token argument
-            CancellationTokenSource cancelTSource = new CancellationTokenSource();
-
             Commands.Debugging_Execution_QueryCLRCapabilities cmd = new Commands.Debugging_Execution_QueryCLRCapabilities();
 
-            cmd.m_caps = caps;
+            cmd.m_caps = capabilities;
 
-            return await PerformRequestAsync(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd, 5, 1000);
+            return PerformRequestAsync(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd, 5, 1000);
         }
 
         private async Task<uint> DiscoverCLRCapabilityUintAsync(uint caps)

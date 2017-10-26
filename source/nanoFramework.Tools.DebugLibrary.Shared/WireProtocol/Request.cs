@@ -13,8 +13,6 @@ using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
 {
-    public delegate void CommandEventHandler(IncomingMessage msg, bool fReply);
-
     internal class Request
     {
         internal Controller ctrl;
@@ -51,6 +49,11 @@ namespace nanoFramework.Tools.Debugger
                 m_event = new ManualResetEvent(false);
         }
 
+        internal async Task SendAsync(CancellationToken cancellationToken)
+        {
+            await outgoingMsg.SendAsync(cancellationToken);
+        }
+
         internal bool MatchesReply(IncomingMessage res)
         {
             Packet headerReq = outgoingMsg.Header;
@@ -63,6 +66,49 @@ namespace nanoFramework.Tools.Debugger
             }
 
             return false;
+        }
+
+        internal async Task<IncomingMessage> WaitAsync()
+        {
+            if (m_event == null)
+                return responseMsg;
+
+            var waitStartTime = DateTime.UtcNow;
+            var requestTimedOut = !m_event.WaitOne(waitRetryTimeout);
+
+            // Wait for m_waitRetryTimeout milliseconds, if we did not get a signal by then
+            // attempt sending the request again, and then wait more.
+            while (requestTimedOut)
+            {
+                var deltaT = DateTime.UtcNow - waitStartTime;
+                if (deltaT >= totalWaitTimeout)
+                    break;
+
+                if (retries <= 0)
+                    break;
+
+                if (await outgoingMsg.SendAsync(new CancellationToken()))
+                {
+                    retries--;
+                }
+
+                requestTimedOut = !m_event.WaitOne(waitRetryTimeout);
+            }
+
+            if (requestTimedOut)
+            {
+
+                // FIXME ctrl.CancelRequest(this);
+            }
+
+            // FIXME
+            //if (responseMsg == null && m_parent.ThrowOnCommunicationFailure)
+            //{
+            //    //do we want a separate exception for aborted requests?
+            //    throw new IOException("Request failed");
+            //}
+
+            return responseMsg;
         }
 
         internal void Signal(IncomingMessage res)

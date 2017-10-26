@@ -68,7 +68,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public async Task<bool> QueueOutputAsync(MessageRaw raw, CancellationToken cancellationToken)
         {
-            Debug.WriteLine("QueueOutputAsync 1");
             // TX header
             var sendHeaderCount = await SendRawBufferAsync(raw.Header, TimeSpan.FromMilliseconds(1000), cancellationToken);
 
@@ -76,7 +75,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             if (cancellationToken.IsCancellationRequested)
             {
                 // cancellation requested
-                Debug.WriteLine("cancellation requested");
                 return false;
             }
 
@@ -85,8 +83,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 // we have a payload to TX
                 if (sendHeaderCount == raw.Header.Length)
                 {
-                    Debug.WriteLine("QueueOutputAsync 2");
-
                     var sendPayloadCount = await SendRawBufferAsync(raw.Payload, TimeSpan.FromMilliseconds(1000), cancellationToken);
 
                     if (sendPayloadCount == raw.Payload.Length)
@@ -144,8 +140,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public Task<uint> SendRawBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
-            Debug.WriteLine("SendRawBufferAsync");
-
             return App.SendBufferAsync(buffer, waiTimeout, cancellationToken);
         }
 
@@ -157,11 +151,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             // sanity check for anything to read
             if (bytesToRead == 0)
             {
-                //Debug.WriteLine("Nothing to read, leaving now");
                 return 0;
             }
-
-            Debug.WriteLine("Trying to read {0} bytes...", bytesToReadRequested);
 
             while (bytesToRead > 0)
             {
@@ -174,7 +165,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 // read next chunk of data async
                 var readResult = await App.ReadBufferAsync((uint)bytesToRead, waitTimeout, cancellationToken);
 
-                Debug.WriteLine("read {0} bytes", readResult.Length);
                 // any byte read?
                 if (readResult.Length > 0)
                 {
