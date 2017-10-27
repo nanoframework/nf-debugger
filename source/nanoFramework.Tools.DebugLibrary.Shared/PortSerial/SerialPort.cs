@@ -44,6 +44,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         List<SerialDeviceInformation> SerialDevices;
 
         /// <summary>
+        /// Internal list of the tentative devices to be checked as valid nanoFramework devices
+        /// </summary>
+        private List<NanoDeviceBase> tentativeNanoFrameworkDevices = new List<NanoDeviceBase>();
+
+        /// <summary>
         /// Creates an Serial debug client
         /// </summary>
         public SerialPort(object callerApp)
@@ -240,9 +245,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     newNanoFrameworkDevice.DebugEngine = new Engine(this, newNanoFrameworkDevice);
                     newNanoFrameworkDevice.Transport = TransportType.Serial;
 
-                    // Add the new element to the end of the list of devices
-                    NanoFrameworkDevices.Add(newNanoFrameworkDevice as NanoDeviceBase);
-
                     // perform check for valid nanoFramework device is this is not the initial enumeration
                     if (IsDevicesEnumerationComplete)
                     {
@@ -256,13 +258,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 // done here, close the device
                                 EventHandlerForSerialDevice.Current.CloseDevice();
 
-                                // remove it from collection... 
-                                NanoFrameworkDevices.Remove(newNanoFrameworkDevice as NanoDeviceBase);
-
-                                //... and add it again, otherwise the bindings might fail
+                                //add device to the collection
                                 NanoFrameworkDevices.Add(newNanoFrameworkDevice as NanoDeviceBase);
-
-                                Debug.WriteLine("Add new nanoFramework device to list: " + newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
+                                Debug.WriteLine($"New Serial device: {newNanoFrameworkDevice.Description} {(((NanoDevice<NanoSerialDevice>)newNanoFrameworkDevice).Device.DeviceInformation.DeviceInformation.Id)}");
 
                                 return;
                             }
@@ -270,11 +268,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                         Debug.WriteLine($"Removing { deviceInformation.Id } from collection...");
 
-                        // couldn't open device better remove it from the collection right away
-                        NanoFrameworkDevices.Remove(newNanoFrameworkDevice as NanoDeviceBase);
-
                         // can't do anything with this one, better dispose it
                         newNanoFrameworkDevice.Dispose();
+                    }
+                    else
+                    {
+                        tentativeNanoFrameworkDevices.Add(newNanoFrameworkDevice as NanoDeviceBase);
                     }
                 }
             }
@@ -329,7 +328,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             if (deviceId != null)
             {
                 // SerialMatch.Device.DeviceInformation
-                return NanoFrameworkDevices.FirstOrDefault(d => ((d as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).DeviceInformation.Id == deviceId);
+                var device = NanoFrameworkDevices.FirstOrDefault(d => ((d as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).DeviceInformation.Id == deviceId);
+
+                if (device == null)
+                {
+                    // try now in tentative list
+                    return tentativeNanoFrameworkDevices.FirstOrDefault(d => ((d as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).DeviceInformation.Id == deviceId);
+                }
             }
 
             return null;
@@ -370,7 +375,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // prepare a list of devices that are to be removed if they are deemed as not valid nanoFramework devices
                 var devicesToRemove = new List<NanoDeviceBase>();
 
-                foreach (NanoDeviceBase device in NanoFrameworkDevices)
+                foreach (NanoDeviceBase device in tentativeNanoFrameworkDevices)
                 {
                     // connect to the device (as Task to get rid of the await)
                     var connectTask = ConnectDeviceAsync(device);
@@ -380,14 +385,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                         var checkValidNFDeviceTask = CheckValidNanoFrameworkSerialDeviceAsync();
 
-                        if (!checkValidNFDeviceTask.Result)
-                        {
-                            // mark this device for removal
-                            devicesToRemove.Add(device);
-                        }
-                        else
+                        if (checkValidNFDeviceTask.Result)
                         {
                             Debug.WriteLine($"New Serial device: {device.Description} {(((NanoDevice<NanoSerialDevice>)device).Device.DeviceInformation.DeviceInformation.Id)}");
+                            NanoFrameworkDevices.Add(device);
                         }
 
                         // done here, disconnect from the device now
@@ -396,13 +397,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     else
                     {
                         // couldn't open device
-                        // mark this device for removal
-                        devicesToRemove.Add(device);
                     }
                 }
-
-                // remove device form nanoFramework device collection (force Linq to execute with call to Count())
-                devicesToRemove.Select(d => NanoFrameworkDevices.Remove(d)).Count();
 
                 // all watchers have completed enumeration
                 IsDevicesEnumerationComplete = true;
@@ -617,10 +613,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     {
                         // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                         // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                        Task<UInt32> loadAsyncTask = inputStreamReader.LoadAsync(bytesToRead).AsTask(cancellationToken.AddTimeout(waiTimeout));
 
                         // get how many bytes are available to read
-                        uint bytesRead = await loadAsyncTask;
+                        uint bytesRead = await inputStreamReader.LoadAsync(bytesToRead).AsTask(cancellationToken.AddTimeout(waiTimeout)).ConfigureAwait(true);
 
                         byte[] readBuffer = new byte[bytesToRead];
                         inputStreamReader.ReadBytes(readBuffer);

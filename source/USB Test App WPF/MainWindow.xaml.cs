@@ -36,6 +36,8 @@ namespace Serial_Test_App_WPF
 
                  bool connectResult = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.ConnectAsync(3, 1000, true);
 
+                 (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Start();
+
                  var di = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfoAsync();
 
                  Debug.WriteLine("");
