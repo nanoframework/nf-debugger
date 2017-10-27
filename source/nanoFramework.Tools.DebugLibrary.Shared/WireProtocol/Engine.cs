@@ -194,8 +194,6 @@ namespace nanoFramework.Tools.Debugger
 
                     ConnectionSource = (reply == null || reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR) ? ConnectionSource.nanoCLR : ConnectionSource.nanoBooter;
 
-                    Start();
-
                     if (m_silent)
                     {
                         await SetExecutionModeAsync(Commands.Debugging_Execution_ChangeConditions.c_fDebugger_Quiet, 0);
@@ -213,8 +211,24 @@ namespace nanoFramework.Tools.Debugger
             {
                 CancellationTokenSource cancellationTSource = new CancellationTokenSource();
 
-                Capabilities = await DiscoverCLRCapabilitiesAsync(cancellationTSource.Token);
-                m_ctrl.Capabilities = Capabilities;
+                //default capabilities
+                Capabilities = new CLRCapabilities();
+
+                var tempCapabilities = await DiscoverCLRCapabilitiesAsync(cancellationTSource.Token);
+
+                if (tempCapabilities != null)
+                {
+                    Capabilities = tempCapabilities;
+                    m_ctrl.Capabilities = Capabilities;
+                }
+                else
+                {
+                    // update flag
+                    IsConnected = false;
+
+                    // done here
+                    return false;
+                }
             }
 
             if (connectionSource != ConnectionSource.Unknown && connectionSource != ConnectionSource)
@@ -235,7 +249,7 @@ namespace nanoFramework.Tools.Debugger
             // operation can be successful
             try
             {
-                // cancel background processor
+                // cancel background processor, if running
                 backgroundProcessorCancellation.Cancel();
 
                 // update flag
@@ -532,28 +546,29 @@ namespace nanoFramework.Tools.Debugger
             return new OutgoingMessage(m_ctrl, CreateConverter(), cmd, flags, payload);
         }
 
-        public async void Start()
+        public async Task Start()
         {
             var reassembler = new MessageReassembler(m_ctrl);
 
-            while (true)
+            // check if cancellation token needs to be renewed
+            if (backgroundProcessorCancellation.IsCancellationRequested)
+            {
+                backgroundProcessorCancellation = new CancellationTokenSource();
+            }
+
+            while (!backgroundProcessorCancellation.IsCancellationRequested)
             {
                 var semaphoreEntered = await semaphore.WaitAsync(500);
 
                 if (semaphoreEntered)
                 {
-                    // check for cancellation request
-                    if (backgroundProcessorCancellation.IsCancellationRequested)
-                    {
-                        // cancellation requested
-                        return;
-                    }
+                    CancellationTokenSource cts = new CancellationTokenSource();
 
                     try
                     {
-                        var message = await reassembler.ProcessAsync(backgroundProcessorCancellation.Token.AddTimeout(new TimeSpan(0, 0, 0, 500)));
+                        var message = await reassembler.ProcessAsync(cts.Token.AddTimeout(new TimeSpan(0, 0, 0, 500)));
 
-                        if(message != null)
+                        if (message != null)
                         {
                             // there was a message, throw it to Processor, no need to wait for execution
                             ProcessMessageAsync(message, false).GetAwaiter();
@@ -562,6 +577,7 @@ namespace nanoFramework.Tools.Debugger
                     catch (OperationCanceledException) { }
                     finally
                     {
+                        cts.Dispose();
                         semaphore.Release();
                     }
                 }
