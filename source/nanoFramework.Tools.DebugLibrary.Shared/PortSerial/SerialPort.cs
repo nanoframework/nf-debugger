@@ -245,6 +245,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     newNanoFrameworkDevice.DebugEngine = new Engine(this, newNanoFrameworkDevice);
                     newNanoFrameworkDevice.Transport = TransportType.Serial;
 
+                    tentativeNanoFrameworkDevices.Add(newNanoFrameworkDevice as NanoDeviceBase);
+
                     // perform check for valid nanoFramework device is this is not the initial enumeration
                     if (IsDevicesEnumerationComplete)
                     {
@@ -262,18 +264,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 NanoFrameworkDevices.Add(newNanoFrameworkDevice as NanoDeviceBase);
                                 Debug.WriteLine($"New Serial device: {newNanoFrameworkDevice.Description} {(((NanoDevice<NanoSerialDevice>)newNanoFrameworkDevice).Device.DeviceInformation.DeviceInformation.Id)}");
 
+                                // clear tentative list
+                                tentativeNanoFrameworkDevices.Clear();
+
+                                // done here
                                 return;
                             }
                         }
 
-                        Debug.WriteLine($"Removing { deviceInformation.Id } from collection...");
+                        // clear tentative list
+                        tentativeNanoFrameworkDevices.Clear();
 
                         // can't do anything with this one, better dispose it
                         newNanoFrameworkDevice.Dispose();
-                    }
-                    else
-                    {
-                        tentativeNanoFrameworkDevices.Add(newNanoFrameworkDevice as NanoDeviceBase);
                     }
                 }
             }
@@ -288,9 +291,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             SerialDevices.Remove(deviceEntry);
 
-            // get device
+            // get device...
             var device = FindNanoFrameworkDevice(deviceId);
-            // yes, remove it from collection
+
+            // ... and remove it from collection
             NanoFrameworkDevices.Remove(device);
 
             device = null;
@@ -334,6 +338,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 {
                     // try now in tentative list
                     return tentativeNanoFrameworkDevices.FirstOrDefault(d => ((d as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).DeviceInformation.Id == deviceId);
+                }
+                else
+                {
+                    return device;
                 }
             }
 
@@ -403,6 +411,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // all watchers have completed enumeration
                 IsDevicesEnumerationComplete = true;
 
+                // clean list of tentative nanoFramework Devices
+                tentativeNanoFrameworkDevices.Clear();
+
                 Debug.WriteLine($"Serial device enumeration completed. Found {NanoFrameworkDevices.Count} devices");
 
                 // fire event that Serial enumeration is complete 
@@ -455,10 +466,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 if (serialNumber.Contains("NANO_"))
                 {
                     var device = FindNanoFrameworkDevice(EventHandlerForSerialDevice.Current.DeviceInformation.Id);
-                    device.Description = serialNumber + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
 
-                    // should be a valid nanoFramework device, done here
-                    return true;
+                    if (device != null)
+                    {
+                        device.Description = serialNumber + " @ " + EventHandlerForSerialDevice.Current.Device.PortName;
+
+                        // should be a valid nanoFramework device, done here
+                        return true;
+                    }
                 }
             }
 
