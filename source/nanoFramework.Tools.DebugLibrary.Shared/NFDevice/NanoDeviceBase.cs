@@ -130,7 +130,7 @@ namespace nanoFramework.Tools.Debugger
         {
             bool ret = false;
 
-            if (!await DebugEngine.ConnectAsync(1, 1000, true)) return false;
+            if (!await DebugEngine.ConnectAsync(1000, true)) return false;
 
             if (DebugEngine != null)
             {
@@ -172,7 +172,7 @@ namespace nanoFramework.Tools.Debugger
                     // check if cancellation was requested 
                     if (cancellationToken.IsCancellationRequested) return false;
 
-                    if (fConnected = await DebugEngine.ConnectAsync(1, 1000, true, ConnectionSource.Unknown))
+                    if (fConnected = await DebugEngine.ConnectAsync(1000, true, ConnectionSource.Unknown))
                     {
                         Commands.Monitor_Ping.Reply reply = await DebugEngine.GetConnectionSourceAsync();
 
@@ -206,7 +206,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (DebugEngine == null) throw new NanoFrameworkDeviceNoResponseException();
 
-            if (!await DebugEngine.ConnectAsync(2, 500, true))
+            if (!await DebugEngine.ConnectAsync(500, true))
             {
                 throw new NanoFrameworkDeviceNoResponseException();
             }
@@ -375,7 +375,7 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            await DebugEngine.ConnectAsync(1, 1000, false, ConnectionSource.Unknown);
+            await DebugEngine.ConnectAsync(1000, false, ConnectionSource.Unknown);
 
             var parseResult = await SRecordFile.ParseAsync(srecFile);
             entryPoint = parseResult.Item1;

@@ -319,9 +319,9 @@ namespace nanoFramework.Tools.Debugger
 
         #endregion
 
-        internal async Task<Request> RequestAsync(OutgoingMessage message, int retries, int timeout)
+        internal async Task<Request> RequestAsync(OutgoingMessage message, int timeout)
         {
-            Request req = new Request(m_ctrl, message, retries, timeout, null);
+            Request req = new Request(m_ctrl, message, timeout, null);
 
             // FIXME
             //lock (m_state.SyncObject)
@@ -350,20 +350,20 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         internal object m_ReqSyncLock = new object();
 
-        private Task<Request> AsyncMessage(uint command, uint flags, object payload, int retries, int timeout)
+        private Task<Request> AsyncMessage(uint command, uint flags, object payload, int timeout)
         {
             OutgoingMessage msg = CreateMessage(command, flags, payload);
 
-            return RequestAsync(msg, retries, timeout);
+            return RequestAsync(msg, timeout);
         }
 
-        private async Task<IncomingMessage> MessageAsync(uint command, uint flags, object payload, int retries, int timeout)
+        private async Task<IncomingMessage> MessageAsync(uint command, uint flags, object payload, int timeout)
         {
             // FIXME
             // Lock on m_ReqSyncLock object, so only one thread is active inside the block.
             //lock (m_ReqSyncLock)
             //{
-            Request req = await AsyncMessage(command, flags, payload, retries, timeout);
+            Request req = await AsyncMessage(command, flags, payload, timeout);
 
             return await req.WaitAsync();
             //}
@@ -371,7 +371,7 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<IncomingMessage> SyncMessageAsync(uint command, uint flags, object payload)
         {
-            return await MessageAsync(command, flags, payload, RETRIES_DEFAULT, TIMEOUT_DEFAULT);
+            return await MessageAsync(command, flags, payload, TIMEOUT_DEFAULT);
         }
     }
 }

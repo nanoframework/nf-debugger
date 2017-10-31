@@ -74,7 +74,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\FifoBuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\DeploymentSector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\IControllerRemote.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\RebootTime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\PublicKeyIndex.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Flags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\IController.cs" />

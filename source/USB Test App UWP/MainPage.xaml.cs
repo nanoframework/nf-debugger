@@ -29,7 +29,7 @@ namespace Test_App_UWP
             // disable button
             (sender as Button).IsEnabled = false;
 
-            bool connectResult = await App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.ConnectAsync(3, 3000);
+            bool connectResult = await App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.ConnectAsync(3000, true);
 
             var di = await App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].GetDeviceInfoAsync();
 

@@ -455,7 +455,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 var device = FindNanoFrameworkDevice(EventHandlerForSerialDevice.Current.DeviceInformation.Id);
 
                 // need an extra check on this because this can be 'just' a regular COM port without any nanoFramework device behind
-                var connectionResult = await device.DebugEngine.ConnectAsync(1, 1000, true);
+                var connectionResult = await device.DebugEngine.ConnectAsync(5000, true);
 
                 if (connectionResult)
                 {
