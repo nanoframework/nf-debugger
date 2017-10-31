@@ -32,13 +32,13 @@ namespace Test_App_UWP
             // disable button
             (sender as Button).IsEnabled = false;
 
-            bool connectResult = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.ConnectAsync(3, 1000);
+            bool connectResult = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.ConnectAsync(3, 3000);
 
-            //var di = await App.NETMFUsbDebugClient.MFDevices[0].GetDeviceInfoAsync();
+            var di = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].GetDeviceInfoAsync();
 
             Debug.WriteLine("");
             Debug.WriteLine("");
-            //Debug.WriteLine(di.ToString());
+            Debug.WriteLine(di.ToString());
             Debug.WriteLine("");
             Debug.WriteLine("");
 
@@ -204,6 +204,23 @@ namespace Test_App_UWP
             {
 
             }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private async void DeviceInfoButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            var di = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].GetDeviceInfoAsync(true);
+
+            Debug.WriteLine("");
+            Debug.WriteLine("");
+            Debug.WriteLine(di.ToString());
+            Debug.WriteLine("");
+            Debug.WriteLine("");
 
             // enable button
             (sender as Button).IsEnabled = true;

@@ -107,32 +107,27 @@ namespace nanoFramework.Tools.Debugger
             {
                 int read = 0;
 
-                while (true)
+                while (noiseHandlingCancellation.IsCancellationRequested)
                 {
-                    m_notifyNoise.WaitHandle.WaitOne(250);
+                    var semaphoreTaken = m_notifyNoise.WaitHandle.WaitOne(250);
 
-                    // check for cancellation request
-                    if (noiseHandlingCancellation.IsCancellationRequested)
+                    if (semaphoreTaken)
                     {
-                        // cancellation requested
-                        return;
-                    }
-
-                    while ((read = m_notifyNoise.Available) > 0)
-                    {
-                        byte[] buffer = new byte[m_notifyNoise.Available];
-
-                        m_notifyNoise.Read(buffer, 0, buffer.Length);
-
-                        if (SpuriousCharactersReceived != null)
+                        while ((read = m_notifyNoise.Available) > 0)
                         {
-                            SpuriousCharactersReceived.Invoke(this, new StringEventArgs(UTF8Encoding.UTF8.GetString(buffer, 0, buffer.Length)));
+                            byte[] buffer = new byte[m_notifyNoise.Available];
+
+                            m_notifyNoise.Read(buffer, 0, buffer.Length);
+
+                            if (SpuriousCharactersReceived != null)
+                            {
+                                SpuriousCharactersReceived.Invoke(this, new StringEventArgs(UTF8Encoding.UTF8.GetString(buffer, 0, buffer.Length)));
+                            }
                         }
                     }
 
                 }
             }, noiseHandlingCancellation.Token);
-
         }
 
         private void InitializeLocal(IPort pd, INanoDevice device)
@@ -249,14 +244,13 @@ namespace nanoFramework.Tools.Debugger
             // operation can be successful
             try
             {
+                noiseHandlingCancellation.Cancel();
+
                 // cancel background processor, if running
                 backgroundProcessorCancellation.Cancel();
 
                 // update flag
                 IsConnected = false;
-
-                // call disconnect at device level
-                Device.Disconnect();
 
                 Debug.WriteLine("Device disconnected");
             }
@@ -316,9 +310,6 @@ namespace nanoFramework.Tools.Debugger
                 if (disposing)
                 {
                     // TODO: dispose managed state (managed objects).
-
-                    // kill listener for spurious chars task
-                    noiseHandlingCancellation.Cancel();
 
                     try
                     {
@@ -556,7 +547,7 @@ namespace nanoFramework.Tools.Debugger
                 backgroundProcessorCancellation = new CancellationTokenSource();
             }
 
-            while (!backgroundProcessorCancellation.IsCancellationRequested)
+            while (!backgroundProcessorCancellation.IsCancellationRequested && IsConnected)
             {
                 var semaphoreEntered = await semaphore.WaitAsync(500);
 
@@ -583,17 +574,10 @@ namespace nanoFramework.Tools.Debugger
                 }
 
                 // no need to rush into the next attempt, wait here
-                await Task.Delay(500);
+                if ((!backgroundProcessorCancellation.IsCancellationRequested && IsConnected)) await Task.Delay(500);
             }
         }
 
-        //private bool IsRunning
-        //{
-        //    get
-        //    {
-        //        return !m_fProcessExited && _state.IsRunning;
-        //    }
-        //}
 
         #region Commands implementation
 
@@ -2476,7 +2460,7 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_caps = capabilities;
 
-            return PerformRequestAsync(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd, 5, 1000);
+            return PerformRequestAsync(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd, 1, 3000);
         }
 
         private async Task<uint> DiscoverCLRCapabilityUintAsync(uint caps)

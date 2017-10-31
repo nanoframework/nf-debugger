@@ -235,7 +235,7 @@ namespace nanoFramework.Tools.Debugger.Serial
                 deviceAccessInformation = null;
             }
 
-            if(!isBackgroundTask && (appSuspendEventHandler != null || appResumeEventHandler != null))
+            if (!isBackgroundTask && (appSuspendEventHandler != null || appResumeEventHandler != null))
             {
                 UnregisterFromAppEvents();
             }
