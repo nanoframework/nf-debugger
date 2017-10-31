@@ -58,10 +58,8 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             // This event is raised when the app is exited and when the app is suspended
             CallerApp.Suspending -= appSuspendEventHandler;
-            appSuspendEventHandler = null;
 
             CallerApp.Resuming -= appResumeEventHandler;
-            appResumeEventHandler = null;
         }
 
         /// <summary>

@@ -18,6 +18,7 @@
 
         <Button x:Name="IsInitButton" Content="Is Initialized" HorizontalAlignment="Left" Margin="82,472,0,0" VerticalAlignment="Top" Click="IsInitButton_Click" />
         <Button x:Name="DeployTestButton" Content="Deploy Test" HorizontalAlignment="Left" Margin="82,534,0,0" VerticalAlignment="Top" Click="DeployTestButton_Click" />
+        <Button x:Name="DeviceInfoButton" Content="Device Info" HorizontalAlignment="Left" Margin="245,534,0,0" VerticalAlignment="Top" Click="DeviceInfoButton_Click" />
 
     </Grid>
 </Page>

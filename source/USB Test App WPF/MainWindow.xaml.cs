@@ -34,7 +34,7 @@ namespace Serial_Test_App_WPF
             await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
              {
 
-                 bool connectResult = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.ConnectAsync(3, 1000, true);
+                 bool connectResult = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.ConnectAsync(3, 3000, true);
 
                  (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Start();
 
