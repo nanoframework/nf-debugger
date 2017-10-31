@@ -24,7 +24,6 @@ namespace nanoFramework.Tools.Debugger
 
     public partial class Engine : IDisposable, IControllerHostLocal
     {
-        private const int RETRIES_DEFAULT = 4;
         private const int TIMEOUT_DEFAULT = 5000;
 
         //internal IControllerHostLocal<MFDevice> m_portDefinition;
@@ -69,7 +68,6 @@ namespace nanoFramework.Tools.Debugger
         //bool m_fProcessExited;
 
         bool m_fThrowOnCommunicationFailure;
-        RebootTime m_RebootTime;
         internal INanoDevice Device;
 
         public Engine(IPort pd, INanoDevice device)
@@ -99,8 +97,6 @@ namespace nanoFramework.Tools.Debugger
 
             //default capabilities, used until clr can be queried.
             Capabilities = new CLRCapabilities();
-
-            m_RebootTime = new RebootTime();
 
             // start task to tx spurious characters
             Task.Factory.StartNew(() =>
@@ -153,7 +149,7 @@ namespace nanoFramework.Tools.Debugger
 
         public bool IsTargetBigEndian { get; internal set; }
 
-        public async Task<bool> ConnectAsync(int retries, int timeout, bool force = false, ConnectionSource connectionSource = ConnectionSource.Unknown)
+        public async Task<bool> ConnectAsync(int timeout, bool force = false, ConnectionSource connectionSource = ConnectionSource.Unknown)
         {
             if (force || IsConnected == false)
             {
@@ -166,7 +162,7 @@ namespace nanoFramework.Tools.Debugger
                     cmd.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
                     //cmd.m_dbg_flags = (m_stopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
 
-                    IncomingMessage msg = await PerformRequestAsync(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, retries, timeout);
+                    IncomingMessage msg = await PerformRequestAsync(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
 
                     if (msg == null || msg?.Payload == null)
                     {
@@ -345,7 +341,7 @@ namespace nanoFramework.Tools.Debugger
 
         #endregion
 
-        private async Task<IncomingMessage> PerformRequestAsync(uint command, uint flags, object payload, int retries = 0, int timeout = 2000)
+        private async Task<IncomingMessage> PerformRequestAsync(uint command, uint flags, object payload, int timeout = 2000)
         {
             var semaphoreEntered = await semaphore.WaitAsync(1000);
 
@@ -369,7 +365,7 @@ namespace nanoFramework.Tools.Debugger
                     OutgoingMessage message = new OutgoingMessage(m_ctrl, CreateConverter(), command, flags, payload);
 
                     // create request 
-                    Request request = new Request(m_ctrl, message, retries, timeout, null);
+                    Request request = new Request(m_ctrl, message, timeout, null);
 
                     return await request.PerformRequestAsync();
                 }
@@ -382,7 +378,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        private async Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int retries = 3, int timeout = 500)
+        private async Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int timeout = 500)
         {
             var semaphoreEntered = await semaphore.WaitAsync(1000);
 
@@ -392,7 +388,7 @@ namespace nanoFramework.Tools.Debugger
                 {
 
                     // create request 
-                    Request request = new Request(m_ctrl, message, retries, timeout, null);
+                    Request request = new Request(m_ctrl, message, timeout, null);
 
                     return await request.PerformRequestAsync();
                 }
@@ -405,7 +401,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        private async Task<List<IncomingMessage>> PerformRequestBatchAsync(List<OutgoingMessage> messages, CancellationToken cancellationToken, int retries = 3, int timeout = 1000)
+        private async Task<List<IncomingMessage>> PerformRequestBatchAsync(List<OutgoingMessage> messages, CancellationToken cancellationToken, int timeout = 1000)
         {
             List<IncomingMessage> replies = new List<IncomingMessage>();
             List<Request> requests = new List<Request>();
@@ -415,7 +411,7 @@ namespace nanoFramework.Tools.Debugger
                 // continue execution only if cancellation was NOT request
                 if (!cancellationToken.IsCancellationRequested)
                 {
-                    replies.Add(await PerformRequestAsync(message, cancellationToken, retries, timeout));
+                    replies.Add(await PerformRequestAsync(message, cancellationToken, timeout));
                 }
                 else
                 {
@@ -431,7 +427,7 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_Ping, 0, null, 2, 500);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_Ping, 0, null);
 
             if (reply != null)
             {
@@ -607,7 +603,7 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_DeploymentMap, 0, cmd, 2, 10000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_DeploymentMap, 0, cmd, 5000);
 
             if (reply != null)
             {
@@ -627,7 +623,7 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_OemInfo, 0, null, 2, 1000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_OemInfo, 0, null, 1000);
 
             if (reply != null)
             {
@@ -642,7 +638,7 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_FlashSectorMap, 0, null, 1, 4000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_FlashSectorMap, 0, null, 4000);
 
             if (reply != null)
             {
@@ -726,7 +722,7 @@ namespace nanoFramework.Tools.Debugger
 
                 Debug.WriteLine($"Sending {packetLength} bytes to address { address.ToString("X8") }, {count} remaining...");
 
-                IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_WriteMemory, 0, cmd, 0, 2000);
+                IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_WriteMemory, 0, cmd, 2000);
 
                 Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
 
@@ -771,7 +767,7 @@ namespace nanoFramework.Tools.Debugger
             // 128kB sector: 2600ms >> 21ms/kB
             const int eraseTimeout128kSector = 2600;
 
-            // this extra timeout is to account comm times and execution operation on the AccessMemory funtion
+            // this extra timeout is to account comm times and execution operation on the AccessMemory function
             const int extraTimeoutForErase = 800;
 
             // the erase memory command isn't aware of the sector(s) size it will end up erasing so we have to do an educated guess on how long that will take
@@ -801,7 +797,7 @@ namespace nanoFramework.Tools.Debugger
                 timeout = (int)(length / (16 * 1024)) * eraseTimeout16kSector + 2 * extraTimeoutForErase;
             }
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_EraseMemory, 0, cmd, 0, timeout);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_EraseMemory, 0, cmd, timeout);
 
             Commands.Monitor_EraseMemory.Reply cmdReply = reply.Payload as Commands.Monitor_EraseMemory.Reply;
 
@@ -850,7 +846,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 m_evtPing.Reset();
 
-                await PerformRequestAsync(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 0, 100);
+                await PerformRequestAsync(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 1000);
 
                 // need to disconnect from the device?
                 if (disconnectRequired)
@@ -864,9 +860,9 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public async Task<bool> ReconnectAsync(bool fSoftReboot)
+        public async Task<bool> ReconnectAsync(bool fSoftReboot, int timeout = 5000)
         {
-            if (!await ConnectAsync(m_RebootTime.Retries, m_RebootTime.WaitMs(fSoftReboot), true, ConnectionSource.Unknown))
+            if (!await ConnectAsync(timeout, true, ConnectionSource.Unknown))
             {
                 if (m_fThrowOnCommunicationFailure)
                 {
@@ -1060,7 +1056,7 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_flags = 0;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_UpgradeToSsl, Flags.c_NoCaching, cmd, 2, 5000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_UpgradeToSsl, Flags.c_NoCaching, cmd, 5000);
 
             if (reply != null)
             {
@@ -1119,7 +1115,7 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_MFUpdate_Start, Flags.c_NoCaching, cmd, 2, 5000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_MFUpdate_Start, Flags.c_NoCaching, cmd, 5000);
 
             if (reply != null)
             {
@@ -1632,7 +1628,7 @@ namespace nanoFramework.Tools.Debugger
         {
             OutgoingMessage cmd = CreateMessage_GetValue_Stack(pid, depth, kind, index);
 
-            IncomingMessage reply = await PerformRequestAsync(cmd, cancellationToken, 10, 200);
+            IncomingMessage reply = await PerformRequestAsync(cmd, cancellationToken, 200);
 
             if (reply != null)
             {
@@ -2182,7 +2178,7 @@ namespace nanoFramework.Tools.Debugger
             Commands.DebuggingDeploymentStatus cmd = new Commands.DebuggingDeploymentStatus();
             Commands.DebuggingDeploymentStatus.Reply cmdReply = null;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Deployment_Status, Flags.c_NoCaching, cmd, 2, 10000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Deployment_Status, Flags.c_NoCaching, cmd, 5000);
 
             if (reply != null)
             {
@@ -2460,7 +2456,7 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_caps = capabilities;
 
-            return PerformRequestAsync(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd, 1, 3000);
+            return PerformRequestAsync(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd, 3000);
         }
 
         private async Task<uint> DiscoverCLRCapabilityUintAsync(uint caps)

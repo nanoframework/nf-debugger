@@ -65,7 +65,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             int bytesRead;
 
             // compute operation timeout here to ease reuse on calls bellow
-            TimeSpan operationTimeout = request != null ? request.waitRetryTimeout : new TimeSpan(500);
+            TimeSpan operationTimeout = request != null ? request.timeout : new TimeSpan(500);
 
             try
             {
