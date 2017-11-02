@@ -32,47 +32,67 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-
             if (!Dbg.IsConnectedTonanoCLR) return false;
 
             // get app domains from device
-            await GetAppDomainsAsync(cancelTSource.Token);
+            if (await GetAppDomainsAsync(cancelTSource.Token).ConfigureAwait(true))
+            {
+                // get assemblies from device
+                if (await GetAssembliesAsync(cancelTSource.Token).ConfigureAwait(true))
+                {
 
-            // get assemblies from device
-            await GetAssembliesAsync(cancelTSource.Token);
+                    Valid = true;
 
-            Valid = true;
+                    return true;
+                }
+            }
 
-            return true;
+            return false;
         }
 
-        private async Task GetAppDomainsAsync(CancellationToken cancellationToken)
+        private async Task<bool> GetAppDomainsAsync(CancellationToken cancellationToken)
         {
             if (Dbg.Capabilities.AppDomains)
             {
-                Commands.Debugging_TypeSys_AppDomains.Reply domainsReply = await Dbg.GetAppDomainsAsync();
+                Commands.Debugging_TypeSys_AppDomains.Reply domainsReply = await Dbg.GetAppDomainsAsync().ConfigureAwait(true);
                 // TODO add cancellation token code
 
                 if (domainsReply != null)
                 {
                     foreach (uint id in domainsReply.Data)
                     {
-                        Commands.Debugging_Resolve_AppDomain.Reply reply = await Dbg.ResolveAppDomainAsync(id);
+                        Commands.Debugging_Resolve_AppDomain.Reply reply = await Dbg.ResolveAppDomainAsync(id).ConfigureAwait(true);
                         // TODO add cancellation token code
                         if (reply != null)
                         {
                             m_Domains.Add(new AppDomainInfo(id, reply));
                         }
                     }
+
+                    // sanity check
+                    if (m_Domains.Count == domainsReply.Data.Length)
+                    {
+                        // we have all the domains listed
+                        return true;
+                    }
                 }
+
+                // default to failure
+                return false;
+            }
+            else
+            {
+                // no app domains, so we are good here
+                return true;
             }
         }
 
-        private async Task GetAssembliesAsync(CancellationToken cancellationToken)
+        private async Task<bool> GetAssembliesAsync(CancellationToken cancellationToken)
         {
-            List<Commands.DebuggingResolveAssembly> reply = await Dbg.ResolveAllAssembliesAsync(cancellationToken);
+            List<Commands.DebuggingResolveAssembly> reply = await Dbg.ResolveAllAssembliesAsync(cancellationToken).ConfigureAwait(true);
 
             if (reply != null)
+            {
                 foreach (Commands.DebuggingResolveAssembly resolvedAssm in reply)
                 {
                     AssemblyInfoFromResolveAssembly ai = new AssemblyInfoFromResolveAssembly(resolvedAssm);
@@ -87,6 +107,17 @@ namespace nanoFramework.Tools.Debugger
 
                     m_AssemblyInfos.Add(ai);
                 }
+
+                // sanity check
+                if (m_AssemblyInfos.Count == reply.Count)
+                {
+                    // we have all the assemblies listed
+                    return true;
+                }
+            }
+
+            // default to failure
+            return false;
         }
 
         private Engine Dbg { get { return m_self.DebugEngine; } }
