@@ -231,7 +231,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                     {
                                         // this is not the message we were waiting
                                         // no need to wait for execution just throw it
-                                        _parent.App.ProcessMessageAsync(GetCompleteMessage(), fReply).GetAwaiter();
+                                        _parent.App.ProcessMessageAsync(GetCompleteMessage(), fReply).FireAndForget();
                                     }
 
                                     _state = ReceiveState.Initialize;

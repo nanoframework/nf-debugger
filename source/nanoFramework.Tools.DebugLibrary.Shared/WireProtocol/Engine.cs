@@ -97,33 +97,6 @@ namespace nanoFramework.Tools.Debugger
 
             //default capabilities, used until clr can be queried.
             Capabilities = new CLRCapabilities();
-
-            // start task to tx spurious characters
-            Task.Factory.StartNew(() =>
-            {
-                int read = 0;
-
-                while (noiseHandlingCancellation.IsCancellationRequested)
-                {
-                    var semaphoreTaken = m_notifyNoise.WaitHandle.WaitOne(250);
-
-                    if (semaphoreTaken)
-                    {
-                        while ((read = m_notifyNoise.Available) > 0)
-                        {
-                            byte[] buffer = new byte[m_notifyNoise.Available];
-
-                            m_notifyNoise.Read(buffer, 0, buffer.Length);
-
-                            if (SpuriousCharactersReceived != null)
-                            {
-                                SpuriousCharactersReceived.Invoke(this, new StringEventArgs(UTF8Encoding.UTF8.GetString(buffer, 0, buffer.Length)));
-                            }
-                        }
-                    }
-
-                }
-            }, noiseHandlingCancellation.Token);
         }
 
         private void InitializeLocal(IPort pd, INanoDevice device)
@@ -543,35 +516,66 @@ namespace nanoFramework.Tools.Debugger
                 backgroundProcessorCancellation = new CancellationTokenSource();
             }
 
-            while (!backgroundProcessorCancellation.IsCancellationRequested && IsConnected)
+            // start task to process background messages
+            await Task.Factory.StartNew(async () =>
             {
-                var semaphoreEntered = await semaphore.WaitAsync(500);
 
-                if (semaphoreEntered)
+                while (!backgroundProcessorCancellation.IsCancellationRequested && IsConnected)
                 {
-                    CancellationTokenSource cts = new CancellationTokenSource();
+                    var semaphoreEntered = await semaphore.WaitAsync(500);
 
-                    try
+                    if (semaphoreEntered)
                     {
-                        var message = await reassembler.ProcessAsync(cts.Token.AddTimeout(new TimeSpan(0, 0, 0, 500)));
-
-                        if (message != null)
+                        try
                         {
-                            // there was a message, throw it to Processor, no need to wait for execution
-                            ProcessMessageAsync(message, false).GetAwaiter();
+                            var message = await reassembler.ProcessAsync(backgroundProcessorCancellation.Token.AddTimeout(new TimeSpan(0, 0, 0, 500)));
+
+                            if (message != null)
+                            {
+                                // there was a message, throw it to Processor, no need to wait for execution
+                                ProcessMessageAsync(message, false).FireAndForget();
+                            }
+                        }
+                        catch (OperationCanceledException) { }
+                        finally
+                        {
+                            semaphore.Release();
                         }
                     }
-                    catch (OperationCanceledException) { }
-                    finally
-                    {
-                        cts.Dispose();
-                        semaphore.Release();
-                    }
-                }
 
-                // no need to rush into the next attempt, wait here
-                if ((!backgroundProcessorCancellation.IsCancellationRequested && IsConnected)) await Task.Delay(500);
-            }
+                    // no need to rush into the next attempt, wait here
+                    if ((!backgroundProcessorCancellation.IsCancellationRequested && IsConnected)) await Task.Delay(500);
+                };
+            }, backgroundProcessorCancellation.Token);
+
+
+            // start task to tx spurious characters
+            await Task.Factory.StartNew(() =>
+            {
+                int read = 0;
+
+                while (noiseHandlingCancellation.IsCancellationRequested)
+                {
+                    var semaphoreTaken = m_notifyNoise.WaitHandle.WaitOne(250);
+
+                    if (semaphoreTaken)
+                    {
+                        while ((read = m_notifyNoise.Available) > 0)
+                        {
+                            byte[] buffer = new byte[m_notifyNoise.Available];
+
+                            m_notifyNoise.Read(buffer, 0, buffer.Length);
+
+                            if (SpuriousCharactersReceived != null)
+                            {
+                                SpuriousCharactersReceived.Invoke(this, new StringEventArgs(UTF8Encoding.UTF8.GetString(buffer, 0, buffer.Length)));
+                            }
+                        }
+                    }
+
+                }
+            }, noiseHandlingCancellation.Token);
+
         }
 
 
