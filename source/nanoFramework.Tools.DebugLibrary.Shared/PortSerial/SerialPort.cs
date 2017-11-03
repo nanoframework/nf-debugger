@@ -589,7 +589,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 finally
                 {
                     // detach stream
-                    outputStreamWriter.DetachStream();
+                    outputStreamWriter?.DetachStream();
                     outputStreamWriter = null;
                 }
             }
