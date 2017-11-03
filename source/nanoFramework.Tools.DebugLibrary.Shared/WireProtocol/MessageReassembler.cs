@@ -189,6 +189,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                 // FIXME 
                                 // evaluate the purpose of this reply back to the nanoFramework device, the nanoCLR doesn't seem to have to handle this. In the end it looks like this does have any real purpose and will only be wasting CPU.
                                 await IncomingMessage.ReplyBadPacketAsync(_parent, Flags.c_BadHeader, cancellationToken);
+
+                                // setup restart
+                                _state = ReceiveState.Initialize;
+
                                 return GetCompleteMessage();
                             }
 
@@ -225,12 +229,16 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                     {
                                         DebuggerEventSource.Log.WireProtocolReceiveState(_state);
 
+                                        // setup restart
+                                        _state = ReceiveState.Initialize;
+
                                         return GetCompleteMessage();
                                     }
                                     else
                                     {
                                         // this is not the message we were waiting
                                         // no need to wait for execution just throw it
+                                        Debug.WriteLine("-->>>");
                                         _parent.App.ProcessMessageAsync(GetCompleteMessage(), fReply).FireAndForget();
                                     }
 
@@ -252,6 +260,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                 // FIXME 
                                 // evaluate the purpose of this reply back to the nanoFramework device, the nanoCLR doesn't seem to have to handle this. In the end it looks like this does have any real purpose and will only be wasting CPU.
                                 await IncomingMessage.ReplyBadPacketAsync(_parent, Flags.c_BadPayload, cancellationToken);
+
+                                // setup restart
+                                _state = ReceiveState.Initialize;
+
                                 return GetCompleteMessage();
                             }
 
@@ -323,7 +335,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                 Request reply = null;
 
-                if (request.MatchesReply(msg))
+                if (request != null && request.MatchesReply(msg))
                 {
                     reply = request;
 
