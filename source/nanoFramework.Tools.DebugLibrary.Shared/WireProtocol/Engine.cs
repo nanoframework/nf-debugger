@@ -401,7 +401,9 @@ namespace nanoFramework.Tools.Debugger
                     // create request 
                     Request request = new Request(m_ctrl, message, timeout, null);
 
-                    return await request.PerformRequestAsync();
+                    var reply = await request.PerformRequestAsync().ConfigureAwait(true);
+
+                    return reply;
                 }
                 finally
                 {
@@ -424,7 +426,9 @@ namespace nanoFramework.Tools.Debugger
                     // create request 
                     Request request = new Request(m_ctrl, message, timeout, null);
 
-                    return await request.PerformRequestAsync();
+                    var reply = await request.PerformRequestAsync().ConfigureAwait(true);
+
+                    return reply;
                 }
                 finally
                 {
