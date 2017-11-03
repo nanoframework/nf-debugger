@@ -34,9 +34,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // set caller app property
             EventHandlerForSerialDevice.CallerApp = callerApp;
 
-            // init semaphore
-            semaphore = new SemaphoreSlim(1, 1);
-
             Task.Factory.StartNew(() =>
             {
                 StartSerialDeviceWatchers();

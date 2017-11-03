@@ -33,8 +33,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         // counter of device watchers completed
         private int deviceWatchersCompletedCount = 0;
 
-        private static SemaphoreSlim semaphore;
-
         private DataReader inputStreamReader;
         private DataWriter outputStreamWriter;
 
@@ -67,9 +65,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 EventHandlerForSerialDevice.CallerApp = callerApp as System.Windows.Application;
 #endif
             };
-
-            // init semaphore
-            semaphore = new SemaphoreSlim(1, 1);
 
             Task.Factory.StartNew(() => {
                 StartSerialDeviceWatchers();
@@ -565,52 +560,37 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public async Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
-            uint bytesWritten = 0;
-
             // device must be connected
             if (EventHandlerForSerialDevice.Current.IsDeviceConnected)
             {
-                // create a stream writer with serial device OutputStream, if there isn't one already
-                if (outputStreamWriter == null)
+                try
                 {
-                    outputStreamWriter = new DataWriter(EventHandlerForSerialDevice.Current.Device.OutputStream);
+                    // create a stream writer with serial device OutputStream, if there isn't one already
+                    if (outputStreamWriter == null)
+                    {
+                        outputStreamWriter = new DataWriter(EventHandlerForSerialDevice.Current.Device.OutputStream);
+                    }
+
+                    // write buffer to device
+                    outputStreamWriter.WriteBytes(buffer);
+
+                    Task<UInt32> storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(cancellationToken.AddTimeout(waiTimeout));
+
+                    return await storeAsyncTask;
                 }
-
-                // serial works as a "single channel" so we can only TX or RX, 
-                // meaning that access to the resource has to be protected with a semaphore
-                var semaphoreEntered = await semaphore.WaitAsync(1000, cancellationToken);
-
-                if (semaphoreEntered)
+                catch (TaskCanceledException)
                 {
-                    try
-                    {
-                        // write buffer to device
-                        outputStreamWriter.WriteBytes(buffer);
-
-                        // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
-                        // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                        Task<uint> storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(cancellationToken.AddTimeout(waiTimeout));
-
-                        bytesWritten = await storeAsyncTask;
-
-                        if (bytesWritten > 0)
-                        {
-                            LastActivity = DateTime.Now;
-                        }
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        // this is expected to happen, don't do anything with this
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                        outputStreamWriter?.DetachBuffer();
-                    }
+                    // this is expected to happen, don't do anything with this
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                }
+                finally
+                {
+                    // detach stream
+                    outputStreamWriter.DetachStream();
+                    outputStreamWriter = null;
                 }
             }
             else
@@ -619,59 +599,54 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 Debug.WriteLine("NotifyDeviceNotConnected");
             }
 
-            return bytesWritten;
+            return 0;
         }
 
         public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
+
             // device must be connected
             if (EventHandlerForSerialDevice.Current.IsDeviceConnected)
             {
-                // serial works as a "single channel" so we can only TX or RX, 
-                // meaning that access to the resource has to be protected with a semaphore
-                var semaphoreEntered = await semaphore.WaitAsync(1000, cancellationToken);
-
-                if (semaphoreEntered)
+                try
                 {
                     // create a stream reader with serial device InputStream, if there isn't one already
                     if (inputStreamReader == null)
                     {
                         inputStreamReader = new DataReader(EventHandlerForSerialDevice.Current.Device.InputStream);
+                        inputStreamReader.InputStreamOptions = InputStreamOptions.Partial;
                     }
 
-                    try
+                    Task<UInt32> loadAsyncTask = inputStreamReader.LoadAsync(bytesToRead).AsTask(cancellationToken.AddTimeout(waiTimeout));
+
+                    UInt32 bytesRead = await loadAsyncTask;
+
+                    if (bytesRead > 0)
+
                     {
-                        // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
-                        // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-
-                        // get how many bytes are available to read
-                        uint bytesRead = await inputStreamReader.LoadAsync(bytesToRead).AsTask(cancellationToken.AddTimeout(waiTimeout)).ConfigureAwait(true);
-
                         byte[] readBuffer = new byte[bytesToRead];
                         inputStreamReader.ReadBytes(readBuffer);
 
                         return readBuffer;
                     }
-                    catch (TaskCanceledException)
-                    {
-                        // this is expected to happen, don't do anything with it
-                    }
-                    catch (NullReferenceException)
-                    {
-                        // this is expected to happen when there is anything to read, don't do anything with it
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
-                    }
-                    finally
-                    {
-                        // release serial device semaphore
-                        semaphore.Release();
-
-                        // detach read buffer
-                        inputStreamReader.DetachBuffer();
-                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    // this is expected to happen, don't do anything with it
+                }
+                catch (NullReferenceException)
+                {
+                    // this is expected to happen when there is anything to read, don't do anything with it
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                }
+                finally
+                {
+                    // detach stream
+                    inputStreamReader?.DetachStream();
+                    inputStreamReader = null;
                 }
             }
             else
