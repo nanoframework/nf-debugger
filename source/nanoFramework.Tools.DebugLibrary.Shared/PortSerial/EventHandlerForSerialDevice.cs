@@ -249,6 +249,7 @@ namespace nanoFramework.Tools.Debugger.Serial
 
             isEnabledAutoReconnect = true;
 
+            Debug.WriteLine($"##################");
             Current.device?.Dispose();
             Current.device = null;
         }
