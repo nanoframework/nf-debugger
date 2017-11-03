@@ -207,15 +207,72 @@ namespace nanoFramework.Tools.Debugger
             return true;
         }
 
+        public async Task ProcessBackgroundMessages()
+        {
+            var reassembler = new MessageReassembler(m_ctrl);
+
+            while (!backgroundProcessorCancellation.IsCancellationRequested)
+            {
+                var semaphoreEntered = await semaphore.WaitAsync(500);
+
+                if (semaphoreEntered)
+                {
+                    try
+                    {
+                        var message = await reassembler.ProcessAsync(backgroundProcessorCancellation.Token.AddTimeout(new TimeSpan(0, 0, 0, 500)));
+
+                        if (message != null)
+                        {
+                            // there was a message, throw it to Processor, no need to wait for execution
+                            ProcessMessageAsync(message, false).FireAndForget();
+                        }
+                    }
+                    catch (Exception) { }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }
+
+                // no need to rush into the next attempt, wait here
+                if ((!backgroundProcessorCancellation.IsCancellationRequested)) await Task.Delay(500);
+            };
+        }
+
+        public void ProcessSpuriousChars()
+        {
+            int read = 0;
+
+            while (noiseHandlingCancellation.IsCancellationRequested)
+            {
+                var semaphoreTaken = m_notifyNoise.WaitHandle.WaitOne(250);
+
+                if (semaphoreTaken)
+                {
+                    while ((read = m_notifyNoise.Available) > 0)
+                    {
+                        byte[] buffer = new byte[m_notifyNoise.Available];
+
+                        m_notifyNoise.Read(buffer, 0, buffer.Length);
+
+                        if (SpuriousCharactersReceived != null)
+                        {
+                            SpuriousCharactersReceived.Invoke(this, new StringEventArgs(UTF8Encoding.UTF8.GetString(buffer, 0, buffer.Length)));
+                        }
+                    }
+                }
+            }
+        }
+
         public void Disconnect()
         {
             // better do this inside of try/catch because we can't be sure that the device is actually connected or that the 
             // operation can be successful
             try
             {
+                // cancel background processors, if they are running
                 noiseHandlingCancellation.Cancel();
 
-                // cancel background processor, if running
                 backgroundProcessorCancellation.Cancel();
 
                 // update flag
@@ -279,6 +336,10 @@ namespace nanoFramework.Tools.Debugger
                 if (disposing)
                 {
                     // TODO: dispose managed state (managed objects).
+
+                    //noiseHandlingCancellation.Cancel();
+
+                    //backgroundProcessorCancellation.Cancel();
 
                     try
                     {
@@ -496,9 +557,9 @@ namespace nanoFramework.Tools.Debugger
             throw new NotImplementedException();
         }
 
-        public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
-            return await m_portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
+            return m_portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
         }
 
         private OutgoingMessage CreateMessage(uint cmd, uint flags, object payload)
@@ -506,10 +567,8 @@ namespace nanoFramework.Tools.Debugger
             return new OutgoingMessage(m_ctrl, CreateConverter(), cmd, flags, payload);
         }
 
-        public async Task Start()
+        public void Start()
         {
-            var reassembler = new MessageReassembler(m_ctrl);
-
             // check if cancellation token needs to be renewed
             if (backgroundProcessorCancellation.IsCancellationRequested)
             {
@@ -517,65 +576,17 @@ namespace nanoFramework.Tools.Debugger
             }
 
             // start task to process background messages
-            await Task.Factory.StartNew(async () =>
+            Task.Factory.StartNew(async () =>
             {
-
-                while (!backgroundProcessorCancellation.IsCancellationRequested && IsConnected)
-                {
-                    var semaphoreEntered = await semaphore.WaitAsync(500);
-
-                    if (semaphoreEntered)
-                    {
-                        try
-                        {
-                            var message = await reassembler.ProcessAsync(backgroundProcessorCancellation.Token.AddTimeout(new TimeSpan(0, 0, 0, 500)));
-
-                            if (message != null)
-                            {
-                                // there was a message, throw it to Processor, no need to wait for execution
-                                ProcessMessageAsync(message, false).FireAndForget();
-                            }
-                        }
-                        catch (OperationCanceledException) { }
-                        finally
-                        {
-                            semaphore.Release();
-                        }
-                    }
-
-                    // no need to rush into the next attempt, wait here
-                    if ((!backgroundProcessorCancellation.IsCancellationRequested && IsConnected)) await Task.Delay(500);
-                };
+                await ProcessBackgroundMessages();
             }, backgroundProcessorCancellation.Token);
 
 
             // start task to tx spurious characters
-            await Task.Factory.StartNew(() =>
+            Task.Factory.StartNew(() =>
             {
-                int read = 0;
-
-                while (noiseHandlingCancellation.IsCancellationRequested)
-                {
-                    var semaphoreTaken = m_notifyNoise.WaitHandle.WaitOne(250);
-
-                    if (semaphoreTaken)
-                    {
-                        while ((read = m_notifyNoise.Available) > 0)
-                        {
-                            byte[] buffer = new byte[m_notifyNoise.Available];
-
-                            m_notifyNoise.Read(buffer, 0, buffer.Length);
-
-                            if (SpuriousCharactersReceived != null)
-                            {
-                                SpuriousCharactersReceived.Invoke(this, new StringEventArgs(UTF8Encoding.UTF8.GetString(buffer, 0, buffer.Length)));
-                            }
-                        }
-                    }
-
-                }
+                ProcessSpuriousChars();
             }, noiseHandlingCancellation.Token);
-
         }
 
 
@@ -1506,8 +1517,19 @@ namespace nanoFramework.Tools.Debugger
                 foreach (IncomingMessage message in replies)
                 {
                     // reply is a match for request which m_seq is same as reply m_seqReply
-                    resolveAssemblies.Add(requests.Find(req => req.Header.Seq == message.Header.SeqReply).Payload as Commands.DebuggingResolveAssembly);
-                    resolveAssemblies[resolveAssemblies.Count - 1].Result = message.Payload as Commands.DebuggingResolveAssembly.Reply;
+                    // need to check for null or invalid payload
+                    var payload = requests.Find(req => req.Header.Seq == message.Header.SeqReply).Payload;
+
+                    if (payload != null)
+                    {
+                        resolveAssemblies.Add(payload as Commands.DebuggingResolveAssembly);
+                        resolveAssemblies[resolveAssemblies.Count - 1].Result = message.Payload as Commands.DebuggingResolveAssembly.Reply;
+                    }
+                    else
+                    {
+                        // failure
+                        return null;
+                    }
                 }
             }
 
