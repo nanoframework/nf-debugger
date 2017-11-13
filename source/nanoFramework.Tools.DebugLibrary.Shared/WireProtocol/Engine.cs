@@ -15,12 +15,12 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Storage.Streams;
 
 namespace nanoFramework.Tools.Debugger
 {
+    public delegate void NoiseEventHandler(byte[] buffer, int offset, int count);
     public delegate void MessageEventHandler(IncomingMessage message, string text);
-    public delegate void CommandEventHandler(IncomingMessage message, bool fReply);
+    public delegate void CommandEventHandler(IncomingMessage message, bool reply);
 
     public partial class Engine : IDisposable, IControllerHostLocal
     {
@@ -30,7 +30,6 @@ namespace nanoFramework.Tools.Debugger
         internal IPort m_portDefinition;
         internal Controller m_ctrl { get; set; }
         bool m_silent;
-        bool m_stopDebuggerOnConnect;
 
         DateTime m_lastNoise = DateTime.Now;
 
@@ -38,10 +37,10 @@ namespace nanoFramework.Tools.Debugger
 
         public event EventHandler<StringEventArgs> SpuriousCharactersReceived;
 
-        //event NoiseEventHandler m_eventNoise;
+        event NoiseEventHandler _eventNoise;
         event MessageEventHandler _eventMessage;
         event CommandEventHandler _eventCommand;
-        //event EventHandler m_eventProcessExit;
+        event EventHandler _eventProcessExit;
 
         /// <summary>
         /// Notification thread is essentially the Tx thread. Other threads pump outgoing data into it, which after potential
@@ -64,10 +63,9 @@ namespace nanoFramework.Tools.Debugger
         ManualResetEvent m_evtPing;
         //ArrayList m_requests;
         TypeSysLookup m_typeSysLookup;
-        //State m_state;
+        EngineState _state;
         //bool m_fProcessExited;
 
-        bool m_fThrowOnCommunicationFailure;
         internal INanoDevice Device;
 
         public Engine(IPort pd, INanoDevice device)
@@ -89,7 +87,7 @@ namespace nanoFramework.Tools.Debugger
 
             m_notifyNoise = new FifoBuffer();
             m_typeSysLookup = new TypeSysLookup();
-            //m_state = new State(this);
+            _state = new EngineState(this);
             //m_fProcessExited = false;
 
             // Create the semaphore.
@@ -115,12 +113,11 @@ namespace nanoFramework.Tools.Debugger
 
         public ConnectionSource ConnectionSource { get; internal set; }
 
-        public bool IsConnectedTonanoCLR
-        {
-            get { return ConnectionSource == ConnectionSource.nanoCLR; }
-        }
+        public bool IsConnectedTonanoCLR { get { return ConnectionSource == ConnectionSource.nanoCLR; } }
 
         public bool IsTargetBigEndian { get; internal set; }
+
+        public bool StopDebuggerOnConnect { get; set; }
 
         public async Task<bool> ConnectAsync(int timeout, bool force = false, ConnectionSource connectionSource = ConnectionSource.Unknown)
         {
@@ -133,7 +130,7 @@ namespace nanoFramework.Tools.Debugger
                     Commands.Monitor_Ping cmd = new Commands.Monitor_Ping();
 
                     cmd.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
-                    //cmd.m_dbg_flags = (m_stopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
+                    cmd.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
 
                     IncomingMessage msg = await PerformRequestAsync(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
 
@@ -164,7 +161,7 @@ namespace nanoFramework.Tools.Debugger
                     }
 
                     // resume execution for older clients, since server tools no longer do this.
-                    if (!m_stopDebuggerOnConnect && (msg != null && msg.Payload == null))
+                    if (!StopDebuggerOnConnect && (msg != null && msg.Payload == null))
                     {
                         await ResumeExecutionAsync();
                     }
@@ -295,7 +292,22 @@ namespace nanoFramework.Tools.Debugger
             set { }
         }
 
+        public bool ThrowOnCommunicationFailure { get; set; }
+
         #region Events 
+
+        public event NoiseEventHandler OnNoise
+        {
+            add
+            {
+                _eventNoise += value;
+            }
+
+            remove
+            {
+                _eventNoise -= value;
+            }
+        }
 
         public event MessageEventHandler OnMessage
         {
@@ -320,6 +332,19 @@ namespace nanoFramework.Tools.Debugger
             remove
             {
                 _eventCommand -= value;
+            }
+        }
+
+        public event EventHandler OnProcessExit
+        {
+            add
+            {
+                _eventProcessExit += value;
+            }
+
+            remove
+            {
+                _eventProcessExit -= value;
             }
         }
 
@@ -496,7 +521,7 @@ namespace nanoFramework.Tools.Debugger
                     Commands.Monitor_Ping.Reply cmdReply = new Commands.Monitor_Ping.Reply();
 
                     cmdReply.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
-                    cmdReply.m_dbg_flags = (m_stopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
+                    cmdReply.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
 
                     // no need for the context, using ConfigureAwait
                     await message.ReplyAsync(CreateConverter(), Flags.c_NonCritical, cmdReply, new CancellationToken()).ConfigureAwait(false);
@@ -573,6 +598,8 @@ namespace nanoFramework.Tools.Debugger
 
         public void Start()
         {
+            _state.SetValue(EngineState.Value.Starting, true);
+
             // check if cancellation token needs to be renewed
             if (backgroundProcessorCancellation.IsCancellationRequested)
             {
@@ -591,8 +618,61 @@ namespace nanoFramework.Tools.Debugger
             {
                 ProcessSpuriousChars();
             }, noiseHandlingCancellation.Token);
+
+            _state.SetValue(EngineState.Value.Started, false);
         }
 
+        public void StopProcessing()
+        {
+            _state.SetValue(EngineState.Value.Stopping, false);
+
+            m_evtShutdown.Set();
+
+            //if (m_inboundDataThread != null)
+            //{
+            //    m_inboundDataThread.Join();
+            //    m_inboundDataThread = null;
+            //}
+            //if (m_stateMachineThread != null)
+            //{
+            //    m_stateMachineThread.Join();
+            //    m_stateMachineThread = null;
+            //}
+        }
+
+        public void ResumeProcessing()
+        {
+            m_evtShutdown.Reset();
+
+            _state.SetValue(EngineState.Value.Resume, false);
+
+            //if (m_inboundDataThread == null)
+            //{
+            //    m_inboundDataThread = CreateThread(new ThreadStart(this.ReceiveInput));
+            //}
+
+            //if (m_stateMachineThread == null)
+            //{
+            //    m_stateMachineThread = CreateThread(new ThreadStart(this.Process));
+            //}
+        }
+
+        public void Stop()
+        {
+            if (m_evtShutdown != null)
+            {
+                m_evtShutdown.Set();
+            }
+
+            if (_state.SetValue(EngineState.Value.Stopping, false))
+            {
+                ((IController)this).StopProcessing();
+
+                //((IController)this).ClosePort();
+
+                _state.SetValue(EngineState.Value.Stopped, false);
+            }
+        }
 
         #region Commands implementation
 
@@ -838,10 +918,10 @@ namespace nanoFramework.Tools.Debugger
         {
             Commands.MonitorReboot cmd = new Commands.MonitorReboot();
 
-            bool fThrowOnCommunicationFailureSav = m_fThrowOnCommunicationFailure;
+            bool fThrowOnCommunicationFailureSav = ThrowOnCommunicationFailure;
             bool disconnectRequired = false;
 
-            m_fThrowOnCommunicationFailure = false;
+            ThrowOnCommunicationFailure = false;
 
             switch (option)
             {
@@ -875,7 +955,7 @@ namespace nanoFramework.Tools.Debugger
             }
             finally
             {
-                m_fThrowOnCommunicationFailure = fThrowOnCommunicationFailureSav;
+                ThrowOnCommunicationFailure = fThrowOnCommunicationFailureSav;
             }
         }
 
@@ -883,7 +963,7 @@ namespace nanoFramework.Tools.Debugger
         {
             if (!await ConnectAsync(timeout, true, ConnectionSource.Unknown))
             {
-                if (m_fThrowOnCommunicationFailure)
+                if (ThrowOnCommunicationFailure)
                 {
                     throw new Exception("Could not reconnect to nanoCLR");
                 }
