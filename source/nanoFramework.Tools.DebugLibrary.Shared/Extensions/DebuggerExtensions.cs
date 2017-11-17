@@ -28,5 +28,25 @@ namespace nanoFramework.Tools.Debugger.Extensions
                 return false;
             }
         }
+
+        /// <summary>
+        /// Check if device execution state is: program exited.
+        /// </summary>
+        /// <param name="debugEngine"></param>
+        /// <returns></returns>
+        public static async Task<bool> IsDeviceInExitedStateAsync(this Engine debugEngine)
+        {
+            var result = await debugEngine.SetExecutionModeAsync(0, 0);
+
+            if (result.success)
+            {
+                var currentState = (result.currentExecutionMode & WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Mask);
+                return (currentState != WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_ProgramExited);
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 }
