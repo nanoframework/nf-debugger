@@ -21,7 +21,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
             if (result.success)
             {
                 var currentState = (result.currentExecutionMode & WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Mask);
-                return (currentState != WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Initialize);
+                return (currentState == WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Initialize);
             }
             else
             {
@@ -41,7 +41,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
             if (result.success)
             {
                 var currentState = (result.currentExecutionMode & WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Mask);
-                return (currentState != WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_ProgramExited);
+                return (currentState == WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_ProgramExited);
             }
             else
             {
