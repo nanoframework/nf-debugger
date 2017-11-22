@@ -1018,14 +1018,14 @@ namespace nanoFramework.Tools.Debugger
         {
             var ret = await SetExecutionModeAsync(Commands.Debugging_Execution_ChangeConditions.c_Stopped, 0);
 
-            return ret.Item2;
+            return ret.success;
         }
 
         public async Task<bool> ResumeExecutionAsync()
         {
             var ret = await SetExecutionModeAsync(0, Commands.Debugging_Execution_ChangeConditions.c_Stopped);
 
-            return ret.Item2;
+            return ret.success;
         }
 
         public async Task<bool> SetCurrentAppDomainAsync(uint id)
@@ -2397,11 +2397,11 @@ namespace nanoFramework.Tools.Debugger
                     // progress?.Report($"Deployed assemblies for a total size of {blocksToDeploy.Sum(b => b.Size)} bytes");
                 }
 
-                // deployment successfull
+                // deployment successful
                 return true;
             }
 
-            // invalid flahs map
+            // invalid flash map
             // TODO provide feedback to user
             return false;
         }
