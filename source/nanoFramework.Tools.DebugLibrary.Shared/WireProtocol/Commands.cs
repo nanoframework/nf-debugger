@@ -343,32 +343,81 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        public class Debugging_Execution_ChangeConditions
+        public class DebuggingExecutionChangeConditions
         {
-            public const uint c_Unused00000001 = 0x00000001;
-            public const uint c_Unused00000002 = 0x00000002;
-            public const uint c_Unused00000004 = 0x00000004;
-            public const uint c_LcdSendFrame = 0x00000100;
-            public const uint c_LcdSendFrameNotification = 0x00000200;
-            public const uint c_State_Initialize = 0x00000000;
-            public const uint c_State_ProgramRunning = 0x00000400;
-            public const uint c_State_ProgramExited = 0x00000800;
-            public const uint c_State_Mask = 0x00000c00;
-            public const uint c_BreakpointsDisabled = 0x00001000;
-            public const int c_fDebugger_Quiet = 0x00010000; // Do not spew debug text to the debugger
-            public const uint c_PauseTimers = 0x04000000; // Threads associated with timers are created in "suspended" mode.
-            public const uint c_NoCompaction = 0x08000000; // Don't perform compaction during execution.
-            public const uint c_SourceLevelDebugging = 0x10000000;
-            public const uint c_RebootPending = 0x20000000;
-            public const uint c_Enabled = 0x40000000;
-            public const uint c_Stopped = 0x80000000;
-
-            public uint m_set = 0;
-            public uint m_reset = 0;
-
-            public class Reply
+            [Flags]
+            /// <summary>
+            /// State for debugger execution on target.
+            /// </summary>
+            public enum State : uint
             {
-                public uint m_current = 0;
+                /////////////////////////////////////////////////////////////////////////////////////////////////
+                // NEED TO KEEP THESE IN SYNC WITH native 'CLR_RT_ExecutionEngine' struct in nanoCLR_Runtime.h //
+                // constants there start with c_fDebugger_NNNNNNNNNNN
+                /////////////////////////////////////////////////////////////////////////////////////////////////
+
+                /// <summary>
+                /// Device is in initialization state
+                /// </summary>
+                Initialize =            0x00000000,
+
+                /// <summary>
+                /// Device has a program running
+                /// </summary>
+                ProgramRunning =        0x00000400,
+
+                /// <summary>
+                /// Device has exited a previously running program
+                /// </summary>
+                ProgramExited =         0x00000800,
+
+                /// <summary>
+                /// Breakpoints are disabled in the device
+                /// </summary>
+                BreakpointsDisabled =   0x00001000,
+
+                /// <summary>
+                /// No debugger text is to be sent by target device
+                /// </summary>
+                DebuggerQuiet =         0x00010000,
+
+                /// <summary>
+                /// Threads associated with timers are created in "suspended" mode.
+                /// </summary>
+                PauseTimers =           0x04000000,
+
+                /// <summary>
+                /// No compaction is to be performed during execution.
+                /// </summary>
+                NoCompaction =          0x08000000,
+
+                /// <summary>
+                /// Enable source level debugging
+                /// </summary>
+                SourceLevelDebugging =  0x10000000,
+
+                /// <summary>
+                /// The debugger is enabled
+                /// </summary>
+                DebuggerEnabled =       0x40000000,
+
+                /// <summary>
+                /// Debugger is stopped
+                /// </summary>
+                Stopped =               0x80000000,
+
+                Unknown =               0xFFFFFFFF,
+            }
+
+            internal const State StateMask = (State.ProgramRunning | State.ProgramExited);
+
+            // these need to be uint type (basic) so that they are properly converted to payload in the outgoing message
+            public uint FlagsToSet = 0;
+            public uint FlagsToReset = 0;
+
+            public  class Reply
+            {
+                public uint CurrentState = (uint)State.Unknown;
             }
         }
 
@@ -1503,7 +1552,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap.Reply();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr.Reply();
-                    case c_Debugging_Execution_ChangeConditions: return new Debugging_Execution_ChangeConditions.Reply();
+                    case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions.Reply();
                     case c_Debugging_Execution_Allocate: return new Debugging_Execution_Allocate.Reply();
                     case c_Debugging_Execution_BreakpointStatus: return new Debugging_Execution_BreakpointStatus.Reply();
                     case c_Debugging_Execution_QueryCLRCapabilities: return new Debugging_Execution_QueryCLRCapabilities.Reply();
@@ -1577,7 +1626,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr();
-                    case c_Debugging_Execution_ChangeConditions: return new Debugging_Execution_ChangeConditions();
+                    case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions();
                     case c_Debugging_Execution_SecurityKey: return new Debugging_Execution_SecurityKey();
                     case c_Debugging_Execution_Unlock: return new Debugging_Execution_Unlock();
                     case c_Debugging_Execution_Allocate: return new Debugging_Execution_Allocate();
