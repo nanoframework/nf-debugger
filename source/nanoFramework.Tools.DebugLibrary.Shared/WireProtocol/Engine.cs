@@ -157,7 +157,7 @@ namespace nanoFramework.Tools.Debugger
 
                     if (m_silent)
                     {
-                        await SetExecutionModeAsync(Commands.Debugging_Execution_ChangeConditions.c_fDebugger_Quiet, 0);
+                        await SetExecutionModeAsync(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
                     }
 
                     // resume execution for older clients, since server tools no longer do this.
@@ -989,43 +989,62 @@ namespace nanoFramework.Tools.Debugger
             return 0;
         }
 
-        public async Task<(uint currentExecutionMode, bool success)> SetExecutionModeAsync(uint iSet, uint iReset)
+        public async Task<Commands.DebuggingExecutionChangeConditions.State> GetExecutionModeAsync()
         {
-            Commands.Debugging_Execution_ChangeConditions cmd = new Commands.Debugging_Execution_ChangeConditions();
+            Commands.DebuggingExecutionChangeConditions cmd = new Commands.DebuggingExecutionChangeConditions();
 
-            cmd.m_set = iSet;
-            cmd.m_reset = iReset;
+            // setting these to 0 won't change anything in the target when the command is executed
+            // BUT, because the current state is returned we can parse the return result to get the state
+            cmd.FlagsToSet = 0;
+            cmd.FlagsToReset = 0;
 
             IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
             if (reply != null)
             {
-                Commands.Debugging_Execution_ChangeConditions.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_ChangeConditions.Reply;
+                // need this to get DebuggingExecutionChangeConditions.State enum from raw value
+                Commands.DebuggingExecutionChangeConditions.Reply cmdReply = reply.Payload as Commands.DebuggingExecutionChangeConditions.Reply;
 
                 if (cmdReply != null)
                 {
-                    return (cmdReply.m_current, true);
-                }
-                else
-                {
-                    return (0, false);
+                    return (Commands.DebuggingExecutionChangeConditions.State)cmdReply.CurrentState;
                 }
             }
 
-            return (0, false);
+            // default to unknown
+            return Commands.DebuggingExecutionChangeConditions.State.Unknown;
+        }
+
+        public async Task<bool> SetExecutionModeAsync(Commands.DebuggingExecutionChangeConditions.State flagsToSet, Commands.DebuggingExecutionChangeConditions.State flagsToReset)
+        {
+            Commands.DebuggingExecutionChangeConditions cmd = new Commands.DebuggingExecutionChangeConditions();
+
+            cmd.FlagsToSet = (uint)flagsToSet;
+            cmd.FlagsToReset = (uint)flagsToReset;
+
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
+            if (reply != null)
+            {
+                Commands.DebuggingExecutionChangeConditions.Reply cmdReply = reply.Payload as Commands.DebuggingExecutionChangeConditions.Reply;
+
+                if (cmdReply != null)
+                {
+                    if(cmdReply.CurrentState != (uint)Commands.DebuggingExecutionChangeConditions.State.Unknown)
+                    return true;
+                }
+            }
+
+            // default to false 
+            return false;
         }
 
         public async Task<bool> PauseExecutionAsync()
         {
-            var ret = await SetExecutionModeAsync(Commands.Debugging_Execution_ChangeConditions.c_Stopped, 0);
-
-            return ret.success;
+            return await SetExecutionModeAsync(Commands.DebuggingExecutionChangeConditions.State.Stopped, 0);
         }
 
         public async Task<bool> ResumeExecutionAsync()
         {
-            var ret = await SetExecutionModeAsync(0, Commands.Debugging_Execution_ChangeConditions.c_Stopped);
-
-            return ret.success;
+            return await SetExecutionModeAsync(0, Commands.DebuggingExecutionChangeConditions.State.Stopped);
         }
 
         public async Task<bool> SetCurrentAppDomainAsync(uint id)

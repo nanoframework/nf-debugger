@@ -10,18 +10,17 @@ namespace nanoFramework.Tools.Debugger.Extensions
     public static class DebuggerExtensions
     {
         /// <summary>
-        /// Check if device is in initialized state.
+        /// Check if device state is <see cref=""/>.
         /// </summary>
         /// <param name="debugEngine"></param>
         /// <returns></returns>
         public static async Task<bool> IsDeviceInInitializeStateAsync(this Engine debugEngine)
         {
-            var result = await debugEngine.SetExecutionModeAsync(0, 0);
+            var result = await debugEngine.GetExecutionModeAsync();
 
-            if (result.success)
+            if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
-                var currentState = (result.currentExecutionMode & WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Mask);
-                return (currentState == WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Initialize);
+                return (result == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Initialize);
             }
             else
             {
@@ -36,17 +35,36 @@ namespace nanoFramework.Tools.Debugger.Extensions
         /// <returns></returns>
         public static async Task<bool> IsDeviceInExitedStateAsync(this Engine debugEngine)
         {
-            var result = await debugEngine.SetExecutionModeAsync(0, 0);
+            var result = await debugEngine.GetExecutionModeAsync();
 
-            if (result.success)
+            if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
-                var currentState = (result.currentExecutionMode & WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_Mask);
-                return (currentState == WireProtocol.Commands.Debugging_Execution_ChangeConditions.c_State_ProgramExited);
+                return (result == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramExited);
             }
             else
             {
                 return false;
             }
         }
+
+        /// <summary>
+        /// Check if device execution state is: program running.
+        /// </summary>
+        /// <param name="debugEngine"></param>
+        /// <returns></returns>
+        public static async Task<bool> IsDeviceInProgramRunningStateAsync(this Engine debugEngine)
+        {
+            var result = await debugEngine.GetExecutionModeAsync();
+
+            if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
+            {
+                return (result == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramRunning);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
     }
 }

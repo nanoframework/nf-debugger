@@ -4,6 +4,7 @@
 //
 
 using nanoFramework.Tools.Debugger.Extensions;
+using nanoFramework.Tools.Debugger.WireProtocol;
 using Serial_Test_App_WPF.ViewModel;
 using System;
 using System.Collections.Generic;
@@ -105,7 +106,7 @@ namespace Serial_Test_App_WPF
             (sender as Button).IsEnabled = true;
         }
 
-        private async void IsInitializedButton_Click(object sender, RoutedEventArgs e)
+        private async void GetExecutionModeButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
@@ -115,14 +116,28 @@ namespace Serial_Test_App_WPF
 
                  try
                  {
-                     var result = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.IsDeviceInInitializeStateAsync();
+                     var deviceState = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetExecutionModeAsync();
 
-                     Debug.WriteLine($">>> Device is in initialized state: {result} <<<<");
-
-                    //Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
-                    //    ConnectionStateResult = ConnectionState.Disconnected;
-                    //}));
-                }
+                     if (deviceState == Commands.DebuggingExecutionChangeConditions.State.Initialize)
+                     {
+                         Debug.WriteLine($">>> Device is in initialized state <<<<");
+                     }
+                     else if ((deviceState & Commands.DebuggingExecutionChangeConditions.State.ProgramRunning) == Commands.DebuggingExecutionChangeConditions.State.ProgramRunning)
+                     {
+                         if ((deviceState & Commands.DebuggingExecutionChangeConditions.State.Stopped) == Commands.DebuggingExecutionChangeConditions.State.Stopped)
+                         {
+                             Debug.WriteLine($">>> Device is running a program **BUT** execution is stopped <<<<");
+                         }
+                         else
+                         {
+                             Debug.WriteLine($">>> Device is running a program <<<<");
+                         }
+                     }
+                     else if ((deviceState & Commands.DebuggingExecutionChangeConditions.State.ProgramExited) == Commands.DebuggingExecutionChangeConditions.State.ProgramExited)
+                     {
+                         Debug.WriteLine($">>> Device is at an unknown state <<<<");
+                     }
+                 }
                  catch (Exception ex)
                  {
 
@@ -257,7 +272,14 @@ namespace Serial_Test_App_WPF
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
-                    Debug.WriteLine($"resume execution: {result}");
+                    if (result)
+                    {
+                        Debug.WriteLine("execution resumed");
+                    }
+                    else
+                    {
+                        Debug.WriteLine("couldn't resume execution");
+                    }
                     Debug.WriteLine("");
                     Debug.WriteLine("");
 
@@ -272,7 +294,7 @@ namespace Serial_Test_App_WPF
             (sender as Button).IsEnabled = true;
         }
 
-        private async void StopExecutionButton_Click(object sender, RoutedEventArgs e)
+        private async void PauseExecutionButton_Click(object sender, RoutedEventArgs e)
         {  
             // disable button
             (sender as Button).IsEnabled = false;
@@ -284,11 +306,18 @@ namespace Serial_Test_App_WPF
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    var result = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.SetExecutionModeAsync(0, 0);
+                    var result = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.PauseExecutionAsync();
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
-                    Debug.WriteLine("execution stopped");
+                    if (result)
+                    {
+                        Debug.WriteLine("execution stopped");
+                    }
+                    else
+                    {
+                        Debug.WriteLine("couldn't stop execution");
+                    }
                     Debug.WriteLine("");
                     Debug.WriteLine("");
 
@@ -354,6 +383,37 @@ namespace Serial_Test_App_WPF
                     Debug.WriteLine("");
                     Debug.WriteLine("");
                     Debug.WriteLine($"soft reboot");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                }));
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private async void RebootAndDebugDeviceButton_Click(object sender, RoutedEventArgs e)
+        {  
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                {
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+
+                    await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDeviceAsync(nanoFramework.Tools.Debugger.RebootOption.RebootClrWaitForDebugger);
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"CLR reboot");
                     Debug.WriteLine("");
                     Debug.WriteLine("");
 
