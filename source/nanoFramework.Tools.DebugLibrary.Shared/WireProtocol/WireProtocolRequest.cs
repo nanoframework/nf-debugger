@@ -4,13 +4,12 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace nanoFramework.Tools.Debugger
+namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class WireProtocolRequest
     {
