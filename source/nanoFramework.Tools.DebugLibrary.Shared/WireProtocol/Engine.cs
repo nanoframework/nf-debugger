@@ -27,7 +27,7 @@ namespace nanoFramework.Tools.Debugger
         private const int TIMEOUT_DEFAULT = 5000;
 
         //internal IControllerHostLocal<MFDevice> m_portDefinition;
-        internal IPort m_portDefinition;
+        internal IPort _portDefinition;
         internal Controller _controlller { get; set; }
         bool m_silent;
 
@@ -73,14 +73,26 @@ namespace nanoFramework.Tools.Debugger
         private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
         public CancellationToken CancellationToken => _cancellationTokenSource.Token;
 
-
         internal INanoDevice Device;
 
-        public Engine(IPort pd, INanoDevice device)
+        public Engine(NanoDeviceBase device)
         {
-            InitializeLocal(pd, device);
+            InitializeLocal(device);
 
             _requestsStore = new WireProtocolRequestsStore();
+
+            _state.SetValue(EngineState.Value.Starting, true);
+
+            // check if cancellation token needs to be renewed
+            if (_backgroundProcessorCancellation.IsCancellationRequested)
+            {
+                _backgroundProcessorCancellation = new CancellationTokenSource();
+            }
+
+            // start task to process background messages
+            _backgroundProcessor = Task.Factory.StartNew(() => ProcessIncomingMessages(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+
+            _state.SetValue(EngineState.Value.Started, false);
 
             _pendingRequestsTimer = new Timer(ClearPendingRequests, null, 1000, 1000);
         }
@@ -106,12 +118,12 @@ namespace nanoFramework.Tools.Debugger
             Capabilities = new CLRCapabilities();
         }
 
-        private void InitializeLocal(IPort pd, INanoDevice device)
+        private void InitializeLocal(NanoDeviceBase device)
         {
-            m_portDefinition = pd;
+            _portDefinition = device.Parent;
             _controlller = new Controller(this);
 
-            Device = device;
+            Device = (INanoDevice)device;
 
             Initialize();
         }
@@ -507,7 +519,7 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
-            return await m_portDefinition.SendBufferAsync(buffer, waiTimeout, cancellationToken);
+            return await _portDefinition.SendBufferAsync(buffer, waiTimeout, cancellationToken);
         }
 
         public async Task<bool> ProcessMessageAsync(IncomingMessage message, bool isReply)
@@ -608,34 +620,12 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
-            return await m_portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
+            return await _portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
         }
 
         private OutgoingMessage CreateMessage(uint cmd, uint flags, object payload)
         {
             return new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), cmd, flags, payload);
-        }
-
-        public void Start()
-        {
-            _state.SetValue(EngineState.Value.Starting, true);
-
-            // check if cancellation token needs to be renewed
-            if (_backgroundProcessorCancellation.IsCancellationRequested)
-            {
-                _backgroundProcessorCancellation = new CancellationTokenSource();
-            }
-
-            // start task to process background messages
-            _backgroundProcessor = Task.Factory.StartNew(() => ProcessIncomingMessages(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
-
-            //// start task to tx spurious characters
-            //Task.Factory.StartNew(() =>
-            //{
-            //    ProcessSpuriousChars();
-            //}, noiseHandlingCancellation.Token);
-
-            _state.SetValue(EngineState.Value.Started, false);
         }
 
         public void StopProcessing()
@@ -976,6 +966,9 @@ namespace nanoFramework.Tools.Debugger
                 // need to disconnect from the device?
                 if (disconnectRequired)
                 {
+                    // cancel background thread
+                    _backgroundProcessorCancellation.Cancel();
+
                     Device.Disconnect();
                 }
             }

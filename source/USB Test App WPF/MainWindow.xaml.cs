@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -39,13 +40,7 @@ namespace Serial_Test_App_WPF
 
                 if(device.DebugEngine == null)
                 {
-                    device.DebugEngine = new nanoFramework.Tools.Debugger.Engine(device.Parent, (INanoDevice)device);
-                }
-
-                // is engine already running?
-                if (!device.DebugEngine.IsRunning)
-                {
-                    device.DebugEngine.Start();
+                    device.DebugEngine = new nanoFramework.Tools.Debugger.Engine(device);
                 }
 
                 bool connectResult = await device.DebugEngine.ConnectAsync(5000, true);
@@ -166,6 +161,7 @@ namespace Serial_Test_App_WPF
             // enable button
             (sender as Button).IsEnabled = true;
         }
+
         private async void ResolveAssembliesButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
@@ -191,6 +187,81 @@ namespace Serial_Test_App_WPF
                     //Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
                     //    ConnectionStateResult = ConnectionState.Disconnected;
                     //}));
+                }
+                 catch (Exception ex)
+                 {
+
+                 }
+
+             }));
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private async void DeviceCapabilitesButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+             {
+
+                 try
+                 {
+                     // Create cancellation token source
+                     CancellationTokenSource cts = new CancellationTokenSource();
+
+                     var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
+
+                     // get device info
+                     var deviceInfo = await device.GetDeviceInfoAsync(true);
+                     var memoryMap = await device.DebugEngine.GetMemoryMapAsync();
+                     var flashMap = await device.DebugEngine.GetFlashSectorMapAsync();
+                     var deploymentMap = await device.DebugEngine.GetDeploymentMapAsync();
+
+                     // we have to have a valid device info
+                     if (deviceInfo.Valid)
+                     {
+                         // load vars
+                         var deviceMemoryMap = new StringBuilder(memoryMap?.ToStringForOutput() ?? "Empty");
+                         var deviceFlashSectorMap = new StringBuilder(flashMap?.ToStringForOutput() ?? "Empty");
+                         var deviceDeploymentMap = new StringBuilder(deploymentMap?.ToStringForOutput() ?? "Empty");
+                         var deviceSystemInfo = new StringBuilder(deviceInfo?.ToString() ?? "Empty");
+
+
+                         Debug.WriteLine("System Information");
+                         Debug.WriteLine(deviceSystemInfo.ToString());
+
+                         Debug.WriteLine(string.Empty);
+                         Debug.WriteLine(string.Empty);
+                         Debug.WriteLine("--------------------------------");
+                         Debug.WriteLine("::        Memory Map          ::");
+                         Debug.WriteLine("--------------------------------");
+                         Debug.WriteLine(deviceMemoryMap.ToString());
+
+                         Debug.WriteLine(string.Empty);
+                         Debug.WriteLine(string.Empty);
+                         Debug.WriteLine("-----------------------------------------------------------");
+                         Debug.WriteLine("::                   Flash Sector Map                    ::");
+                         Debug.WriteLine("-----------------------------------------------------------");
+                         Debug.WriteLine(deviceFlashSectorMap.ToString());
+
+                         Debug.WriteLine(string.Empty);
+                         Debug.WriteLine(string.Empty);
+                         Debug.WriteLine("Deployment Map");
+                         Debug.WriteLine(deviceDeploymentMap.ToString());
+
+                     }
+                     else
+                     {
+                         // invalid device info
+                         Debug.WriteLine("");
+                         Debug.WriteLine("Invalid device info");
+                         Debug.WriteLine("");
+
+                         return;
+                     }
                 }
                  catch (Exception ex)
                  {
@@ -395,9 +466,6 @@ namespace Serial_Test_App_WPF
 
                     await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDeviceAsync(nanoFramework.Tools.Debugger.RebootOption.NormalReboot);
 
-                    // need to disconnect from device too
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Disconnect();
-
                     Debug.WriteLine("");
                     Debug.WriteLine("");
                     Debug.WriteLine($"soft reboot");
@@ -463,38 +531,6 @@ namespace Serial_Test_App_WPF
                     Debug.WriteLine("");
                     Debug.WriteLine("");
                     Debug.WriteLine(dm?.ToStringForOutput());
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-
-                }));
-            }
-            catch (Exception ex)
-            {
-
-            }
-
-            // enable button
-            (sender as Button).IsEnabled = true;
-        }
-
-
-        private async void StartProcessingButton_Click(object sender, RoutedEventArgs e)
-        {  
-            // disable button
-            (sender as Button).IsEnabled = false;
-
-            try
-            {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-                {
-                    // enable button
-                    (sender as Button).IsEnabled = true;
-
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Start();
-
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-                    Debug.WriteLine($"Start background processing");
                     Debug.WriteLine("");
                     Debug.WriteLine("");
 

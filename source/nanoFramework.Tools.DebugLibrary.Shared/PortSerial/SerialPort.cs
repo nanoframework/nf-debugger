@@ -219,6 +219,15 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <param name="deviceSelector">The AQS used to find this device</param>
         private async void AddDeviceToList(DeviceInformation deviceInformation, String deviceSelector)
         {
+            // discard known system and unusable devices
+            if(
+                deviceInformation.Id.StartsWith(@"\\?\ACPI")
+              )
+            {
+                // don't even bother with these
+                return;
+            }
+
             // search the device list for a device with a matching interface ID
             var serialMatch = FindDevice(deviceInformation.Id);
 
@@ -241,7 +250,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     var newNanoFrameworkDevice = new NanoDevice<NanoSerialDevice>();
                     newNanoFrameworkDevice.Device.DeviceInformation = new SerialDeviceInformation(deviceInformation, deviceSelector);
                     newNanoFrameworkDevice.Parent = this;
-                    newNanoFrameworkDevice.DebugEngine = new Engine(this, newNanoFrameworkDevice);
                     newNanoFrameworkDevice.Transport = TransportType.Serial;
 
                     tentativeNanoFrameworkDevices.Add(newNanoFrameworkDevice as NanoDeviceBase);
