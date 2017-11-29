@@ -108,7 +108,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (eep == null)
             {
-                IControllerRemote remote = m_ctrl as IControllerRemote;
+                IControllerRemote remote = _controlller as IControllerRemote;
 
                 if (remote != null)
                 {
@@ -153,7 +153,7 @@ namespace nanoFramework.Tools.Debugger
 
                 eep.Destroy();
 
-                IControllerRemote remote = m_ctrl as IControllerRemote;
+                IControllerRemote remote = _controlller as IControllerRemote;
                 if (remote != null)
                 {
                     remote.DeregisterEndpoint(ep._type, ep._id);
@@ -314,43 +314,47 @@ namespace nanoFramework.Tools.Debugger
 
         internal uint RpcGetUniqueEndpointId()
         {
-            return m_ctrl.GetUniqueEndpointId();
+            return _controlller.GetUniqueEndpointId();
         }
 
         #endregion
 
-        internal async Task<Request> RequestAsync(OutgoingMessage message, int timeout)
+        internal async Task<WireProtocolRequest> RequestAsync(OutgoingMessage message, int timeout)
         {
-            Request req = new Request(m_ctrl, message, timeout, null);
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                WireProtocolRequest req = new WireProtocolRequest(message, null, cts.Token);
 
-            // FIXME
-            //lock (m_state.SyncObject)
-            //{
+                // FIXME
+                //lock (m_state.SyncObject)
+                //{
 
-            //    //Checking whether IsRunning and adding the request to m_requests
-            //    //needs to be atomic to avoid adding a request after the Engine
-            //    //has been stopped.
+                //    //Checking whether IsRunning and adding the request to m_requests
+                //    //needs to be atomic to avoid adding a request after the Engine
+                //    //has been stopped.
 
-            //    if (!IsRunning)
-            //    {
-            //        throw new ApplicationException("Engine is not running or process has exited.");
-            //    }
+                //    if (!IsRunning)
+                //    {
+                //        throw new ApplicationException("Engine is not running or process has exited.");
+                //    }
 
-            //    m_requests.Add(req);
+                //    m_requests.Add(req);
 
-            await req.SendAsync(new CancellationToken());
-            //}
+                // FIXME
+                //await req.SendAsync(m_ctrl);
+                //}
 
-            return req;
+                return req;
+            }
         }
 
         /// <summary>
-        /// Global lock object for synchornizing message request. This ensures there is only one
+        /// Global lock object for synchronizing message request. This ensures there is only one
         /// outstanding request at any point of time. 
         /// </summary>
         internal object m_ReqSyncLock = new object();
 
-        private Task<Request> AsyncMessage(uint command, uint flags, object payload, int timeout)
+        private Task<WireProtocolRequest> AsyncMessage(uint command, uint flags, object payload, int timeout)
         {
             OutgoingMessage msg = CreateMessage(command, flags, payload);
 
@@ -363,9 +367,10 @@ namespace nanoFramework.Tools.Debugger
             // Lock on m_ReqSyncLock object, so only one thread is active inside the block.
             //lock (m_ReqSyncLock)
             //{
-            Request req = await AsyncMessage(command, flags, payload, timeout);
+            WireProtocolRequest req = await AsyncMessage(command, flags, payload, timeout);
 
-            return await req.WaitAsync();
+            //return await req.WaitAsync();
+            return null;
             //}
         }
 

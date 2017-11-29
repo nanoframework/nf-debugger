@@ -4,78 +4,68 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools;
-using System.Threading.Tasks;
-using System.Threading;
-
 namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class OutgoingMessage
     {
-        internal IController _parent;
+        ushort _sequenceId;
 
-        MessageRaw _raw;
-        MessageBase _base;
+        public MessageRaw Raw { get; private set; }
+        public MessageBase Base { get; private set; }
 
-        public OutgoingMessage(IController parent, Converter converter, uint cmd, uint flags, object payload)
+        public Packet Header => Base.Header;
+
+        public object Payload => Base.Payload;
+
+        public OutgoingMessage(ushort sequenceId, Converter converter, uint command, uint flags, object payload)
         {
-            InitializeForSend(parent, converter, cmd, flags, payload);
+            _sequenceId = sequenceId;
+
+            InitializeForSend(converter, command, flags, payload);
 
             UpdateCRC(converter);
         }
 
-        internal OutgoingMessage(IncomingMessage req, Converter converter, uint flags, object payload)
+        internal OutgoingMessage(IncomingMessage request, Converter converter, uint flags, object payload)
         {
-            InitializeForSend(req.Parent, converter, req.Header.Cmd, flags, payload);
+            InitializeForSend(converter, request.Header.Cmd, flags, payload);
 
-            _base.Header.SeqReply = req.Header.Seq;
-            _base.Header.Flags |= Flags.c_Reply;
+            Base.Header.SeqReply = request.Header.Seq;
+            Base.Header.Flags |= Flags.c_Reply;
 
             UpdateCRC(converter);
         }
 
-        public Packet Header
+
+        internal void InitializeForSend(Converter converter, uint cmd, uint flags, object payload)
         {
-            get
+            Packet header = new Packet
             {
-                return _base.Header;
-            }
-        }
+                Seq = _sequenceId,
+                Cmd = cmd,
+                Flags = flags
+            };
 
-        public object Payload
-        {
-            get
+            Raw = new MessageRaw();
+
+            Base = new MessageBase
             {
-                return _base.Payload;
-            }
-        }
-
-        internal void InitializeForSend(IController parent, Converter converter, uint cmd, uint flags, object payload)
-        {
-            Packet header = parent.NewPacket();
-
-            header.Cmd = cmd;
-            header.Flags = flags;
-
-            _parent = parent;
-
-            _raw = new MessageRaw();
-            _base = new MessageBase();
-            _base.Header = header;
-            _base.Payload = payload;
+                Header = header,
+                Payload = payload
+            };
 
             if (payload != null)
             {
-                _raw.Payload = converter.Serialize(payload);
+                Raw.Payload = converter.Serialize(payload);
 
-                _base.Header.Size = (uint)_raw.Payload.Length;
-                _base.Header.CrcData = CRC.ComputeCRC(_raw.Payload, 0);
+                Base.Header.Size = (uint)Raw.Payload.Length;
+                Base.Header.CrcData = CRC.ComputeCRC(Raw.Payload, 0);
             }
         }
 
         private void UpdateCRC(Converter converter)
         {
-            Packet header = _base.Header;
+            Packet header = Base.Header;
 
             //
             // The CRC for the header is computed setting the CRC field to zero and then running the CRC algorithm.
@@ -83,22 +73,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             header.CrcHeader = 0;
             header.CrcHeader = CRC.ComputeCRC(converter.Serialize(header), 0);
 
-            _raw.Header = converter.Serialize(header);
-        }
-
-        internal async Task<bool> SendAsync(CancellationToken cancellationToken)
-        {
-
-            DebuggerEventSource.Log.WireProtocolTxHeader(_base.Header.CrcHeader
-                                                        , _base.Header.CrcData
-                                                        , _base.Header.Cmd
-                                                        , _base.Header.Flags
-                                                        , _base.Header.Seq
-                                                        , _base.Header.SeqReply
-                                                        , _base.Header.Size
-                                                        );
-
-            return await _parent.QueueOutputAsync(_raw, cancellationToken);
+            Raw.Header = converter.Serialize(header);
         }
     }
 }

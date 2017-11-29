@@ -28,12 +28,10 @@ namespace nanoFramework.Tools.Debugger
 
         //internal IControllerHostLocal<MFDevice> m_portDefinition;
         internal IPort m_portDefinition;
-        internal Controller m_ctrl { get; set; }
+        internal Controller _controlller { get; set; }
         bool m_silent;
 
         DateTime m_lastNoise = DateTime.Now;
-
-        private static SemaphoreSlim semaphore;
 
         public event EventHandler<StringEventArgs> SpuriousCharactersReceived;
 
@@ -51,9 +49,9 @@ namespace nanoFramework.Tools.Debugger
         //ArrayList m_notifyQueue;
         FifoBuffer m_notifyNoise;
 
-        CancellationTokenSource noiseHandlingCancellation = new CancellationTokenSource();
+        CancellationTokenSource _noiseHandlingCancellation = new CancellationTokenSource();
 
-        CancellationTokenSource backgroundProcessorCancellation = new CancellationTokenSource();
+        CancellationTokenSource _backgroundProcessorCancellation = new CancellationTokenSource();
 
         AutoResetEvent _rpcEvent;
         //ArrayList m_rpcQueue;
@@ -66,11 +64,25 @@ namespace nanoFramework.Tools.Debugger
         EngineState _state;
         //bool m_fProcessExited;
 
+        private Task _backgroundProcessor;
+
+        protected readonly WireProtocolRequestsStore _requestsStore = new WireProtocolRequestsStore();
+        protected readonly Timer _pendingRequestsTimer;
+
+
+        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        public CancellationToken CancellationToken => _cancellationTokenSource.Token;
+
+
         internal INanoDevice Device;
 
         public Engine(IPort pd, INanoDevice device)
         {
             InitializeLocal(pd, device);
+
+            _requestsStore = new WireProtocolRequestsStore();
+
+            _pendingRequestsTimer = new Timer(ClearPendingRequests, null, 1000, 1000);
         }
 
         private void Initialize()
@@ -90,9 +102,6 @@ namespace nanoFramework.Tools.Debugger
             _state = new EngineState(this);
             //m_fProcessExited = false;
 
-            // Create the semaphore.
-            semaphore = new SemaphoreSlim(1, 1);
-
             //default capabilities, used until clr can be queried.
             Capabilities = new CLRCapabilities();
         }
@@ -100,7 +109,7 @@ namespace nanoFramework.Tools.Debugger
         private void InitializeLocal(IPort pd, INanoDevice device)
         {
             m_portDefinition = pd;
-            m_ctrl = new Controller(Packet.MARKER_PACKET_V1, this);
+            _controlller = new Controller(this);
 
             Device = device;
 
@@ -132,7 +141,7 @@ namespace nanoFramework.Tools.Debugger
                     cmd.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
                     cmd.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
 
-                    IncomingMessage msg = await PerformRequestAsync(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
+                    IncomingMessage msg = await PerformRequestAsync(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd);
 
                     if (msg == null || msg?.Payload == null)
                     {
@@ -180,7 +189,7 @@ namespace nanoFramework.Tools.Debugger
                 if (tempCapabilities != null)
                 {
                     Capabilities = tempCapabilities;
-                    m_ctrl.Capabilities = Capabilities;
+                    _controlller.Capabilities = Capabilities;
                 }
                 else
                 {
@@ -204,43 +213,60 @@ namespace nanoFramework.Tools.Debugger
             return true;
         }
 
-        public async Task ProcessBackgroundMessages()
+        private void ClearPendingRequests(object state)
         {
-            var reassembler = new MessageReassembler(m_ctrl);
+            var requestsToCancel = _requestsStore.FindAllToCancel();
 
-            while (!backgroundProcessorCancellation.IsCancellationRequested)
+            foreach (var wireProtocolRequest in requestsToCancel)
             {
-                var semaphoreEntered = await semaphore.WaitAsync(500);
+                // cancel the task using the cancellation token if available or not requested
+                var requestCanceled = wireProtocolRequest.CancellationToken.IsCancellationRequested
+                    ? wireProtocolRequest.TaskCompletionSource.TrySetCanceled(wireProtocolRequest.CancellationToken)
+                    : wireProtocolRequest.TaskCompletionSource.TrySetCanceled();
 
-                if (semaphoreEntered)
+                // remove the request from the store
+                if (_requestsStore.Remove(wireProtocolRequest.OutgoingMessage.Header) && requestCanceled)
                 {
-                    try
-                    {
-                        var message = await reassembler.ProcessAsync(backgroundProcessorCancellation.Token.AddTimeout(new TimeSpan(0, 0, 0, 500)));
+                    // TODO 
+                    // invoke the event hook
+                }
+            }
+        }
 
-                        if (message != null)
+        public async Task ProcessIncomingMessages()
+        {
+            var reassembler = new MessageReassembler(_controlller);
+
+            while (!_backgroundProcessorCancellation.IsCancellationRequested && _state.IsRunning)
+            {
+                try
+                {
+                    reassembler.Process(_backgroundProcessorCancellation.Token);
+                }
+                catch (DeviceNotConnectedException ex)
+                {
+                    await Task.Delay(1000);
+                    await Device.ConnectAsync();
+                }
+                catch (Exception ex)
+                {
+                    if (ex.GetType().Equals(typeof(AggregateException)))
+                    {
+                        if (ex.GetBaseException().GetType().Name == typeof(DeviceNotConnectedException).Name)
                         {
-                            // there was a message, throw it to Processor, no need to wait for execution
-                            ProcessMessageAsync(message, false).FireAndForget();
+                            await Task.Delay(1000);
+                            await Device.ConnectAsync();
                         }
                     }
-                    catch (Exception) { }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
                 }
-
-                // no need to rush into the next attempt, wait here
-                if ((!backgroundProcessorCancellation.IsCancellationRequested)) await Task.Delay(500);
-            };
+            }
         }
 
         public void ProcessSpuriousChars()
         {
             int read = 0;
 
-            while (noiseHandlingCancellation.IsCancellationRequested)
+            while (_noiseHandlingCancellation.IsCancellationRequested)
             {
                 var semaphoreTaken = m_notifyNoise.WaitHandle.WaitOne(250);
 
@@ -268,9 +294,9 @@ namespace nanoFramework.Tools.Debugger
             try
             {
                 // cancel background processors, if they are running
-                noiseHandlingCancellation.Cancel();
+                _noiseHandlingCancellation.Cancel();
 
-                backgroundProcessorCancellation.Cancel();
+                _backgroundProcessorCancellation.Cancel();
 
                 // update flag
                 IsConnected = false;
@@ -368,6 +394,9 @@ namespace nanoFramework.Tools.Debugger
 
                     try
                     {
+                        _cancellationTokenSource.Cancel();
+                        _cancellationTokenSource.Dispose();
+
                         if (IsConnected)
                         {
                             Device.Disconnect();
@@ -400,81 +429,46 @@ namespace nanoFramework.Tools.Debugger
 
         #endregion
 
-        private async Task<IncomingMessage> PerformRequestAsync(uint command, uint flags, object payload, int timeout = 2000)
+
+        private async Task<IncomingMessage> PerformRequestAsync(uint command, uint flags, object payload)
         {
-            var semaphoreEntered = await semaphore.WaitAsync(1000);
+            // create message
+            OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
 
-            if (semaphoreEntered)
-            {
-                //// check for cancellation request
-                //if (cancellationToken.IsCancellationRequested)
-                //{
-                //    // cancellation requested
-                //    Debug.WriteLine("cancellation requested");
-                //    return null;
-                //}
-
-                try
-                {
-                    //Debug.WriteLine("_________________________________________________________");
-                    //Debug.WriteLine("Executing " + DebuggerEventSource.GetCommandName(command));
-                    //Debug.WriteLine("_________________________________________________________");
-
-                    // create message
-                    OutgoingMessage message = new OutgoingMessage(m_ctrl, CreateConverter(), command, flags, payload);
-
-                    // create request 
-                    Request request = new Request(m_ctrl, message, timeout, null);
-
-                    var reply = await request.PerformRequestAsync().ConfigureAwait(true);
-
-                    return reply;
-                }
-                finally
-                {
-                    semaphore.Release();
-                }
-            }
-
-            return null;
+            return await PerformRequestAsync(message, _cancellationTokenSource.Token);
         }
 
-        private async Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int timeout = 500)
+        public async Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken)
         {
-            var semaphoreEntered = await semaphore.WaitAsync(1000);
+            WireProtocolRequest request = new WireProtocolRequest(message, null, cancellationToken);
+            _requestsStore.Add(request);
 
-            if (semaphoreEntered)
+            try
             {
-                try
-                {
 
-                    // create request 
-                    Request request = new Request(m_ctrl, message, timeout, null);
-
-                    var reply = await request.PerformRequestAsync().ConfigureAwait(true);
-
-                    return reply;
-                }
-                finally
-                {
-                    semaphore.Release();
-                }
+                await request.PerformRequestAsync(_controlller).ConfigureAwait(true);
+            }
+            catch(Exception)
+            {
+                // perform request failed, remove it from store
+                _requestsStore.Remove(request.OutgoingMessage.Header);
             }
 
-            return null;
+            var task = Convert<IncomingMessage>(request.TaskCompletionSource.Task);
+            return await task;
         }
 
         private async Task<List<IncomingMessage>> PerformRequestBatchAsync(List<OutgoingMessage> messages, CancellationToken cancellationToken, int timeout = 1000)
         {
             List<IncomingMessage> replies = new List<IncomingMessage>();
-            List<Request> requests = new List<Request>();
+            List<WireProtocolRequest> requests = new List<WireProtocolRequest>();
 
             foreach (OutgoingMessage message in messages)
             {
                 // continue execution only if cancellation was NOT request
                 if (!cancellationToken.IsCancellationRequested)
                 {
-                    replies.Add(await PerformRequestAsync(message, cancellationToken, timeout));
+                    replies.Add(await PerformRequestAsync(message, cancellationToken));
                 }
                 else
                 {
@@ -483,6 +477,12 @@ namespace nanoFramework.Tools.Debugger
             }
 
             return replies;
+        }
+
+        private static async Task<T> Convert<T>(Task<object> task)
+        {
+            var result = await task;
+            return (T)result;
         }
 
         public async Task<Commands.Monitor_Ping.Reply> GetConnectionSourceAsync()
@@ -510,68 +510,88 @@ namespace nanoFramework.Tools.Debugger
             return await m_portDefinition.SendBufferAsync(buffer, waiTimeout, cancellationToken);
         }
 
-        public async Task ProcessMessageAsync(IncomingMessage message, bool isReply)
+        public async Task<bool> ProcessMessageAsync(IncomingMessage message, bool isReply)
         {
-            Packet packet = message.Header;
+            message.Payload = Commands.ResolveCommandToPayload(message.Header.Cmd, isReply, _controlller.Capabilities);
 
-            switch (packet.Cmd)
+
+            if (isReply == true)
             {
-                case Commands.c_Monitor_Ping:
-                    //need to send a Ping back to the device
-                    Commands.Monitor_Ping.Reply cmdReply = new Commands.Monitor_Ping.Reply();
+                // we are processing a message flagged as a reply
+                // OR we this is a reply to an explicit request
 
-                    cmdReply.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
-                    cmdReply.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
+                WireProtocolRequest reply = _requestsStore.GetByReplyHeader(message.Header);
 
-                    // no need for the context, using ConfigureAwait
-                    await message.ReplyAsync(CreateConverter(), Flags.c_NonCritical, cmdReply, new CancellationToken()).ConfigureAwait(false);
+                if (reply != null)
+                {
+                    // remove from store
+                    _requestsStore.Remove(reply.OutgoingMessage.Header);
 
-                    // FIXME
-                    //m_evtPing.Set();
+                    // resolve the response
+                    reply.TaskCompletionSource.TrySetResult(message);
 
-                    break;
+                    return true;
+                }
+            }
+            else
+            {
+                Packet bp = message.Header;
 
-                case Commands.c_Monitor_Message:
-                    Commands.Monitor_Message payloadMessage = message.Payload as Commands.Monitor_Message;
-
-                    Debug.Assert(payloadMessage != null);
-
-                    if (payloadMessage != null && _eventMessage != null)
-                    {
-                        _eventMessage(message, payloadMessage.ToString());
-                    }
-
-                    break;
-
-                case Commands.c_Debugging_Messaging_Query:
-                case Commands.c_Debugging_Messaging_Reply:
-                case Commands.c_Debugging_Messaging_Send:
-                    Debug.Assert(message.Payload != null);
-
-                    if (message.Payload != null)
-                    {
-                        object payload = message.Payload;
-
-                        switch (message.Header.Cmd)
+                switch (bp.Cmd)
+                {
+                    case Commands.c_Monitor_Ping:
                         {
-                            case Commands.c_Debugging_Messaging_Query:
-                                await RpcReceiveQueryAsync(message, (Commands.Debugging_Messaging_Query)payload).ConfigureAwait(false);
-                                break;
-                            case Commands.c_Debugging_Messaging_Send:
-                                // FIXME RpcReceiveSend(message, (Commands.Debugging_Messaging_Send)payload);
-                                break;
-                            case Commands.c_Debugging_Messaging_Reply:
-                                // FIXME RpcReceiveReply(message, (Commands.Debugging_Messaging_Reply)payload);
-                                break;
-                            default:
-                                await IncomingMessage.ReplyBadPacketAsync(message.Parent, 0, new CancellationToken()).ConfigureAwait(false);
-                                break;
+                            Commands.Monitor_Ping.Reply cmdReply = new Commands.Monitor_Ping.Reply();
+
+                            cmdReply.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
+                            cmdReply.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
+
+                            PerformRequestAsync(new OutgoingMessage(message, _controlller.CreateConverter(), Flags.c_NonCritical, cmdReply), _backgroundProcessorCancellation.Token).ConfigureAwait(false);
+
+                            return true;
                         }
-                    }
-                    break;
+
+                    case Commands.c_Monitor_Message:
+                        {
+                            Commands.Monitor_Message payload = message.Payload as Commands.Monitor_Message;
+
+                            Debug.Assert(payload != null);
+
+                            if (payload != null)
+                            {
+                                // FIXME
+                                //QueueNotify(m_eventMessage, msg, payload.ToString());
+                            }
+
+                            return true;
+                        }
+
+                    case Commands.c_Debugging_Messaging_Query:
+                    case Commands.c_Debugging_Messaging_Reply:
+                    case Commands.c_Debugging_Messaging_Send:
+                        {
+                            Debug.Assert(message.Payload != null);
+
+                            if (message.Payload != null)
+                            {
+                                // FIXME
+                                //QueueRpc(msg);
+                            }
+
+                            return true;
+                        }
+                }
             }
 
-            _eventCommand?.Invoke(message, isReply);
+            if (_eventCommand != null)
+            {
+                //QueueNotify(_eventCommand, message, isReply);
+                _eventCommand.Invoke(message, isReply);
+
+                return true;
+            }
+
+            return false;
         }
 
         public void SpuriousCharacters(byte[] buf, int offset, int count)
@@ -586,14 +606,14 @@ namespace nanoFramework.Tools.Debugger
             throw new NotImplementedException();
         }
 
-        public Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
-            return m_portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
+            return await m_portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
         }
 
         private OutgoingMessage CreateMessage(uint cmd, uint flags, object payload)
         {
-            return new OutgoingMessage(m_ctrl, CreateConverter(), cmd, flags, payload);
+            return new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), cmd, flags, payload);
         }
 
         public void Start()
@@ -601,23 +621,19 @@ namespace nanoFramework.Tools.Debugger
             _state.SetValue(EngineState.Value.Starting, true);
 
             // check if cancellation token needs to be renewed
-            if (backgroundProcessorCancellation.IsCancellationRequested)
+            if (_backgroundProcessorCancellation.IsCancellationRequested)
             {
-                backgroundProcessorCancellation = new CancellationTokenSource();
+                _backgroundProcessorCancellation = new CancellationTokenSource();
             }
 
             // start task to process background messages
-            Task.Factory.StartNew(async () =>
-            {
-                await ProcessBackgroundMessages();
-            }, backgroundProcessorCancellation.Token);
+            _backgroundProcessor = Task.Factory.StartNew(() => ProcessIncomingMessages(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
-
-            // start task to tx spurious characters
-            Task.Factory.StartNew(() =>
-            {
-                ProcessSpuriousChars();
-            }, noiseHandlingCancellation.Token);
+            //// start task to tx spurious characters
+            //Task.Factory.StartNew(() =>
+            //{
+            //    ProcessSpuriousChars();
+            //}, noiseHandlingCancellation.Token);
 
             _state.SetValue(EngineState.Value.Started, false);
         }
@@ -627,6 +643,14 @@ namespace nanoFramework.Tools.Debugger
             _state.SetValue(EngineState.Value.Stopping, false);
 
             m_evtShutdown.Set();
+
+            if (_backgroundProcessor != null)
+            {
+                _backgroundProcessorCancellation.Cancel();
+
+                Task.WaitAll(_backgroundProcessor);
+                _backgroundProcessor = null;
+            }
 
             //if (m_inboundDataThread != null)
             //{
@@ -646,10 +670,10 @@ namespace nanoFramework.Tools.Debugger
 
             _state.SetValue(EngineState.Value.Resume, false);
 
-            //if (m_inboundDataThread == null)
-            //{
-            //    m_inboundDataThread = CreateThread(new ThreadStart(this.ReceiveInput));
-            //}
+            if (_backgroundProcessor == null)
+            {
+                _backgroundProcessor = Task.Factory.StartNew(() => ProcessIncomingMessages(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+            }
 
             //if (m_stateMachineThread == null)
             //{
@@ -666,13 +690,15 @@ namespace nanoFramework.Tools.Debugger
 
             if (_state.SetValue(EngineState.Value.Stopping, false))
             {
-                ((IController)this).StopProcessing();
+                StopProcessing();
 
                 //((IController)this).ClosePort();
 
                 _state.SetValue(EngineState.Value.Stopped, false);
             }
         }
+
+        public bool IsRunning => _state.IsRunning;
 
         #region Commands implementation
 
@@ -702,7 +728,7 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_DeploymentMap, 0, cmd, 5000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_DeploymentMap, 0, cmd);
 
             if (reply != null)
             {
@@ -722,7 +748,7 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_OemInfo, 0, null, 1000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_OemInfo, 0, null);
 
             if (reply != null)
             {
@@ -737,7 +763,7 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_FlashSectorMap, 0, null, 4000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_FlashSectorMap, 0, null);
 
             if (reply != null)
             {
@@ -821,7 +847,7 @@ namespace nanoFramework.Tools.Debugger
 
                 Debug.WriteLine($"Sending {packetLength} bytes to address { address.ToString("X8") }, {count} remaining...");
 
-                IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_WriteMemory, 0, cmd, 2000);
+                IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_WriteMemory, 0, cmd);
 
                 Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
 
@@ -896,7 +922,7 @@ namespace nanoFramework.Tools.Debugger
                 timeout = (int)(length / (16 * 1024)) * eraseTimeout16kSector + 2 * extraTimeoutForErase;
             }
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_EraseMemory, 0, cmd, timeout);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_EraseMemory, 0, cmd);
 
             Commands.Monitor_EraseMemory.Reply cmdReply = reply.Payload as Commands.Monitor_EraseMemory.Reply;
 
@@ -945,7 +971,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 m_evtPing.Reset();
 
-                await PerformRequestAsync(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 1000);
+                await PerformRequestAsync(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
 
                 // need to disconnect from the device?
                 if (disconnectRequired)
@@ -1028,8 +1054,8 @@ namespace nanoFramework.Tools.Debugger
 
                 if (cmdReply != null)
                 {
-                    if(cmdReply.CurrentState != (uint)Commands.DebuggingExecutionChangeConditions.State.Unknown)
-                    return true;
+                    if (cmdReply.CurrentState != (uint)Commands.DebuggingExecutionChangeConditions.State.Unknown)
+                        return true;
                 }
             }
 
@@ -1174,7 +1200,7 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_flags = 0;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_UpgradeToSsl, Flags.c_NoCaching, cmd, 5000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_UpgradeToSsl, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
@@ -1233,7 +1259,7 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_MFUpdate_Start, Flags.c_NoCaching, cmd, 5000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_MFUpdate_Start, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
@@ -1757,7 +1783,7 @@ namespace nanoFramework.Tools.Debugger
         {
             OutgoingMessage cmd = CreateMessage_GetValue_Stack(pid, depth, kind, index);
 
-            IncomingMessage reply = await PerformRequestAsync(cmd, cancellationToken, 200);
+            IncomingMessage reply = await PerformRequestAsync(cmd, cancellationToken);
 
             if (reply != null)
             {
@@ -2307,7 +2333,7 @@ namespace nanoFramework.Tools.Debugger
             Commands.DebuggingDeploymentStatus cmd = new Commands.DebuggingDeploymentStatus();
             Commands.DebuggingDeploymentStatus.Reply cmdReply = null;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Deployment_Status, Flags.c_NoCaching, cmd, 5000);
+            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Deployment_Status, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
@@ -2585,7 +2611,7 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_caps = capabilities;
 
-            return PerformRequestAsync(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd, 3000);
+            return PerformRequestAsync(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd);
         }
 
         private async Task<uint> DiscoverCLRCapabilityUintAsync(uint caps)

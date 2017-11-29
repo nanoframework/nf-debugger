@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using nanoFramework.Tools.Debugger;
 using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.WireProtocol;
 using Serial_Test_App_WPF.ViewModel;
@@ -33,21 +34,33 @@ namespace Serial_Test_App_WPF
             (sender as Button).IsEnabled = false;
 
             await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
-             {
+            {
+                var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
 
-                 bool connectResult = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.ConnectAsync(5000, true);
+                if(device.DebugEngine == null)
+                {
+                    device.DebugEngine = new nanoFramework.Tools.Debugger.Engine(device.Parent, (INanoDevice)device);
+                }
 
-                 //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Start();
+                // is engine already running?
+                if (!device.DebugEngine.IsRunning)
+                {
+                    device.DebugEngine.Start();
+                }
 
-                 var di = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfoAsync();
+                bool connectResult = await device.DebugEngine.ConnectAsync(5000, true);
 
-                 Debug.WriteLine("");
-                 Debug.WriteLine("");
-                 Debug.WriteLine(di.ToString());
-                 Debug.WriteLine("");
-                 Debug.WriteLine("");
+                //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Start();
 
-             }));
+                var di = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfoAsync();
+
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine(di.ToString());
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+
+            }));
 
             // enable button
             (sender as Button).IsEnabled = true;
@@ -89,8 +102,9 @@ namespace Serial_Test_App_WPF
 
                 try
                 {
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Disconnect();
-
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Stop();
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Dispose();
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine = null;
                     //Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
                     //    ConnectionStateResult = ConnectionState.Disconnected;
                     //}));
@@ -118,7 +132,11 @@ namespace Serial_Test_App_WPF
                  {
                      var deviceState = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetExecutionModeAsync();
 
-                     if (deviceState == Commands.DebuggingExecutionChangeConditions.State.Initialize)
+                     if (deviceState == Commands.DebuggingExecutionChangeConditions.State.Unknown)
+                     {
+                         Debug.WriteLine($">>> Couldn't determine device state <<<<");
+                     }
+                     else if (deviceState == Commands.DebuggingExecutionChangeConditions.State.Initialize)
                      {
                          Debug.WriteLine($">>> Device is in initialized state <<<<");
                      }
@@ -135,7 +153,7 @@ namespace Serial_Test_App_WPF
                      }
                      else if ((deviceState & Commands.DebuggingExecutionChangeConditions.State.ProgramExited) == Commands.DebuggingExecutionChangeConditions.State.ProgramExited)
                      {
-                         Debug.WriteLine($">>> Device is at an unknown state <<<<");
+                         Debug.WriteLine($">>> Device it's idle after exiting from a program execution <<<<");
                      }
                  }
                  catch (Exception ex)
@@ -458,5 +476,69 @@ namespace Serial_Test_App_WPF
             // enable button
             (sender as Button).IsEnabled = true;
         }
+
+
+        private async void StartProcessingButton_Click(object sender, RoutedEventArgs e)
+        {  
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Start();
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"Start background processing");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                }));
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private async void StopProcessingButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Stop();
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"Start background processing");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                }));
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+       
     }
 }

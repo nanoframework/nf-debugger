@@ -45,6 +45,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Internal list of the tentative devices to be checked as valid nanoFramework devices
         /// </summary>
         private List<NanoDeviceBase> tentativeNanoFrameworkDevices = new List<NanoDeviceBase>();
+        private bool deviceConnected;
 
         /// <summary>
         /// Creates an Serial debug client
@@ -301,8 +302,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // ... and remove it from collection
             NanoFrameworkDevices.Remove(device);
 
-            device?.DebugEngine.Disconnect();
-            device?.DebugEngine.Dispose();
+            device?.DebugEngine?.Disconnect();
+            device?.DebugEngine?.Dispose();
         }
 
         private void ClearDeviceEntries()
@@ -450,7 +451,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 var device = FindNanoFrameworkDevice(EventHandlerForSerialDevice.Current.DeviceInformation.Id);
 
                 // need an extra check on this because this can be 'just' a regular COM port without any nanoFramework device behind
-                var connectionResult = await device.DebugEngine.ConnectAsync(5000, true);
+                var connectionResult = await PingDeviceLocalAsync();
 
                 if (connectionResult)
                 {
@@ -491,6 +492,67 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return false;
         }
 
+        private async Task<bool> PingDeviceLocalAsync()
+        {
+            // fake Ping header
+            byte[] pingHeader = new byte[] {
+                78,
+                70,
+                80,
+                75,
+                84,
+                86,
+                49,
+                0,
+                240,
+                240,
+                187,
+                218,
+                148,
+                185,
+                67,
+                183,
+                0,
+                0,
+                0,
+                0,
+                191,
+                130,
+                0,
+                0,
+                0,
+                32,
+                0,
+                0,
+                8,
+                0,
+                0,
+                0,
+            };
+
+            // fake Ping payload
+            byte[] pingPayload = new byte[] {
+                0x02,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+            };
+
+            var cts = new CancellationTokenSource();
+
+            await SendBufferAsync(pingHeader, new TimeSpan(0, 0, 2), cts.Token);
+
+            await SendBufferAsync(pingPayload, new TimeSpan(0, 0, 2), cts.Token);
+
+            byte[] pingResponseHeader = await ReadBufferAsync(32, new TimeSpan(0, 0, 1), cts.Token);
+
+            return (pingResponseHeader.Length == 32);
+        }
+
         protected virtual void OnDeviceEnumerationCompleted()
         {
             DeviceEnumerationCompleted?.Invoke(this, new EventArgs());
@@ -509,7 +571,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             inputStreamReader = null;
             outputStreamWriter = null;
 
-            return await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).ConfigureAwait(true);
+            // UWP API for serial port doesn't handle very well multiple connect/disconnect from devices
+            // so we are better using this internal flag so that we only open the device once
+            //if (!deviceConnected)
+            //{
+                deviceConnected = await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).ConfigureAwait(true);
+            //}
+
+            return deviceConnected;
         }
 
         private async Task<bool> ConnectSerialDeviceAsync(SerialDeviceInformation serialDeviceInfo)
@@ -538,6 +607,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             if (FindDevice(((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).DeviceInformation.Id) != null)
             {
                 EventHandlerForSerialDevice.Current.CloseDevice();
+
+                deviceConnected = false;
 
                 inputStreamReader?.DetachStream();
                 inputStreamReader?.DetachBuffer();
@@ -585,6 +656,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                    throw ex;
                 }
                 finally
                 {
@@ -595,8 +667,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
             else
             {
-                // NotifyDeviceNotConnected
-                Debug.WriteLine("NotifyDeviceNotConnected");
+                throw new DeviceNotConnectedException();
             }
 
             return 0;
@@ -604,7 +675,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
-
             // device must be connected
             if (EventHandlerForSerialDevice.Current.IsDeviceConnected)
             {
@@ -640,7 +710,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                    Debug.WriteLine($"ReadBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                    //throw ex;
                 }
                 finally
                 {
@@ -651,9 +722,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
             else
             {
-                // FIXME 
-                // NotifyDeviceNotConnected
                 Debug.WriteLine("NotifyDeviceNotConnected");
+                throw new DeviceNotConnectedException();
             }
 
             // return empty byte array
