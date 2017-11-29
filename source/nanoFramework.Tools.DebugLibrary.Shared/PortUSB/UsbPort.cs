@@ -224,7 +224,6 @@ namespace nanoFramework.Tools.Debugger.Usb
                     //newMFDevice.DeviceInformation = new UsbDeviceInformation(deviceInformation, deviceSelector);
                     newNanoFrameworkDevice.Device.DeviceInformation = new UsbDeviceInformation(deviceInformation, deviceSelector);
                     newNanoFrameworkDevice.Parent = this;
-                    newNanoFrameworkDevice.DebugEngine = new Engine(this, newNanoFrameworkDevice);
                     newNanoFrameworkDevice.Transport = TransportType.Usb;
 
                     // Add the new element to the end of the list of devices
