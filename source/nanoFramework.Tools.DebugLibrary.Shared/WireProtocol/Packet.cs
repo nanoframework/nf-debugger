@@ -4,6 +4,9 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using System;
+using System.Text;
+
 namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class Packet
@@ -12,7 +15,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public static string MARKER_PACKET_V1 = "NFPKTV1\0"; // Used to identify the start of a packet.
         public const int SIZE_OF_MARKER = 8;
 
-        public byte[] Marker = new byte[SIZE_OF_MARKER];
+        public byte[] Marker;
         public uint CrcHeader = 0;
         public uint CrcData = 0;
 
@@ -21,5 +24,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public ushort SeqReply = 0;
         public uint Flags = 0;
         public uint Size = 0;
+
+        public Packet()
+        {
+            Marker = Encoding.UTF8.GetBytes(MARKER_PACKET_V1);
+        }
     }
 }

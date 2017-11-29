@@ -14,6 +14,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DebuggerEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\CouldntOpenNanoFrameworkDeviceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DebugSessionAlreadyOpenException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DeviceNotConnectedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\CancellationTokenExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\FlashSectorDataExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DeploymentSectorExtensions.cs" />
@@ -92,11 +93,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\PortFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\RebootOption.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\ReleaseInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Request.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\WireProtocolRequest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\StringEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\ThreadStatus.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\TransportType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\TypeSysLookup.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\VersionStruct.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\WireProtocolRequestsStore.cs" />
   </ItemGroup>
 </Project>
