@@ -23,6 +23,11 @@ namespace nanoFramework.Tools.Debugger
             {
                 Transport = TransportType.Usb;
             }
+            else if (Device is NanoSerialDevice)
+            {
+                Transport = TransportType.Serial;
+            }
+
         }
 
         #region Disposable implementation
