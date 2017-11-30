@@ -128,12 +128,13 @@ For .NET look for the respective Nuget package.</PackageReleaseNotes>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ApplicationException.cs" />
+    <Compile Include="BinaryFormatter.cs" />
     <Compile Include="PortDefinitions\PortBase.cs" />
     <Compile Include="PortSerial\EventHandlerForSerialDevice.cs" />
     <Compile Include="PortSerial\SerialPort.cs" />
     <Compile Include="PortUsb\EventHandlerForUsbDevice.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WireProtocol\Engine.cs" />
     <EmbeddedResource Include="Properties\nanoFramework.Tools.DebugLibrary.UWP.rd.xml" />
   </ItemGroup>
   <ItemGroup>

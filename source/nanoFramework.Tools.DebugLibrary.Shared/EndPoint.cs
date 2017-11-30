@@ -8,10 +8,10 @@ using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.Remoting;
-using System.Runtime.Remoting.Messaging;
-using System.Runtime.Remoting.Proxies;
-using System.Runtime.Serialization.Formatters.Binary;
+//using System.Runtime.Remoting;
+//using System.Runtime.Remoting.Messaging;
+//using System.Runtime.Remoting.Proxies;
+//using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -105,7 +105,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (res == null)
             {
-                throw new RemotingException(string.Format("Remote call '{0}' failed", call.Name));
+                throw new Exception(string.Format("Remote call '{0}' failed", call.Name));
             }
 
             object o = _engine.CreateBinaryFormatter().Deserialize(res);
@@ -177,103 +177,103 @@ namespace nanoFramework.Tools.Debugger
             return _engine.RpcReplyAsync(msg.m_addr, data);
         }
 
-        static public object GetObject(Engine eng, Type type, uint id, Type classToRemote)
-        {
-            return GetObject(eng, new EndPoint(type, id, eng), classToRemote);
-        }
+        //static public object GetObject(Engine eng, Type type, uint id, Type classToRemote)
+        //{
+        //    return GetObject(eng, new EndPoint(type, id, eng), classToRemote);
+        //}
 
-        static internal object GetObject(Engine eng, EndPoint ep, Type classToRemote)
-        {
-            uint id = eng.RpcGetUniqueEndpointId();
+        //static internal object GetObject(Engine eng, EndPoint ep, Type classToRemote)
+        //{
+        //    uint id = eng.RpcGetUniqueEndpointId();
 
-            EndPoint epLocal = new EndPoint(typeof(EndPointProxy), id, eng);
+        //    EndPoint epLocal = new EndPoint(typeof(EndPointProxy), id, eng);
 
-            EndPointProxy prx = new EndPointProxy(eng, epLocal, ep, classToRemote);
+        //    EndPointProxy prx = new EndPointProxy(eng, epLocal, ep, classToRemote);
 
-            return prx.GetTransparentProxy();
-        }
+        //    return prx.GetTransparentProxy();
+        //}
 
-        internal class EndPointProxy : RealProxy, IDisposable
-        {
-            private Engine _engine;
-            private Type _type;
-            private EndPoint _from;
-            private EndPoint _to;
+        //internal class EndPointProxy : RealProxy, IDisposable
+        //{
+        //    private Engine _engine;
+        //    private Type _type;
+        //    private EndPoint _from;
+        //    private EndPoint _to;
 
-            internal EndPointProxy(Engine engine, EndPoint from, EndPoint to, Type type)
-                : base(type)
-            {
-                from.Register();
+        //    internal EndPointProxy(Engine engine, EndPoint from, EndPoint to, Type type)
+        //        : base(type)
+        //    {
+        //        from.Register();
 
-                // FIXME can't use async in a constructor
-                //if (await from.CheckDestinationAsync(to) == false)
-                //{
-                //    from.Deregister();
+        //        // FIXME can't use async in a constructor
+        //        //if (await from.CheckDestinationAsync(to) == false)
+        //        //{
+        //        //    from.Deregister();
 
-                //    throw new ArgumentException("Cannot connect to device EndPoint");
-                //}
+        //        //    throw new ArgumentException("Cannot connect to device EndPoint");
+        //        //}
 
-                _engine = engine;
-                _from = from;
-                _to = to;
-                _type = type;
-            }
+        //        _engine = engine;
+        //        _from = from;
+        //        _to = to;
+        //        _type = type;
+        //    }
 
-            ~EndPointProxy()
-            {
-                Dispose();
-            }
+        //    ~EndPointProxy()
+        //    {
+        //        Dispose();
+        //    }
 
-            public void Dispose()
-            {
-                try
-                {
-                    if (_from != null)
-                    {
-                        _from.Deregister();
-                    }
-                }
-                catch
-                {
-                }
-                finally
-                {
-                    _engine = null;
-                    _from = null;
-                    _to = null;
-                    _type = null;
-                }
-            }
+        //    public void Dispose()
+        //    {
+        //        try
+        //        {
+        //            if (_from != null)
+        //            {
+        //                _from.Deregister();
+        //            }
+        //        }
+        //        catch
+        //        {
+        //        }
+        //        finally
+        //        {
+        //            _engine = null;
+        //            _from = null;
+        //            _to = null;
+        //            _type = null;
+        //        }
+        //    }
 
-            public override IMessage Invoke(IMessage message)
-            {
-                IMethodMessage myMethodMessage = (IMethodMessage)message;
+        //    public override IMessage Invoke(IMessage message)
+        //    {
+        //        IMethodMessage myMethodMessage = (IMethodMessage)message;
 
-                if (myMethodMessage.MethodSignature is Array)
-                {
-                    foreach (Type t in (Array)myMethodMessage.MethodSignature)
-                    {
-                        if (t.IsByRef)
-                        {
-                            throw new NotSupportedException("ByRef parameters are not supported");
-                        }
-                    }
-                }
+        //        if (myMethodMessage.MethodSignature is Array)
+        //        {
+        //            foreach (Type t in (Array)myMethodMessage.MethodSignature)
+        //            {
+        //                if (t.IsByRef)
+        //                {
+        //                    throw new NotSupportedException("ByRef parameters are not supported");
+        //                }
+        //            }
+        //        }
 
-                MethodInfo mi = myMethodMessage.MethodBase as MethodInfo;
+        //        MethodInfo mi = myMethodMessage.MethodBase as MethodInfo;
 
-                if (mi != null)
-                {
-                    BinaryFormatter.PopulateFromType(mi.ReturnType);
-                }
+        //        if (mi != null)
+        //        {
+        //            BinaryFormatter.PopulateFromType(mi.ReturnType);
+        //        }
 
-                MessageCall call = MessageCall.CreateFromIMethodMessage(myMethodMessage);
+        //        MessageCall call = MessageCall.CreateFromIMethodMessage(myMethodMessage);
 
-                object returnValue = _from.SendMessageAsync(_to, 60 * 1000, call);
+        //        object returnValue = _from.SendMessageAsync(_to, 60 * 1000, call);
 
-                // Build the return message to pass back to the transparent proxy.
-                return new ReturnMessage(returnValue, null, 0, null, (IMethodCallMessage)message);
-            }
-        }
+        //        // Build the return message to pass back to the transparent proxy.
+        //        return new ReturnMessage(returnValue, null, 0, null, (IMethodCallMessage)message);
+        //    }
+        //}
     }
 }
