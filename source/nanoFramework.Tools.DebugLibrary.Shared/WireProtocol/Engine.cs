@@ -493,8 +493,15 @@ namespace nanoFramework.Tools.Debugger
 
         private static async Task<T> Convert<T>(Task<object> task)
         {
-            var result = await task;
-            return (T)result;
+            try
+            {
+                var result = await task;
+                return (T)result;
+            }
+            catch
+            {
+                return default(T);
+            }
         }
 
         public async Task<Commands.Monitor_Ping.Reply> GetConnectionSourceAsync()
