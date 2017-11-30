@@ -323,7 +323,7 @@ namespace nanoFramework.Tools.Debugger
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
             {
-                WireProtocolRequest req = new WireProtocolRequest(message, null, cts.Token);
+                WireProtocolRequest req = new WireProtocolRequest(message, cts.Token);
 
                 // FIXME
                 //lock (m_state.SyncObject)
