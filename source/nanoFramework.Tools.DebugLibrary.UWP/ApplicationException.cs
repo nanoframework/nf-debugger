@@ -8,18 +8,18 @@ using System;
 
 namespace nanoFramework.Tools.Debugger
 {
-    [Serializable()]
-    public class RemotedException
+    internal class ApplicationException : Exception
     {
-        public string m_message;
-        public RemotedException(Exception payload)
+        public ApplicationException()
         {
-            m_message = payload.Message;
         }
 
-        public void Raise()
+        public ApplicationException(string message) : base(message)
         {
-            throw new System.Runtime.Remoting.RemotingException(m_message);
+        }
+
+        public ApplicationException(string message, Exception innerException) : base(message, innerException)
+        {
         }
     }
 }

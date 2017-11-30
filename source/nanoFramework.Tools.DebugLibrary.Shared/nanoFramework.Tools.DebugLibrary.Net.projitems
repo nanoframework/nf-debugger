@@ -9,12 +9,15 @@
     <Import_RootNamespace>nanoFramework.Tools.Debugger</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)BitStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CLRCapabilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CRC32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DebuggerEventSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EndPoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\CouldntOpenNanoFrameworkDeviceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DebugSessionAlreadyOpenException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DeviceNotConnectedException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exceptions\RemotedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\CancellationTokenExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\FlashSectorDataExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DeploymentSectorExtensions.cs" />
@@ -24,6 +27,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\OutputExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\TaskExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\TypeExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Message.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MessageCall.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MFDeployTool\AssemblyInfoFromResolveAssembly.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MFDeployTool\INanoFrameworkDeviceInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MFDeployTool\IAssemblyInfo.cs" />

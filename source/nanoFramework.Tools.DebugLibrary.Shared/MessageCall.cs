@@ -4,7 +4,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using System.Runtime.Remoting.Messaging;
+//using System.Runtime.Remoting.Messaging;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -19,10 +19,10 @@ namespace nanoFramework.Tools.Debugger
             Args = args;
         }
 
-        public static MessageCall CreateFromIMethodMessage(IMethodMessage message)
-        {
-            return new MessageCall(message.MethodName, message.Args);
-        }
+        //public static MessageCall CreateFromIMethodMessage(IMethodMessage message)
+        //{
+        //    return new MessageCall(message.MethodName, message.Args);
+        //}
 
         public object CreateMessagePayload()
         {

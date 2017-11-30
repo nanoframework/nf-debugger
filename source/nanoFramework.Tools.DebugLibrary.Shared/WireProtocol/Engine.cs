@@ -26,7 +26,6 @@ namespace nanoFramework.Tools.Debugger
     {
         private const int TIMEOUT_DEFAULT = 5000;
 
-        //internal IControllerHostLocal<MFDevice> m_portDefinition;
         internal IPort _portDefinition;
         internal Controller _controlller { get; set; }
         bool m_silent;
@@ -59,7 +58,6 @@ namespace nanoFramework.Tools.Debugger
 
         ManualResetEvent m_evtShutdown;
         ManualResetEvent m_evtPing;
-        //ArrayList m_requests;
         TypeSysLookup m_typeSysLookup;
         EngineState _state;
         //bool m_fProcessExited;
@@ -82,7 +80,7 @@ namespace nanoFramework.Tools.Debugger
             _state.SetValue(EngineState.Value.Starting, true);
 
             // start task to process background messages
-            _backgroundProcessor = Task.Factory.StartNew(() => ProcessIncomingMessages(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+            _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListenerAsync(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
             _state.SetValue(EngineState.Value.Started, false);
 
@@ -98,7 +96,6 @@ namespace nanoFramework.Tools.Debugger
 
             //m_rpcQueue = ArrayList.Synchronized(new ArrayList());
             //m_rpcEndPoints = ArrayList.Synchronized(new ArrayList());
-            //m_requests = ArrayList.Synchronized(new ArrayList());
             //m_notifyQueue = ArrayList.Synchronized(new ArrayList());
 
             m_notifyNoise = new FifoBuffer();
@@ -121,6 +118,11 @@ namespace nanoFramework.Tools.Debugger
         }
 
         public CLRCapabilities Capabilities { get; internal set; }
+
+        public BinaryFormatter CreateBinaryFormatter()
+        {
+            return new BinaryFormatter(Capabilities);
+        }
 
         public bool IsConnected { get; internal set; }
 
@@ -237,7 +239,7 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public async Task ProcessIncomingMessages()
+        public async Task IncomingMessagesListenerAsync()
         {
             var reassembler = new MessageReassembler(_controlller);
 
@@ -262,31 +264,6 @@ namespace nanoFramework.Tools.Debugger
                         {
                             await Task.Delay(1000);
                             await Device.ConnectAsync();
-                        }
-                    }
-                }
-            }
-        }
-
-        public void ProcessSpuriousChars()
-        {
-            int read = 0;
-
-            while (_noiseHandlingCancellation.IsCancellationRequested)
-            {
-                var semaphoreTaken = m_notifyNoise.WaitHandle.WaitOne(250);
-
-                if (semaphoreTaken)
-                {
-                    while ((read = m_notifyNoise.Available) > 0)
-                    {
-                        byte[] buffer = new byte[m_notifyNoise.Available];
-
-                        m_notifyNoise.Read(buffer, 0, buffer.Length);
-
-                        if (SpuriousCharactersReceived != null)
-                        {
-                            SpuriousCharactersReceived.Invoke(this, new StringEventArgs(UTF8Encoding.UTF8.GetString(buffer, 0, buffer.Length)));
                         }
                     }
                 }
@@ -572,33 +549,31 @@ namespace nanoFramework.Tools.Debugger
 
                             if (payload != null)
                             {
-                                // FIXME
-                                //QueueNotify(m_eventMessage, msg, payload.ToString());
+                                _eventMessage?.Invoke(message, payload.ToString());
                             }
 
                             return true;
                         }
 
                     case Commands.c_Debugging_Messaging_Query:
+                        Debug.Assert(message.Payload != null);
+                        Task.Factory.StartNew(() => RpcReceiveQueryAsync(message, (Commands.Debugging_Messaging_Query)message.Payload), _backgroundProcessorCancellation.Token);
+                        break;
+
                     case Commands.c_Debugging_Messaging_Reply:
+                        Debug.Assert(message.Payload != null);
+                        Task.Factory.StartNew(() => RpcReceiveReplyAsync(message, (Commands.Debugging_Messaging_Reply)message.Payload), _backgroundProcessorCancellation.Token);
+                        break;
+
                     case Commands.c_Debugging_Messaging_Send:
-                        {
-                            Debug.Assert(message.Payload != null);
-
-                            if (message.Payload != null)
-                            {
-                                // FIXME
-                                //QueueRpc(msg);
-                            }
-
-                            return true;
-                        }
+                        Debug.Assert(message.Payload != null);
+                        Task.Factory.StartNew(() => RpcReceiveSendAsync(message, (Commands.Debugging_Messaging_Send)message.Payload), _backgroundProcessorCancellation.Token);
+                        break;
                 }
             }
 
             if (_eventCommand != null)
             {
-                //QueueNotify(_eventCommand, message, isReply);
                 _eventCommand.Invoke(message, isReply);
 
                 return true;
@@ -642,17 +617,6 @@ namespace nanoFramework.Tools.Debugger
                 Task.WaitAll(_backgroundProcessor);
                 _backgroundProcessor = null;
             }
-
-            //if (m_inboundDataThread != null)
-            //{
-            //    m_inboundDataThread.Join();
-            //    m_inboundDataThread = null;
-            //}
-            //if (m_stateMachineThread != null)
-            //{
-            //    m_stateMachineThread.Join();
-            //    m_stateMachineThread = null;
-            //}
         }
 
         public void ResumeProcessing()
@@ -663,13 +627,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (_backgroundProcessor == null)
             {
-                _backgroundProcessor = Task.Factory.StartNew(() => ProcessIncomingMessages(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListenerAsync(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
             }
-
-            //if (m_stateMachineThread == null)
-            //{
-            //    m_stateMachineThread = CreateThread(new ThreadStart(this.Process));
-            //}
         }
 
         public void Stop()
@@ -690,6 +649,435 @@ namespace nanoFramework.Tools.Debugger
         }
 
         public bool IsRunning => _state.IsRunning;
+
+
+        #region RPC Support
+
+        // comment from original code REVIEW: Can this be refactored out of here to a separate class dedicated to RPC?
+        internal class EndPointRegistration
+        {
+            internal class Request
+            {
+                public readonly EndPointRegistration Owner;
+
+                public Request(EndPointRegistration owner)
+                {
+                    Owner = owner;
+                }
+            }
+
+            internal class OutboundRequest : Request
+            {
+                private byte[] _data;
+                private readonly AutoResetEvent _wait;
+                public readonly uint Sequence;
+                public readonly uint Type;
+                public readonly uint Id;
+
+                public OutboundRequest(EndPointRegistration owner, uint sequence, uint type, uint id)
+                    : base(owner)
+                {
+                    Sequence = sequence;
+                    Type = type;
+                    Id = id;
+                    _wait = new AutoResetEvent(false);
+                }
+
+                public byte[] Reply
+                {
+                    get { return _data; }
+
+                    set
+                    {
+                        _data = value;
+                        _wait.Set();
+                    }
+                }
+                public WaitHandle WaitHandle
+                {
+                    get { return _wait; }
+                }
+            }
+
+            internal class InboundRequest : Request
+            {
+                public readonly Message m_msg;
+
+                public InboundRequest(EndPointRegistration owner, Message msg)
+                    : base(owner)
+                {
+                    m_msg = msg;
+                }
+            }
+
+            internal EndPoint m_ep;
+            internal ArrayList m_req_Outbound;
+
+            internal EndPointRegistration(EndPoint ep)
+            {
+                m_ep = ep;
+                m_req_Outbound = ArrayList.Synchronized(new ArrayList());
+            }
+
+            internal void Destroy()
+            {
+                lock (m_req_Outbound.SyncRoot)
+                {
+                    foreach (OutboundRequest or in m_req_Outbound)
+                    {
+                        or.Reply = null;
+                    }
+                }
+
+                m_req_Outbound.Clear();
+            }
+        }
+
+        internal void RpcRegisterEndPoint(EndPoint ep)
+        {
+            EndPointRegistration eep = RpcFind(ep);
+            bool fSuccess = false;
+
+            if (eep == null)
+            {
+                IControllerRemote remote = _controlller as IControllerRemote;
+
+                if (remote != null)
+                {
+                    fSuccess = remote.RegisterEndpoint(ep._type, ep._id);
+                }
+                else
+                {
+                    fSuccess = true;
+                }
+
+                if (fSuccess)
+                {
+                    lock (_rpcEndPoints.SyncRoot)
+                    {
+                        eep = RpcFind(ep);
+
+                        if (eep == null)
+                        {
+                            _rpcEndPoints.Add(new EndPointRegistration(ep));
+                        }
+                        else
+                        {
+                            fSuccess = false;
+                        }
+                    }
+                }
+            }
+
+            if (!fSuccess)
+            {
+                throw new ApplicationException("Endpoint already registered.");
+            }
+        }
+
+        internal void RpcDeregisterEndPoint(EndPoint ep)
+        {
+            EndPointRegistration eep = RpcFind(ep);
+
+            if (eep != null)
+            {
+                _rpcEndPoints.Remove(eep);
+
+                eep.Destroy();
+
+                IControllerRemote remote = _controlller as IControllerRemote;
+                if (remote != null)
+                {
+                    remote.DeregisterEndpoint(ep._type, ep._id);
+                }
+            }
+        }
+
+        private EndPointRegistration RpcFind(EndPoint ep)
+        {
+            return RpcFind(ep._type, ep._id, false);
+        }
+
+        private EndPointRegistration RpcFind(uint type, uint id, bool fOnlyServer)
+        {
+            lock (_rpcEndPoints.SyncRoot)
+            {
+                foreach (EndPointRegistration eep in _rpcEndPoints)
+                {
+                    EndPoint ep = eep.m_ep;
+
+                    if (ep._type == type && ep._id == id)
+                    {
+                        if (!fOnlyServer || ep.IsRpcServer)
+                        {
+                            return eep;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        private async Task RpcReceiveQueryAsync(IncomingMessage message, Commands.Debugging_Messaging_Query query)
+        {
+            Commands.Debugging_Messaging_Address addr = query.m_addr;
+            EndPointRegistration eep = RpcFind(addr.m_to_Type, addr.m_to_Id, true);
+
+            Commands.Debugging_Messaging_Query.Reply reply = new Commands.Debugging_Messaging_Query.Reply();
+
+            reply.m_found = (eep != null) ? 1u : 0u;
+            reply.m_addr = addr;
+
+            await PerformRequestAsync(new OutgoingMessage(message, CreateConverter(), Flags.c_NonCritical, reply), _cancellationTokenSource.Token);
+        }
+
+        internal async Task<bool> RpcCheckAsync(Commands.Debugging_Messaging_Address addr)
+        {
+            Commands.Debugging_Messaging_Query cmd = new Commands.Debugging_Messaging_Query();
+
+            cmd.m_addr = addr;
+
+            IncomingMessage reply = await SyncMessageAsync(Commands.c_Debugging_Messaging_Query, 0, cmd);
+            if (reply != null)
+            {
+                Commands.Debugging_Messaging_Query.Reply res = reply.Payload as Commands.Debugging_Messaging_Query.Reply;
+
+                if (res != null && res.m_found != 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal async Task<byte[]> RpcSendAsync(Commands.Debugging_Messaging_Address addr, int timeout, byte[] data)
+        {
+            EndPointRegistration.OutboundRequest or = null;
+            byte[] res = null;
+
+            try
+            {
+                or = await RpcSend_SetupAsync(addr, data);
+                if (or != null)
+                {
+                    or.WaitHandle.WaitOne(timeout);
+
+                    res = or.Reply;
+                }
+            }
+            finally
+            {
+                if (or != null)
+                {
+                    or.Owner.m_req_Outbound.Remove(or);
+                }
+            }
+
+            return res;
+        }
+
+        private async Task<EndPointRegistration.OutboundRequest> RpcSend_SetupAsync(Commands.Debugging_Messaging_Address addr, byte[] data)
+        {
+            EndPointRegistration eep = RpcFind(addr.m_from_Type, addr.m_from_Id, false);
+            EndPointRegistration.OutboundRequest or = null;
+
+            if (eep != null)
+            {
+                bool fSuccess = false;
+
+                or = new EndPointRegistration.OutboundRequest(eep, addr.m_seq, addr.m_to_Type, addr.m_to_Id);
+
+                eep.m_req_Outbound.Add(or);
+
+                Commands.Debugging_Messaging_Send cmd = new Commands.Debugging_Messaging_Send();
+
+                cmd.m_addr = addr;
+                cmd.m_data = data;
+
+                IncomingMessage reply = await SyncMessageAsync(Commands.c_Debugging_Messaging_Send, 0, cmd);
+                if (reply != null)
+                {
+                    Commands.Debugging_Messaging_Send.Reply res = reply.Payload as Commands.Debugging_Messaging_Send.Reply;
+
+                    if (res != null && res.m_found != 0)
+                    {
+                        fSuccess = true;
+                    }
+                }
+
+                // FIXME
+                //if (!IsRunning)
+                //{
+                //    fSuccess = false;
+                //}
+
+                if (!fSuccess)
+                {
+                    eep.m_req_Outbound.Remove(or);
+
+                    or = null;
+                }
+            }
+
+            return or;
+        }
+
+        private async Task RpcReceiveSendAsync(IncomingMessage msg, Commands.Debugging_Messaging_Send send)
+        {
+            Commands.Debugging_Messaging_Address addr = send.m_addr;
+            EndPointRegistration eep;
+
+            eep = RpcFind(addr.m_to_Type, addr.m_to_Id, true);
+
+            Commands.Debugging_Messaging_Send.Reply res = new Commands.Debugging_Messaging_Send.Reply();
+
+            res.m_found = (eep != null) ? 1u : 0u;
+            res.m_addr = addr;
+
+            await PerformRequestAsync(new OutgoingMessage(msg, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
+
+            if (eep != null)
+            {
+                Message msgNew = new Message(eep.m_ep, addr, send.m_data);
+
+                EndPointRegistration.InboundRequest ir = new EndPointRegistration.InboundRequest(eep, msgNew);
+
+                // FIXME
+                //ThreadPool.QueueUserWorkItem(new WaitCallback(RpcReceiveSendDispatch), ir);
+            }
+        }
+
+        private void RpcReceiveSendDispatch(object obj)
+        {
+            EndPointRegistration.InboundRequest ir = (EndPointRegistration.InboundRequest)obj;
+
+            if (IsRunning)
+            {
+                ir.Owner.m_ep.DispatchMessage(ir.m_msg);
+            }
+        }
+
+        internal async Task<bool> RpcReplyAsync(Commands.Debugging_Messaging_Address addr, byte[] data)
+        {
+            Commands.Debugging_Messaging_Reply cmd = new Commands.Debugging_Messaging_Reply();
+
+            cmd.m_addr = addr;
+            cmd.m_data = data;
+
+            IncomingMessage reply = await SyncMessageAsync(Commands.c_Debugging_Messaging_Reply, 0, cmd);
+            if (reply != null)
+            {
+                Commands.Debugging_Messaging_Reply.Reply res = new Commands.Debugging_Messaging_Reply.Reply();
+
+                if (res != null && res.m_found != 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private async Task RpcReceiveReplyAsync(IncomingMessage message, Commands.Debugging_Messaging_Reply reply)
+        {
+            Commands.Debugging_Messaging_Address addr = reply.m_addr;
+            EndPointRegistration eep;
+
+            eep = RpcFind(addr.m_from_Type, addr.m_from_Id, false);
+
+            Commands.Debugging_Messaging_Reply.Reply res = new Commands.Debugging_Messaging_Reply.Reply();
+
+            res.m_found = (eep != null) ? 1u : 0u;
+            res.m_addr = addr;
+
+            await PerformRequestAsync(new OutgoingMessage(message, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
+
+            if (eep != null)
+            {
+                lock (eep.m_req_Outbound.SyncRoot)
+                {
+                    foreach (EndPointRegistration.OutboundRequest or in eep.m_req_Outbound)
+                    {
+                        if (or.Sequence == addr.m_seq && or.Type == addr.m_to_Type && or.Id == addr.m_to_Id)
+                        {
+                            or.Reply = reply.m_data;
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        internal uint RpcGetUniqueEndpointId()
+        {
+            return _controlller.GetUniqueEndpointId();
+        }
+
+        #endregion
+
+
+        internal async Task<WireProtocolRequest> RequestAsync(OutgoingMessage message, int timeout)
+        {
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                WireProtocolRequest req = new WireProtocolRequest(message, cts.Token);
+
+                // FIXME
+                //lock (m_state.SyncObject)
+                //{
+
+                //    //Checking whether IsRunning and adding the request to m_requests
+                //    //needs to be atomic to avoid adding a request after the Engine
+                //    //has been stopped.
+
+                //    if (!IsRunning)
+                //    {
+                //        throw new ApplicationException("Engine is not running or process has exited.");
+                //    }
+
+                //    m_requests.Add(req);
+
+                // FIXME
+                //await req.SendAsync(m_ctrl);
+                //}
+
+                return req;
+            }
+        }
+
+        /// <summary>
+        /// Global lock object for synchronizing message request. This ensures there is only one
+        /// outstanding request at any point of time. 
+        /// </summary>
+        internal object m_ReqSyncLock = new object();
+
+        private Task<WireProtocolRequest> AsyncMessage(uint command, uint flags, object payload, int timeout)
+        {
+            OutgoingMessage msg = CreateMessage(command, flags, payload);
+
+            return RequestAsync(msg, timeout);
+        }
+
+        private async Task<IncomingMessage> MessageAsync(uint command, uint flags, object payload, int timeout)
+        {
+            // FIXME
+            // Lock on m_ReqSyncLock object, so only one thread is active inside the block.
+            //lock (m_ReqSyncLock)
+            //{
+            WireProtocolRequest req = await AsyncMessage(command, flags, payload, timeout);
+
+            //return await req.WaitAsync();
+            return null;
+            //}
+        }
+
+        private async Task<IncomingMessage> SyncMessageAsync(uint command, uint flags, object payload)
+        {
+            return await MessageAsync(command, flags, payload, TIMEOUT_DEFAULT);
+        }
+
 
         #region Commands implementation
 
