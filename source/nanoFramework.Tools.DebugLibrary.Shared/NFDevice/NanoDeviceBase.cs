@@ -20,10 +20,27 @@ namespace nanoFramework.Tools.Debugger
 {
     public abstract class NanoDeviceBase
     {
+        private Engine _debugEngine;
+
+
         /// <summary>
-        /// .NETMF debug engine
+        /// nanoFramework debug engine.
         /// </summary>
-        public Engine DebugEngine { get; set; }
+        /// 
+        public Engine DebugEngine
+        {
+            get
+            { 
+                if (_debugEngine == null)
+                {
+                    _debugEngine = new Engine(this);
+                }
+
+                return _debugEngine;
+            }
+
+            set => _debugEngine = value;
+        }
 
         /// <summary>
         /// Transport to the device. 
@@ -77,6 +94,8 @@ namespace nanoFramework.Tools.Debugger
         }
 
         public object OnProgress { get; private set; }
+
+        public object DeviceBase { get; internal set; }
 
         /// <summary>
         /// Get <see cref="INanoFrameworkDeviceInfo"/> from device.

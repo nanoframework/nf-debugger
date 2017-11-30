@@ -8,9 +8,6 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
-using Windows.Foundation;
-using System.Windows;
-using Windows.UI.Xaml;
 
 namespace nanoFramework.Tools.Debugger.Serial
 {
@@ -20,10 +17,8 @@ namespace nanoFramework.Tools.Debugger.Serial
     /// </summary>
     public partial class EventHandlerForSerialDevice
     {
-        private EventHandler appSuspendEventHandler;
-        private EventHandler appResumeEventHandler;
-
-        private SuspendingEventHandler appSuspendCallback;
+        private EventHandler _appSuspendEventHandler;
+        private EventHandler _appResumeEventHandler;
 
         /// <summary>
         /// Register for app suspension/resume events. See the comments
@@ -33,21 +28,21 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// </summary>
         private void RegisterForAppEvents()
         {
-            appSuspendEventHandler = new EventHandler(Current.OnAppDeactivated);
-            appResumeEventHandler = new EventHandler(Current.OnAppResume);
+            _appSuspendEventHandler = new EventHandler(Current.OnAppDeactivated);
+            _appResumeEventHandler = new EventHandler(Current.OnAppResume);
 
             // This event is raised when the app is exited and when the app is suspended
-            CallerApp.Deactivated += appSuspendEventHandler;
+            CallerApp.Deactivated += _appSuspendEventHandler;
 
-            CallerApp.Activated += appResumeEventHandler;
+            CallerApp.Activated += _appResumeEventHandler;
         }
 
         private void UnregisterFromAppEvents()
         {
             // This event is raised when the app is exited and when the app is suspended
-            CallerApp.Deactivated -= appSuspendEventHandler;
+            CallerApp.Deactivated -= _appSuspendEventHandler;
 
-            CallerApp.Activated -= appResumeEventHandler;
+            CallerApp.Activated -= _appResumeEventHandler;
         }
 
         /// <summary>
@@ -74,14 +69,14 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// <param name="eventArgs"></param>
         private void OnAppDeactivated(object sender, EventArgs args)
         {
-            if (watcherStarted)
+            if (_watcherStarted)
             {
-                watcherSuspended = true;
+                _watcherSuspended = true;
                 StopDeviceWatcher();
             }
             else
             {
-                watcherSuspended = false;
+                _watcherSuspended = false;
             }
 
             //// Forward suspend event to registered callback function
@@ -106,65 +101,70 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// <param name="deviceSelector">The AQS used to find this device</param>
         /// <returns>True if the device was successfully opened, false if the device could not be opened for well known reasons.
         /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
-        public async Task<bool> OpenDeviceAsync(DeviceInformation deviceInfo, string deviceSelector)
+        public async Task<bool> OpenDeviceAsync(DeviceInformation deviceInfo, string deviceSelector, SerialDevice existingDevice)
         {
-#pragma warning disable ConfigureAwaitChecker // CAC001
-            device = await SerialDevice.FromIdAsync(deviceInfo.Id);
-#pragma warning restore ConfigureAwaitChecker // CAC001
-
             bool successfullyOpenedDevice = false;
+
+            if (existingDevice == null)
+            {
+                _device = await SerialDevice.FromIdAsync(deviceInfo.Id);
+            }
+            else
+            {
+                _device = existingDevice;
+            }
 
             try
             {
                 // Device could have been blocked by user or the device has already been opened by another app.
-                if (device != null)
+                if (_device != null)
                 {
                     successfullyOpenedDevice = true;
 
-                    deviceInformation = deviceInfo;
-                    this.deviceSelector = deviceSelector;
+                    _deviceInformation = deviceInfo;
+                    this._deviceSelector = deviceSelector;
 
-                    Debug.WriteLine($"Device {deviceInformation.Id} opened");
+                    Debug.WriteLine($"Device {_deviceInformation.Id} opened");
 
                     // adjust settings for serial port
-                    device.BaudRate = 115200;
+                    _device.BaudRate = 115200;
 
                     /////////////////////////////////////////////////////////////
                     // need to FORCE the parity setting to _NONE_ because        
                     // the default on the current ST Link is different causing 
                     // the communication to fail
                     /////////////////////////////////////////////////////////////
-                    device.Parity = SerialParity.None;
+                    _device.Parity = SerialParity.None;
 
-                    device.WriteTimeout = TimeSpan.FromMilliseconds(1000);
-                    device.ReadTimeout = TimeSpan.FromMilliseconds(1000);
-                    device.ErrorReceived += Device_ErrorReceived;
+                    _device.WriteTimeout = TimeSpan.FromMilliseconds(1000);
+                    _device.ReadTimeout = TimeSpan.FromMilliseconds(1000);
+                    _device.ErrorReceived += Device_ErrorReceived;
 
                     // Notify registered callback handle that the device has been opened
-                    deviceConnectedCallback?.Invoke(this, deviceInformation);
+                    _deviceConnectedCallback?.Invoke(this, _deviceInformation);
 
                     // Background tasks are not part of the app, so app events will not have an affect on the device
-                    if (!isBackgroundTask && (appSuspendEventHandler == null || appResumeEventHandler == null))
+                    if (!_isBackgroundTask && (_appSuspendEventHandler == null || _appResumeEventHandler == null))
                     {
                         RegisterForAppEvents();
                     }
 
                     // User can block the device after it has been opened in the Settings charm. We can detect this by registering for the 
                     // DeviceAccessInformation.AccessChanged event
-                    if (deviceAccessEventHandler == null)
+                    if (_deviceAccessEventHandler == null)
                     {
                         RegisterForDeviceAccessStatusChange();
                     }
 
                     // Create and register device watcher events for the device to be opened unless we're reopening the device
-                    if (deviceWatcher == null)
+                    if (_deviceWatcher == null)
                     {
-                        deviceWatcher = DeviceInformation.CreateWatcher(deviceSelector);
+                        _deviceWatcher = DeviceInformation.CreateWatcher(deviceSelector);
 
                         RegisterForDeviceWatcherEvents();
                     }
 
-                    if (!watcherStarted)
+                    if (!_watcherStarted)
                     {
                         // Start the device watcher after we made sure that the device is opened.
                         StartDeviceWatcher();

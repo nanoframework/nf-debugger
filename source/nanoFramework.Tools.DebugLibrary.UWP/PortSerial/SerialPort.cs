@@ -27,9 +27,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         public SerialPort(Application callerApp)
         {
-            mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, String>();
+            _mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, String>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
-            SerialDevices = new List<Serial.SerialDeviceInformation>();
+            _serialDevices = new List<Serial.SerialDeviceInformation>();
 
             // set caller app property
             EventHandlerForSerialDevice.CallerApp = callerApp;

@@ -75,19 +75,11 @@ namespace nanoFramework.Tools.Debugger
 
         internal INanoDevice Device;
 
-        public Engine(NanoDeviceBase device)
+        internal Engine(NanoDeviceBase device)
         {
             InitializeLocal(device);
 
-            _requestsStore = new WireProtocolRequestsStore();
-
             _state.SetValue(EngineState.Value.Starting, true);
-
-            // check if cancellation token needs to be renewed
-            if (_backgroundProcessorCancellation.IsCancellationRequested)
-            {
-                _backgroundProcessorCancellation = new CancellationTokenSource();
-            }
 
             // start task to process background messages
             _backgroundProcessor = Task.Factory.StartNew(() => ProcessIncomingMessages(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
@@ -251,6 +243,8 @@ namespace nanoFramework.Tools.Debugger
 
             while (!_backgroundProcessorCancellation.IsCancellationRequested && _state.IsRunning)
             {
+                await Device.ConnectAsync();
+
                 try
                 {
                     await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
