@@ -436,17 +436,17 @@ namespace nanoFramework.Tools.Debugger
         #endregion
 
 
-        private async Task<IncomingMessage> PerformRequestAsync(uint command, uint flags, object payload)
+        private async Task<IncomingMessage> PerformRequestAsync(uint command, uint flags, object payload, int millisecondsTimeout = 5000)
         {
             // create message
             OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
 
-            return await PerformRequestAsync(message, _cancellationTokenSource.Token);
+            return await PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
         }
 
-        public async Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken)
+        public async Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int millisecondsTimeout = 5000)
         {
-            WireProtocolRequest request = new WireProtocolRequest(message, null, cancellationToken);
+            WireProtocolRequest request = new WireProtocolRequest(message, cancellationToken, millisecondsTimeout);
             _requestsStore.Add(request);
 
             try

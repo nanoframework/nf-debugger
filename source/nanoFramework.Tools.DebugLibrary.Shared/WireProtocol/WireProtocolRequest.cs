@@ -14,44 +14,24 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     public class WireProtocolRequest
     {
         private CommandEventHandler _callback;
-        private ManualResetEvent _event;
 
         public CancellationToken CancellationToken { get; }
         public TaskCompletionSource<object> TaskCompletionSource { get; }
 
         public DateTimeOffset Expires { get; }
-        public OutgoingMessage OutgoingMessage { get; private set; }
+        public OutgoingMessage OutgoingMessage { get; }
 
-        internal WireProtocolRequest(OutgoingMessage outgoingMessage, CommandEventHandler callback, CancellationToken cancellationToken)
+        public WireProtocolRequest(OutgoingMessage outgoingMessage, CancellationToken cancellationToken, int millisecondsTimeout = 5000, CommandEventHandler callback = null)
         {
             OutgoingMessage = outgoingMessage;
             _callback = callback;
 
-            if (callback == null)
-            {
-                _event = new ManualResetEvent(false);
-            }
-
-            // a request has TTL of 20 seconds
-            Expires = DateTime.Now.AddSeconds(20);
+            // set TTL for the request
+            Expires = DateTime.Now.AddMilliseconds(millisecondsTimeout);
 
             // https://blogs.msdn.microsoft.com/pfxteam/2009/06/02/the-nature-of-taskcompletionsourcetresult/
             TaskCompletionSource = new TaskCompletionSource<object>();
             CancellationToken = cancellationToken;
-        }
-
-        internal bool MatchesReply(IncomingMessage res)
-        {
-            Packet headerRequest = OutgoingMessage.Header;
-            Packet headerResponse = res.Header;
-
-            if (headerRequest.Cmd == headerResponse.Cmd &&
-               headerRequest.Seq == headerResponse.SeqReply)
-            {
-                return true;
-            }
-
-            return false;
         }
         
         internal async Task<bool> PerformRequestAsync(IController controller)
