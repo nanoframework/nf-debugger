@@ -5,7 +5,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
 using Windows.Foundation;
@@ -21,32 +20,32 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// <summary>
         /// Allows for singleton EventHandlerForSerialEclo
         /// </summary>
-        private static volatile EventHandlerForSerialDevice eventHandlerForNanoFrameworkDevice;
+        private static volatile EventHandlerForSerialDevice s_eventHandlerForNanoFrameworkDevice;
 
         /// <summary>
         /// Used to synchronize threads to avoid multiple instantiations of eventHandlerForSerialEclo.
         /// </summary>
-        private static object singletonCreationLock = new object();
+        private static object s_singletonCreationLock = new object();
 
-        private string deviceSelector;
-        private DeviceWatcher deviceWatcher;
+        private string _deviceSelector;
+        private DeviceWatcher _deviceWatcher;
 
-        private DeviceInformation deviceInformation;
-        private DeviceAccessInformation deviceAccessInformation;
-        private SerialDevice device;
+        private DeviceInformation _deviceInformation;
+        private DeviceAccessInformation _deviceAccessInformation;
+        private SerialDevice _device;
 
-        private TypedEventHandler<EventHandlerForSerialDevice, DeviceInformation> deviceCloseCallback;
-        private TypedEventHandler<EventHandlerForSerialDevice, DeviceInformation> deviceConnectedCallback;
+        private TypedEventHandler<EventHandlerForSerialDevice, DeviceInformation> _deviceCloseCallback;
+        private TypedEventHandler<EventHandlerForSerialDevice, DeviceInformation> _deviceConnectedCallback;
 
-        private TypedEventHandler<DeviceWatcher, DeviceInformation> deviceAddedEventHandler;
-        private TypedEventHandler<DeviceWatcher, DeviceInformationUpdate> deviceRemovedEventHandler;
-        private TypedEventHandler<DeviceAccessInformation, DeviceAccessChangedEventArgs> deviceAccessEventHandler;
+        private TypedEventHandler<DeviceWatcher, DeviceInformation> _deviceAddedEventHandler;
+        private TypedEventHandler<DeviceWatcher, DeviceInformationUpdate> _deviceRemovedEventHandler;
+        private TypedEventHandler<DeviceAccessInformation, DeviceAccessChangedEventArgs> _deviceAccessEventHandler;
 
-        private bool watcherSuspended;
-        private bool watcherStarted;
+        private bool _watcherSuspended;
+        private bool _watcherStarted;
 
-        private bool isBackgroundTask;
-        private bool isEnabledAutoReconnect;
+        private bool _isBackgroundTask;
+        private bool _isEnabledAutoReconnect;
 
         // A pointer back to the calling app.  This is needed to reach methods and events there 
 #if WINDOWS_UWP
@@ -69,9 +68,9 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             get
             {
-                lock (singletonCreationLock)
+                lock (s_singletonCreationLock)
                 {
-                    if (eventHandlerForNanoFrameworkDevice == null)
+                    if (s_eventHandlerForNanoFrameworkDevice == null)
                     {
                         if (CallerApp != null)
                         {
@@ -86,7 +85,7 @@ namespace nanoFramework.Tools.Debugger.Serial
                     }
                 }
 
-                return eventHandlerForNanoFrameworkDevice;
+                return s_eventHandlerForNanoFrameworkDevice;
             }
         }
 
@@ -95,7 +94,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// </summary>
         public static void CreateNewEventHandlerForDevice()
         {
-            eventHandlerForNanoFrameworkDevice = new EventHandlerForSerialDevice(false);
+            s_eventHandlerForNanoFrameworkDevice = new EventHandlerForSerialDevice(false);
         }
 
         /// <summary>
@@ -104,7 +103,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// </summary>
         public static void CreateNewEventHandlerForDeviceForBackgroundTasks()
         {
-            eventHandlerForNanoFrameworkDevice = new EventHandlerForSerialDevice(true);
+            s_eventHandlerForNanoFrameworkDevice = new EventHandlerForSerialDevice(true);
         }
 
 
@@ -112,12 +111,12 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             get
             {
-                return deviceCloseCallback;
+                return _deviceCloseCallback;
             }
 
             set
             {
-                deviceCloseCallback = value;
+                _deviceCloseCallback = value;
             }
         }
 
@@ -125,12 +124,12 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             get
             {
-                return deviceConnectedCallback;
+                return _deviceConnectedCallback;
             }
 
             set
             {
-                deviceConnectedCallback = value;
+                _deviceConnectedCallback = value;
             }
         }
 
@@ -138,7 +137,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             get
             {
-                return (device != null);
+                return (_device != null);
             }
         }
 
@@ -146,7 +145,12 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             get
             {
-                return device;
+                return _device;
+            }
+
+            internal set
+            {
+                _device = value;
             }
         }
 
@@ -158,7 +162,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             get
             {
-                return deviceInformation;
+                return _deviceInformation;
             }
         }
 
@@ -170,7 +174,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             get
             {
-                return deviceAccessInformation;
+                return _deviceAccessInformation;
             }
         }
 
@@ -181,7 +185,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             get
             {
-                return deviceSelector;
+                return _deviceSelector;
             }
         }
 
@@ -192,11 +196,11 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             get
             {
-                return isEnabledAutoReconnect;
+                return _isEnabledAutoReconnect;
             }
             set
             {
-                isEnabledAutoReconnect = value;
+                _isEnabledAutoReconnect = value;
             }
         }
 
@@ -216,42 +220,14 @@ namespace nanoFramework.Tools.Debugger.Serial
                 CloseCurrentlyConnectedDevice();
             }
 
-            if (deviceWatcher != null)
-            {
-                if (watcherStarted)
-                {
-                    StopDeviceWatcher();
+            _deviceInformation = null;
+            _deviceSelector = null;
 
-                    UnregisterFromDeviceWatcherEvents();
-                }
-
-                deviceWatcher = null;
-            }
-
-            if (deviceAccessInformation != null)
-            {
-                UnregisterFromDeviceAccessStatusChange();
-
-                deviceAccessInformation = null;
-            }
-
-            if (!isBackgroundTask && (appSuspendEventHandler != null || appResumeEventHandler != null))
-            {
-                UnregisterFromAppEvents();
-            }
-
-            deviceInformation = null;
-            deviceSelector = null;
-
-            deviceConnectedCallback = null;
-            deviceCloseCallback = null;
-            appSuspendCallback = null;
-
-            isEnabledAutoReconnect = true;
+            _isEnabledAutoReconnect = true;
 
             Debug.WriteLine($"##################");
-            Current.device?.Dispose();
-            Current.device = null;
+            Current._device?.Dispose();
+            Current._device = null;
         }
 
         /// <summary>
@@ -261,10 +237,10 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// <param name="isBackgroundTask">Whether or not the event handler will be running as a background task</param>
         private EventHandlerForSerialDevice(bool isBackgroundTask)
         {
-            watcherStarted = false;
-            watcherSuspended = false;
-            isEnabledAutoReconnect = true;
-            this.isBackgroundTask = isBackgroundTask;
+            _watcherStarted = false;
+            _watcherSuspended = false;
+            _isEnabledAutoReconnect = true;
+            this._isBackgroundTask = isBackgroundTask;
         }
 
         /// <summary>
@@ -279,15 +255,15 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// </summary>
         private void CloseCurrentlyConnectedDevice()
         {
-            if (device != null)
+            if (_device != null)
             {
                 // Notify callback that we're about to close the device
-                deviceCloseCallback?.Invoke(this, deviceInformation);
+                _deviceCloseCallback?.Invoke(this, _deviceInformation);
 
-                Debug.WriteLine($"Closing device {deviceInformation?.Id}");
+                Debug.WriteLine($"Closing device {_deviceInformation?.Id}");
 
                 // This closes the handle to the device
-                device.Dispose();
+                _device.Dispose();
             }
         }
 
@@ -297,51 +273,51 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// </summary>
         private void RegisterForDeviceWatcherEvents()
         {
-            deviceAddedEventHandler = new TypedEventHandler<DeviceWatcher, DeviceInformation>(OnDeviceAdded);
+            _deviceAddedEventHandler = new TypedEventHandler<DeviceWatcher, DeviceInformation>(OnDeviceAdded);
 
-            deviceRemovedEventHandler = new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(OnDeviceRemoved);
+            _deviceRemovedEventHandler = new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(OnDeviceRemoved);
 
-            deviceWatcher.Added += deviceAddedEventHandler;
+            _deviceWatcher.Added += _deviceAddedEventHandler;
 
-            deviceWatcher.Removed += deviceRemovedEventHandler;
+            _deviceWatcher.Removed += _deviceRemovedEventHandler;
         }
 
         private void UnregisterFromDeviceWatcherEvents()
         {
-            deviceWatcher.Added -= deviceAddedEventHandler;
-            deviceAddedEventHandler = null;
+            _deviceWatcher.Added -= _deviceAddedEventHandler;
+            _deviceAddedEventHandler = null;
 
-            deviceWatcher.Removed -= deviceRemovedEventHandler;
-            deviceRemovedEventHandler = null;
+            _deviceWatcher.Removed -= _deviceRemovedEventHandler;
+            _deviceRemovedEventHandler = null;
         }
 
         private void UnregisterFromDeviceAccessStatusChange()
         {
-            deviceAccessInformation.AccessChanged -= deviceAccessEventHandler;
+            _deviceAccessInformation.AccessChanged -= _deviceAccessEventHandler;
 
-            deviceAccessEventHandler = null;
+            _deviceAccessEventHandler = null;
         }
 
         private void StartDeviceWatcher()
         {
-            watcherStarted = true;
+            _watcherStarted = true;
 
-            if ((deviceWatcher.Status != DeviceWatcherStatus.Started)
-                && (deviceWatcher.Status != DeviceWatcherStatus.EnumerationCompleted))
+            if ((_deviceWatcher.Status != DeviceWatcherStatus.Started)
+                && (_deviceWatcher.Status != DeviceWatcherStatus.EnumerationCompleted))
             {
-                deviceWatcher.Start();
+                _deviceWatcher.Start();
             }
         }
 
         private void StopDeviceWatcher()
         {
-            if ((deviceWatcher.Status == DeviceWatcherStatus.Started)
-                || (deviceWatcher.Status == DeviceWatcherStatus.EnumerationCompleted))
+            if ((_deviceWatcher.Status == DeviceWatcherStatus.Started)
+                || (_deviceWatcher.Status == DeviceWatcherStatus.EnumerationCompleted))
             {
-                deviceWatcher.Stop();
+                _deviceWatcher.Stop();
             }
 
-            watcherStarted = false;
+            _watcherStarted = false;
         }
 
         /// <summary>
@@ -355,9 +331,9 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// <param name="arg"></param>
         private void OnAppResume(object sender, object args)
         {
-            if (watcherSuspended)
+            if (_watcherSuspended)
             {
-                watcherSuspended = false;
+                _watcherSuspended = false;
                 StartDeviceWatcher();
             }
         }
@@ -369,7 +345,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// <param name="deviceInformationUpdate"></param>
         private void OnDeviceRemoved(DeviceWatcher sender, DeviceInformationUpdate deviceInformationUpdate)
         {
-            if (IsDeviceConnected && (deviceInformationUpdate.Id == deviceInformation.Id))
+            if (IsDeviceConnected && (deviceInformationUpdate.Id == _deviceInformation.Id))
             {
                 // The main reasons to close the device explicitly is to clean up resources, to properly handle errors,
                 // and stop talking to the disconnected device.
@@ -384,7 +360,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// <param name="deviceInfo"></param>
         private void OnDeviceAdded(DeviceWatcher sender, DeviceInformation deviceInfo)
         {
-            if ((deviceInformation != null) && (deviceInfo.Id == deviceInformation.Id) && !IsDeviceConnected && isEnabledAutoReconnect)
+            if ((_deviceInformation != null) && (deviceInfo.Id == _deviceInformation.Id) && !IsDeviceConnected && _isEnabledAutoReconnect)
             {
             }
         }

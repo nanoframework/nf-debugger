@@ -6,7 +6,6 @@
 
 using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
@@ -27,7 +26,6 @@ namespace nanoFramework.Tools.Debugger
             {
                 Transport = TransportType.Serial;
             }
-
         }
 
         #region Disposable implementation

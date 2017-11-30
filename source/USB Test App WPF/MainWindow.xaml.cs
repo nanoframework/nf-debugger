@@ -38,11 +38,6 @@ namespace Serial_Test_App_WPF
             {
                 var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
 
-                if(device.DebugEngine == null)
-                {
-                    device.DebugEngine = new nanoFramework.Tools.Debugger.Engine(device);
-                }
-
                 bool connectResult = await device.DebugEngine.ConnectAsync(5000, true);
 
                 //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Start();
