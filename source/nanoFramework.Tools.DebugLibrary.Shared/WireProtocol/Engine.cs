@@ -253,7 +253,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 try
                 {
-                    reassembler.Process(_backgroundProcessorCancellation.Token);
+                    await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
                 }
                 catch (DeviceNotConnectedException ex)
                 {
