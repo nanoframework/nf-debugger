@@ -1205,7 +1205,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             public uint Idx = 0;
 
-            [IgnoreDataMemberAttribute]
+            [IgnoreDataMember]
             public Reply Result;
 
             public struct Version
@@ -1246,9 +1246,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 public byte[] NameBuffer = new byte[512]; // char
                 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                [IgnoreDataMemberAttribute]
+                [IgnoreDataMember]
                 private string _name;
-                [IgnoreDataMemberAttribute]
+                [IgnoreDataMember]
                 private string _path;
 
                 private void EnsureName()
