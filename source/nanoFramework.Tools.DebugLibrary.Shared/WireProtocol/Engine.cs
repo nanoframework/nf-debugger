@@ -2027,6 +2027,12 @@ namespace nanoFramework.Tools.Debugger
 
                 foreach (IncomingMessage message in replies)
                 {
+                    if (message == null)
+                    {
+                        // can't happen, failing right now
+                        return null;
+                    }
+
                     // reply is a match for request which m_seq is same as reply m_seqReply
                     // need to check for null or invalid payload
                     var payload = requests.Find(req => req.Header.Seq == message.Header.SeqReply).Payload;
