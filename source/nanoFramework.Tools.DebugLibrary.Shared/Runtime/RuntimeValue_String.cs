@@ -21,20 +21,17 @@ namespace nanoFramework.Tools.Debugger
 
             if (handle.m_bytesInString >= buf.Length)
             {
-                var task = m_eng.ReadMemoryAsync(m_handle.m_charsInString, m_handle.m_bytesInString);
-                task.Start();
-                if(task.Wait(5000))
+                var result = m_eng.ReadMemory(m_handle.m_charsInString, m_handle.m_bytesInString);
+
+                if (!result.Success)
                 {
-                    if (task.Result.Item2 == false)
-                    {
-                        // Revert to the preview on failure
-                        buf = handle.m_builtinValue;
-                    }
-                    else
-                    {
-                        // copy return value back to handler value
-                        Array.Copy(task.Result.Item1, 0, handle.m_builtinValue, 0, task.Result.Item1.Length);
-                    }
+                    // Revert to the preview on failure
+                    buf = handle.m_builtinValue;
+                }
+                else
+                {
+                    // copy return value back to handler value
+                    Array.Copy(result.Buffer, 0, handle.m_builtinValue, 0, result.Buffer.Length);
                 }
             }
 
@@ -61,7 +58,7 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        internal override async Task SetStringValueAsync(string val)
+        internal override void SetStringValue(string val)
         {
             byte[] buf = Encoding.UTF8.GetBytes(val);
 
@@ -70,8 +67,8 @@ namespace nanoFramework.Tools.Debugger
                 throw new ArgumentException("String must have same length");
             }
 
-            var writeResult = await m_eng.WriteMemoryAsync(m_handle.m_charsInString, buf);
-            if (writeResult.success == false)
+            var writeResult = m_eng.WriteMemory(m_handle.m_charsInString, buf);
+            if (writeResult.Success == false)
             {
                 throw new ArgumentException("Cannot write string");
             }

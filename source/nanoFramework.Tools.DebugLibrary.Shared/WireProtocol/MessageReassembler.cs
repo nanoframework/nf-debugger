@@ -198,7 +198,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                         _messageRaw.Payload = null;
                                     }
 
-                                    _parent.App.ProcessMessageAsync(GetCompleteMessage(), fReply).ConfigureAwait(false);
+                                    _parent.App.ProcessMessage(GetCompleteMessage(), fReply);
 
                                     // setup restart
                                     _state = ReceiveState.Initialize;

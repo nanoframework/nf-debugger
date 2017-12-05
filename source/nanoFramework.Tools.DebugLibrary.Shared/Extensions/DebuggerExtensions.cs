@@ -14,9 +14,9 @@ namespace nanoFramework.Tools.Debugger.Extensions
         /// </summary>
         /// <param name="debugEngine"></param>
         /// <returns></returns>
-        public static async Task<bool> IsDeviceInInitializeStateAsync(this Engine debugEngine)
+        public static bool IsDeviceInInitializeState(this Engine debugEngine)
         {
-            var result = await debugEngine.GetExecutionModeAsync();
+            var result = debugEngine.GetExecutionMode();
 
             if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
@@ -33,9 +33,9 @@ namespace nanoFramework.Tools.Debugger.Extensions
         /// </summary>
         /// <param name="debugEngine"></param>
         /// <returns></returns>
-        public static async Task<bool> IsDeviceInExitedStateAsync(this Engine debugEngine)
+        public static bool IsDeviceInExitedState(this Engine debugEngine)
         {
-            var result = await debugEngine.GetExecutionModeAsync();
+            var result = debugEngine.GetExecutionMode();
 
             if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
@@ -52,9 +52,9 @@ namespace nanoFramework.Tools.Debugger.Extensions
         /// </summary>
         /// <param name="debugEngine"></param>
         /// <returns></returns>
-        public static async Task<bool> IsDeviceInProgramRunningStateAsync(this Engine debugEngine)
+        public static bool IsDeviceInProgramRunningState(this Engine debugEngine)
         {
-            var result = await debugEngine.GetExecutionModeAsync();
+            var result = debugEngine.GetExecutionMode();
 
             if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {

@@ -83,16 +83,7 @@ namespace nanoFramework.Tools.Debugger
 
                         byte[] data = m_eng.CreateConverter().Serialize(valToSerialize);
 
-                        // need to call SetBlockAsync in a sync fashion
-                        var task = SetBlockAsync(m_handle.m_dt, data);
-                        task.Start();
-                        if (task.Wait(5000))
-                        {
-                            if (task.Result)
-                            {
-                                m_value = value;
-                            }
-                        }
+                        m_value = SetBlock(m_handle.m_dt, data);
                     }
                 }
             }

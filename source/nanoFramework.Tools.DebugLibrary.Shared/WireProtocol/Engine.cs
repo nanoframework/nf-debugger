@@ -147,7 +147,7 @@ namespace nanoFramework.Tools.Debugger
                     cmd.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
                     cmd.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
 
-                    IncomingMessage msg = await PerformRequestAsync(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd);
+                    IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd);
 
                     if (msg == null || msg?.Payload == null)
                     {
@@ -172,13 +172,13 @@ namespace nanoFramework.Tools.Debugger
 
                     if (m_silent)
                     {
-                        await SetExecutionModeAsync(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
+                        SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
                     }
 
                     // resume execution for older clients, since server tools no longer do this.
                     if (!StopDebuggerOnConnect && (msg != null && msg.Payload == null))
                     {
-                        await ResumeExecutionAsync();
+                        ResumeExecution();
                     }
                 }
             }
@@ -190,7 +190,7 @@ namespace nanoFramework.Tools.Debugger
                 //default capabilities
                 Capabilities = new CLRCapabilities();
 
-                var tempCapabilities = await DiscoverCLRCapabilitiesAsync(cancellationTSource.Token);
+                var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
 
                 if (tempCapabilities != null)
                 {
@@ -251,7 +251,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
                 }
-                catch (DeviceNotConnectedException ex)
+                catch (DeviceNotConnectedException)
                 {
                     await Task.Delay(1000);
                     await Device.ConnectAsync();
@@ -412,13 +412,24 @@ namespace nanoFramework.Tools.Debugger
 
         #endregion
 
-
-        private async Task<IncomingMessage> PerformRequestAsync(uint command, uint flags, object payload, int millisecondsTimeout = 5000)
+        private IncomingMessage PerformSyncRequest(uint command, uint flags, object payload, int millisecondsTimeout = 5000)
         {
-            // create message
-            OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
+            var t = Task.Run(async () => {
+                OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
 
-            return await PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
+                return await PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
+            });
+
+            return t.Result;
+        }
+
+        private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = 5000)
+        {
+            var t = Task.Run(async () => {
+                return await PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
+            });
+
+            return t.Result;
         }
 
         public async Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int millisecondsTimeout = 5000)
@@ -441,22 +452,14 @@ namespace nanoFramework.Tools.Debugger
             return await task;
         }
 
-        private async Task<List<IncomingMessage>> PerformRequestBatchAsync(List<OutgoingMessage> messages, CancellationToken cancellationToken, int timeout = 1000)
+        private List<IncomingMessage> PerformRequestBatch(List<OutgoingMessage> messages, int timeout = 1000)
         {
             List<IncomingMessage> replies = new List<IncomingMessage>();
             List<WireProtocolRequest> requests = new List<WireProtocolRequest>();
 
             foreach (OutgoingMessage message in messages)
             {
-                // continue execution only if cancellation was NOT request
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    replies.Add(await PerformRequestAsync(message, cancellationToken));
-                }
-                else
-                {
-                    break;
-                }
+                replies.Add(PerformSyncRequest(message));
             }
 
             return replies;
@@ -475,12 +478,9 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public async Task<Commands.Monitor_Ping.Reply> GetConnectionSourceAsync()
+        public Commands.Monitor_Ping.Reply GetConnectionSource()
         {
-            // TODO replace with token argument
-            CancellationTokenSource cancelTSource = new CancellationTokenSource();
-
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_Ping, 0, null);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Ping, 0, null);
 
             if (reply != null)
             {
@@ -500,7 +500,7 @@ namespace nanoFramework.Tools.Debugger
             return await _portDefinition.SendBufferAsync(buffer, waiTimeout, cancellationToken);
         }
 
-        public async Task<bool> ProcessMessageAsync(IncomingMessage message, bool isReply)
+        public bool ProcessMessage(IncomingMessage message, bool isReply)
         {
             message.Payload = Commands.ResolveCommandToPayload(message.Header.Cmd, isReply, _controlller.Capabilities);
 
@@ -557,7 +557,7 @@ namespace nanoFramework.Tools.Debugger
 
                     case Commands.c_Debugging_Messaging_Query:
                         Debug.Assert(message.Payload != null);
-                        Task.Factory.StartNew(() => RpcReceiveQueryAsync(message, (Commands.Debugging_Messaging_Query)message.Payload), _backgroundProcessorCancellation.Token);
+                        Task.Factory.StartNew(() => RpcReceiveQuery(message, (Commands.Debugging_Messaging_Query)message.Payload), _backgroundProcessorCancellation.Token);
                         break;
 
                     case Commands.c_Debugging_Messaging_Reply:
@@ -818,7 +818,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        private async Task RpcReceiveQueryAsync(IncomingMessage message, Commands.Debugging_Messaging_Query query)
+        private async Task RpcReceiveQuery(IncomingMessage message, Commands.Debugging_Messaging_Query query)
         {
             Commands.Debugging_Messaging_Address addr = query.m_addr;
             EndPointRegistration eep = RpcFind(addr.m_to_Type, addr.m_to_Id, true);
@@ -831,13 +831,13 @@ namespace nanoFramework.Tools.Debugger
             await PerformRequestAsync(new OutgoingMessage(message, CreateConverter(), Flags.c_NonCritical, reply), _cancellationTokenSource.Token);
         }
 
-        internal async Task<bool> RpcCheckAsync(Commands.Debugging_Messaging_Address addr)
+        internal bool RpcCheck(Commands.Debugging_Messaging_Address addr)
         {
             Commands.Debugging_Messaging_Query cmd = new Commands.Debugging_Messaging_Query();
 
             cmd.m_addr = addr;
 
-            IncomingMessage reply = await SyncMessageAsync(Commands.c_Debugging_Messaging_Query, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Messaging_Query, 0, cmd);
             if (reply != null)
             {
                 Commands.Debugging_Messaging_Query.Reply res = reply.Payload as Commands.Debugging_Messaging_Query.Reply;
@@ -851,14 +851,14 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        internal async Task<byte[]> RpcSendAsync(Commands.Debugging_Messaging_Address addr, int timeout, byte[] data)
+        internal byte[] RpcSend(Commands.Debugging_Messaging_Address addr, int timeout, byte[] data)
         {
             EndPointRegistration.OutboundRequest or = null;
             byte[] res = null;
 
             try
             {
-                or = await RpcSend_SetupAsync(addr, data);
+                or = RpcSend_Setup(addr, data);
                 if (or != null)
                 {
                     or.WaitHandle.WaitOne(timeout);
@@ -877,7 +877,7 @@ namespace nanoFramework.Tools.Debugger
             return res;
         }
 
-        private async Task<EndPointRegistration.OutboundRequest> RpcSend_SetupAsync(Commands.Debugging_Messaging_Address addr, byte[] data)
+        private EndPointRegistration.OutboundRequest RpcSend_Setup(Commands.Debugging_Messaging_Address addr, byte[] data)
         {
             EndPointRegistration eep = RpcFind(addr.m_from_Type, addr.m_from_Id, false);
             EndPointRegistration.OutboundRequest or = null;
@@ -895,7 +895,7 @@ namespace nanoFramework.Tools.Debugger
                 cmd.m_addr = addr;
                 cmd.m_data = data;
 
-                IncomingMessage reply = await SyncMessageAsync(Commands.c_Debugging_Messaging_Send, 0, cmd);
+                IncomingMessage reply =  PerformSyncRequest(Commands.c_Debugging_Messaging_Send, 0, cmd);
                 if (reply != null)
                 {
                     Commands.Debugging_Messaging_Send.Reply res = reply.Payload as Commands.Debugging_Messaging_Send.Reply;
@@ -958,14 +958,14 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        internal async Task<bool> RpcReplyAsync(Commands.Debugging_Messaging_Address addr, byte[] data)
+        internal bool RpcReply(Commands.Debugging_Messaging_Address addr, byte[] data)
         {
             Commands.Debugging_Messaging_Reply cmd = new Commands.Debugging_Messaging_Reply();
 
             cmd.m_addr = addr;
             cmd.m_data = data;
 
-            IncomingMessage reply = await SyncMessageAsync(Commands.c_Debugging_Messaging_Reply, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Messaging_Reply, 0, cmd);
             if (reply != null)
             {
                 Commands.Debugging_Messaging_Reply.Reply res = new Commands.Debugging_Messaging_Reply.Reply();
@@ -1022,28 +1022,28 @@ namespace nanoFramework.Tools.Debugger
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
             {
-                WireProtocolRequest req = new WireProtocolRequest(message, cts.Token);
+                //Checking whether IsRunning and adding the request to m_requests
+                //needs to be atomic to avoid adding a request after the Engine
+                //has been stopped.
 
-                // FIXME
-                //lock (m_state.SyncObject)
-                //{
+                if (!IsRunning)
+                {
+                    throw new ApplicationException("Engine is not running or process has exited.");
+                }
 
-                //    //Checking whether IsRunning and adding the request to m_requests
-                //    //needs to be atomic to avoid adding a request after the Engine
-                //    //has been stopped.
+                WireProtocolRequest request = new WireProtocolRequest(message, cts.Token);
+                _requestsStore.Add(request);
 
-                //    if (!IsRunning)
-                //    {
-                //        throw new ApplicationException("Engine is not running or process has exited.");
-                //    }
+                try
+                {
+                    await request.PerformRequestAsync(_controlller);
+                }
+                catch
+                {
+                    _requestsStore.Remove(message.Header);
+                }
 
-                //    m_requests.Add(req);
-
-                // FIXME
-                //await req.SendAsync(m_ctrl);
-                //}
-
-                return req;
+                return request;
             }
         }
 
@@ -1081,11 +1081,11 @@ namespace nanoFramework.Tools.Debugger
 
         #region Commands implementation
 
-        public async Task<List<Commands.Monitor_MemoryMap.Range>> GetMemoryMapAsync()
+        public List<Commands.Monitor_MemoryMap.Range> GetMemoryMap()
         {
             Commands.Monitor_MemoryMap cmd = new Commands.Monitor_MemoryMap();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_MemoryMap, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_MemoryMap, 0, cmd);
 
             if (reply != null)
             {
@@ -1100,14 +1100,14 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<List<Commands.Monitor_DeploymentMap.DeploymentData>> GetDeploymentMapAsync()
+        public List<Commands.Monitor_DeploymentMap.DeploymentData> GetDeploymentMap()
         {
             Commands.Monitor_DeploymentMap cmd = new Commands.Monitor_DeploymentMap();
 
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_DeploymentMap, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_DeploymentMap, 0, cmd);
 
             if (reply != null)
             {
@@ -1122,12 +1122,12 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<Commands.Monitor_OemInfo.Reply> GetMonitorOemInfo()
+        public Commands.Monitor_OemInfo.Reply GetMonitorOemInfo()
         {
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_OemInfo, 0, null);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_OemInfo, 0, null);
 
             if (reply != null)
             {
@@ -1137,12 +1137,12 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<List<Commands.Monitor_FlashSectorMap.FlashSectorData>> GetFlashSectorMapAsync()
+        public List<Commands.Monitor_FlashSectorMap.FlashSectorData> GetFlashSectorMap()
         {
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_FlashSectorMap, 0, null);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_FlashSectorMap, 0, null);
 
             if (reply != null)
             {
@@ -1157,7 +1157,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        private async Task<(byte[] buffer, bool success)> ReadMemoryAsync(uint address, uint length, uint offset)
+        private (byte[] Buffer, bool Success) ReadMemory(uint address, uint length, uint offset)
         {
             byte[] buffer = new byte[length];
 
@@ -1168,7 +1168,7 @@ namespace nanoFramework.Tools.Debugger
                 cmd.m_address = address;
                 cmd.m_length = length;
 
-                IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_ReadMemory, 0, cmd);
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_ReadMemory, 0, cmd);
                 if (reply == null)
                 {
                     return (new byte[0], false);
@@ -1193,12 +1193,12 @@ namespace nanoFramework.Tools.Debugger
             return (new byte[0], true);
         }
 
-        public async Task<(byte[] buffer, bool success)> ReadMemoryAsync(uint address, uint length)
+        public (byte[] Buffer, bool Success) ReadMemory(uint address, uint length)
         {
-            return await ReadMemoryAsync(address, length, 0);
+            return ReadMemory(address, length, 0);
         }
 
-        public async Task<(uint errorCode, bool success)> WriteMemoryAsync(uint address, byte[] buf, int offset, int length)
+        public (uint ErrorCode, bool Success) WriteMemory(uint address, byte[] buf, int offset, int length)
         {
             Debug.WriteLine($"Write memory operation. Start address { address.ToString("X8") }, lenght {length}");
 
@@ -1226,7 +1226,7 @@ namespace nanoFramework.Tools.Debugger
 
                 Debug.WriteLine($"Sending {packetLength} bytes to address { address.ToString("X8") }, {count} remaining...");
 
-                IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_WriteMemory, 0, cmd);
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_WriteMemory, 0, cmd);
 
                 Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
 
@@ -1243,12 +1243,12 @@ namespace nanoFramework.Tools.Debugger
             return (0, true);
         }
 
-        public async Task<(uint errorCode, bool success)> WriteMemoryAsync(uint address, byte[] buf)
+        public (uint ErrorCode, bool Success) WriteMemory(uint address, byte[] buf)
         {
-            return await WriteMemoryAsync(address, buf, 0, buf.Length);
+            return WriteMemory(address, buf, 0, buf.Length);
         }
 
-        public async Task<(uint errorCode, bool success)> EraseMemoryAsync(uint address, uint length)
+        public (uint ErrorCode, bool Success) EraseMemory(uint address, uint length)
         {
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
@@ -1301,25 +1301,25 @@ namespace nanoFramework.Tools.Debugger
                 timeout = (int)(length / (16 * 1024)) * eraseTimeout16kSector + 2 * extraTimeoutForErase;
             }
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_EraseMemory, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_EraseMemory, 0, cmd);
 
             Commands.Monitor_EraseMemory.Reply cmdReply = reply.Payload as Commands.Monitor_EraseMemory.Reply;
 
             return (cmdReply?.ErrorCode ?? 0, IncomingMessage.IsPositiveAcknowledge(reply));
         }
 
-        public async Task<bool> ExecuteMemoryAsync(uint address)
+        public bool ExecuteMemory(uint address)
         {
             Commands.Monitor_Execute cmd = new Commands.Monitor_Execute();
 
             cmd.m_address = address;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Monitor_Execute, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Execute, 0, cmd);
 
             return IncomingMessage.IsPositiveAcknowledge(reply);
         }
 
-        public async Task RebootDeviceAsync(RebootOption option = RebootOption.NormalReboot)
+        public void RebootDevice(RebootOption option = RebootOption.NormalReboot)
         {
             Commands.MonitorReboot cmd = new Commands.MonitorReboot();
 
@@ -1350,7 +1350,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 m_evtPing.Reset();
 
-                await PerformRequestAsync(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
+                PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
 
                 // need to disconnect from the device?
                 if (disconnectRequired)
@@ -1381,9 +1381,9 @@ namespace nanoFramework.Tools.Debugger
             return true;
         }
 
-        public async Task<uint> GetExecutionBasePtrAsync()
+        public uint GetExecutionBasePtr()
         {
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Execution_BasePtr, 0, null);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_BasePtr, 0, null);
             if (reply != null)
             {
                 Commands.Debugging_Execution_BasePtr.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_BasePtr.Reply;
@@ -1397,7 +1397,7 @@ namespace nanoFramework.Tools.Debugger
             return 0;
         }
 
-        public async Task<Commands.DebuggingExecutionChangeConditions.State> GetExecutionModeAsync()
+        public Commands.DebuggingExecutionChangeConditions.State GetExecutionMode()
         {
             Commands.DebuggingExecutionChangeConditions cmd = new Commands.DebuggingExecutionChangeConditions();
 
@@ -1406,7 +1406,7 @@ namespace nanoFramework.Tools.Debugger
             cmd.FlagsToSet = 0;
             cmd.FlagsToReset = 0;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
             if (reply != null)
             {
                 // need this to get DebuggingExecutionChangeConditions.State enum from raw value
@@ -1422,14 +1422,14 @@ namespace nanoFramework.Tools.Debugger
             return Commands.DebuggingExecutionChangeConditions.State.Unknown;
         }
 
-        public async Task<bool> SetExecutionModeAsync(Commands.DebuggingExecutionChangeConditions.State flagsToSet, Commands.DebuggingExecutionChangeConditions.State flagsToReset)
+        public bool SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State flagsToSet, Commands.DebuggingExecutionChangeConditions.State flagsToReset)
         {
             Commands.DebuggingExecutionChangeConditions cmd = new Commands.DebuggingExecutionChangeConditions();
 
             cmd.FlagsToSet = (uint)flagsToSet;
             cmd.FlagsToReset = (uint)flagsToReset;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
             if (reply != null)
             {
                 Commands.DebuggingExecutionChangeConditions.Reply cmdReply = reply.Payload as Commands.DebuggingExecutionChangeConditions.Reply;
@@ -1445,39 +1445,39 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        public async Task<bool> PauseExecutionAsync()
+        public bool PauseExecution()
         {
-            return await SetExecutionModeAsync(Commands.DebuggingExecutionChangeConditions.State.Stopped, 0);
+            return SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.Stopped, 0);
         }
 
-        public async Task<bool> ResumeExecutionAsync()
+        public bool ResumeExecution()
         {
-            return await SetExecutionModeAsync(0, Commands.DebuggingExecutionChangeConditions.State.Stopped);
+            return SetExecutionMode(0, Commands.DebuggingExecutionChangeConditions.State.Stopped);
         }
 
-        public async Task<bool> SetCurrentAppDomainAsync(uint id)
+        public bool SetCurrentAppDomain(uint id)
         {
             Commands.Debugging_Execution_SetCurrentAppDomain cmd = new Commands.Debugging_Execution_SetCurrentAppDomain();
 
             cmd.m_id = id;
 
-            return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Execution_SetCurrentAppDomain, 0, cmd));
+            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Execution_SetCurrentAppDomain, 0, cmd));
         }
 
-        public async Task<bool> SetBreakpointsAsync(Commands.Debugging_Execution_BreakpointDef[] breakpoints)
+        public bool SetBreakpoints(Commands.Debugging_Execution_BreakpointDef[] breakpoints)
         {
             Commands.Debugging_Execution_Breakpoints cmd = new Commands.Debugging_Execution_Breakpoints();
 
             cmd.m_data = breakpoints;
 
-            return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Execution_Breakpoints, 0, cmd));
+            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Execution_Breakpoints, 0, cmd));
         }
 
-        public async Task<Commands.Debugging_Execution_BreakpointDef> GetBreakpointStatusAsync()
+        public Commands.Debugging_Execution_BreakpointDef GetBreakpointStatus()
         {
             Commands.Debugging_Execution_BreakpointStatus cmd = new Commands.Debugging_Execution_BreakpointStatus();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Execution_BreakpointStatus, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_BreakpointStatus, 0, cmd);
 
             if (reply != null)
             {
@@ -1490,32 +1490,32 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<bool> SetSecurityKeyAsync(byte[] key)
+        public bool SetSecurityKey(byte[] key)
         {
             Commands.Debugging_Execution_SecurityKey cmd = new Commands.Debugging_Execution_SecurityKey();
 
             cmd.m_key = key;
 
-            return await PerformRequestAsync(Commands.c_Debugging_Execution_SecurityKey, 0, cmd) != null;
+            return PerformSyncRequest(Commands.c_Debugging_Execution_SecurityKey, 0, cmd) != null;
         }
 
-        public async Task<bool> UnlockDeviceAsync(byte[] blob)
+        public bool UnlockDevice(byte[] blob)
         {
             Commands.Debugging_Execution_Unlock cmd = new Commands.Debugging_Execution_Unlock();
 
             Array.Copy(blob, 0, cmd.m_command, 0, 128);
             Array.Copy(blob, 128, cmd.m_hash, 0, 128);
 
-            return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Execution_Unlock, 0, cmd));
+            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Execution_Unlock, 0, cmd));
         }
 
-        public async Task<(uint address, bool success)> AllocateMemoryAsync(uint size)
+        public (uint Address, bool Success) AllocateMemory(uint size)
         {
             Commands.Debugging_Execution_Allocate cmd = new Commands.Debugging_Execution_Allocate();
 
             cmd.m_size = size;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Execution_Allocate, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_Allocate, 0, cmd);
             if (reply != null)
             {
                 Commands.Debugging_Execution_Allocate.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_Allocate.Reply;
@@ -1573,7 +1573,7 @@ namespace nanoFramework.Tools.Debugger
         //    }
         //}
 
-        public async Task<bool> CanUpgradeToSslAsync()
+        public bool CanUpgradeToSsl()
         {
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
@@ -1582,7 +1582,7 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_flags = 0;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_UpgradeToSsl, Flags.c_NoCaching, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_UpgradeToSsl, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
@@ -1614,7 +1614,7 @@ namespace nanoFramework.Tools.Debugger
         /// <param name="packetSize"></param>
         /// <param name="installAddress"></param>
         /// <returns>The update handle value. -1 if the start update request failed.</returns>
-        public async Task<int> StartUpdateAsync(
+        public int StartUpdate(
             string provider,
             ushort versionMajor,
             ushort versionMinor,
@@ -1641,7 +1641,7 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_MFUpdate_Start, Flags.c_NoCaching, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_MFUpdate_Start, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
@@ -1656,7 +1656,7 @@ namespace nanoFramework.Tools.Debugger
             return -1;
         }
 
-        public async Task<(byte[] response, bool success)> UpdateAuthCommandAsync(int updateHandle, uint authCommand, byte[] commandArgs)
+        public (byte[] Response, bool Success) UpdateAuthCommand(int updateHandle, uint authCommand, byte[] commandArgs)
         {
             Commands.Debugging_MFUpdate_AuthCommand cmd = new Commands.Debugging_MFUpdate_AuthCommand();
 
@@ -1670,7 +1670,7 @@ namespace nanoFramework.Tools.Debugger
             cmd.m_authArgs = commandArgs;
             cmd.m_authArgsSize = (uint)commandArgs.Length;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_MFUpdate_AuthCmd, Flags.c_NoCaching, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_MFUpdate_AuthCmd, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
@@ -1691,14 +1691,14 @@ namespace nanoFramework.Tools.Debugger
             return (new byte[4], true);
         }
 
-        public async Task<bool> UpdateAuthenticateAsync(int updateHandle, byte[] authenticationData)
+        public bool UpdateAuthenticate(int updateHandle, byte[] authenticationData)
         {
             Commands.Debugging_MFUpdate_Authenticate cmd = new Commands.Debugging_MFUpdate_Authenticate();
 
             cmd.m_updateHandle = updateHandle;
             cmd.PrepareForSend(authenticationData);
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_MFUpdate_Authenticate, Flags.c_NoCaching, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_MFUpdate_Authenticate, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
@@ -1713,13 +1713,13 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        private async Task<bool> UpdateGetMissingPacketsAsync(int updateHandle)
+        private bool UpdateGetMissingPackets(int updateHandle)
         {
             Commands.Debugging_MFUpdate_GetMissingPkts cmd = new Commands.Debugging_MFUpdate_GetMissingPkts();
 
             cmd.m_updateHandle = updateHandle;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_MFUpdate_GetMissingPkts, Flags.c_NoCaching, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_MFUpdate_GetMissingPkts, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
@@ -1742,11 +1742,11 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        public async Task<bool> AddPacketAsync(int updateHandle, uint packetIndex, byte[] packetData, uint packetValidation)
+        public bool AddPacket(int updateHandle, uint packetIndex, byte[] packetData, uint packetValidation)
         {
             if (!m_updateMissingPktTbl.ContainsKey(updateHandle))
             {
-                await UpdateGetMissingPacketsAsync(updateHandle);
+                UpdateGetMissingPackets(updateHandle);
             }
 
             if (m_updateMissingPktTbl.ContainsKey(updateHandle) && m_updateMissingPktTbl[updateHandle].Length > 0)
@@ -1770,7 +1770,7 @@ namespace nanoFramework.Tools.Debugger
             cmd.m_packetValidation = packetValidation;
             cmd.PrepareForSend(packetData);
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_MFUpdate_AddPacket, Flags.c_NoCaching, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_MFUpdate_AddPacket, Flags.c_NoCaching, cmd);
             if (reply != null)
             {
                 Commands.Debugging_MFUpdate_AddPacket.Reply cmdReply = reply.Payload as Commands.Debugging_MFUpdate_AddPacket.Reply;
@@ -1784,7 +1784,7 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        public async Task<bool> InstallUpdateAsync(int updateHandle, byte[] validationData)
+        public bool InstallUpdate(int updateHandle, byte[] validationData)
         {
             if (m_updateMissingPktTbl.ContainsKey(updateHandle))
             {
@@ -1797,7 +1797,7 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.PrepareForSend(validationData);
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_MFUpdate_Install, Flags.c_NoCaching, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_MFUpdate_Install, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
@@ -1812,12 +1812,12 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        public async Task<uint> CreateThreadAsync(uint methodIndex, int scratchPadLocation)
+        public uint CreateThread(uint methodIndex, int scratchPadLocation)
         {
-            return await CreateThreadAsync(methodIndex, scratchPadLocation, 0);
+            return CreateThread(methodIndex, scratchPadLocation, 0);
         }
 
-        public async Task<uint> CreateThreadAsync(uint methodIndex, int scratchPadLocation, uint pid)
+        public uint CreateThread(uint methodIndex, int scratchPadLocation, uint pid)
         {
             if (Capabilities.ThreadCreateEx)
             {
@@ -1827,7 +1827,7 @@ namespace nanoFramework.Tools.Debugger
                 cmd.m_scratchPad = scratchPadLocation;
                 cmd.m_pid = pid;
 
-                IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Thread_CreateEx, 0, cmd);
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_CreateEx, 0, cmd);
 
                 if (reply != null)
                 {
@@ -1840,9 +1840,9 @@ namespace nanoFramework.Tools.Debugger
             return 0;
         }
 
-        public async Task<uint[]> GetThreadListAsync()
+        public uint[] GetThreadList()
         {
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Thread_List, 0, null);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_List, 0, null);
 
             if (reply != null)
             {
@@ -1857,13 +1857,14 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<Commands.Debugging_Thread_Stack.Reply> GetThreadStackAsync(uint pid)
+        public Commands.Debugging_Thread_Stack.Reply GetThreadStack(uint pid)
         {
-            Commands.Debugging_Thread_Stack cmd = new Commands.Debugging_Thread_Stack();
+            Commands.Debugging_Thread_Stack cmd = new Commands.Debugging_Thread_Stack
+            {
+                m_pid = pid
+            };
 
-            cmd.m_pid = pid;
-
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Thread_Stack, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_Stack, 0, cmd);
 
             if (reply != null)
             {
@@ -1873,13 +1874,13 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<bool> KillThreadAsync(uint pid)
+        public bool KillThread(uint pid)
         {
             Commands.Debugging_Thread_Kill cmd = new Commands.Debugging_Thread_Kill();
 
             cmd.m_pid = pid;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Thread_Kill, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_Kill, 0, cmd);
 
             if (reply != null)
             {
@@ -1891,53 +1892,53 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        public async Task<bool> SuspendThreadAsync(uint pid)
+        public bool SuspendThread(uint pid)
         {
             Commands.Debugging_Thread_Suspend cmd = new Commands.Debugging_Thread_Suspend();
 
             cmd.m_pid = pid;
 
-            return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Thread_Suspend, 0, cmd));
+            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Thread_Suspend, 0, cmd));
         }
 
-        public async Task<bool> ResumeThreadAsync(uint pid)
+        public bool ResumeThread(uint pid)
         {
             Commands.Debugging_Thread_Resume cmd = new Commands.Debugging_Thread_Resume();
 
             cmd.m_pid = pid;
 
-            return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Thread_Resume, 0, cmd));
+            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Thread_Resume, 0, cmd));
         }
 
-        public Task<RuntimeValue> GetThreadExceptionAsync(uint pid)
+        public RuntimeValue GetThreadException(uint pid)
         {
             Commands.Debugging_Thread_GetException cmd = new Commands.Debugging_Thread_GetException();
 
             cmd.m_pid = pid;
 
-            return GetRuntimeValueAsync(Commands.c_Debugging_Thread_GetException, cmd);
+            return GetRuntimeValue(Commands.c_Debugging_Thread_GetException, cmd);
         }
 
-        public Task<RuntimeValue> GetThreadAsync(uint pid)
+        public RuntimeValue GetThread(uint pid)
         {
             Commands.Debugging_Thread_Get cmd = new Commands.Debugging_Thread_Get();
 
             cmd.m_pid = pid;
 
-            return GetRuntimeValueAsync(Commands.c_Debugging_Thread_Get, cmd);
+            return GetRuntimeValue(Commands.c_Debugging_Thread_Get, cmd);
         }
 
-        public async Task<bool> UnwindThreadAsync(uint pid, uint depth)
+        public bool UnwindThread(uint pid, uint depth)
         {
             Commands.Debugging_Thread_Unwind cmd = new Commands.Debugging_Thread_Unwind();
 
             cmd.m_pid = pid;
             cmd.m_depth = depth;
 
-            return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Thread_Unwind, 0, cmd));
+            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Thread_Unwind, 0, cmd));
         }
 
-        public async Task<bool> SetIPOfStackFrameAsync(uint pid, uint depth, uint IP, uint depthOfEvalStack)
+        public bool SetIPOfStackFrame(uint pid, uint depth, uint IP, uint depthOfEvalStack)
         {
             Commands.Debugging_Stack_SetIP cmd = new Commands.Debugging_Stack_SetIP();
 
@@ -1947,17 +1948,17 @@ namespace nanoFramework.Tools.Debugger
             cmd.m_IP = IP;
             cmd.m_depthOfEvalStack = depthOfEvalStack;
 
-            return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Stack_SetIP, 0, cmd));
+            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Stack_SetIP, 0, cmd));
         }
 
-        public async Task<Commands.Debugging_Stack_Info.Reply> GetStackInfoAsync(uint pid, uint depth)
+        public Commands.Debugging_Stack_Info.Reply GetStackInfo(uint pid, uint depth)
         {
             Commands.Debugging_Stack_Info cmd = new Commands.Debugging_Stack_Info();
 
             cmd.m_pid = pid;
             cmd.m_depth = depth;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Stack_Info, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Stack_Info, 0, cmd);
 
             if (reply != null)
             {
@@ -1969,14 +1970,14 @@ namespace nanoFramework.Tools.Debugger
 
         //--//
 
-        public async Task<Commands.Debugging_TypeSys_AppDomains.Reply> GetAppDomainsAsync()
+        public Commands.Debugging_TypeSys_AppDomains.Reply GetAppDomains()
         {
             if (!Capabilities.AppDomains)
                 return null;
 
             Commands.Debugging_TypeSys_AppDomains cmd = new Commands.Debugging_TypeSys_AppDomains();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_TypeSys_AppDomains, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_TypeSys_AppDomains, 0, cmd);
 
             if (reply != null)
             {
@@ -1986,11 +1987,11 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<Commands.Debugging_TypeSys_Assemblies.Reply> GetAssembliesAsync(CancellationToken cancellationToken)
+        public Commands.Debugging_TypeSys_Assemblies.Reply GetAssemblies()
         {
             Commands.Debugging_TypeSys_Assemblies cmd = new Commands.Debugging_TypeSys_Assemblies();
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_TypeSys_Assemblies, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_TypeSys_Assemblies, 0, cmd);
 
             if (reply != null)
             {
@@ -2000,9 +2001,9 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<List<Commands.DebuggingResolveAssembly>> ResolveAllAssembliesAsync(CancellationToken cancellationToken)
+        public List<Commands.DebuggingResolveAssembly> ResolveAllAssemblies()
         {
-            Commands.Debugging_TypeSys_Assemblies.Reply assemblies = await GetAssembliesAsync(cancellationToken);
+            Commands.Debugging_TypeSys_Assemblies.Reply assemblies = GetAssemblies();
             List<Commands.DebuggingResolveAssembly> resolveAssemblies = new List<Commands.DebuggingResolveAssembly>();
 
             if (assemblies == null || assemblies.Data == null)
@@ -2023,7 +2024,7 @@ namespace nanoFramework.Tools.Debugger
                     requests.Add(CreateMessage(Commands.c_Debugging_Resolve_Assembly, 0, cmd));
                 }
 
-                List<IncomingMessage> replies = await PerformRequestBatchAsync(requests, cancellationToken);
+                List<IncomingMessage> replies = PerformRequestBatch(requests);
 
                 foreach (IncomingMessage message in replies)
                 {
@@ -2053,13 +2054,13 @@ namespace nanoFramework.Tools.Debugger
             return resolveAssemblies;
         }
 
-        public async Task<Commands.DebuggingResolveAssembly.Reply> ResolveAssemblyAsync(uint idx)
+        public Commands.DebuggingResolveAssembly.Reply ResolveAssembly(uint idx)
         {
             Commands.DebuggingResolveAssembly cmd = new Commands.DebuggingResolveAssembly();
 
             cmd.Idx = idx;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Resolve_Assembly, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_Assembly, 0, cmd);
 
             if (reply != null)
             {
@@ -2082,9 +2083,9 @@ namespace nanoFramework.Tools.Debugger
         /// <param name="pid"></param>
         /// <param name="depth"></param>
         /// <returns>Tuple with numOfArguments, numOfLocals, depthOfEvalStack and request success result.</returns>
-        public async Task<(uint numOfArguments, uint numOfLocals, uint depthOfEvalStack, bool success)> GetStackFrameInfoAsync(uint pid, uint depth)
+        public (uint NumOfArguments, uint NnumOfLocals, uint DepthOfEvalStack, bool Success) GetStackFrameInfo(uint pid, uint depth)
         {
-            Commands.Debugging_Stack_Info.Reply reply = await GetStackInfoAsync(pid, depth);
+            Commands.Debugging_Stack_Info.Reply reply = GetStackInfo(pid, depth);
 
             if (reply == null)
             {
@@ -2094,9 +2095,9 @@ namespace nanoFramework.Tools.Debugger
             return (reply.m_numOfArguments, reply.m_numOfLocals, reply.m_depthOfEvalStack, true);
         }
 
-        private async Task<RuntimeValue> GetRuntimeValueAsync(uint msg, object cmd)
+        private RuntimeValue GetRuntimeValue(uint msg, object cmd)
         {
-            IncomingMessage reply = await PerformRequestAsync(msg, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(msg, 0, cmd);
 
             if (reply != null && reply.Payload != null)
             {
@@ -2108,7 +2109,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        internal async Task<RuntimeValue> GetFieldValueAsync(RuntimeValue val, uint offset, uint fd)
+        internal RuntimeValue GetFieldValue(RuntimeValue val, uint offset, uint fd)
         {
             Commands.Debugging_Value_GetField cmd = new Commands.Debugging_Value_GetField();
 
@@ -2116,25 +2117,25 @@ namespace nanoFramework.Tools.Debugger
             cmd.m_offset = offset;
             cmd.m_fd = fd;
 
-            return await GetRuntimeValueAsync(Commands.c_Debugging_Value_GetField, cmd);
+            return GetRuntimeValue(Commands.c_Debugging_Value_GetField, cmd);
         }
 
-        public async Task<RuntimeValue> GetStaticFieldValueAsync(uint fd)
+        public RuntimeValue GetStaticFieldValue(uint fd)
         {
-            return await GetFieldValueAsync(null, 0, fd);
+            return GetFieldValue(null, 0, fd);
         }
 
-        internal async Task<RuntimeValue> AssignRuntimeValueAsync(uint heapblockSrc, uint heapblockDst)
+        internal RuntimeValue AssignRuntimeValue(uint heapblockSrc, uint heapblockDst)
         {
             Commands.Debugging_Value_Assign cmd = new Commands.Debugging_Value_Assign();
 
             cmd.m_heapblockSrc = heapblockSrc;
             cmd.m_heapblockDst = heapblockDst;
 
-            return await GetRuntimeValueAsync(Commands.c_Debugging_Value_Assign, cmd);
+            return GetRuntimeValue(Commands.c_Debugging_Value_Assign, cmd);
         }
 
-        internal async Task<bool> SetBlockAsync(uint heapblock, uint dt, byte[] data)
+        internal bool SetBlock(uint heapblock, uint dt, byte[] data)
         {
             Commands.Debugging_Value_SetBlock setBlock = new Commands.Debugging_Value_SetBlock();
 
@@ -2143,7 +2144,7 @@ namespace nanoFramework.Tools.Debugger
 
             data.CopyTo(setBlock.m_value, 0);
 
-            return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Value_SetBlock, 0, setBlock));
+            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Value_SetBlock, 0, setBlock));
         }
 
         private OutgoingMessage CreateMessage_GetValue_Stack(uint pid, uint depth, StackValueKind kind, uint index)
@@ -2158,20 +2159,20 @@ namespace nanoFramework.Tools.Debugger
             return CreateMessage(Commands.c_Debugging_Value_GetStack, 0, cmd);
         }
 
-        public async Task<bool> ResizeScratchPadAsync(int size)
+        public bool ResizeScratchPad(int size)
         {
             Commands.Debugging_Value_ResizeScratchPad cmd = new Commands.Debugging_Value_ResizeScratchPad();
 
             cmd.m_size = size;
 
-            return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Value_ResizeScratchPad, 0, cmd));
+            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Value_ResizeScratchPad, 0, cmd));
         }
 
-        public async Task<RuntimeValue> GetStackFrameValueAsync(uint pid, uint depth, StackValueKind kind, uint index, CancellationToken cancellationToken)
+        public RuntimeValue GetStackFrameValue(uint pid, uint depth, StackValueKind kind, uint index)
         {
             OutgoingMessage cmd = CreateMessage_GetValue_Stack(pid, depth, kind, index);
 
-            IncomingMessage reply = await PerformRequestAsync(cmd, cancellationToken);
+            IncomingMessage reply = PerformSyncRequest(cmd);
 
             if (reply != null)
             {
@@ -2183,7 +2184,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<RuntimeValue[]> GetStackFrameValueAllAsync(uint pid, uint depth, uint cValues, StackValueKind kind, CancellationToken cancellationToken)
+        public RuntimeValue[] GetStackFrameValueAll(uint pid, uint depth, uint cValues, StackValueKind kind)
         {
             List<OutgoingMessage> cmds = new List<OutgoingMessage>();
             RuntimeValue[] vals = null;
@@ -2194,7 +2195,7 @@ namespace nanoFramework.Tools.Debugger
                 cmds.Add(CreateMessage_GetValue_Stack(pid, depth, kind, i));
             }
 
-            List<IncomingMessage> replies = await PerformRequestBatchAsync(cmds, cancellationToken);
+            List<IncomingMessage> replies = PerformRequestBatch(cmds);
 
             if (replies != null)
             {
@@ -2213,14 +2214,14 @@ namespace nanoFramework.Tools.Debugger
             return vals;
         }
 
-        public async Task<RuntimeValue> GetArrayElementAsync(uint arrayReferenceId, uint index)
+        public RuntimeValue GetArrayElement(uint arrayReferenceId, uint index)
         {
             Commands.Debugging_Value_GetArray cmd = new Commands.Debugging_Value_GetArray();
 
             cmd.m_heapblock = arrayReferenceId;
             cmd.m_index = index;
 
-            RuntimeValue rtv = await GetRuntimeValueAsync(Commands.c_Debugging_Value_GetArray, cmd);
+            RuntimeValue rtv = GetRuntimeValue(Commands.c_Debugging_Value_GetArray, cmd);
 
             if (rtv != null)
             {
@@ -2231,7 +2232,7 @@ namespace nanoFramework.Tools.Debugger
             return rtv;
         }
 
-        internal async Task<bool> SetArrayElementAsync(uint heapblock, uint index, byte[] data)
+        internal bool SetArrayElement(uint heapblock, uint index, byte[] data)
         {
             Commands.Debugging_Value_SetArray cmd = new Commands.Debugging_Value_SetArray();
 
@@ -2240,46 +2241,46 @@ namespace nanoFramework.Tools.Debugger
 
             data.CopyTo(cmd.m_value, 0);
 
-            return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Value_SetArray, 0, cmd));
+            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Value_SetArray, 0, cmd));
         }
 
-        public Task<RuntimeValue> GetScratchPadValueAsync(int index)
+        public RuntimeValue GetScratchPadValue(int index)
         {
             Commands.Debugging_Value_GetScratchPad cmd = new Commands.Debugging_Value_GetScratchPad();
 
             cmd.m_index = index;
 
-            return GetRuntimeValueAsync(Commands.c_Debugging_Value_GetScratchPad, cmd);
+            return GetRuntimeValue(Commands.c_Debugging_Value_GetScratchPad, cmd);
         }
 
-        public Task<RuntimeValue> AllocateObjectAsync(int scratchPadLocation, uint td)
+        public RuntimeValue AllocateObject(int scratchPadLocation, uint td)
         {
             Commands.Debugging_Value_AllocateObject cmd = new Commands.Debugging_Value_AllocateObject();
 
             cmd.m_index = scratchPadLocation;
             cmd.m_td = td;
 
-            return GetRuntimeValueAsync(Commands.c_Debugging_Value_AllocateObject, cmd);
+            return GetRuntimeValue(Commands.c_Debugging_Value_AllocateObject, cmd);
         }
 
-        public async Task<RuntimeValue> AllocateStringAsync(int scratchPadLocation, string val)
+        public RuntimeValue AllocateString(int scratchPadLocation, string val)
         {
             Commands.Debugging_Value_AllocateString cmd = new Commands.Debugging_Value_AllocateString();
 
             cmd.m_index = scratchPadLocation;
             cmd.m_size = (uint)Encoding.UTF8.GetByteCount(val);
 
-            RuntimeValue rtv = await GetRuntimeValueAsync(Commands.c_Debugging_Value_AllocateString, cmd);
+            RuntimeValue rtv = GetRuntimeValue(Commands.c_Debugging_Value_AllocateString, cmd);
 
             if (rtv != null)
             {
-                await rtv.SetStringValueAsync(val);
+                rtv.SetStringValue(val);
             }
 
             return rtv;
         }
 
-        public Task<RuntimeValue> AllocateArrayAsync(int scratchPadLocation, uint td, int depth, int numOfElements)
+        public RuntimeValue AllocateArray(int scratchPadLocation, uint td, int depth, int numOfElements)
         {
             Commands.Debugging_Value_AllocateArray cmd = new Commands.Debugging_Value_AllocateArray();
 
@@ -2288,10 +2289,10 @@ namespace nanoFramework.Tools.Debugger
             cmd.m_depth = (uint)depth;
             cmd.m_numOfElements = (uint)numOfElements;
 
-            return GetRuntimeValueAsync(Commands.c_Debugging_Value_AllocateArray, cmd);
+            return GetRuntimeValue(Commands.c_Debugging_Value_AllocateArray, cmd);
         }
 
-        public async Task<Commands.Debugging_Resolve_Type.Result> ResolveTypeAsync(uint td)
+        public Commands.Debugging_Resolve_Type.Result ResolveType(uint td)
         {
             Commands.Debugging_Resolve_Type.Result result = (Commands.Debugging_Resolve_Type.Result)m_typeSysLookup.Lookup(TypeSysLookup.Type.Type, td);
 
@@ -2301,7 +2302,7 @@ namespace nanoFramework.Tools.Debugger
 
                 cmd.m_td = td;
 
-                IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Resolve_Type, 0, cmd);
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_Type, 0, cmd);
 
                 if (reply != null)
                 {
@@ -2321,7 +2322,7 @@ namespace nanoFramework.Tools.Debugger
             return result;
         }
 
-        public async Task<Commands.Debugging_Resolve_Method.Result> ResolveMethodAsync(uint md)
+        public Commands.Debugging_Resolve_Method.Result ResolveMethod(uint md)
         {
             Commands.Debugging_Resolve_Method.Result result = (Commands.Debugging_Resolve_Method.Result)m_typeSysLookup.Lookup(TypeSysLookup.Type.Method, md);
 
@@ -2331,7 +2332,7 @@ namespace nanoFramework.Tools.Debugger
 
                 cmd.m_md = md;
 
-                IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Resolve_Method, 0, cmd);
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_Method, 0, cmd);
 
                 if (reply != null)
                 {
@@ -2352,7 +2353,7 @@ namespace nanoFramework.Tools.Debugger
             return result;
         }
 
-        public async Task<Commands.Debugging_Resolve_Field.Result> ResolveFieldAsync(uint fd)
+        public Commands.Debugging_Resolve_Field.Result ResolveField(uint fd)
         {
             Commands.Debugging_Resolve_Field.Result result = (Commands.Debugging_Resolve_Field.Result)m_typeSysLookup.Lookup(TypeSysLookup.Type.Field, fd);
 
@@ -2362,7 +2363,7 @@ namespace nanoFramework.Tools.Debugger
 
                 cmd.m_fd = fd;
 
-                IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Resolve_Field, 0, cmd);
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_Field, 0, cmd);
                 if (reply != null)
                 {
                     Commands.Debugging_Resolve_Field.Reply cmdReply = reply.Payload as Commands.Debugging_Resolve_Field.Reply;
@@ -2383,7 +2384,7 @@ namespace nanoFramework.Tools.Debugger
             return result;
         }
 
-        public async Task<Commands.Debugging_Resolve_AppDomain.Reply> ResolveAppDomainAsync(uint appDomainID)
+        public Commands.Debugging_Resolve_AppDomain.Reply ResolveAppDomain(uint appDomainID)
         {
             if (!Capabilities.AppDomains)
                 return null;
@@ -2392,7 +2393,7 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_id = appDomainID;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Resolve_AppDomain, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_AppDomain, 0, cmd);
 
             if (reply != null)
             {
@@ -2402,23 +2403,23 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public async Task<string> GetTypeNameAsync(uint td)
+        public string GetTypeName(uint td)
         {
-            Commands.Debugging_Resolve_Type.Result resolvedType = await ResolveTypeAsync(td);
+            Commands.Debugging_Resolve_Type.Result resolvedType = ResolveType(td);
 
             return (resolvedType != null) ? resolvedType.m_name : null;
         }
 
-        public async Task<string> GetMethodNameAsync(uint md, bool fIncludeType)
+        public string GetMethodName(uint md, bool fIncludeType)
         {
-            Commands.Debugging_Resolve_Method.Result resolvedMethod = await ResolveMethodAsync(md);
+            Commands.Debugging_Resolve_Method.Result resolvedMethod = ResolveMethod(md);
             string name = null;
 
             if (resolvedMethod != null)
             {
                 if (fIncludeType)
                 {
-                    name = string.Format("{0}::{1}", await GetTypeNameAsync(resolvedMethod.m_td), resolvedMethod.m_name);
+                    name = string.Format("{0}::{1}", GetTypeName(resolvedMethod.m_td), resolvedMethod.m_name);
                 }
                 else
                 {
@@ -2434,9 +2435,9 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         /// <param name="fd"></param>
         /// <returns>Tuple with field name, td and offset.</returns>
-        public async Task<(string td, uint offset, uint success)> GetFieldNameAsync(uint fd)
+        public (string Td, uint Offset, uint Success) GetFieldName(uint fd)
         {
-            Commands.Debugging_Resolve_Field.Result resolvedField = await ResolveFieldAsync(fd);
+            Commands.Debugging_Resolve_Field.Result resolvedField = ResolveField(fd);
 
             if (resolvedField != null)
             {
@@ -2446,14 +2447,14 @@ namespace nanoFramework.Tools.Debugger
             return (null, 0, 0);
         }
 
-        public async Task<uint> GetVirtualMethodAsync(uint md, RuntimeValue obj)
+        public uint GetVirtualMethod(uint md, RuntimeValue obj)
         {
             Commands.Debugging_Resolve_VirtualMethod cmd = new Commands.Debugging_Resolve_VirtualMethod();
 
             cmd.m_md = md;
             cmd.m_obj = obj.ReferenceId;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Resolve_VirtualMethod, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_VirtualMethod, 0, cmd);
 
             if (reply != null)
             {
@@ -2472,9 +2473,9 @@ namespace nanoFramework.Tools.Debugger
         /// 
         /// </summary>
         /// <returns>Tuple with widthInWords, heightInPixels, buffer and request result success.</returns>
-        public async Task<(ushort widthInWords, ushort heightInPixels, uint[] buf, bool success)> GetFrameBufferAsync()
+        public (ushort WidthInWords, ushort HeightInPixels, uint[] Buf, bool Success) GetFrameBuffer()
         {
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Lcd_GetFrame, 0, null);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Lcd_GetFrame, 0, null);
             if (reply != null)
             {
                 Commands.Debugging_Lcd_GetFrame.Reply cmdReply = reply.Payload as Commands.Debugging_Lcd_GetFrame.Reply;
@@ -2646,26 +2647,26 @@ namespace nanoFramework.Tools.Debugger
         //    //return bmp;
         //}
 
-        public Task InjectButtonsAsync(uint pressed, uint released)
+        public void InjectButtons(uint pressed, uint released)
         {
             Commands.Debugging_Button_Inject cmd = new Commands.Debugging_Button_Inject();
 
             cmd.m_pressed = pressed;
             cmd.m_released = released;
 
-            return PerformRequestAsync(Commands.c_Debugging_Button_Inject, 0, cmd);
+            PerformSyncRequest(Commands.c_Debugging_Button_Inject, 0, cmd);
         }
 
-        public async Task<List<ThreadStatus>> GetThreadsAsync()
+        public List<ThreadStatus> GetThreads()
         {
             List<ThreadStatus> threads = new List<ThreadStatus>();
-            uint[] pids = await GetThreadListAsync();
+            uint[] pids = GetThreadList();
 
             if (pids != null)
             {
                 for (int i = 0; i < pids.Length; i++)
                 {
-                    Commands.Debugging_Thread_Stack.Reply reply = await GetThreadStackAsync(pids[i]);
+                    Commands.Debugging_Thread_Stack.Reply reply = GetThreadStack(pids[i]);
 
                     if (reply != null)
                     {
@@ -2679,7 +2680,7 @@ namespace nanoFramework.Tools.Debugger
 
                         for (int j = 0; j < depth; j++)
                         {
-                            ts.m_calls[depth - 1 - j] = String.Format("{0} [IP:{1:X4}]", await GetMethodNameAsync(reply.m_data[j].m_md, true), reply.m_data[j].m_IP);
+                            ts.m_calls[depth - 1 - j] = String.Format("{0} [IP:{1:X4}]", GetMethodName(reply.m_data[j].m_md, true), reply.m_data[j].m_IP);
                         }
 
                         threads.Add(ts);
@@ -2699,9 +2700,9 @@ namespace nanoFramework.Tools.Debugger
         /// <param name="storageStart"></param>
         /// <param name="storageLength"></param>
         /// <returns>Tuple with entrypoint, storageStart, storageLength and request success</returns>
-        public async Task<(uint entrypoint, uint storageStart, uint storageLength, bool success)> DeploymentGetStatusWithResultAsync()
+        public (uint Entrypoint, uint StorageStart, uint StorageLength, bool Success) DeploymentGetStatusWithResult()
         {
-            Commands.DebuggingDeploymentStatus.Reply status = await DeploymentGetStatusAsync();
+            Commands.DebuggingDeploymentStatus.Reply status = DeploymentGetStatus();
 
             if (status != null)
             {
@@ -2713,7 +2714,7 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public async Task<Commands.DebuggingDeploymentStatus.Reply> DeploymentGetStatusAsync()
+        public Commands.DebuggingDeploymentStatus.Reply DeploymentGetStatus()
         {
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
@@ -2721,7 +2722,7 @@ namespace nanoFramework.Tools.Debugger
             Commands.DebuggingDeploymentStatus cmd = new Commands.DebuggingDeploymentStatus();
             Commands.DebuggingDeploymentStatus.Reply cmdReply = null;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Debugging_Deployment_Status, Flags.c_NoCaching, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Deployment_Status, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
@@ -2731,7 +2732,7 @@ namespace nanoFramework.Tools.Debugger
             return cmdReply;
         }
 
-        public async Task<bool> Info_SetJMCAsync(bool fJMC, ReflectionDefinition.Kind kind, uint index)
+        public bool Info_SetJMC(bool fJMC, ReflectionDefinition.Kind kind, uint index)
         {
             Commands.Debugging_Info_SetJMC cmd = new Commands.Debugging_Info_SetJMC();
 
@@ -2739,13 +2740,13 @@ namespace nanoFramework.Tools.Debugger
             cmd.m_kind = (uint)kind;
             cmd.m_raw = index;
 
-            return IncomingMessage.IsPositiveAcknowledge(await PerformRequestAsync(Commands.c_Debugging_Info_SetJMC, 0, cmd));
+            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Info_SetJMC, 0, cmd));
         }
 
-        private async Task<bool> DeploymentExecuteIncrementalAsync(List<byte[]> assemblies, IProgress<string> progress)
+        private bool DeploymentExecuteIncremental(List<byte[]> assemblies, IProgress<string> progress)
         {
             // get flash sector map from device
-            var flashSectorMap = await GetFlashSectorMapAsync();
+            var flashSectorMap = GetFlashSectorMap();
 
             // check if we do have the map
             if (flashSectorMap != null)
@@ -2810,16 +2811,16 @@ namespace nanoFramework.Tools.Debugger
 
                 foreach (DeploymentBlock block in blocksToDeploy)
                 {
-                    var eraseResult = await EraseMemoryAsync((uint)block.StartAddress, 1);
-                    if (!eraseResult.success)
+                    var eraseResult = EraseMemory((uint)block.StartAddress, 1);
+                    if (!eraseResult.Success)
                     {
                         progress?.Report(($"FAILED to erase device memory @0x{block.StartAddress.ToString("X8")} with Length=0x{block.Size.ToString("X8")}"));
 
                         return false;
                     }
 
-                    var writeResult = await WriteMemoryAsync((uint)block.StartAddress, block.DeploymentData);
-                    if (!writeResult.success)
+                    var writeResult = WriteMemory((uint)block.StartAddress, block.DeploymentData);
+                    if (!writeResult.Success)
                     {
                         progress?.Report(($"FAILED to write device memory @0x{block.StartAddress.ToString("X8")} with Length={block.Size.ToString("X8")}"));
 
@@ -2839,25 +2840,25 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        private async Task<bool> DeploymentExecuteFullAsync(List<byte[]> assemblies, IProgress<string> progress)
+        private bool DeploymentExecuteFull(List<byte[]> assemblies, IProgress<string> progress)
         {
             uint storageStart;
             uint deployLength;
             byte[] closeHeader = new byte[8];
 
             // perform request
-            var reply = await DeploymentGetStatusWithResultAsync();
+            var reply = DeploymentGetStatusWithResult();
 
             // check if request was successfully executed
-            if (!reply.success)
+            if (!reply.Success)
             {
                 return false;
             }
 
             // fill in the local properties with the result
-            storageStart = reply.storageStart;
+            storageStart = reply.StorageStart;
 
-            if (reply.storageLength == 0)
+            if (reply.StorageLength == 0)
             {
                 return false;
             }
@@ -2871,14 +2872,14 @@ namespace nanoFramework.Tools.Debugger
 
             progress?.Report(string.Format("Deploying assemblies for a total size of {0} bytes", deployLength));
 
-            if (deployLength > reply.storageLength)
+            if (deployLength > reply.StorageLength)
             {
                 return false;
             }
 
-            var eraseResult = await EraseMemoryAsync(storageStart, deployLength);
+            var eraseResult = EraseMemory(storageStart, deployLength);
 
-            if (!eraseResult.success)
+            if (!eraseResult.Success)
             {
                 return false;
             }
@@ -2893,9 +2894,9 @@ namespace nanoFramework.Tools.Debugger
                     return false;
                 }
 
-                var writeResult1 = await WriteMemoryAsync(storageStart, assembly);
+                var writeResult1 = WriteMemory(storageStart, assembly);
 
-                if (!writeResult1.success)
+                if (!writeResult1.Success)
                 {
                     return false;
                 }
@@ -2903,8 +2904,8 @@ namespace nanoFramework.Tools.Debugger
                 storageStart += (uint)assembly.Length;
             }
 
-            var writeResult2 = await WriteMemoryAsync(storageStart, closeHeader);
-            if (!writeResult2.success)
+            var writeResult2 = WriteMemory(storageStart, closeHeader);
+            if (!writeResult2.Success)
             {
                 return false;
             }
@@ -2917,11 +2918,11 @@ namespace nanoFramework.Tools.Debugger
         //    return Deployment_Execute(assemblies, true, null);
         //}
 
-        public async Task<bool> DeploymentExecuteAsync(List<byte[]> assemblies, bool fRebootAfterDeploy = true, IProgress<string> progress = null)
+        public bool DeploymentExecute(List<byte[]> assemblies, bool fRebootAfterDeploy = true, IProgress<string> progress = null)
         {
             bool fDeployedOK = false;
 
-            if (!await PauseExecutionAsync())
+            if (!PauseExecution())
             {
                 return false;
             }
@@ -2930,7 +2931,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 progress?.Report("Incrementally deploying assemblies to device");
 
-                fDeployedOK = await DeploymentExecuteIncrementalAsync(assemblies, progress);
+                fDeployedOK = DeploymentExecuteIncremental(assemblies, progress);
             }
             else
             {
@@ -2953,21 +2954,21 @@ namespace nanoFramework.Tools.Debugger
 
                     progress?.Report("Rebooting device...");
 
-                    await RebootDeviceAsync(RebootOption.RebootClrOnly);
+                    RebootDevice(RebootOption.RebootClrOnly);
                 }
             }
 
             return fDeployedOK;
         }
 
-        public async Task<(uint current, bool success)> SetProfilingModeAsync(uint iSet, uint iReset)
+        public (uint Current, bool Success) SetProfilingMode(uint iSet, uint iReset)
         {
             Commands.Profiling_Command cmd = new Commands.Profiling_Command();
             cmd.m_command = Commands.Profiling_Command.c_Command_ChangeConditions;
             cmd.m_parm1 = iSet;
             cmd.m_parm2 = iReset;
 
-            IncomingMessage reply = await PerformRequestAsync(Commands.c_Profiling_Command, 0, cmd);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Profiling_Command, 0, cmd);
             if (reply != null)
             {
                 Commands.Profiling_Command.Reply cmdReply = reply.Payload as Commands.Profiling_Command.Reply;
@@ -2985,28 +2986,28 @@ namespace nanoFramework.Tools.Debugger
             return (0, false);
         }
 
-        public async Task<bool> FlushProfilingStreamAsync()
+        public bool FlushProfilingStream()
         {
             Commands.Profiling_Command cmd = new Commands.Profiling_Command();
             cmd.m_command = Commands.Profiling_Command.c_Command_FlushStream;
-            await PerformRequestAsync(Commands.c_Profiling_Command, 0, cmd);
+            PerformSyncRequest(Commands.c_Profiling_Command, 0, cmd);
             return true;
         }
 
-        private Task<IncomingMessage> DiscoverCLRCapabilityAsync(uint capabilities)
+        private IncomingMessage DiscoverCLRCapability(uint capabilities)
         {
             Commands.Debugging_Execution_QueryCLRCapabilities cmd = new Commands.Debugging_Execution_QueryCLRCapabilities();
 
             cmd.m_caps = capabilities;
 
-            return PerformRequestAsync(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd);
+            return PerformSyncRequest(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd);
         }
 
-        private async Task<uint> DiscoverCLRCapabilityUintAsync(uint caps)
+        private uint DiscoverCLRCapabilityAsUint(uint capabilities)
         {
             uint ret = 0;
 
-            IncomingMessage reply = await DiscoverCLRCapabilityAsync(caps);
+            IncomingMessage reply = DiscoverCLRCapability(capabilities);
 
             if (reply != null)
             {
@@ -3027,18 +3028,18 @@ namespace nanoFramework.Tools.Debugger
             return ret;
         }
 
-        private async Task<CLRCapabilities.Capability> DiscoverCLRCapabilityFlagsAsync()
+        private CLRCapabilities.Capability DiscoverCLRCapabilityFlags()
         {
             Debug.WriteLine("DiscoverCLRCapability");
 
-            return (CLRCapabilities.Capability)await DiscoverCLRCapabilityUintAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityFlags);
+            return (CLRCapabilities.Capability)DiscoverCLRCapabilityAsUint(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityFlags);
         }
 
-        private async Task<CLRCapabilities.SoftwareVersionProperties> DiscoverSoftwareVersionPropertiesAsync()
+        private CLRCapabilities.SoftwareVersionProperties DiscoverSoftwareVersionProperties()
         {
             Debug.WriteLine("DiscoverSoftwareVersionProperties");
 
-            IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilitySoftwareVersion);
+            IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilitySoftwareVersion);
 
             Commands.Debugging_Execution_QueryCLRCapabilities.SoftwareVersion ver = new Commands.Debugging_Execution_QueryCLRCapabilities.SoftwareVersion();
 
@@ -3059,11 +3060,11 @@ namespace nanoFramework.Tools.Debugger
             return verCaps;
         }
 
-        private async Task<CLRCapabilities.HalSystemInfoProperties> DiscoverHalSystemInfoPropertiesAsync()
+        private CLRCapabilities.HalSystemInfoProperties DiscoverHalSystemInfoProperties()
         {
             Debug.WriteLine("DiscoverHalSystemInfoProperties");
 
-            IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityHalSystemInfo);
+            IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityHalSystemInfo);
 
             Commands.Debugging_Execution_QueryCLRCapabilities.HalSystemInfo halSystemInfo = new Commands.Debugging_Execution_QueryCLRCapabilities.HalSystemInfo();
 
@@ -3088,11 +3089,11 @@ namespace nanoFramework.Tools.Debugger
             return halProps;
         }
 
-        private async Task<CLRCapabilities.ClrInfoProperties> DiscoverClrInfoPropertiesAsync()
+        private CLRCapabilities.ClrInfoProperties DiscoverClrInfoProperties()
         {
             Debug.WriteLine("DiscoverClrInfoProperties");
 
-            IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityClrInfo);
+            IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityClrInfo);
 
             Commands.Debugging_Execution_QueryCLRCapabilities.ClrInfo clrInfo = new Commands.Debugging_Execution_QueryCLRCapabilities.ClrInfo();
 
@@ -3113,12 +3114,12 @@ namespace nanoFramework.Tools.Debugger
             return clrInfoProps;
         }
 
-        private async Task<CLRCapabilities.TargetInfoProperties> DiscoverTargetInfoPropertiesAsync()
+        private CLRCapabilities.TargetInfoProperties DiscoverTargetInfoProperties()
         {
             Debug.WriteLine("==============================");
             Debug.WriteLine("DiscoverTargetInfoProperties");
 
-            IncomingMessage reply = await DiscoverCLRCapabilityAsync(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilitySolutionReleaseInfo);
+            IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilitySolutionReleaseInfo);
 
             ReleaseInfo targetInfo = new ReleaseInfo();
 
@@ -3139,9 +3140,9 @@ namespace nanoFramework.Tools.Debugger
             return targetInfoProps;
         }
 
-        private async Task<CLRCapabilities> DiscoverCLRCapabilitiesAsync(CancellationToken cancellationToken)
+        private CLRCapabilities DiscoverCLRCapabilities(CancellationToken cancellationToken)
         {
-            var clrFlags = await DiscoverCLRCapabilityFlagsAsync();
+            var clrFlags = DiscoverCLRCapabilityFlags();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
             {
@@ -3150,7 +3151,7 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            var softwareVersion = await DiscoverSoftwareVersionPropertiesAsync();
+            var softwareVersion = DiscoverSoftwareVersionProperties();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
             {
@@ -3159,7 +3160,7 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            var halSysInfo = await DiscoverHalSystemInfoPropertiesAsync();
+            var halSysInfo = DiscoverHalSystemInfoProperties();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
             {
@@ -3168,7 +3169,7 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            var clrInfo = await DiscoverClrInfoPropertiesAsync();
+            var clrInfo = DiscoverClrInfoProperties();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
             {
@@ -3177,7 +3178,7 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            var solutionInfo = await DiscoverTargetInfoPropertiesAsync();
+            var solutionInfo = DiscoverTargetInfoProperties();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
             {
