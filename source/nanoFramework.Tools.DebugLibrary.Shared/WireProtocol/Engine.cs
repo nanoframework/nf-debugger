@@ -2184,29 +2184,26 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public RuntimeValue[] GetStackFrameValueAll(uint pid, uint depth, uint cValues, StackValueKind kind)
+        public List<RuntimeValue> GetStackFrameValueAll(uint pid, uint depth, uint cValues, StackValueKind kind)
         {
-            List<OutgoingMessage> cmds = new List<OutgoingMessage>();
-            RuntimeValue[] vals = null;
-            uint i = 0;
+            List<OutgoingMessage> commands = new List<OutgoingMessage>();
+            List<RuntimeValue> vals = new List<RuntimeValue>();
 
-            for (i = 0; i < cValues; i++)
+            for (uint i = 0; i < cValues; i++)
             {
-                cmds.Add(CreateMessage_GetValue_Stack(pid, depth, kind, i));
+                commands.Add(CreateMessage_GetValue_Stack(pid, depth, kind, i));
             }
 
-            List<IncomingMessage> replies = PerformRequestBatch(cmds);
+            List<IncomingMessage> replies = PerformRequestBatch(commands);
 
             if (replies != null)
             {
-                vals = new RuntimeValue[cValues];
-
                 foreach (IncomingMessage message in replies)
                 {
                     Commands.Debugging_Value_Reply reply = message.Payload as Commands.Debugging_Value_Reply;
                     if (reply != null)
                     {
-                        vals[i++] = RuntimeValue.Convert(this, reply.m_values);
+                        vals.Add(RuntimeValue.Convert(this, reply.m_values));
                     }
                 }
             }
