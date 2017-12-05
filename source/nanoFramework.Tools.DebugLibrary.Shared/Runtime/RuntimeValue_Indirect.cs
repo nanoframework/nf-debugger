@@ -77,21 +77,21 @@ namespace nanoFramework.Tools.Debugger
         public override uint Depth { get { return (m_value == null) ? 0 : m_value.Depth; } }
         public override uint Type { get { return (m_value == null) ? 0 : m_value.Type; } }
 
-        internal override async Task SetStringValueAsync(string val)
+        internal override void SetStringValue(string val)
         {
             if (m_value == null) throw new NotImplementedException();
 
-            await m_value.SetStringValueAsync(val);
+            m_value.SetStringValue(val);
         }
 
-        public override async Task<RuntimeValue> GetFieldAsync(uint offset, uint fd)
+        public override RuntimeValue GetField(uint offset, uint fd)
         {
-            return (m_value == null) ? null : await m_value.GetFieldAsync(offset, fd);
+            return (m_value == null) ? null : m_value.GetField(offset, fd);
         }
 
-        public override async Task<RuntimeValue> GetElementAsync(uint index)
+        public override RuntimeValue GetElement(uint index)
         {
-            return (m_value == null) ? null : await m_value.GetElementAsync(index);
+            return (m_value == null) ? null : m_value.GetElement(index);
         }
     }
 }

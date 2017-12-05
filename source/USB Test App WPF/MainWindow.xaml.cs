@@ -42,7 +42,7 @@ namespace Serial_Test_App_WPF
 
                 //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Start();
 
-                var di = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfoAsync();
+                var di = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo();
 
                 Debug.WriteLine("");
                 Debug.WriteLine("");
@@ -62,9 +62,9 @@ namespace Serial_Test_App_WPF
             // disable button
             (sender as Button).IsEnabled = false;
 
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () => {
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
 
-                var p = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].PingAsync();
+                var p = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].Ping();
 
                 Debug.WriteLine("");
                 Debug.WriteLine("");
@@ -95,11 +95,8 @@ namespace Serial_Test_App_WPF
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Stop();
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Dispose();
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine = null;
-                    //Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
-                    //    ConnectionStateResult = ConnectionState.Disconnected;
-                    //}));
                 }
-                catch (Exception ex)
+                catch
                 {
 
                 }
@@ -115,12 +112,12 @@ namespace Serial_Test_App_WPF
             // disable button
             (sender as Button).IsEnabled = false;
 
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
              {
 
                  try
                  {
-                     var deviceState = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetExecutionModeAsync();
+                     var deviceState = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetExecutionMode();
 
                      if (deviceState == Commands.DebuggingExecutionChangeConditions.State.Unknown)
                      {
@@ -146,7 +143,7 @@ namespace Serial_Test_App_WPF
                          Debug.WriteLine($">>> Device it's idle after exiting from a program execution <<<<");
                      }
                  }
-                 catch (Exception ex)
+                 catch
                  {
 
                  }
@@ -162,15 +159,12 @@ namespace Serial_Test_App_WPF
             // disable button
             (sender as Button).IsEnabled = false;
 
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
              {
 
                  try
                  {
-                     // Create cancelation token source
-                     CancellationTokenSource cts = new CancellationTokenSource();
-
-                     var result = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.ResolveAllAssembliesAsync(cts.Token);
+                     var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.ResolveAllAssemblies();
 
                      Debug.WriteLine("Assembly list:");
                      
@@ -183,7 +177,7 @@ namespace Serial_Test_App_WPF
                     //    ConnectionStateResult = ConnectionState.Disconnected;
                     //}));
                 }
-                 catch (Exception ex)
+                 catch
                  {
 
                  }
@@ -199,7 +193,7 @@ namespace Serial_Test_App_WPF
             // disable button
             (sender as Button).IsEnabled = false;
 
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
              {
 
                  try
@@ -210,10 +204,10 @@ namespace Serial_Test_App_WPF
                      var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
 
                      // get device info
-                     var deviceInfo = await device.GetDeviceInfoAsync(true);
-                     var memoryMap = await device.DebugEngine.GetMemoryMapAsync();
-                     var flashMap = await device.DebugEngine.GetFlashSectorMapAsync();
-                     var deploymentMap = await device.DebugEngine.GetDeploymentMapAsync();
+                     var deviceInfo = device.GetDeviceInfo(true);
+                     var memoryMap = device.DebugEngine.GetMemoryMap();
+                     var flashMap = device.DebugEngine.GetFlashSectorMap();
+                     var deploymentMap = device.DebugEngine.GetDeploymentMap();
 
                      // we have to have a valid device info
                      if (deviceInfo.Valid)
@@ -258,7 +252,7 @@ namespace Serial_Test_App_WPF
                          return;
                      }
                 }
-                 catch (Exception ex)
+                 catch
                  {
 
                  }
@@ -291,16 +285,16 @@ namespace Serial_Test_App_WPF
                     assemblies.Add(buffer);
                 }
 
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
 
-                    var result = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.DeploymentExecuteAsync(assemblies, false);
+                    var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.DeploymentExecute(assemblies, false);
 
                     Debug.WriteLine($">>> Deployment result: {result} <<<<");
 
                 }));
             }
-            catch (Exception ex)
+            catch
             {
 
             }
@@ -316,12 +310,12 @@ namespace Serial_Test_App_WPF
 
             try
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    var fm = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetFlashSectorMapAsync();
+                    var fm = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetFlashSectorMap();
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -331,7 +325,7 @@ namespace Serial_Test_App_WPF
 
                 }));
             }
-            catch (Exception ex)
+            catch
             {
 
             }
@@ -347,12 +341,12 @@ namespace Serial_Test_App_WPF
 
             try
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    var result = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.ResumeExecutionAsync();
+                    var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.ResumeExecution();
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -369,7 +363,7 @@ namespace Serial_Test_App_WPF
 
                 }));
             }
-            catch (Exception ex)
+            catch
             {
 
             }
@@ -385,12 +379,12 @@ namespace Serial_Test_App_WPF
 
             try
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    var result = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.PauseExecutionAsync();
+                    var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.PauseExecution();
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -407,7 +401,7 @@ namespace Serial_Test_App_WPF
 
                 }));
             }
-            catch (Exception ex)
+            catch
             {
 
             }
@@ -423,12 +417,12 @@ namespace Serial_Test_App_WPF
 
             try
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDeviceAsync(nanoFramework.Tools.Debugger.RebootOption.RebootClrOnly);
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(nanoFramework.Tools.Debugger.RebootOption.RebootClrOnly);
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -438,7 +432,7 @@ namespace Serial_Test_App_WPF
 
                 }));
             }
-            catch (Exception ex)
+            catch
             {
 
             }
@@ -454,12 +448,12 @@ namespace Serial_Test_App_WPF
 
             try
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDeviceAsync(nanoFramework.Tools.Debugger.RebootOption.NormalReboot);
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(nanoFramework.Tools.Debugger.RebootOption.NormalReboot);
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -469,7 +463,7 @@ namespace Serial_Test_App_WPF
 
                 }));
             }
-            catch (Exception ex)
+            catch
             {
 
             }
@@ -485,12 +479,12 @@ namespace Serial_Test_App_WPF
 
             try
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDeviceAsync(nanoFramework.Tools.Debugger.RebootOption.RebootClrWaitForDebugger);
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(nanoFramework.Tools.Debugger.RebootOption.RebootClrWaitForDebugger);
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -500,7 +494,7 @@ namespace Serial_Test_App_WPF
 
                 }));
             }
-            catch (Exception ex)
+            catch
             {
 
             }
@@ -516,12 +510,12 @@ namespace Serial_Test_App_WPF
 
             try
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    var dm = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetDeploymentMapAsync();
+                    var dm = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetDeploymentMap();
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -531,7 +525,7 @@ namespace Serial_Test_App_WPF
 
                 }));
             }
-            catch (Exception ex)
+            catch
             {
 
             }
@@ -562,8 +556,8 @@ namespace Serial_Test_App_WPF
 
                 }));
             }
-            catch (Exception ex)
-            {
+            catch
+            { 
 
             }
 

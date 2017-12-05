@@ -31,7 +31,7 @@ namespace Test_App_UWP
 
             bool connectResult = await App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.ConnectAsync(3000, true);
 
-            var di = await App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].GetDeviceInfoAsync();
+            var di = App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].GetDeviceInfo();
 
             Debug.WriteLine("");
             Debug.WriteLine("");
@@ -52,11 +52,11 @@ namespace Test_App_UWP
             var r = await App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.ReadBufferAsync(10, TimeSpan.FromMilliseconds(1000), new System.Threading.CancellationToken());
         }
 
-        private async void pingButton_Click(object sender, RoutedEventArgs e)
+        private void pingButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
-            var p = await App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].PingAsync();
+            var p = App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].Ping();
 
             Debug.WriteLine("");
             Debug.WriteLine("");
@@ -68,12 +68,12 @@ namespace Test_App_UWP
             (sender as Button).IsEnabled = true;
         }
 
-        private async void printMemoryMapButton_Click(object sender, RoutedEventArgs e)
+        private void printMemoryMapButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
-            var mm = await App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.GetMemoryMapAsync();
+            var mm = App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.GetMemoryMap();
 
             Debug.WriteLine("");
             Debug.WriteLine("");
@@ -85,12 +85,12 @@ namespace Test_App_UWP
             (sender as Button).IsEnabled = true;
         }
 
-        private async void printFlashSectorMapButton_Click(object sender, RoutedEventArgs e)
+        private void printFlashSectorMapButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
-            var fm = await App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.GetFlashSectorMapAsync();
+            var fm = App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.GetFlashSectorMap();
             //var fm = await App.NETMFUsbDebugClient.MFDevices[0].DebugEngine.GetAssembliesAsync();
 
             Debug.WriteLine("");

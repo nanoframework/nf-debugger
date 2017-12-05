@@ -103,14 +103,14 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         /// <param name="force">Force retrieving the information from the device.</param>
         /// <returns>Return the <see cref="INanoFrameworkDeviceInfo"/> for this device.</returns>
-        public async Task<INanoFrameworkDeviceInfo> GetDeviceInfoAsync(bool force = true)
+        public INanoFrameworkDeviceInfo GetDeviceInfo(bool force = true)
         {
             // start by checking if we already have this available
             if (!DeviceInfo.Valid || force)
             {
                 // seems to be invalid so get it from device
                 var mfDeviceInfo = new NanoFrameworkDeviceInfo(this);
-                await mfDeviceInfo.GetDeviceInfo();
+                mfDeviceInfo.GetDeviceInfo();
 
                 DeviceInfo = mfDeviceInfo;
             }
@@ -122,9 +122,9 @@ namespace nanoFramework.Tools.Debugger
         /// Attempts to communicate with the connected .Net Micro Framework device
         /// </summary>
         /// <returns></returns>
-        public async Task<PingConnectionType> PingAsync()
+        public PingConnectionType Ping()
         {
-            var reply = await DebugEngine.GetConnectionSourceAsync();
+            var reply = DebugEngine.GetConnectionSource();
 
             if (reply != null)
             {
@@ -155,7 +155,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 if (DebugEngine.ConnectionSource == ConnectionSource.nanoBooter) return true;
 
-                await DebugEngine.RebootDeviceAsync(RebootOption.EnterBootloader);
+                DebugEngine.RebootDevice(RebootOption.EnterBootloader);
 
                 /////////////////////////////////////////
                 // FIXME
@@ -193,7 +193,7 @@ namespace nanoFramework.Tools.Debugger
 
                     if (fConnected = await DebugEngine.ConnectAsync(1000, true, ConnectionSource.Unknown))
                     {
-                        Commands.Monitor_Ping.Reply reply = await DebugEngine.GetConnectionSourceAsync();
+                        Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
 
                         ret = (reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter);
 
@@ -232,7 +232,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (!IsClrDebuggerEnabled || 0 != (options & EraseOptions.Firmware))
             {
-                fReset = (await PingAsync() == PingConnectionType.nanoCLR);
+                fReset = (Ping() == PingConnectionType.nanoCLR);
 
                 if (!await ConnectToNanoBooterAsync(cancellationToken))
                 {
@@ -240,11 +240,11 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            var reply = await DebugEngine.GetFlashSectorMapAsync();
+            var reply = DebugEngine.GetFlashSectorMap();
 
             if (reply == null) throw new NanoFrameworkDeviceNoResponseException();
 
-            Commands.Monitor_Ping.Reply ping = await DebugEngine.GetConnectionSourceAsync();
+            Commands.Monitor_Ping.Reply ping = DebugEngine.GetConnectionSource();
 
             ret = true;
 
@@ -256,7 +256,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (isConnectedToCLR)
             {
-                await DebugEngine.PauseExecutionAsync();
+                DebugEngine.PauseExecution();
             }
 
             List<Commands.Monitor_FlashSectorMap.FlashSectorData> eraseSectors = new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
@@ -325,9 +325,9 @@ namespace nanoFramework.Tools.Debugger
             {
                 progress?.Report(new ProgressReport(value, total, string.Format("Erasing sector 0x{0:x08}", flashSectorData.m_StartAddress)));
 
-                var eraseResult = await DebugEngine.EraseMemoryAsync(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
+                var eraseResult = DebugEngine.EraseMemory(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
 
-                ret &= eraseResult.success;
+                ret &= eraseResult.Success;
 
                 value++;
             }
@@ -335,7 +335,7 @@ namespace nanoFramework.Tools.Debugger
             // reset if we specifically entered tinybooter for the erase
             if (fReset)
             {
-                await DebugEngine.ExecuteMemoryAsync(0);
+                DebugEngine.ExecuteMemory(0);
             }
 
             // reboot if we are talking to the clr
@@ -343,7 +343,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 progress?.Report(new ProgressReport(0, 0, "Rebooting..."));
 
-                await DebugEngine.RebootDeviceAsync(RebootOption.RebootClrOnly);
+                DebugEngine.RebootDevice(RebootOption.RebootClrOnly);
             }
 
             return ret;
@@ -427,9 +427,9 @@ namespace nanoFramework.Tools.Debugger
                     progress?.Report(new ProgressReport(0, total, string.Format("Erasing sector 0x{0:x08}", block.address)));
 
                     // the clr requires erase before writing
-                    var eraseResult = await DebugEngine.EraseMemoryAsync(block.address, (uint)len);
+                    var eraseResult = DebugEngine.EraseMemory(block.address, (uint)len);
 
-                    if (!eraseResult.success)
+                    if (!eraseResult.Success)
                     {
                         return new Tuple<uint, bool>(0, false);
                     }
@@ -447,8 +447,8 @@ namespace nanoFramework.Tools.Debugger
                             return new Tuple<uint, bool>(0, false);
                         }
 
-                        var writeResult = await DebugEngine.WriteMemoryAsync(addr, data);
-                        if (writeResult.success == false)
+                        var writeResult = DebugEngine.WriteMemory(addr, data);
+                        if (writeResult.Success == false)
                         {
                             return new Tuple<uint, bool>(0, false);
                         }
@@ -516,18 +516,18 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            Commands.Monitor_Ping.Reply reply = await DebugEngine.GetConnectionSourceAsync();
+            Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
 
             if (reply == null) throw new NanoFrameworkDeviceNoResponseException();
 
             // only execute if we are talking to the nanoBooter, otherwise reboot
             if (reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter)
             {
-                return await DebugEngine.ExecuteMemoryAsync(entryPoint);
+                return DebugEngine.ExecuteMemory(entryPoint);
             }
             else // if we are talking to the CLR then we simply did a deployment update, so reboot
             {
-                await DebugEngine.RebootDeviceAsync(RebootOption.RebootClrOnly);
+                DebugEngine.RebootDevice(RebootOption.RebootClrOnly);
             }
 
             return true;
@@ -587,17 +587,17 @@ namespace nanoFramework.Tools.Debugger
 
                     //Debug.WriteLine(updateId);
 
-                    handle = await DebugEngine.StartUpdateAsync("NetMF", 4, 4, updateId, 0, 0, (uint)fileInfo.Size, (uint)c_PacketSize, 0);
+                    handle = DebugEngine.StartUpdate("NetMF", 4, 4, updateId, 0, 0, (uint)fileInfo.Size, (uint)c_PacketSize, 0);
                     if (handle > -1)
                     {
                         uint authType;
                         IAsyncResult iar = null;
 
                         // perform request
-                        var resp = await DebugEngine.UpdateAuthCommandAsync(handle, 1, null);
+                        var resp = DebugEngine.UpdateAuthCommand(handle, 1, null);
 
                         // check result
-                        if (!resp.Item2 || resp.Item1.Length < 4) return false;
+                        if (!resp.Success || resp.Response.Length < 4) return false;
 
 
                         using (MemoryStream ms = new MemoryStream(resp.Item1))
@@ -621,7 +621,7 @@ namespace nanoFramework.Tools.Debugger
                         //    }
                         //}
 
-                        if (!await DebugEngine.UpdateAuthenticateAsync(handle, pubKey))
+                        if (!DebugEngine.UpdateAuthenticate(handle, pubKey))
                         {
                             return false;
                         }
@@ -682,7 +682,7 @@ namespace nanoFramework.Tools.Debugger
 
                             uint crc = CRC.ComputeCRC(packet, 0, packet.Length, 0);
 
-                            if (!await DebugEngine.AddPacketAsync(handle, (uint)idx++, packet, CRC.ComputeCRC(packet, 0, packet.Length, 0))) return false;
+                            if (!DebugEngine.AddPacket(handle, (uint)idx++, packet, CRC.ComputeCRC(packet, 0, packet.Length, 0))) return false;
 
                             imageCRC = CRC.ComputeCRC(packet, 0, packet.Length, imageCRC);
 
@@ -712,7 +712,7 @@ namespace nanoFramework.Tools.Debugger
                             }
                         }
 
-                        if (await DebugEngine.InstallUpdateAsync(handle, sig))
+                        if (DebugEngine.InstallUpdate(handle, sig))
                         {
                             return true;
                         }
@@ -1061,7 +1061,7 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            var flasSectorsMap = await DebugEngine.GetFlashSectorMapAsync();
+            var flasSectorsMap = DebugEngine.GetFlashSectorMap();
 
             if (flasSectorsMap == null || flasSectorsMap.Count == 0) throw new NanoFrameworkDeviceNoResponseException();
 
@@ -1104,7 +1104,7 @@ namespace nanoFramework.Tools.Debugger
             }
             if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
             {
-                await DebugEngine.PauseExecutionAsync();
+                DebugEngine.PauseExecution();
             }
         }
     }

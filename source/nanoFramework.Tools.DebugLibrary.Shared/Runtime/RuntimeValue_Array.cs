@@ -22,9 +22,9 @@ namespace nanoFramework.Tools.Debugger
         public override bool IsArray { get { return true; } }
         public override bool IsReflection { get { return false; } }
 
-        public override async Task<RuntimeValue> GetElementAsync(uint index)
+        public override RuntimeValue GetElement(uint index)
         {
-            return await m_eng.GetArrayElementAsync(m_handle.m_referenceID, index);
+            return m_eng.GetArrayElement(m_handle.m_referenceID, index);
         }
 
         public override uint Length { get { return m_handle.m_array_numOfElements; } }

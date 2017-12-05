@@ -30,10 +30,10 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public Task Reply(object data)
+        public void Reply(object data)
         {
             byte[] payload = m_source._engine.CreateBinaryFormatter().Serialize(data);
-            return m_source.ReplyInnerAsync(this, payload);
+            m_source.ReplyInner(this, payload);
         }
     }
 }

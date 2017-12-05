@@ -30,9 +30,9 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public override async Task<RuntimeValue> GetFieldAsync(uint offset, uint fd)
+        public override RuntimeValue GetField(uint offset, uint fd)
         {
-            return await m_eng.GetFieldValueAsync(this, offset, fd);
+            return m_eng.GetFieldValue(this, offset, fd);
         }
     }
 }

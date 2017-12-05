@@ -55,9 +55,9 @@ namespace nanoFramework.Tools.Debugger
             _engine.RpcDeregisterEndPoint(this);
         }
 
-        internal async System.Threading.Tasks.Task<bool> CheckDestinationAsync(EndPoint ep)
+        internal bool CheckDestination(EndPoint ep)
         {
-            return await _engine.RpcCheckAsync(InitializeAddressForTransmission(ep));
+            return _engine.RpcCheck(InitializeAddressForTransmission(ep));
         }
 
         internal bool IsRpcServer
@@ -95,13 +95,13 @@ namespace nanoFramework.Tools.Debugger
             return addr;
         }
 
-        internal async Task<object> SendMessageAsync(EndPoint ep, int timeout, MessageCall call)
+        internal object SendMessage(EndPoint ep, int timeout, MessageCall call)
         {
             object data = call.CreateMessagePayload();
 
             byte[] payload = _engine.CreateBinaryFormatter().Serialize(data);
 
-            byte[] res = await SendMessageInnerAsync(ep, timeout, payload);
+            byte[] res = SendMessageInner(ep, timeout, payload);
 
             if (res == null)
             {
@@ -167,14 +167,14 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        internal async System.Threading.Tasks.Task<byte[]> SendMessageInnerAsync(EndPoint ep, int timeout, byte[] data)
+        internal byte[] SendMessageInner(EndPoint ep, int timeout, byte[] data)
         {
-            return await _engine.RpcSendAsync(InitializeAddressForTransmission(ep), timeout, data);
+            return _engine.RpcSend(InitializeAddressForTransmission(ep), timeout, data);
         }
 
-        internal Task ReplyInnerAsync(Message msg, byte[] data)
+        internal void ReplyInner(Message msg, byte[] data)
         {
-            return _engine.RpcReplyAsync(msg.m_addr, data);
+            _engine.RpcReply(msg.m_addr, data);
         }
 
         //static public object GetObject(Engine eng, Type type, uint id, Type classToRemote)

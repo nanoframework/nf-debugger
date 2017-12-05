@@ -14,7 +14,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public interface IControllerHostLocal : IControllerHost
     {
-        Task<bool> ProcessMessageAsync(IncomingMessage msg, bool fReply);
+        bool ProcessMessage(IncomingMessage msg, bool fReply);
 
         Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken);
 

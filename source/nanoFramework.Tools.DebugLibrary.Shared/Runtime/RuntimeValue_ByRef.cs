@@ -15,12 +15,7 @@ namespace nanoFramework.Tools.Debugger
         {
             if (m_value == null && m_handle.m_arrayref_referenceID != 0)
             {
-                var task = m_eng.GetArrayElementAsync(m_handle.m_arrayref_referenceID, m_handle.m_arrayref_index);
-                task.Start();
-                if (task.Wait(5000))
-                {
-                    m_value = task.Result;
-                }
+                m_value = m_eng.GetArrayElement(m_handle.m_arrayref_referenceID, m_handle.m_arrayref_index);
             }
 
             if (m_value == null)
