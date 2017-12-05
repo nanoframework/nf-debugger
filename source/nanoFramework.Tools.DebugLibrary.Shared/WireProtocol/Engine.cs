@@ -574,7 +574,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (_eventCommand != null)
             {
-                _eventCommand.Invoke(message, isReply);
+                Task.Factory.StartNew(() => _eventCommand.Invoke(message, isReply), _backgroundProcessorCancellation.Token);
 
                 return true;
             }
