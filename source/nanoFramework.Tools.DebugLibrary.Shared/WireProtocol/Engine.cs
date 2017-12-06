@@ -1200,13 +1200,8 @@ namespace nanoFramework.Tools.Debugger
 
         public (uint ErrorCode, bool Success) WriteMemory(uint address, byte[] buf, int offset, int length)
         {
-            Debug.WriteLine($"Write memory operation. Start address { address.ToString("X8") }, lenght {length}");
-
             int count = length;
             int position = offset;
-
-            // TODO replace with token argument
-            CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
             while (count > 0)
             {
@@ -1224,14 +1219,11 @@ namespace nanoFramework.Tools.Debugger
 
                 DebuggerEventSource.Log.EngineWriteMemory(address, packetLength);
 
-                Debug.WriteLine($"Sending {packetLength} bytes to address { address.ToString("X8") }, {count} remaining...");
-
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_WriteMemory, 0, cmd);
-
-                Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
 
                 if (reply != null)
                 {
+                    Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
 
                     if (!reply.IsPositiveAcknowledge())
                     {
@@ -1248,7 +1240,7 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            return (0, true);
+            return (0, false);
         }
 
         public (uint ErrorCode, bool Success) WriteMemory(uint address, byte[] buf)
@@ -1258,9 +1250,6 @@ namespace nanoFramework.Tools.Debugger
 
         public (uint ErrorCode, bool Success) EraseMemory(uint address, uint length)
         {
-            // TODO replace with token argument
-            CancellationTokenSource cancelTSource = new CancellationTokenSource();
-
             DebuggerEventSource.Log.EngineEraseMemory(address, length);
 
             var cmd = new Commands.Monitor_EraseMemory
@@ -1283,7 +1272,7 @@ namespace nanoFramework.Tools.Debugger
             const int extraTimeoutForErase = 800;
 
             // the erase memory command isn't aware of the sector(s) size it will end up erasing so we have to do an educated guess on how long that will take
-            // considering the worst case timming which is the erase of the smallest sector.
+            // considering the worst case timing which is the erase of the smallest sector.
 
             // default timeout is 0ms
             var timeout = 0;
