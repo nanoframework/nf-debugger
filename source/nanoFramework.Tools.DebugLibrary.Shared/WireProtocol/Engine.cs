@@ -1230,14 +1230,22 @@ namespace nanoFramework.Tools.Debugger
 
                 Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
 
-                if (!IncomingMessage.IsPositiveAcknowledge(reply))
+                if (reply != null)
                 {
-                    return (cmdReply.ErrorCode, false);
-                }
 
-                address += (uint)packetLength;
-                count -= packetLength;
-                position += packetLength;
+                    if (!reply.IsPositiveAcknowledge())
+                    {
+                        return (cmdReply.ErrorCode, false);
+                    }
+
+                    address += (uint)packetLength;
+                    count -= packetLength;
+                    position += packetLength;
+                }
+                else
+                {
+                    break;
+                }
             }
 
             return (0, true);
@@ -1303,9 +1311,14 @@ namespace nanoFramework.Tools.Debugger
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_EraseMemory, 0, cmd);
 
-            Commands.Monitor_EraseMemory.Reply cmdReply = reply.Payload as Commands.Monitor_EraseMemory.Reply;
+            if (reply != null)
+            {
+                Commands.Monitor_EraseMemory.Reply cmdReply = reply.Payload as Commands.Monitor_EraseMemory.Reply;
 
-            return (cmdReply?.ErrorCode ?? 0, IncomingMessage.IsPositiveAcknowledge(reply));
+                return (cmdReply?.ErrorCode ?? 0, reply.IsPositiveAcknowledge());
+            }
+
+            return (0, false);
         }
 
         public bool ExecuteMemory(uint address)
@@ -1316,7 +1329,12 @@ namespace nanoFramework.Tools.Debugger
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Execute, 0, cmd);
 
-            return IncomingMessage.IsPositiveAcknowledge(reply);
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+
+            return false;
         }
 
         public void RebootDevice(RebootOption option = RebootOption.NormalReboot)
@@ -1461,7 +1479,14 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_id = id;
 
-            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Execution_SetCurrentAppDomain, 0, cmd));
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_SetCurrentAppDomain, 0, cmd);
+
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+
+            return false;
         }
 
         public bool SetBreakpoints(Commands.Debugging_Execution_BreakpointDef[] breakpoints)
@@ -1470,7 +1495,14 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_data = breakpoints;
 
-            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Execution_Breakpoints, 0, cmd));
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_Breakpoints, 0, cmd);
+
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+
+            return false;
         }
 
         public Commands.Debugging_Execution_BreakpointDef GetBreakpointStatus()
@@ -1506,7 +1538,14 @@ namespace nanoFramework.Tools.Debugger
             Array.Copy(blob, 0, cmd.m_command, 0, 128);
             Array.Copy(blob, 128, cmd.m_hash, 0, 128);
 
-            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Execution_Unlock, 0, cmd));
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_Unlock, 0, cmd);
+
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+
+            return false;
         }
 
         public (uint Address, bool Success) AllocateMemory(uint size)
@@ -1898,7 +1937,14 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_pid = pid;
 
-            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Thread_Suspend, 0, cmd));
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_Suspend, 0, cmd);
+
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+            
+            return false;
         }
 
         public bool ResumeThread(uint pid)
@@ -1907,7 +1953,14 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_pid = pid;
 
-            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Thread_Resume, 0, cmd));
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_Resume, 0, cmd);
+
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+
+            return false;
         }
 
         public RuntimeValue GetThreadException(uint pid)
@@ -1935,7 +1988,14 @@ namespace nanoFramework.Tools.Debugger
             cmd.m_pid = pid;
             cmd.m_depth = depth;
 
-            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Thread_Unwind, 0, cmd));
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_Unwind, 0, cmd);
+
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+
+            return false;
         }
 
         public bool SetIPOfStackFrame(uint pid, uint depth, uint IP, uint depthOfEvalStack)
@@ -1948,7 +2008,14 @@ namespace nanoFramework.Tools.Debugger
             cmd.m_IP = IP;
             cmd.m_depthOfEvalStack = depthOfEvalStack;
 
-            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Stack_SetIP, 0, cmd));
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Stack_SetIP, 0, cmd);
+
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+
+            return false;
         }
 
         public Commands.Debugging_Stack_Info.Reply GetStackInfo(uint pid, uint depth)
@@ -2144,7 +2211,14 @@ namespace nanoFramework.Tools.Debugger
 
             data.CopyTo(setBlock.m_value, 0);
 
-            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Value_SetBlock, 0, setBlock));
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Value_SetBlock, 0, setBlock);
+
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+
+            return false;
         }
 
         private OutgoingMessage CreateMessage_GetValue_Stack(uint pid, uint depth, StackValueKind kind, uint index)
@@ -2165,7 +2239,14 @@ namespace nanoFramework.Tools.Debugger
 
             cmd.m_size = size;
 
-            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Value_ResizeScratchPad, 0, cmd));
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Value_ResizeScratchPad, 0, cmd);
+
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+
+            return false;
         }
 
         public RuntimeValue GetStackFrameValue(uint pid, uint depth, StackValueKind kind, uint index)
@@ -2238,7 +2319,14 @@ namespace nanoFramework.Tools.Debugger
 
             data.CopyTo(cmd.m_value, 0);
 
-            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Value_SetArray, 0, cmd));
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Value_SetArray, 0, cmd);
+
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+
+            return false;
         }
 
         public RuntimeValue GetScratchPadValue(int index)
@@ -2737,7 +2825,14 @@ namespace nanoFramework.Tools.Debugger
             cmd.m_kind = (uint)kind;
             cmd.m_raw = index;
 
-            return IncomingMessage.IsPositiveAcknowledge(PerformSyncRequest(Commands.c_Debugging_Info_SetJMC, 0, cmd));
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Info_SetJMC, 0, cmd);
+
+            if (reply != null)
+            {
+                return reply.IsPositiveAcknowledge();
+            }
+
+            return false;
         }
 
         private bool DeploymentExecuteIncremental(List<byte[]> assemblies, IProgress<string> progress)

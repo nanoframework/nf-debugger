@@ -25,6 +25,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DeviceInformationExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\MonitorFlashSectorMapExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\OutputExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\IncomingMessageExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\TaskExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\TypeExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Message.cs" />
