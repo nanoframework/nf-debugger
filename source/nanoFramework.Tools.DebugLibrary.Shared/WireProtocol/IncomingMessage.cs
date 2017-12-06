@@ -58,11 +58,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        static public bool IsPositiveAcknowledge(IncomingMessage reply)
-        {
-            return reply != null && ((reply.Header.Flags & WireProtocol.Flags.c_ACK) != 0);
-        }
-
         public async Task<bool> ReplyAsync(Converter converter, uint flags, object payload, CancellationToken cancellationToken)
         {
             // FIXME
