@@ -1236,11 +1236,11 @@ namespace nanoFramework.Tools.Debugger
                 }
                 else
                 {
-                    break;
+                    return (0, false);
                 }
             }
 
-            return (0, false);
+            return (0, true);
         }
 
         public (uint ErrorCode, bool Success) WriteMemory(uint address, byte[] buf)
