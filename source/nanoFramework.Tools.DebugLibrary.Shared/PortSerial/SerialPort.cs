@@ -260,8 +260,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                             if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice.Device.DeviceInformation))
                             {
+                                // the device info was updated above, need to get it from the tentative devices collection
+
                                 //add device to the collection
-                                NanoFrameworkDevices.Add(newNanoFrameworkDevice as NanoDeviceBase);
+                                NanoFrameworkDevices.Add(FindNanoFrameworkDevice(newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id));
                                 Debug.WriteLine($"New Serial device: {newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}");
 
                                 // done here, clear tentative list
