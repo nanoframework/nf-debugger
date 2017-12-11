@@ -39,8 +39,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             public override string ToString()
             {
-                // FIXME
-                return ""; //Encoding.UTF8.GetString(m_data);
+                return Encoding.UTF8.GetString(m_data);
             }
         }
 
