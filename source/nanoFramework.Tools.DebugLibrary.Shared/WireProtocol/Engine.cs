@@ -418,7 +418,7 @@ namespace nanoFramework.Tools.Debugger
                 OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
 
                 return await PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
-            });
+            }, _cancellationTokenSource.Token.AddTimeout(new TimeSpan(0, 0, 0, 0, millisecondsTimeout)));
 
             return t.Result;
         }
@@ -427,7 +427,7 @@ namespace nanoFramework.Tools.Debugger
         {
             var t = Task.Run(async () => {
                 return await PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
-            });
+            }, _cancellationTokenSource.Token.AddTimeout(new TimeSpan(0, 0, 0, 0, millisecondsTimeout)));
 
             return t.Result;
         }
