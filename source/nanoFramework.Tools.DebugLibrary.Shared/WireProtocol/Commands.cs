@@ -39,7 +39,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             public override string ToString()
             {
-                return Encoding.UTF8.GetString(m_data);
+                Boolean completed;
+                Int32 bytesUsed, charsUsed;
+                var chars = new Char[m_data.Length];
+
+                Encoding.UTF8.GetDecoder().Convert(m_data, 0, m_data.Length, chars, 0, m_data.Length, false, out bytesUsed, out charsUsed, out completed);
+                return new String(chars, 0, charsUsed);
             }
         }
 
