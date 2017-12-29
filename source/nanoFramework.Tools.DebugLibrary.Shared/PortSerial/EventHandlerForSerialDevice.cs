@@ -206,7 +206,7 @@ namespace nanoFramework.Tools.Debugger.Serial
 
         private void Device_ErrorReceived(SerialDevice sender, ErrorReceivedEventArgs args)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         /// <summary>
