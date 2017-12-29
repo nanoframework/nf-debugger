@@ -2,6 +2,7 @@ using GalaSoft.MvvmLight;
 using nanoFramework.ANT.Services.NanoFrameworkService;
 using nanoFramework.Tools.Debugger;
 using nanoFramework.Tools.Debugger.WireProtocol;
+using PropertyChanged;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -23,7 +24,9 @@ namespace Serial_Test_App_WPF.ViewModel
     /// See http://www.galasoft.ch/mvvm
     /// </para>
     /// </summary>
+    [AddINotifyPropertyChangedInterface]
     public class MainViewModel : ViewModelBase
+
     {
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
@@ -40,7 +43,7 @@ namespace Serial_Test_App_WPF.ViewModel
             ////}
         }
 
-        public INFSerialDebugClientService SerialDebugService { get; set; } = null;
+        public INFSerialDebugClientService SerialDebugService { get; set; }
 
         public void OnSerialDebugServiceChanged()
         {
