@@ -128,7 +128,8 @@ namespace nanoFramework.Tools.Debugger.Serial
 
                     // adjust settings for serial port
                     _device.BaudRate = 115200;
-
+                    _device.DataBits = 8;
+                    
                     /////////////////////////////////////////////////////////////
                     // need to FORCE the parity setting to _NONE_ because        
                     // the default on the current ST Link is different causing 

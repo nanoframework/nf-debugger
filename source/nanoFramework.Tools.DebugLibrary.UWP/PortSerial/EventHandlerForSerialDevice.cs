@@ -153,13 +153,14 @@ namespace nanoFramework.Tools.Debugger.Serial
 
                     // adjust settings for serial port
                     _device.BaudRate = 115200;
-
-                    /////////////////////////////////////////////////////////////
+					_device.DataBits = 8;
+                    
+                     /////////////////////////////////////////////////////////////
                     // need to FORCE the parity setting to _NONE_ because        
                     // the default on the current ST Link is different causing 
                     // the communication to fail
                     /////////////////////////////////////////////////////////////
-                    _device.Parity = SerialParity.None;
+                   _device.Parity = SerialParity.None;
 
                     _device.WriteTimeout = TimeSpan.FromMilliseconds(1000);
                     _device.ReadTimeout = TimeSpan.FromMilliseconds(1000);

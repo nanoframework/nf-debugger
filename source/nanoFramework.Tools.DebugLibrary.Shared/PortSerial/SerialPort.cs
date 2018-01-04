@@ -441,11 +441,23 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             var name = deviceInformation.DeviceInformation.Name;
             var serialNumber = GetSerialNumber(deviceInformation.DeviceInformation.Id);
 
-            // acceptable names and that are know valid nanoFramework devices
-            if (
-                // STM32 COM port on on-board ST Link found in most NUCLEO boards
-                (name == "STM32 STLink")
-               )
+            if (serialNumber != null && serialNumber.Contains("NANO_"))
+            {
+                var device = FindNanoFrameworkDevice(deviceInformation.DeviceInformation.Id);
+
+                if (device != null)
+                {
+                    device.Description = serialNumber + " @ " + device.Description;
+
+                    // should be a valid nanoFramework device, done here
+                    return true;
+                }
+                else
+                {
+                    Debug.WriteLine($"Couldn't find nano device {EventHandlerForSerialDevice.Current.DeviceInformation.Id} with serial {serialNumber}");
+                }
+            }
+            else
             {
                 // need an extra check on this because this can be 'just' a regular COM port without any nanoFramework device behind
 
@@ -470,26 +482,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
 
             }
-            else if (serialNumber != null)
-            {
-                if (serialNumber.Contains("NANO_"))
-                {
-                    var device = FindNanoFrameworkDevice(deviceInformation.DeviceInformation.Id);
-
-                    if (device != null)
-                    {
-                        device.Description = serialNumber + " @ " + device.Description;
-
-                        // should be a valid nanoFramework device, done here
-                        return true;
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"Couldn't find nano device {EventHandlerForSerialDevice.Current.DeviceInformation.Id} with serial {serialNumber}");
-                    }
-                }
-            }
-
+ 
             // default to false
             return false;
         }
