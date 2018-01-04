@@ -706,10 +706,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 public uint m_height;
                 public uint m_bpp;
             }
+
             public class SoftwareVersion
             {
-                public byte[] m_buildDate = new byte[22];
-                public uint m_compilerVersion;
+                public byte[] BuildDate = new byte[22];
+                public byte[] CompilerInfo = new byte[16];
+                public uint CompilerVersion;
             }
 
             public class OEM_MODEL_SKU

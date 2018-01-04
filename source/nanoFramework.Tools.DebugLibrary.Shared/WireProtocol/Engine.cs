@@ -3134,7 +3134,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     new Converter().Deserialize(ver, cmdReply.m_data);
 
-                    verCaps = new CLRCapabilities.SoftwareVersionProperties(ver.m_buildDate, ver.m_compilerVersion);
+                    verCaps = new CLRCapabilities.SoftwareVersionProperties(ver.BuildDate, ver.CompilerInfo, ver.CompilerVersion);
                 }
             }
 
