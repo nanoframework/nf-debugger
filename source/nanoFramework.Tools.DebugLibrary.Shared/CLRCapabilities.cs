@@ -30,17 +30,28 @@ namespace nanoFramework.Tools.Debugger
         public struct SoftwareVersionProperties
         {
             public readonly string BuildDate;
+            public readonly string CompilerInfo;
             public readonly Version CompilerVersion;
 
-            public SoftwareVersionProperties(byte[] buildDate, uint compVersion)
+            public SoftwareVersionProperties(byte[] buildDate, byte[] compilerInfo, uint compVersion)
             {
+                // parse build date from byte[]
                 char[] chars = new char[buildDate.Length];
                 int i = 0;
                 for (i = 0; i < chars.Length && buildDate[i] != 0; i++)
                 {
                     chars[i] = (char)buildDate[i];
                 }
-                BuildDate = new string(chars, 0, i);
+                BuildDate = (new string(chars, 0, i)).TrimEnd('\0');
+
+                // parse compiler info from byte[]
+                chars = new char[compilerInfo.Length];
+                i = 0;
+                for (i = 0; i < chars.Length && compilerInfo[i] != 0; i++)
+                {
+                    chars[i] = (char)compilerInfo[i];
+                }
+                CompilerInfo = new string(chars, 0, i);
 
                 // this is the compiler version in coded format: MAJOR x 10000 + MINOR x 100 + PATCH
                 // example: v6.3.1 shows as 6 x 10000 + 3 x 100 + 1 = 60301
@@ -78,8 +89,8 @@ namespace nanoFramework.Tools.Debugger
                 halVersion = hv; halVendorInfo = hvi;
                 oemCode = oc; modelCode = mc; skuCode = sc;
 
-                moduleSerialNumber = BytesToHexString(mSerNumBytes);
-                systemSerialNumber = BytesToHexString(sSerNumBytes);
+                moduleSerialNumber = BytesToHexString(mSerNumBytes).TrimEnd('\0');
+                systemSerialNumber = BytesToHexString(sSerNumBytes).TrimEnd('\0');
             }
 
             private static string BytesToHexString(byte[] bytes)
@@ -117,7 +128,7 @@ namespace nanoFramework.Tools.Debugger
             public TargetInfoProperties(Version v, string i)
             {
                 targetVersion = v;
-                targetVendorInfo = i;
+                targetVendorInfo = i.TrimEnd('\0');
             }
         }
 

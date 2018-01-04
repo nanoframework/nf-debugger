@@ -11,30 +11,26 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class ReleaseInfo : IConverter
     {
-        public VersionStruct m_version;
-        public byte[] m_info;
+        // these constants reflect the size of the struct NFReleaseInfo in native code @ nanoHAL_ReleaseInfo.h
+        private const int c_sizeOfVersion = 8;
+        private const int c_sizeOfInfo = 128;
+
+        private VersionStruct _version;
+        private byte[] _info;
 
         public ReleaseInfo()
         {
-            m_info = new byte[64 - 8];
+            _version = new VersionStruct();
+            _info = new byte[c_sizeOfInfo - c_sizeOfVersion];
         }
 
         public void PrepareForDeserialize(int size, byte[] data, Converter converter)
         {
-            m_info = new byte[64 - 8];
+            _info = new byte[c_sizeOfInfo - c_sizeOfVersion];
         }
 
-        public Version Version
-        {
-            get { return m_version.Version; }
-        }
+        public Version Version => _version.Version;
 
-        public string Info
-        {
-            get
-            {
-                return Encoding.UTF8.GetString(m_info, 0, m_info.Length);
-            }
-        }
+        public string Info => Encoding.UTF8.GetString(_info, 0, _info.Length).TrimEnd('\0');
     }
 }
