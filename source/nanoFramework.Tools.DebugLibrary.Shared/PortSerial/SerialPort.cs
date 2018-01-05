@@ -570,7 +570,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public async Task<bool> ConnectDeviceAsync(NanoDeviceBase device)
         {
-            if(await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation, device.DeviceBase as SerialDevice).ConfigureAwait(true))
+            if(await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation, device.DeviceBase as SerialDevice))
             {
                 if (device.DeviceBase == null)
                 {
@@ -582,7 +582,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
             }
 
-            return await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).ConfigureAwait(true);
+            return await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation);
         }
 
         private async Task<bool> ConnectSerialDeviceAsync(SerialDeviceInformation serialDeviceInfo, SerialDevice existingDevice = null)
