@@ -268,22 +268,41 @@ namespace Serial_Test_App_WPF
             // disable button
             (sender as Button).IsEnabled = false;
 
-            List<byte[]> assemblies = new List<byte[]>();
+            List<byte[]> assemblies = new List<byte[]>(4);
+            // test data
+// mscorlib v(36500 bytes)
+// Windows.Storage.Streams v(6180 bytes)
+// Windows.Devices.SerialCommunication v(3172 bytes)
+// SerialCommunication v1.0.6578.34099(1180 bytes)
+// assemblies to device...total size in bytes is 47032.
+
+              assemblies.Add(new byte[36500]);
+            assemblies[0][0] = 0x5;
+            assemblies[0][1] = 0x5;
+            assemblies.Add(new byte[6180]);
+            assemblies[1][0] = 0x6;
+            assemblies[1][1] = 0x6;
+            assemblies.Add(new byte[3172]);
+            assemblies[2][0] = 0x7;
+            assemblies[2][1] = 0x7;
+            assemblies.Add(new byte[1180]);
+            assemblies[3][0] = 0x8;
+            assemblies[3][1] = 0x8;
 
             try
             {
-                // add mscorlib
-                string assemblyPath = @"..\..\..\packages\nanoFramework.CoreLibrary.1.0.0-preview022\lib\mscorlib.pe";
+                //// add mscorlib
+                //string assemblyPath = @"..\..\..\packages\nanoFramework.CoreLibrary.1.0.0-preview022\lib\mscorlib.pe";
 
-                using (FileStream fs = File.Open(assemblyPath, FileMode.Open, FileAccess.Read))
-                {
-                    Debug.WriteLine($"Adding pe file {assemblyPath} to deployment bundle");
-                    long length = (fs.Length + 3) / 4 * 4;
-                    byte[] buffer = new byte[length];
+                //using (FileStream fs = File.Open(assemblyPath, FileMode.Open, FileAccess.Read))
+                //{
+                //    Debug.WriteLine($"Adding pe file {assemblyPath} to deployment bundle");
+                //    long length = (fs.Length + 3) / 4 * 4;
+                //    byte[] buffer = new byte[length];
 
-                    fs.Read(buffer, 0, (int)fs.Length);
-                    assemblies.Add(buffer);
-                }
+                //    fs.Read(buffer, 0, (int)fs.Length);
+                //    assemblies.Add(buffer);
+                //}
 
                 await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {

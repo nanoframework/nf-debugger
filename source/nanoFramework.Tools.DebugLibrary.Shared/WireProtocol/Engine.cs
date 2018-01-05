@@ -414,10 +414,10 @@ namespace nanoFramework.Tools.Debugger
 
         private IncomingMessage PerformSyncRequest(uint command, uint flags, object payload, int millisecondsTimeout = 5000)
         {
-            var t = Task.Run(async () => {
+            var t = Task.Run(() => {
                 OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
 
-                return await PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
+                return PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
             }, _cancellationTokenSource.Token.AddTimeout(new TimeSpan(0, 0, 0, 0, millisecondsTimeout)));
 
             return t.Result;
@@ -425,8 +425,8 @@ namespace nanoFramework.Tools.Debugger
 
         private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = 5000)
         {
-            var t = Task.Run(async () => {
-                return await PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
+            var t = Task.Run(() => {
+                return PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
             }, _cancellationTokenSource.Token.AddTimeout(new TimeSpan(0, 0, 0, 0, millisecondsTimeout)));
 
             return t.Result;
@@ -1206,7 +1206,11 @@ namespace nanoFramework.Tools.Debugger
             while (count > 0)
             {
                 Commands.Monitor_WriteMemory cmd = new Commands.Monitor_WriteMemory();
-                int packetLength = Math.Min(1024, count);
+
+                // get packet length, either the maximum allowed size or whatever is still available to TX
+                // on the maximum packet size: 8 bytes are being subtracted to account for the CRC32 value
+                // the above seems to be paramount because the WinRT API seems to have issues with USB packets smaller than 64 bytes
+                int packetLength = Math.Min(1024 - 8, count);
 
                 // sanity check for length because TXing a packet with less than 64 bytes seems to be causing issues
                 if ((count - packetLength) < 64 && count > 64)
