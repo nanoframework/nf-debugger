@@ -16,7 +16,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         private CommandEventHandler _callback;
 
         public CancellationToken CancellationToken { get; }
-        public TaskCompletionSource<object> TaskCompletionSource { get; }
+        public TaskCompletionSource<IncomingMessage> TaskCompletionSource { get; }
 
         public DateTimeOffset Expires { get; }
         public OutgoingMessage OutgoingMessage { get; }
@@ -30,10 +30,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             Expires = DateTime.Now.AddMilliseconds(millisecondsTimeout);
 
             // https://blogs.msdn.microsoft.com/pfxteam/2009/06/02/the-nature-of-taskcompletionsourcetresult/
-            TaskCompletionSource = new TaskCompletionSource<object>();
+            TaskCompletionSource = new TaskCompletionSource<IncomingMessage>();
             CancellationToken = cancellationToken;
         }
-        
+
         internal async Task<bool> PerformRequestAsync(IController controller)
         {
             Debug.WriteLine($"Performing request");

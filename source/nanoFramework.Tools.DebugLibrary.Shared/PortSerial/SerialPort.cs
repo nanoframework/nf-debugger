@@ -482,7 +482,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
 
             }
- 
+
             // default to false
             return false;
         }
@@ -570,7 +570,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public async Task<bool> ConnectDeviceAsync(NanoDeviceBase device)
         {
-            if(await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation, device.DeviceBase as SerialDevice))
+            if (await ConnectSerialDeviceAsync((device as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation, device.DeviceBase as SerialDevice))
             {
                 if (device.DeviceBase == null)
                 {
@@ -609,7 +609,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 // kill debug engine
                 device.DebugEngine.Stop();
-                device.DebugEngine = null; 
+                device.DebugEngine = null;
 
                 EventHandlerForSerialDevice.Current.CloseDevice();
             }
@@ -647,7 +647,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         public async Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
             // device must be connected
-            if (EventHandlerForSerialDevice.Current.IsDeviceConnected)
+            if (EventHandlerForSerialDevice.Current.IsDeviceConnected && !cancellationToken.IsCancellationRequested)
             {
                 DataWriter outputStreamWriter = new DataWriter(EventHandlerForSerialDevice.Current.Device.OutputStream);
 
@@ -687,7 +687,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
             // device must be connected
-            if (EventHandlerForSerialDevice.Current.IsDeviceConnected)
+            if (EventHandlerForSerialDevice.Current.IsDeviceConnected && !cancellationToken.IsCancellationRequested)
             {
                 DataReader inputStreamReader = new DataReader(EventHandlerForSerialDevice.Current.Device.InputStream);
 

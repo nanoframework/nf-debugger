@@ -40,7 +40,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public async Task<bool> SendAsync(MessageRaw raw, CancellationToken cancellationToken)
         {
-             _sendSemaphore.WaitOne();
+            _sendSemaphore.WaitOne();
+
+            // check for cancellation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                return false;
+            }
 
             try
             {
@@ -116,9 +123,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             throw new NotImplementedException();
         }
 
-        private Task<uint> SendRawBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        private async Task<uint> SendRawBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
-            return App.SendBufferAsync(buffer, waiTimeout, cancellationToken);
+            return await App.SendBufferAsync(buffer, waiTimeout, cancellationToken);
         }
 
         internal async Task<int> ReadBufferAsync(byte[] buffer, int offset, int bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)

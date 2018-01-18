@@ -414,42 +414,40 @@ namespace nanoFramework.Tools.Debugger
 
         private IncomingMessage PerformSyncRequest(uint command, uint flags, object payload, int millisecondsTimeout = 5000)
         {
-            var t = Task.Run(() => {
-                OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
+            OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
 
-                return PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
-            }, _cancellationTokenSource.Token.AddTimeout(new TimeSpan(0, 0, 0, 0, millisecondsTimeout)));
-
-            return t.Result;
+            return PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout).Result;
         }
 
         private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = 5000)
         {
-            var t = Task.Run(() => {
-                return PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
-            }, _cancellationTokenSource.Token.AddTimeout(new TimeSpan(0, 0, 0, 0, millisecondsTimeout)));
-
-            return t.Result;
+            return PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout).Result;
         }
 
-        public async Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int millisecondsTimeout = 5000)
+        public Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int millisecondsTimeout = 5000)
         {
             WireProtocolRequest request = new WireProtocolRequest(message, cancellationToken, millisecondsTimeout);
             _requestsStore.Add(request);
 
             try
             {
-
-                await request.PerformRequestAsync(_controlller).ConfigureAwait(true);
+                // Start a background task that will complete tcs1.Task
+                Task.Factory.StartNew(() =>
+                {
+                    var dummy = request.PerformRequestAsync(_controlller);
+                });
             }
-            catch(Exception)
+            catch (Exception ex)
             {
                 // perform request failed, remove it from store
                 _requestsStore.Remove(request.OutgoingMessage.Header);
+
+                request.TaskCompletionSource.SetException(ex);
+
+                return null;
             }
 
-            var task = Convert<IncomingMessage>(request.TaskCompletionSource.Task);
-            return await task;
+            return request.TaskCompletionSource.Task;
         }
 
         private List<IncomingMessage> PerformRequestBatch(List<OutgoingMessage> messages, int timeout = 1000)
@@ -463,19 +461,6 @@ namespace nanoFramework.Tools.Debugger
             }
 
             return replies;
-        }
-
-        private static async Task<T> Convert<T>(Task<object> task)
-        {
-            try
-            {
-                var result = await task;
-                return (T)result;
-            }
-            catch
-            {
-                return default(T);
-            }
         }
 
         public Commands.Monitor_Ping.Reply GetConnectionSource()
@@ -521,6 +506,10 @@ namespace nanoFramework.Tools.Debugger
                     reply.TaskCompletionSource.TrySetResult(message);
 
                     return true;
+                }
+                else
+                {
+                    reply.TaskCompletionSource.TrySetResult(null);
                 }
             }
             else
@@ -895,7 +884,7 @@ namespace nanoFramework.Tools.Debugger
                 cmd.m_addr = addr;
                 cmd.m_data = data;
 
-                IncomingMessage reply =  PerformSyncRequest(Commands.c_Debugging_Messaging_Send, 0, cmd);
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Messaging_Send, 0, cmd);
                 if (reply != null)
                 {
                     Commands.Debugging_Messaging_Send.Reply res = reply.Payload as Commands.Debugging_Messaging_Send.Reply;
@@ -1936,7 +1925,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 return reply.IsPositiveAcknowledge();
             }
-            
+
             return false;
         }
 
