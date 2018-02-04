@@ -4,7 +4,9 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
 using Windows.Foundation;
@@ -262,8 +264,13 @@ namespace nanoFramework.Tools.Debugger.Serial
 
                 Debug.WriteLine($"Closing device {_deviceInformation?.Id}");
 
+                var tasks = new List<Task>();
+                tasks.Add(Task.Factory.StartNew(() => _device.Dispose()));
+
                 // This closes the handle to the device
-                _device.Dispose();
+                Task.WaitAll(tasks.ToArray(), 2000);
+
+                _device = null;
             }
         }
 

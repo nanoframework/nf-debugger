@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -270,24 +271,37 @@ namespace Serial_Test_App_WPF
 
             List<byte[]> assemblies = new List<byte[]>(4);
             // test data
-// mscorlib v(36500 bytes)
-// Windows.Storage.Streams v(6180 bytes)
-// Windows.Devices.SerialCommunication v(3172 bytes)
-// SerialCommunication v1.0.6578.34099(1180 bytes)
-// assemblies to device...total size in bytes is 47032.
+            // mscorlib v(36500 bytes)
+            // Windows.Storage.Streams v(6180 bytes)
+            // Windows.Devices.SerialCommunication v(3172 bytes)
+            // SerialCommunication v1.0.6578.34099(1180 bytes)
+            // assemblies to device...total size in bytes is 47032.
 
-              assemblies.Add(new byte[36500]);
+            var p1Size = 36500;
+            var p2Size = 6180;
+            var p3Size = 3172;
+            var p4Size = 1180;
+
+
+            assemblies.Add(new byte[p1Size]);
             assemblies[0][0] = 0x5;
             assemblies[0][1] = 0x5;
-            assemblies.Add(new byte[6180]);
+            assemblies.Add(new byte[p2Size]);
             assemblies[1][0] = 0x6;
             assemblies[1][1] = 0x6;
-            assemblies.Add(new byte[3172]);
+            assemblies.Add(new byte[p3Size]);
             assemblies[2][0] = 0x7;
             assemblies[2][1] = 0x7;
-            assemblies.Add(new byte[1180]);
+            assemblies.Add(new byte[p4Size]);
             assemblies[3][0] = 0x8;
             assemblies[3][1] = 0x8;
+
+            var totalSize = p1Size + p2Size + p3Size + p4Size;
+
+            var largePackets = totalSize / (1024 - 8);
+
+            Debug.WriteLine($">>> Sending : {totalSize} bytes.<<<<");
+            Debug.WriteLine($">>> This is {largePackets} 1k packets plus  bytes.<<<<");
 
             try
             {
@@ -310,6 +324,13 @@ namespace Serial_Test_App_WPF
                     var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.DeploymentExecute(assemblies, false);
 
                     Debug.WriteLine($">>> Deployment result: {result} <<<<");
+
+
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOption.RebootClrOnly);
+
+                    Task.Delay(1000).Wait();
+
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo(true);
 
                 }));
             }

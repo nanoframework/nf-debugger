@@ -130,6 +130,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         internal async Task<int> ReadBufferAsync(byte[] buffer, int offset, int bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
+            // check for cancellation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                return 0;
+            }
+
             int bytesToReadRequested = bytesToRead;
 
             try

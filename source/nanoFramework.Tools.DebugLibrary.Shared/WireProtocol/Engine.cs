@@ -245,25 +245,45 @@ namespace nanoFramework.Tools.Debugger
 
             while (!_backgroundProcessorCancellation.IsCancellationRequested && _state.IsRunning)
             {
-                await Device.ConnectAsync();
-
-                try
+                if (await Device.ConnectAsync())
                 {
-                    await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
-                }
-                catch (DeviceNotConnectedException)
-                {
-                    await Task.Delay(1000);
-                    await Device.ConnectAsync();
-                }
-                catch (Exception ex)
-                {
-                    if (ex.GetType().Equals(typeof(AggregateException)))
+                    try
                     {
-                        if (ex.GetBaseException().GetType().Name == typeof(DeviceNotConnectedException).Name)
+                        await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
+                    }
+                    catch (DeviceNotConnectedException)
+                    {
+                        if (_backgroundProcessorCancellation.IsCancellationRequested || !_state.IsRunning)
+                        {
+                            return;
+                        }
+                        else
                         {
                             await Task.Delay(1000);
                             await Device.ConnectAsync();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (_backgroundProcessorCancellation.IsCancellationRequested || !_state.IsRunning)
+                        {
+                            return;
+                        }
+                        else
+                        {
+
+                            if (ex.GetType().Equals(typeof(AggregateException)))
+                            {
+                                if (ex.GetBaseException().GetType().Name == typeof(DeviceNotConnectedException).Name)
+                                {
+                                    await Task.Delay(1000);
+                                    await Device.ConnectAsync();
+                                }
+                            }
+                            else if (ex.HResult == 0x80070006)
+                            {
+                                return;
+                            }
                         }
                     }
                 }
@@ -416,12 +436,34 @@ namespace nanoFramework.Tools.Debugger
         {
             OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
 
-            return PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout).Result;
+            var request = PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
+
+            try
+            {
+                Task.WaitAll(request);
+            }
+            catch(AggregateException)
+            {
+                return null;
+            }
+
+            return request.Result;
         }
 
         private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = 5000)
         {
-            return PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout).Result;
+            var request = PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
+
+            try
+            {
+                Task.WaitAll(request);
+            }
+            catch (AggregateException)
+            {
+                return null;
+            }
+
+            return request.Result;
         }
 
         public Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int millisecondsTimeout = 5000)
@@ -434,7 +476,7 @@ namespace nanoFramework.Tools.Debugger
                 // Start a background task that will complete tcs1.Task
                 Task.Factory.StartNew(() =>
                 {
-                    var dummy = request.PerformRequestAsync(_controlller);
+                    request.PerformRequestAsync(_controlller).Wait();
                 });
             }
             catch (Exception ex)
@@ -603,7 +645,12 @@ namespace nanoFramework.Tools.Debugger
             {
                 _backgroundProcessorCancellation.Cancel();
 
-                Task.WaitAll(_backgroundProcessor);
+                try
+                {
+                    Task.WaitAll(_backgroundProcessor);
+                }
+                catch (AggregateException) { }
+
                 _backgroundProcessor = null;
             }
         }
@@ -1197,16 +1244,7 @@ namespace nanoFramework.Tools.Debugger
                 Commands.Monitor_WriteMemory cmd = new Commands.Monitor_WriteMemory();
 
                 // get packet length, either the maximum allowed size or whatever is still available to TX
-                // on the maximum packet size: 8 bytes are being subtracted to account for the CRC32 value
-                // the above seems to be paramount because the WinRT API seems to have issues with USB packets smaller than 64 bytes
-                int packetLength = Math.Min(1024 - 8, count);
-
-                // sanity check for length because TXing a packet with less than 64 bytes seems to be causing issues
-                if ((count - packetLength) < 64 && count > 64)
-                {
-                    // need to adjust this length so that 64 bytes are left for the last packet
-                    packetLength = (count - 64);
-                }
+                int packetLength = Math.Min(1024, count);
 
                 cmd.PrepareForSend(address, buf, position, packetLength);
 
@@ -1350,7 +1388,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 m_evtPing.Reset();
 
-                PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
 
                 // need to disconnect from the device?
                 if (disconnectRequired)
