@@ -245,25 +245,45 @@ namespace nanoFramework.Tools.Debugger
 
             while (!_backgroundProcessorCancellation.IsCancellationRequested && _state.IsRunning)
             {
-                await Device.ConnectAsync();
-
-                try
+                if (await Device.ConnectAsync())
                 {
-                    await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
-                }
-                catch (DeviceNotConnectedException)
-                {
-                    await Task.Delay(1000);
-                    await Device.ConnectAsync();
-                }
-                catch (Exception ex)
-                {
-                    if (ex.GetType().Equals(typeof(AggregateException)))
+                    try
                     {
-                        if (ex.GetBaseException().GetType().Name == typeof(DeviceNotConnectedException).Name)
+                        await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
+                    }
+                    catch (DeviceNotConnectedException)
+                    {
+                        if (_backgroundProcessorCancellation.IsCancellationRequested || !_state.IsRunning)
+                        {
+                            return;
+                        }
+                        else
                         {
                             await Task.Delay(1000);
                             await Device.ConnectAsync();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (_backgroundProcessorCancellation.IsCancellationRequested || !_state.IsRunning)
+                        {
+                            return;
+                        }
+                        else
+                        {
+
+                            if (ex.GetType().Equals(typeof(AggregateException)))
+                            {
+                                if (ex.GetBaseException().GetType().Name == typeof(DeviceNotConnectedException).Name)
+                                {
+                                    await Task.Delay(1000);
+                                    await Device.ConnectAsync();
+                                }
+                            }
+                            else if (ex.HResult == 0x80070006)
+                            {
+                                return;
+                            }
                         }
                     }
                 }
@@ -416,12 +436,34 @@ namespace nanoFramework.Tools.Debugger
         {
             OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
 
-            return PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout).Result;
+            var request = PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
+
+            try
+            {
+                Task.WaitAll(request);
+            }
+            catch(AggregateException)
+            {
+                return null;
+            }
+
+            return request.Result;
         }
 
         private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = 5000)
         {
-            return PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout).Result;
+            var request = PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
+
+            try
+            {
+                Task.WaitAll(request);
+            }
+            catch (AggregateException)
+            {
+                return null;
+            }
+
+            return request.Result;
         }
 
         public Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int millisecondsTimeout = 5000)
@@ -434,7 +476,7 @@ namespace nanoFramework.Tools.Debugger
                 // Start a background task that will complete tcs1.Task
                 Task.Factory.StartNew(() =>
                 {
-                    var dummy = request.PerformRequestAsync(_controlller);
+                    request.PerformRequestAsync(_controlller).Wait();
                 });
             }
             catch (Exception ex)
@@ -603,7 +645,12 @@ namespace nanoFramework.Tools.Debugger
             {
                 _backgroundProcessorCancellation.Cancel();
 
-                Task.WaitAll(_backgroundProcessor);
+                try
+                {
+                    Task.WaitAll(_backgroundProcessor);
+                }
+                catch (AggregateException) { }
+
                 _backgroundProcessor = null;
             }
         }
@@ -1341,7 +1388,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 m_evtPing.Reset();
 
-                PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
 
                 // need to disconnect from the device?
                 if (disconnectRequired)
