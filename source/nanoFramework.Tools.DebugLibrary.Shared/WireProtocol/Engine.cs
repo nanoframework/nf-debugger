@@ -1197,17 +1197,7 @@ namespace nanoFramework.Tools.Debugger
                 Commands.Monitor_WriteMemory cmd = new Commands.Monitor_WriteMemory();
 
                 // get packet length, either the maximum allowed size or whatever is still available to TX
-                // on the maximum packet size: 8 bytes are being subtracted to account for the CRC32 value
-                // the above seems to be paramount because the WinRT API seems to have issues with USB packets smaller than 64 bytes
                 int packetLength = Math.Min(1024, count);
-
-                //// sanity check for length because TXing a packet with less than 64 bytes seems to be causing issues
-                //// on the maximum packet size: 8 bytes are being subtracted to account for the CRC32 value
-                //if ((count - packetLength) < 56 && count > 56)
-                //{
-                //    // need to adjust this length so that 64 bytes are left for the last packet
-                //    packetLength = (count - 56);
-                //}
 
                 cmd.PrepareForSend(address, buf, position, packetLength);
 
