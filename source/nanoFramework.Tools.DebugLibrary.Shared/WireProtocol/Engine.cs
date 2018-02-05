@@ -645,11 +645,12 @@ namespace nanoFramework.Tools.Debugger
             {
                 _backgroundProcessorCancellation.Cancel();
 
+                // need to wrap this in try-catch to catch possible AggregateExceptions
                 try
                 {
                     Task.WaitAll(_backgroundProcessor);
                 }
-                catch (AggregateException) { }
+                catch { }
 
                 _backgroundProcessor = null;
             }
