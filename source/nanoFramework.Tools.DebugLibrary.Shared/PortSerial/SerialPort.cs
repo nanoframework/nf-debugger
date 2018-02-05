@@ -275,11 +275,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             else
                             {
                                 Debug.WriteLine("Invalid serial device: " + deviceInformation.Id);
+                                newNanoFrameworkDevice.Disconnect();
                             }
                         }
                         else
                         {
                             Debug.WriteLine("Couldn't connect to serial device: " + deviceInformation.Id);
+                            newNanoFrameworkDevice.Disconnect();
                         }
 
                         // clear tentative list
@@ -414,11 +416,16 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                             NanoFrameworkDevices.Add(device);
                         }
+                        else
+                        {
+                            ((NanoDevice<NanoSerialDevice>)device).Disconnect();
+                        }
                     }
                     else
                     {
                         // couldn't open device
                         Debug.WriteLine($"Checking device: {(((NanoDevice<NanoSerialDevice>)device).Device.DeviceInformation.DeviceInformation.Id)} FAILED");
+                        ((NanoDevice<NanoSerialDevice>)device).Disconnect();
                     }
                 }
 

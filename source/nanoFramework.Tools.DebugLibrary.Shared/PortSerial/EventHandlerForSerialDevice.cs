@@ -264,11 +264,20 @@ namespace nanoFramework.Tools.Debugger.Serial
 
                 Debug.WriteLine($"Closing device {_deviceInformation?.Id}");
 
-                var tasks = new List<Task>();
-                tasks.Add(Task.Factory.StartNew(() => _device.Dispose()));
+                // dispose on a Task to give it a timeout to perform the Dispose()
+                // this is required to be able to actually close devices that get stuck with pending tasks on the in/output streams
+                var closeTask = Task.Factory.StartNew(() =>
+                {
+                    // This closes the handle to the device
+                    _device.Dispose();
+                });
 
-                // This closes the handle to the device
-                Task.WaitAll(tasks.ToArray(), 2000);
+                // need to wrap this in try-catch to catch possible AggregateExceptions
+                try
+                {
+                    Task.WaitAll(new Task[] { closeTask }, TimeSpan.FromMilliseconds(1000));
+                }
+                catch { }
 
                 _device = null;
             }
