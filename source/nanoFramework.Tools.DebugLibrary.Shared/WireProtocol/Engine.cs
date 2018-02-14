@@ -1358,7 +1358,7 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        public void RebootDevice(RebootOption option = RebootOption.NormalReboot)
+        public void RebootDevice(RebootOptions options = RebootOptions.NormalReboot)
         {
             Commands.MonitorReboot cmd = new Commands.MonitorReboot();
 
@@ -1367,22 +1367,21 @@ namespace nanoFramework.Tools.Debugger
 
             ThrowOnCommunicationFailure = false;
 
-            switch (option)
+            // check if device can handle soft reboot
+            if(Capabilities.SoftReboot)
             {
-                case RebootOption.EnterBootloader:
-                    cmd.flags = Commands.MonitorReboot.EnterBootloader;
-                    disconnectRequired = true;
-                    break;
-                case RebootOption.RebootClrOnly:
-                    cmd.flags = Capabilities.SoftReboot ? Commands.MonitorReboot.ClrRebootOnly : Commands.MonitorReboot.NormalReboot;
-                    break;
-                case RebootOption.RebootClrWaitForDebugger:
-                    cmd.flags = Capabilities.SoftReboot ? Commands.MonitorReboot.ClrWaitForDbg : Commands.MonitorReboot.NormalReboot;
-                    break;
-                default:
-                    cmd.flags = Commands.MonitorReboot.NormalReboot;
-                    disconnectRequired = true;
-                    break;
+                cmd.flags = (uint)options;
+            }
+            else
+            {
+                // device can't soft reboot, so a normal reboot will have to do it
+                cmd.flags = (uint)RebootOptions.NormalReboot;
+            }
+
+            // if this is a 'normal reboot' device will go away and we better disconnect from the device
+            if(cmd.flags  == (uint)RebootOptions.NormalReboot)
+            {
+                disconnectRequired = true;
             }
 
             try
@@ -3067,7 +3066,7 @@ namespace nanoFramework.Tools.Debugger
 
                     progress?.Report("Rebooting device...");
 
-                    RebootDevice(RebootOption.RebootClrOnly);
+                    RebootDevice(RebootOptions.ClrOnly);
                 }
             }
 

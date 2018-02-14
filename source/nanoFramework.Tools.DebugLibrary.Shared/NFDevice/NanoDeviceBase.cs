@@ -155,7 +155,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 if (DebugEngine.ConnectionSource == ConnectionSource.nanoBooter) return true;
 
-                DebugEngine.RebootDevice(RebootOption.EnterBootloader);
+                DebugEngine.RebootDevice(RebootOptions.EnterBootloader);
 
                 /////////////////////////////////////////
                 // FIXME
@@ -332,18 +332,26 @@ namespace nanoFramework.Tools.Debugger
                 value++;
             }
 
-            // reset if we specifically entered tinybooter for the erase
+            // reset if we specifically entered nanoBooter to erase
             if (fReset)
             {
                 DebugEngine.ExecuteMemory(0);
             }
 
-            // reboot if we are talking to the clr
+            // reboot if we are talking to the CLR
             if (isConnectedToCLR)
             {
                 progress?.Report(new ProgressReport(0, 0, "Rebooting..."));
 
-                DebugEngine.RebootDevice(RebootOption.RebootClrOnly);
+                var rebootOptions = RebootOptions.ClrOnly;
+
+                // if we've just erase the deployment area there is no more app so the execution engine can't be gracefully stopped
+                if ((options & EraseOptions.Deployment) == EraseOptions.Deployment)
+                {
+                    rebootOptions |= RebootOptions.NoShutdown;
+                }
+
+                DebugEngine.RebootDevice(rebootOptions);
             }
 
             return ret;
@@ -527,7 +535,7 @@ namespace nanoFramework.Tools.Debugger
             }
             else // if we are talking to the CLR then we simply did a deployment update, so reboot
             {
-                DebugEngine.RebootDevice(RebootOption.RebootClrOnly);
+                DebugEngine.RebootDevice(RebootOptions.ClrOnly);
             }
 
             return true;

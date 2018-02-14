@@ -227,11 +227,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public class MonitorReboot
         {
-            public const uint NormalReboot = 0;
-            public const uint EnterBootloader = 1;
-            public const uint ClrRebootOnly = 2;
-            public const uint ClrWaitForDbg = 4;
-
             public uint flags = 0;
         }
 

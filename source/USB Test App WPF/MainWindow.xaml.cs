@@ -326,7 +326,7 @@ namespace Serial_Test_App_WPF
                     Debug.WriteLine($">>> Deployment result: {result} <<<<");
 
 
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOption.RebootClrOnly);
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
 
                     Task.Delay(1000).Wait();
 
@@ -462,7 +462,7 @@ namespace Serial_Test_App_WPF
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(nanoFramework.Tools.Debugger.RebootOption.RebootClrOnly);
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(nanoFramework.Tools.Debugger.RebootOptions.ClrOnly);
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -493,7 +493,7 @@ namespace Serial_Test_App_WPF
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(nanoFramework.Tools.Debugger.RebootOption.NormalReboot);
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(nanoFramework.Tools.Debugger.RebootOptions.NormalReboot);
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -524,7 +524,7 @@ namespace Serial_Test_App_WPF
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(nanoFramework.Tools.Debugger.RebootOption.RebootClrWaitForDebugger);
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly | RebootOptions.WaitForDebugger);
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -590,7 +590,7 @@ namespace Serial_Test_App_WPF
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
-                    Debug.WriteLine($"Start background processing");
+                    Debug.WriteLine($"Stop background processing");
                     Debug.WriteLine("");
                     Debug.WriteLine("");
 
@@ -604,6 +604,36 @@ namespace Serial_Test_App_WPF
             // enable button
             (sender as Button).IsEnabled = true;
         }
-       
+
+        private async void EraseDeploymentButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+                {
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+
+                    await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].EraseAsync(EraseOptions.Deployment, CancellationToken.None);
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"Erased deployment area.");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                }));
+            }
+            catch
+            { 
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }       
     }
 }
