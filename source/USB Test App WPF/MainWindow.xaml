@@ -42,6 +42,7 @@
         <Button Content="Soft Reboot" HorizontalAlignment="Left" Margin="378,102,0,0" VerticalAlignment="Top" Width="98" Click="SoftRebootDeviceButton_Click"/>
         <Button Content="Reboot + Debug" HorizontalAlignment="Left" Margin="378,129,0,0" VerticalAlignment="Top" Width="98" Click="RebootAndDebugDeviceButton_Click"/>
         <Button Content="Stop Processing" HorizontalAlignment="Left" Margin="378,195,0,0" VerticalAlignment="Top" Width="98" Click="StopProcessingButton_Click"/>
+        <Button Content="Erase Deployment" HorizontalAlignment="Left" Margin="378,235,0,0" VerticalAlignment="Top" Width="98" Click="EraseDeploymentButton_Click" />
 
 
     </Grid>
