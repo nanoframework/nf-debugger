@@ -311,10 +311,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public const uint c_Debugging_UpgradeToSsl = 0x00020069; // 
 
-        public const uint c_Debugging_Lcd_NewFrame = 0x00020070; // Reports a new frame sent to the LCD.
-        public const uint c_Debugging_Lcd_NewFrameData = 0x00020071; // Reports a new frame sent to the LCD, with its contents.
-        public const uint c_Debugging_Lcd_GetFrame = 0x00020072; // Requests the current frame.
-
         public const uint c_Debugging_Button_Report = 0x00020080; // Reports a button press/release.
         public const uint c_Debugging_Button_Inject = 0x00020081; // Injects a button press/release.
 
@@ -666,7 +662,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public class Debugging_Execution_QueryCLRCapabilities
         {
             public const uint c_CapabilityFlags = 1;
-            public const uint c_CapabilityLCD = 2;
             public const uint c_CapabilitySoftwareVersion = 3;
 
             public const uint c_CapabilityHalSystemInfo = 5;
@@ -693,13 +688,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 {
                     m_data = new byte[size];
                 }
-            }
-
-            public class LCD
-            {
-                public uint m_width;
-                public uint m_height;
-                public uint m_bpp;
             }
 
             public class SoftwareVersion
@@ -1342,44 +1330,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        public class Debugging_Lcd_FrameData : IConverter
-        {
-            public class Header
-            {
-                public ushort m_widthInWords;
-                public ushort m_heightInPixels;
-            }
-
-            public Header m_header = null;
-            public uint[] m_data = null;
-
-            public void PrepareForDeserialize(int size, byte[] data, Converter converter)
-            {
-                m_header = new Header();
-
-                converter.Deserialize(m_header, data);
-
-                int sizeData = m_header.m_heightInPixels * m_header.m_widthInWords;
-
-                m_data = new uint[sizeData];
-            }
-        }
-
-        public class Debugging_Lcd_NewFrame
-        {
-        }
-
-        public class Debugging_Lcd_NewFrameData : Debugging_Lcd_FrameData
-        {
-        }
-
-        public class Debugging_Lcd_GetFrame
-        {
-            public class Reply : Debugging_Lcd_FrameData
-            {
-            }
-        }
-
         public class Debugging_Button_Report
         {
             public uint m_pressed;
@@ -1597,8 +1547,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Debugging_Resolve_VirtualMethod: return new Debugging_Resolve_VirtualMethod.Reply();
                     case c_Debugging_Resolve_AppDomain: return new Debugging_Resolve_AppDomain.Reply();
 
-                    case c_Debugging_Lcd_GetFrame: return new Debugging_Lcd_GetFrame.Reply();
-
                     case c_Debugging_Messaging_Query: return new Debugging_Messaging_Query.Reply();
                     case c_Debugging_Messaging_Send: return new Debugging_Messaging_Send.Reply();
                     case c_Debugging_Messaging_Reply: return new Debugging_Messaging_Reply.Reply();
@@ -1681,10 +1629,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Debugging_Resolve_Assembly: return new DebuggingResolveAssembly();
                     case c_Debugging_Resolve_VirtualMethod: return new Debugging_Resolve_VirtualMethod();
                     case c_Debugging_Resolve_AppDomain: return new Debugging_Resolve_AppDomain();
-
-                    case c_Debugging_Lcd_NewFrame: return new Debugging_Lcd_NewFrame();
-                    case c_Debugging_Lcd_NewFrameData: return new Debugging_Lcd_NewFrameData();
-                    case c_Debugging_Lcd_GetFrame: return new Debugging_Lcd_GetFrame();
 
                     case c_Debugging_Button_Report: return new Debugging_Button_Report();
                     case c_Debugging_Button_Inject: return new Debugging_Button_Inject();
