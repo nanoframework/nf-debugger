@@ -43,6 +43,7 @@
         <Button Content="Reboot + Debug" HorizontalAlignment="Left" Margin="378,129,0,0" VerticalAlignment="Top" Width="98" Click="RebootAndDebugDeviceButton_Click"/>
         <Button Content="Stop Processing" HorizontalAlignment="Left" Margin="378,195,0,0" VerticalAlignment="Top" Width="98" Click="StopProcessingButton_Click"/>
         <Button Content="Erase Deployment" HorizontalAlignment="Left" Margin="378,235,0,0" VerticalAlignment="Top" Width="98" Click="EraseDeploymentButton_Click" />
+        <Button Content="Is Init State" HorizontalAlignment="Left" Margin="162,195,0,0" VerticalAlignment="Top" Width="75" Click="IsInitStateButton_Click" />
 
 
     </Grid>

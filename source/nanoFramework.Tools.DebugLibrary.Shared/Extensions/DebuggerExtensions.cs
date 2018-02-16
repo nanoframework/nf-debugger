@@ -20,7 +20,8 @@ namespace nanoFramework.Tools.Debugger.Extensions
 
             if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
-                return (result == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Initialize);
+                // engine is in initialised state if it's not running a program or if the program execution is stopped (after having running one)
+                return ((result & (WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramExited | WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramRunning)) == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Initialize);
             }
             else
             {
@@ -39,7 +40,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
 
             if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
-                return (result == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramExited);
+                return ((result & WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramExited) == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramExited);
             }
             else
             {
@@ -58,7 +59,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
 
             if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
-                return (result == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramRunning);
+                return ((result & WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramRunning) == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramRunning);
             }
             else
             {

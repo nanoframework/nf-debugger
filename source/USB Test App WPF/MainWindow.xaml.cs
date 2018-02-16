@@ -528,7 +528,7 @@ namespace Serial_Test_App_WPF
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
-                    Debug.WriteLine($"CLR reboot");
+                    Debug.WriteLine($"CLR reboot & wait for debugger");
                     Debug.WriteLine("");
                     Debug.WriteLine("");
 
@@ -634,6 +634,37 @@ namespace Serial_Test_App_WPF
 
             // enable button
             (sender as Button).IsEnabled = true;
-        }       
+        }
+
+        private async void IsInitStateButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+
+                    var isInitState = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.IsDeviceInInitializeState();
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"device is in init state: {isInitState}");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                }));
+            }
+            catch
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
     }
 }
