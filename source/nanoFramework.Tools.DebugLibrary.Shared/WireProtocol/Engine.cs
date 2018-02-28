@@ -173,22 +173,22 @@ namespace nanoFramework.Tools.Debugger
                         IsTargetBigEndian = (reply.m_dbg_flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
 
                         IsCRC32EnabledForWireProtocol = (reply.m_dbg_flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
-                    }
 
-                    // update flag
-                    IsConnected = true;
+                        // update flag
+                        IsConnected = true;
 
-                    ConnectionSource = (reply == null || reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR) ? ConnectionSource.nanoCLR : ConnectionSource.nanoBooter;
+                        ConnectionSource = (reply == null || reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR) ? ConnectionSource.nanoCLR : ConnectionSource.nanoBooter;
 
-                    if (m_silent)
-                    {
-                        SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
-                    }
+                        if (m_silent)
+                        {
+                            SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
+                        }
 
-                    // resume execution for older clients, since server tools no longer do this.
-                    if (!StopDebuggerOnConnect && (msg != null && msg.Payload == null))
-                    {
-                        ResumeExecution();
+                        // resume execution for older clients, since server tools no longer do this.
+                        if (!StopDebuggerOnConnect && (msg != null && msg.Payload == null))
+                        {
+                            ResumeExecution();
+                        }
                     }
                 }
             }
