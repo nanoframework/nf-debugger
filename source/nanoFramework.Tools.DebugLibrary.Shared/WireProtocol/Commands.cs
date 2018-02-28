@@ -94,6 +94,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint c_Ping_DbgFlag_BigEndian = 0x02000002;
             public const uint c_Ping_DbgFlag_AppExit = 0x00000004;
 
+            // flags specific to Wire Protocol capabilities
+            public const uint c_Ping_WPFlag_SupportsCRC32 = 0x00000010;
+
             public uint m_source;
             public uint m_dbg_flags;
 

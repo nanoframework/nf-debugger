@@ -77,6 +77,9 @@ namespace nanoFramework.Tools.Debugger
         {
             InitializeLocal(device);
 
+            // default to false
+            IsCRC32EnabledForWireProtocol = false;
+
             _state.SetValue(EngineState.Value.Starting, true);
 
             // start task to process background messages
@@ -132,6 +135,11 @@ namespace nanoFramework.Tools.Debugger
 
         public bool IsTargetBigEndian { get; internal set; }
 
+        /// <summary>
+        /// This flag is true when connected nanoDevice implements CRC32 in Wire Protocol packets and headers
+        /// </summary>
+        public bool IsCRC32EnabledForWireProtocol { get; internal set; }
+
         public bool StopDebuggerOnConnect { get; set; }
 
         public async Task<bool> ConnectAsync(int timeout, bool force = false, ConnectionSource connectionSource = ConnectionSource.Unknown)
@@ -163,6 +171,8 @@ namespace nanoFramework.Tools.Debugger
                     if (reply != null)
                     {
                         IsTargetBigEndian = (reply.m_dbg_flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
+
+                        IsCRC32EnabledForWireProtocol = (reply.m_dbg_flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
                     }
 
                     // update flag
@@ -303,6 +313,9 @@ namespace nanoFramework.Tools.Debugger
 
                 // update flag
                 IsConnected = false;
+
+                // update CRC32 support flag
+                IsCRC32EnabledForWireProtocol = false;
 
                 Debug.WriteLine("Device disconnected");
             }

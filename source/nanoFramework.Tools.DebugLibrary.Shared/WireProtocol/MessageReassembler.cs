@@ -250,9 +250,17 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             _messageBase.Header.CrcHeader = 0;
 
-            fRes = CRC.ComputeCRC(_parent.CreateConverter().Serialize(_messageBase.Header), 0) == crc;
+            // verify CRC32 only if connected device has reported that it implements it
+            if (_parent.App.IsCRC32EnabledForWireProtocol)
+            {
+                fRes = CRC.ComputeCRC(_parent.CreateConverter().Serialize(_messageBase.Header), 0) == crc;
 
-            _messageBase.Header.CrcHeader = crc;
+                _messageBase.Header.CrcHeader = crc;
+            }
+            else
+            {
+                fRes = true;
+            }
 
             return fRes;
         }
@@ -267,7 +275,15 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 if (_messageBase.Header.Size != _messageRaw.Payload.Length) return false;
 
-                return CRC.ComputeCRC(_messageRaw.Payload, 0) == _messageBase.Header.CrcData;
+                // verify CRC32 only if connected device has reported that it implements it
+                if (_parent.App.IsCRC32EnabledForWireProtocol)
+                {
+                    return CRC.ComputeCRC(_messageRaw.Payload, 0) == _messageBase.Header.CrcData;
+                }
+                else
+                {
+                    return true;
+                }
             }
         }
     }
