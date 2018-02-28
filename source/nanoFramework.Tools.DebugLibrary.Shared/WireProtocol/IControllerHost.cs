@@ -14,6 +14,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         bool IsConnected { get; }
 
+        bool IsCRC32EnabledForWireProtocol { get; }
+
         void SpuriousCharacters(byte[] buf, int offset, int count);
 
         event EventHandler<StringEventArgs> SpuriousCharactersReceived;
