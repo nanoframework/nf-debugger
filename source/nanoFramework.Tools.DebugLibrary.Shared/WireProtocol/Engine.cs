@@ -1240,7 +1240,7 @@ namespace nanoFramework.Tools.Debugger
                 offset += actualLength;
             }
 
-            return (new byte[0], true);
+            return (buffer, true);
         }
 
         public (byte[] Buffer, bool Success) ReadMemory(uint address, uint length)
