@@ -666,5 +666,88 @@ namespace Serial_Test_App_WPF
             // enable button
             (sender as Button).IsEnabled = true;
         }
+
+        private async void GetDeviceConfigButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+             {
+
+                 try
+                 {
+                     // Create cancellation token source
+                     CancellationTokenSource cts = new CancellationTokenSource();
+
+                     var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
+
+                     // get device info
+                     var deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
+
+
+                    Debug.WriteLine(deviceConfig.NetworkConfiguraton.ToStringForOutput());
+
+                    //Debug.WriteLine(string.Empty);
+                    //Debug.WriteLine(string.Empty);
+                    //Debug.WriteLine("--------------------------------");
+                    //Debug.WriteLine("::        Memory Map          ::");
+                    //Debug.WriteLine("--------------------------------");
+
+
+                 }
+                 catch(Exception ex)
+                 {
+
+                 }
+
+             }));
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private async void SetDeviceConfigButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+             {
+
+                 try
+                 {
+                     // Create cancellation token source
+                     CancellationTokenSource cts = new CancellationTokenSource();
+
+                     var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
+
+                     // get device info
+                     var deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
+
+                     // change device configuration
+                     deviceConfig.NetworkConfiguraton.MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 };
+                     deviceConfig.NetworkConfiguraton.StartupAddressMode = DeviceConfiguration.AddressMode.DHCP;
+
+                     // write device configuration to device
+                     var returnValue = device.DebugEngine.WriteDeviceConfigurationAsBlock(deviceConfig);
+
+                     Debug.WriteLine("");
+                     Debug.WriteLine("");
+                     Debug.WriteLine($"device config update result: {returnValue}");
+                     Debug.WriteLine("");
+                     Debug.WriteLine("");
+
+                 }
+                 catch (Exception ex)
+                 {
+
+                 }
+
+             }));
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
     }
 }

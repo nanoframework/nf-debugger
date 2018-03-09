@@ -27,6 +27,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Monitor_DeploymentMap = 0x0000000B;
         public const uint c_Monitor_FlashSectorMap = 0x0000000C;
         public const uint c_Monitor_OemInfo = 0x0000000E;
+        public const uint c_Monitor_QueryConfiguration = 0x0000000F;
 
         public class Monitor_Message : IConverter
         {
@@ -255,6 +256,51 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                 }
             }
+        }
+
+        public class Monitor_QueryConfiguration
+        {
+            public const uint c_ConfigurationNetwork = 1;
+
+            public uint Configuration;
+
+            public class Reply : IConverter
+            {
+                public byte[] Data = null;
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    Data = new byte[size];
+                }
+            }
+
+            public class NetworkConfiguration : NetworkConfigurationBase, IConverter
+            {
+                public NetworkConfiguration()
+                {
+                    Marker = new byte[4];
+                    MacAddress = new byte[6];
+                    IPv6Address = new uint[4];
+                    IPv6NetMask = new uint[4];
+                    IPv6GatewayAddress = new uint[4];
+                    IPv6DNS1Address = new uint[4];
+                    IPv6DNS2Address = new uint[4];
+                    StartupAddressMode = (byte)DeviceConfiguration.AddressMode.Invalid;
+                }
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    Marker = new byte[4];
+                    MacAddress = new byte[6];
+                    IPv6Address = new uint[4];
+                    IPv6NetMask = new uint[4];
+                    IPv6GatewayAddress = new uint[4];
+                    IPv6DNS1Address = new uint[4];
+                    IPv6DNS2Address = new uint[4];
+                    StartupAddressMode = (byte)DeviceConfiguration.AddressMode.Invalid;
+                }
+            }
+
         }
 
         public const uint c_Debugging_Execution_BasePtr = 0x00020000; // Returns the pointer for the ExecutionEngine object.
@@ -1504,6 +1550,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_MemoryMap: return new Monitor_MemoryMap.Reply();
                     case c_Monitor_DeploymentMap: return new Monitor_DeploymentMap.Reply();
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap.Reply();
+                    case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration.Reply();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr.Reply();
                     case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions.Reply();
@@ -1576,6 +1623,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_Reboot: return new MonitorReboot();
                     case c_Monitor_DeploymentMap: return new Monitor_DeploymentMap();
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap();
+                    case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr();
                     case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions();
