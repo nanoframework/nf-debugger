@@ -108,6 +108,9 @@ namespace nanoFramework.Tools.Debugger
 
             //default capabilities, used until clr can be queried.
             Capabilities = new CLRCapabilities();
+
+            // clear memory map
+            FlashSectorMap = new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
         }
 
         private void InitializeLocal(NanoDeviceBase device)
@@ -121,6 +124,8 @@ namespace nanoFramework.Tools.Debugger
         }
 
         public CLRCapabilities Capabilities { get; internal set; }
+
+        public List<Commands.Monitor_FlashSectorMap.FlashSectorData> FlashSectorMap { get; private set; }
 
         public BinaryFormatter CreateBinaryFormatter()
         {
@@ -199,6 +204,9 @@ namespace nanoFramework.Tools.Debugger
 
                 //default capabilities
                 Capabilities = new CLRCapabilities();
+
+                // clear memory map
+                FlashSectorMap = new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
 
                 var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
 
@@ -1200,6 +1208,10 @@ namespace nanoFramework.Tools.Debugger
 
                 if (cmdReply != null)
                 {
+                    // update property
+                    FlashSectorMap = cmdReply.m_map;
+
+
                     return cmdReply.m_map;
                 }
             }
@@ -3135,6 +3147,121 @@ namespace nanoFramework.Tools.Debugger
             }
 
             return new CLRCapabilities(clrFlags, softwareVersion, halSysInfo, clrInfo, solutionInfo);
+        }
+
+        #endregion
+
+
+        #region Device configuration methods
+
+        public DeviceConfiguration GetDeviceConfiguration(CancellationToken cancellationToken)
+        {
+            var networkConfig = GetNetworkConfiguratonProperties();
+            // check for cancellation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancellation requested");
+                return null;
+            }
+
+            return new DeviceConfiguration(networkConfig);
+        }
+
+        public DeviceConfiguration.NetworkConfigurationProperties GetNetworkConfiguratonProperties()
+        {
+            Debug.WriteLine("NetworkConfiguratonProperties");
+
+            IncomingMessage reply = GetDeviceConfiguration(Commands.Monitor_QueryConfiguration.c_ConfigurationNetwork);
+
+            Commands.Monitor_QueryConfiguration.NetworkConfiguration networkConfiguration = new Commands.Monitor_QueryConfiguration.NetworkConfiguration();
+
+            DeviceConfiguration.NetworkConfigurationProperties networkConfigProperties = new DeviceConfiguration.NetworkConfigurationProperties();
+
+            if (reply != null)
+            {
+                Commands.Monitor_QueryConfiguration.Reply cmdReply = reply.Payload as Commands.Monitor_QueryConfiguration.Reply;
+
+                if (cmdReply != null && cmdReply.Data != null)
+                {
+                    new Converter().Deserialize(networkConfiguration, cmdReply.Data);
+
+                    // sanity check for invalid configuration (can occur for example when flash is erased and reads as 0xFF)
+                    if (((byte)networkConfiguration.StartupAddressMode) > (byte)DeviceConfiguration.AddressMode.AutoIP)
+                    {
+                        // fix this to invalid
+                        networkConfiguration.StartupAddressMode = (byte)DeviceConfiguration.AddressMode.Invalid;
+                    }
+
+                    networkConfigProperties = new DeviceConfiguration.NetworkConfigurationProperties(
+                                    networkConfiguration.MacAddress, networkConfiguration.IPv4Address,
+                                    networkConfiguration.IPv4NetMask, networkConfiguration.IPv4GatewayAddress,
+                                    networkConfiguration.IPv4DNS1Address, networkConfiguration.IPv4DNS2Address,
+                                    networkConfiguration.IPv6Address,
+                                    networkConfiguration.IPv6NetMask, networkConfiguration.IPv6GatewayAddress,
+                                    networkConfiguration.IPv6DNS1Address, networkConfiguration.IPv6DNS2Address,
+                                    networkConfiguration.StartupAddressMode);
+                }
+            }
+
+            return networkConfigProperties;
+        }
+
+        private IncomingMessage GetDeviceConfiguration(uint configuration)
+        {
+            Commands.Monitor_QueryConfiguration cmd = new Commands.Monitor_QueryConfiguration();
+
+            cmd.Configuration = configuration;
+
+            return PerformSyncRequest(Commands.c_Monitor_QueryConfiguration, 0, cmd);
+        }
+
+        /// <summary>
+        /// Writes the configuration block to the device.
+        /// This method should be used when the target device stores the configuration block in a flash sector.
+        /// </summary>
+        /// <param name="configuration">The device configuration</param>
+        /// <returns></returns>
+        public bool WriteDeviceConfigurationAsBlock(DeviceConfiguration configuration)
+        {
+            // we need the device memory map in order to know were to store this
+            if (FlashSectorMap.Count == 0)
+            {
+                // flash sector map is still empty, go get it
+                if (GetFlashSectorMap() == null)
+                {
+                    return false;
+                }
+            }
+
+            // get configuration sector details
+            var configSector = FlashSectorMap.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG);
+
+            // store the current configuration in case we need to revert this for some reason
+            var readConfigSector = ReadMemory(configSector.m_StartAddress, configSector.m_NumBlocks * configSector.m_BytesPerBlock);
+
+            if (readConfigSector.Success)
+            {
+                // start erasing the sector that holds the configuration block
+                var eraseResult = EraseMemory(configSector.m_StartAddress, 1);
+                if (eraseResult.Success)
+                {
+                    var configurationSerialized = CreateConverter().Serialize(((DeviceConfigurationBase)configuration).NetworkConfiguration);
+
+                    // write the configuration block to the device
+                    var writeResult = WriteMemory(configSector.m_StartAddress, configurationSerialized);
+                    if (writeResult.Success)
+                    {
+                        return true;
+                    }
+                }
+
+                // write failed, try to replace back the old config?
+                // FIXME
+            }
+
+            // default to false
+            return false;
         }
 
         #endregion
