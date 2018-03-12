@@ -1282,7 +1282,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
 
-                    if (!reply.IsPositiveAcknowledge())
+                    if (!reply.IsPositiveAcknowledge() || cmdReply.ErrorCode != 0)
                     {
                         return (cmdReply.ErrorCode, false);
                     }
