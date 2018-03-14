@@ -707,6 +707,14 @@ namespace Serial_Test_App_WPF
             (sender as Button).IsEnabled = true;
         }
 
+        /// <summary>
+        /// 
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <remarks>
+        /// </remarks>
         private async void SetDeviceConfigButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
@@ -725,12 +733,17 @@ namespace Serial_Test_App_WPF
                      // get device info
                      var deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
 
-                     // change device configuration
-                     deviceConfig.NetworkConfiguraton.MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 };
-                     deviceConfig.NetworkConfiguraton.StartupAddressMode = DeviceConfiguration.AddressMode.DHCP;
+                     // change device configuration using the global configuration class
+                     //deviceConfig.NetworkConfiguraton.MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 };
+                     //deviceConfig.NetworkConfiguraton.StartupAddressMode = DeviceConfiguration.AddressMode.DHCP;
+
+                     // set new network configuration on the specific class
+                     DeviceConfiguration.NetworkConfigurationProperties newDeviceNetworkConfiguration = new DeviceConfiguration.NetworkConfigurationProperties();
+                     newDeviceNetworkConfiguration.MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 };
+                     newDeviceNetworkConfiguration.StartupAddressMode = DeviceConfiguration.AddressMode.DHCP;
 
                      // write device configuration to device
-                     var returnValue = device.DebugEngine.WriteDeviceConfigurationAsBlock(deviceConfig);
+                     var returnValue = device.DebugEngine.WriteDeviceConfiguration(newDeviceNetworkConfiguration);
 
                      Debug.WriteLine("");
                      Debug.WriteLine("");
