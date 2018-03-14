@@ -3246,7 +3246,7 @@ namespace nanoFramework.Tools.Debugger
                 var eraseResult = EraseMemory(configSector.m_StartAddress, 1);
                 if (eraseResult.Success)
                 {
-                    var configurationSerialized = CreateConverter().Serialize(((DeviceConfigurationBase)configuration).NetworkConfiguration);
+                    var configurationSerialized = CreateConverter().Serialize(((DeviceConfigurationBase)configuration));
 
                     // write the configuration block to the device
                     var writeResult = WriteMemory(configSector.m_StartAddress, configurationSerialized);
@@ -3258,6 +3258,42 @@ namespace nanoFramework.Tools.Debugger
 
                 // write failed, try to replace back the old config?
                 // FIXME
+            }
+
+
+            // default to false
+            return false;
+        }
+
+        /// <summary>
+        /// Writes the network configuration block to the device.
+        /// The configuration block is updated only with the changes for this configuration part.
+        /// </summary>
+        /// <param name="configuration">The device network configuration</param>
+        /// <returns></returns>
+        public bool WriteDeviceConfiguration(DeviceConfiguration.NetworkConfigurationProperties configuration)
+        {
+            // Create cancellation token source
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            // update the network class
+            var oldConfiguration = GetDeviceConfiguration(cts.Token);
+
+            if (oldConfiguration != null)
+            {
+                // get the configuration
+                // now update the network configuration
+                oldConfiguration.NetworkConfiguraton = configuration;
+
+                if(WriteDeviceConfigurationAsBlock(oldConfiguration))
+                {
+                    // done here
+                    return true;
+                }
+                else
+                {
+                    // write failed, the old configuration is supposed to have been reverted by 
+                }
             }
 
             // default to false
