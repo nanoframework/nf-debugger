@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -741,6 +742,8 @@ namespace Serial_Test_App_WPF
                      DeviceConfiguration.NetworkConfigurationProperties newDeviceNetworkConfiguration = new DeviceConfiguration.NetworkConfigurationProperties();
                      newDeviceNetworkConfiguration.MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 };
                      newDeviceNetworkConfiguration.StartupAddressMode = DeviceConfiguration.AddressMode.DHCP;
+
+                     newDeviceNetworkConfiguration.IPv4DNS1Address = IPAddress.Parse("192.168.1.254");
 
                      // write device configuration to device
                      var returnValue = device.DebugEngine.WriteDeviceConfiguration(newDeviceNetworkConfiguration);

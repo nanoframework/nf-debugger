@@ -199,10 +199,10 @@ namespace nanoFramework.Tools.Debugger
             {
                 var addressAsArray = address.GetAddressBytes();
 
-                return (((uint)addressAsArray[0] << 24) | 
-                        ((uint)addressAsArray[1] << 16) | 
-                        ((uint)addressAsArray[2] << 8) | 
-                        (addressAsArray[3]));
+                return (((uint)addressAsArray[3] << 24) | 
+                        ((uint)addressAsArray[2] << 16) | 
+                        ((uint)addressAsArray[1] << 8) | 
+                        (addressAsArray[0]));
             }
             catch { };
 
@@ -215,10 +215,10 @@ namespace nanoFramework.Tools.Debugger
             {
                 var addressAsArray = address.ToString().Split(new string[] { ":", "::" }, StringSplitOptions.RemoveEmptyEntries);
 
-                return new uint[] { uint.Parse(addressAsArray[0], System.Globalization.NumberStyles.HexNumber),
-                                    uint.Parse(addressAsArray[1], System.Globalization.NumberStyles.HexNumber),
+                return new uint[] { uint.Parse(addressAsArray[3], System.Globalization.NumberStyles.HexNumber),
                                     uint.Parse(addressAsArray[2], System.Globalization.NumberStyles.HexNumber),
-                                    uint.Parse(addressAsArray[3], System.Globalization.NumberStyles.HexNumber) };
+                                    uint.Parse(addressAsArray[1], System.Globalization.NumberStyles.HexNumber),
+                                    uint.Parse(addressAsArray[0], System.Globalization.NumberStyles.HexNumber) };
             }
             catch { };
 
