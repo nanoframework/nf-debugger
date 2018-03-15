@@ -746,7 +746,7 @@ namespace Serial_Test_App_WPF
                      newDeviceNetworkConfiguration.IPv4DNS1Address = IPAddress.Parse("192.168.1.254");
 
                      // write device configuration to device
-                     var returnValue = device.DebugEngine.WriteDeviceConfiguration(newDeviceNetworkConfiguration);
+                     var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newDeviceNetworkConfiguration);
 
                      Debug.WriteLine("");
                      Debug.WriteLine("");
