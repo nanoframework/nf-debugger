@@ -28,6 +28,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Monitor_FlashSectorMap = 0x0000000C;
         public const uint c_Monitor_OemInfo = 0x0000000E;
         public const uint c_Monitor_QueryConfiguration = 0x0000000F;
+        public const uint c_Monitor_UpdateConfiguration = 0x00000010;
 
         public class Monitor_Message : IConverter
         {
@@ -260,8 +261,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public class Monitor_QueryConfiguration
         {
-            public const uint c_ConfigurationNetwork = 1;
-
             public uint Configuration;
 
             public class Reply : IConverter
@@ -301,6 +300,26 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 }
             }
 
+        }
+
+        public class Monitor_UpdateConfiguration
+        {
+            public uint Configuration;
+            public uint Length = 0;
+            public byte[] Data = null;
+
+            public class Reply
+            {
+                public uint ErrorCode;
+            };
+
+            public void PrepareForSend(byte[] data, int length)
+            {
+                Length = (uint)length;
+                Data = new byte[length];
+
+                Array.Copy(data, 0, Data, 0, length);
+            }
         }
 
         public const uint c_Debugging_Execution_BasePtr = 0x00020000; // Returns the pointer for the ExecutionEngine object.
@@ -1551,6 +1570,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_DeploymentMap: return new Monitor_DeploymentMap.Reply();
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap.Reply();
                     case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration.Reply();
+                    case c_Monitor_UpdateConfiguration: return new Monitor_UpdateConfiguration.Reply();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr.Reply();
                     case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions.Reply();

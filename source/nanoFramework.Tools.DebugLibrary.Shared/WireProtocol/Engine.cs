@@ -3172,7 +3172,7 @@ namespace nanoFramework.Tools.Debugger
         {
             Debug.WriteLine("NetworkConfiguratonProperties");
 
-            IncomingMessage reply = GetDeviceConfiguration(Commands.Monitor_QueryConfiguration.c_ConfigurationNetwork);
+            IncomingMessage reply = GetDeviceConfiguration((uint)DeviceConfiguration.DeviceConfigurationOption.Network);
 
             Commands.Monitor_QueryConfiguration.NetworkConfiguration networkConfiguration = new Commands.Monitor_QueryConfiguration.NetworkConfiguration();
 
@@ -3222,7 +3222,7 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         /// <param name="configuration">The device configuration</param>
         /// <returns></returns>
-        public bool WriteDeviceConfigurationAsBlock(DeviceConfiguration configuration)
+        public bool UpdateDeviceConfigurationAsBlock(DeviceConfiguration configuration)
         {
             // we need the device memory map in order to know were to store this
             if (FlashSectorMap.Count == 0)
@@ -3248,11 +3248,22 @@ namespace nanoFramework.Tools.Debugger
                 {
                     var configurationSerialized = CreateConverter().Serialize(((DeviceConfigurationBase)configuration));
 
-                    // write the configuration block to the device
-                    var writeResult = WriteMemory(configSector.m_StartAddress, configurationSerialized);
-                    if (writeResult.Success)
+                    Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration();
+
+                    cmd.Configuration = (uint)DeviceConfiguration.DeviceConfigurationOption.Network;
+
+                    cmd.PrepareForSend(configurationSerialized, configurationSerialized.Length);
+
+                    IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_UpdateConfiguration, 0, cmd);
+
+                    if (reply != null)
                     {
-                        return true;
+                        Commands.Monitor_UpdateConfiguration.Reply cmdReply = reply.Payload as Commands.Monitor_UpdateConfiguration.Reply;
+
+                        if (reply.IsPositiveAcknowledge() && cmdReply.ErrorCode == 0)
+                        {
+                            return true;
+                        }
                     }
                 }
 
@@ -3271,7 +3282,7 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         /// <param name="configuration">The device network configuration</param>
         /// <returns></returns>
-        public bool WriteDeviceConfiguration(DeviceConfiguration.NetworkConfigurationProperties configuration)
+        public bool UpdateDeviceConfiguration(DeviceConfiguration.NetworkConfigurationProperties configuration)
         {
             // Create cancellation token source
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -3285,7 +3296,7 @@ namespace nanoFramework.Tools.Debugger
                 // now update the network configuration
                 oldConfiguration.NetworkConfiguraton = configuration;
 
-                if(WriteDeviceConfigurationAsBlock(oldConfiguration))
+                if(UpdateDeviceConfigurationAsBlock(oldConfiguration))
                 {
                     // done here
                     return true;
