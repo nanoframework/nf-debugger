@@ -25,6 +25,11 @@ namespace nanoFramework.Tools.Debugger
             Profiling_Allocations = 0x00000080,
             Profiling_Calls = 0x00000100,
             ThreadCreateEx = 0x00000400,
+
+            /// <summary>
+            /// This flag indicates that the device requires em erase command before updating the configuration block.
+            /// </summary>
+            ConfigBlockRequiresErase = 0x00000800,
         }
 
         public struct SoftwareVersionProperties
@@ -286,6 +291,15 @@ namespace nanoFramework.Tools.Debugger
             {
                 Debug.Assert(!m_fUnknown);
                 return (m_capabilities & Capability.Profiling_Calls) != 0;
+            }
+        }
+
+        public bool ConfigBlockRequiresErase
+        {
+            get
+            {
+                Debug.Assert(!m_fUnknown);
+                return (m_capabilities & Capability.ConfigBlockRequiresErase) != 0;
             }
         }
 

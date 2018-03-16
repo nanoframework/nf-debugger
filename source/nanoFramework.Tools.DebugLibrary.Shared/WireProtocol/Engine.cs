@@ -3224,46 +3224,70 @@ namespace nanoFramework.Tools.Debugger
         /// <returns></returns>
         public bool UpdateDeviceConfigurationAsBlock(DeviceConfiguration configuration)
         {
-            // we need the device memory map in order to know were to store this
-            if (FlashSectorMap.Count == 0)
-            {
-                // flash sector map is still empty, go get it
-                if (GetFlashSectorMap() == null)
+            bool okToUploadConfig = false;
+
+            if(Capabilities.ConfigBlockRequiresErase)
+            { 
+                // this devices requires flash erase before updating the configuration block
+
+                // we need the device memory map in order to know were to store this
+                if (FlashSectorMap.Count == 0)
+                {
+                    // flash sector map is still empty, go get it
+                    if (GetFlashSectorMap() == null)
+                    {
+                        return false;
+                    }
+                }
+
+                // get configuration sector details
+                var configSector = FlashSectorMap.FirstOrDefault(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG);
+
+                // store the current configuration in case we need to revert this for some reason
+                var readConfigSector = ReadMemory(configSector.m_StartAddress, configSector.m_NumBlocks * configSector.m_BytesPerBlock);
+
+                if (readConfigSector.Success)
+                {
+                    // start erasing the sector that holds the configuration block
+                    var eraseResult = EraseMemory(configSector.m_StartAddress, 1);
+                    if (eraseResult.Success)
+                    {
+                        okToUploadConfig = true;
+                    }
+                }
+                else
                 {
                     return false;
+
                 }
             }
-
-            // get configuration sector details
-            var configSector = FlashSectorMap.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG);
-
-            // store the current configuration in case we need to revert this for some reason
-            var readConfigSector = ReadMemory(configSector.m_StartAddress, configSector.m_NumBlocks * configSector.m_BytesPerBlock);
-
-            if (readConfigSector.Success)
+            else
             {
-                // start erasing the sector that holds the configuration block
-                var eraseResult = EraseMemory(configSector.m_StartAddress, 1);
-                if (eraseResult.Success)
+                // configurations storage doesn't require erase
+                okToUploadConfig = true;
+            }
+
+            if (okToUploadConfig)
+            {
+                // serialize the configuration block
+                var configurationSerialized = CreateConverter().Serialize(((DeviceConfigurationBase)configuration));
+
+                // prepare command to upload new configuration
+                Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration
                 {
-                    var configurationSerialized = CreateConverter().Serialize(((DeviceConfigurationBase)configuration));
+                    Configuration = (uint)DeviceConfiguration.DeviceConfigurationOption.Network
+                };
+                cmd.PrepareForSend(configurationSerialized, configurationSerialized.Length);
 
-                    Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration();
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_UpdateConfiguration, 0, cmd);
 
-                    cmd.Configuration = (uint)DeviceConfiguration.DeviceConfigurationOption.Network;
+                if (reply != null)
+                {
+                    Commands.Monitor_UpdateConfiguration.Reply cmdReply = reply.Payload as Commands.Monitor_UpdateConfiguration.Reply;
 
-                    cmd.PrepareForSend(configurationSerialized, configurationSerialized.Length);
-
-                    IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_UpdateConfiguration, 0, cmd);
-
-                    if (reply != null)
+                    if (reply.IsPositiveAcknowledge() && cmdReply.ErrorCode == 0)
                     {
-                        Commands.Monitor_UpdateConfiguration.Reply cmdReply = reply.Payload as Commands.Monitor_UpdateConfiguration.Reply;
-
-                        if (reply.IsPositiveAcknowledge() && cmdReply.ErrorCode == 0)
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
 
