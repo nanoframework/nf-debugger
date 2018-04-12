@@ -7,6 +7,7 @@ using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -154,15 +155,15 @@ namespace nanoFramework.Tools.Debugger.Extensions
         {
             StringBuilder output = new StringBuilder();
 
-            if (networkConfiguration.StartupAddressMode != DeviceConfiguration.AddressMode.Invalid)
+            if (networkConfiguration.StartupAddressMode != AddressMode.Invalid)
             {
                 output.AppendLine("IPv4 configuration");
                 output.AppendLine("------------------------------------");
                 output.AppendLine($"address: {networkConfiguration.IPv4Address.ToString()}");
                 output.AppendLine($"subnet mask: {networkConfiguration.IPv4NetMask.ToString()}");
                 output.AppendLine($"gateway: {networkConfiguration.IPv4GatewayAddress.ToString()}");
-                output.AppendLine($"DNS server 1: {networkConfiguration.IPv4DNS1Address.ToString()}");
-                output.AppendLine($"DNS server 2: {networkConfiguration.IPv4DNS2Address.ToString()}");
+                output.AppendLine($"DNS server 1: {networkConfiguration.IPv4DNSAddress1.ToString()}");
+                output.AppendLine($"DNS server 2: {networkConfiguration.IPv4DNSAddress2.ToString()}");
 
                 output.AppendLine("");
                 output.AppendLine("IPv6 configuration");
@@ -170,23 +171,23 @@ namespace nanoFramework.Tools.Debugger.Extensions
                 output.AppendLine($"address: {networkConfiguration.IPv6Address.ToString()}");
                 output.AppendLine($"subnet mask: {networkConfiguration.IPv6NetMask.ToString()}");
                 output.AppendLine($"gateway: {networkConfiguration.IPv6GatewayAddress.ToString()}");
-                output.AppendLine($"DNS server 1: {networkConfiguration.IPv6DNS1Address.ToString()}");
-                output.AppendLine($"DNS server 2: {networkConfiguration.IPv6DNS2Address.ToString()}");
+                output.AppendLine($"DNS server 1: {networkConfiguration.IPv6DNSAddress1.ToString()}");
+                output.AppendLine($"DNS server 2: {networkConfiguration.IPv6DNSAddress2.ToString()}");
 
                 output.AppendLine("");
                 output.Append("IP configuration: ");
 
                 switch (networkConfiguration.StartupAddressMode)
                 {
-                    case DeviceConfiguration.AddressMode.Static:
+                    case AddressMode.Static:
                         output.AppendLine("IP configuration: Static");
                         break;
 
-                    case DeviceConfiguration.AddressMode.DHCP:
+                    case AddressMode.DHCP:
                         output.AppendLine("IP configuration: DHCP");
                         break;
 
-                    case DeviceConfiguration.AddressMode.AutoIP:
+                    case AddressMode.AutoIP:
                         output.AppendLine("IP configuration: auto IP");
                         break;
                 }

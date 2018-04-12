@@ -12,14 +12,29 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public enum DeviceConfigurationOption : byte
         {
-            ////////////////////////////////////////////////////////////////////////////////////
-            // NEED TO KEEP THESE IN SYNC WITH native 'AddressMode' enum in nanoHAL_Network.h //
-            ////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // NEED TO KEEP THESE IN SYNC WITH native 'DeviceConfigurationOption' enum in WireProtocol_MonitorCommands.h //
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             /// <summary>
-            /// Network configuration
+            /// Network configuration block
             /// </summary>
             Network = 1,
+
+            /// <summary>
+            /// Wireless Network configuration block
+            /// </summary>
+            WirelessNetwork = 2,
+
+            /// <summary>
+            /// Wireless Network as AP configuration block
+            /// </summary>
+            WirelessNetworkAP = 3,
+
+            /// <summary>
+            /// All configuration blocks
+            /// </summary>
+            All = 255,
         }
     }
 }

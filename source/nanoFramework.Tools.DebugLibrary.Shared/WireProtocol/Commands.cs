@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -263,6 +264,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             public uint Configuration;
 
+            public uint ConfigurationBlockIndex;
+
             public class Reply : IConverter
             {
                 public byte[] Data = null;
@@ -282,9 +285,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     IPv6Address = new uint[4];
                     IPv6NetMask = new uint[4];
                     IPv6GatewayAddress = new uint[4];
-                    IPv6DNS1Address = new uint[4];
-                    IPv6DNS2Address = new uint[4];
-                    StartupAddressMode = (byte)DeviceConfiguration.AddressMode.Invalid;
+                    IPv6DNSAddress1 = new uint[4];
+                    IPv6DNSAddress2 = new uint[4];
+                    StartupAddressMode = (byte)AddressMode.Invalid;
                 }
 
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
@@ -294,12 +297,44 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     IPv6Address = new uint[4];
                     IPv6NetMask = new uint[4];
                     IPv6GatewayAddress = new uint[4];
-                    IPv6DNS1Address = new uint[4];
-                    IPv6DNS2Address = new uint[4];
-                    StartupAddressMode = (byte)DeviceConfiguration.AddressMode.Invalid;
+                    IPv6DNSAddress1 = new uint[4];
+                    IPv6DNSAddress2 = new uint[4];
+                    StartupAddressMode = (byte)AddressMode.Invalid;
                 }
             }
 
+            public class NetworkWirelessConfiguration : NetworkWirelessConfigurationBase, IConverter
+            {
+                public NetworkWirelessConfiguration()
+                {
+                    Marker = new byte[4];
+                    MacAddress = new byte[6];
+                    IPv6Address = new uint[4];
+                    IPv6NetMask = new uint[4];
+                    IPv6GatewayAddress = new uint[4];
+                    IPv6DNSAddress1 = new uint[4];
+                    IPv6DNSAddress2 = new uint[4];
+                    StartupAddressMode = (byte)AddressMode.Invalid;
+                    Authentication = (byte)AuthenticationType.None ;
+                    Encryption = (byte)EncryptionType.None;
+                    Radio = (byte)RadioType.None;
+            }
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    Marker = new byte[4];
+                    MacAddress = new byte[6];
+                    IPv6Address = new uint[4];
+                    IPv6NetMask = new uint[4];
+                    IPv6GatewayAddress = new uint[4];
+                    IPv6DNSAddress1 = new uint[4];
+                    IPv6DNSAddress2 = new uint[4];
+                    StartupAddressMode = (byte)AddressMode.Invalid;
+                    Authentication = (byte)AuthenticationType.None;
+                    Encryption = (byte)EncryptionType.None;
+                    Radio = (byte)RadioType.None;
+                }
+            }
         }
 
         public class Monitor_UpdateConfiguration
