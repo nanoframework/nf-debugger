@@ -27,12 +27,12 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Wireless network configuration marker
         /// </summary>
-        public static string MarkerConfigurationWirelessNetwork_v1 = "WN1\0";
+        public static string MarkerConfigurationWireless80211Network_v1 = "WN1\0";
 
         /// <summary>
         /// Wireless AP configuration marker
         /// </summary>
-        public static string MarkerConfigurationWirelessAP_v1 = "AP1\0";
+        public static string MarkerConfigurationWireless80211AP_v1 = "AP1\0";
 
         /////////////////////////////////////////////////////////////
 
@@ -52,12 +52,12 @@ namespace nanoFramework.Tools.Debugger
             set { _networkConfigurations = value; }
         }
 
-        private NetworkWirelessConfigurationProperties[] _networkWirelessConfigurations;
+        private NetworkWireless80211ConfigurationProperties[] _networkWirelessConfigurations;
 
         /// <summary>
-        /// Collection of <see cref="NetworkWirelessConfigurationProperties"/> blocks in a target device.
+        /// Collection of <see cref="NetworkWireless80211ConfigurationProperties"/> blocks in a target device.
         /// </summary>
-        public NetworkWirelessConfigurationProperties[] NetworkWirelessConfigurations
+        public NetworkWireless80211ConfigurationProperties[] NetworkWirelessConfigurations
         {
             get
             {
@@ -72,13 +72,13 @@ namespace nanoFramework.Tools.Debugger
 
         public DeviceConfiguration()
             : this(new NetworkConfigurationProperties[0],
-                   new NetworkWirelessConfigurationProperties[0])
+                   new NetworkWireless80211ConfigurationProperties[0])
         {
         }
 
         public DeviceConfiguration(
             NetworkConfigurationProperties[] networkConfiguratons,
-            NetworkWirelessConfigurationProperties[] networkWirelessConfiguratons
+            NetworkWireless80211ConfigurationProperties[] networkWirelessConfiguratons
             )
         {
             _networkConfigurations = networkConfiguratons;
@@ -91,7 +91,7 @@ namespace nanoFramework.Tools.Debugger
             return new DeviceConfigurationBase()
             {
                 NetworkConfigurations = value.NetworkConfigurations.Select(i => (NetworkConfigurationBase)i).ToArray(),
-                NetworkWirelessConfigurations = value.NetworkWirelessConfigurations.Select(i => (NetworkWirelessConfigurationBase)i).ToArray()
+                NetworkWirelessConfigurations = value.NetworkWirelessConfigurations.Select(i => (NetworkWireless80211ConfigurationBase)i).ToArray()
             };
         }
 
@@ -212,14 +212,14 @@ namespace nanoFramework.Tools.Debugger
 
         }
 
-        public class NetworkWirelessConfigurationProperties : NetworkWirelessConfigurationPropertiesBase
+        public class NetworkWireless80211ConfigurationProperties : NetworkWireless80211ConfigurationPropertiesBase
         {
-            public NetworkWirelessConfigurationProperties()
+            public NetworkWireless80211ConfigurationProperties()
             {
 
             }
 
-            public NetworkWirelessConfigurationProperties(
+            public NetworkWireless80211ConfigurationProperties(
                 byte[] macAddress,
                 uint ipv4Address,
                 uint ipv4NetMask,
@@ -263,11 +263,11 @@ namespace nanoFramework.Tools.Debugger
             }
 
             // operator to allow cast_ing a NetworkWirelessConfigurationProperties object to NetworkConfigurationBase
-            public static explicit operator NetworkWirelessConfigurationBase(NetworkWirelessConfigurationProperties value)
+            public static explicit operator NetworkWireless80211ConfigurationBase(NetworkWireless80211ConfigurationProperties value)
             {
-                var networkWirelessConfig = new NetworkWirelessConfigurationBase()
+                var networkWirelessConfig = new NetworkWireless80211ConfigurationBase()
                 {
-                    Marker = Encoding.UTF8.GetBytes(MarkerConfigurationNetwork_v1),
+                    Marker = Encoding.UTF8.GetBytes(MarkerConfigurationWireless80211Network_v1),
 
                     MacAddress = value.MacAddress,
 

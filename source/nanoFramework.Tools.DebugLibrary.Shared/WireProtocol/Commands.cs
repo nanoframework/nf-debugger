@@ -303,7 +303,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 }
             }
 
-            public class NetworkWirelessConfiguration : NetworkWirelessConfigurationBase, IConverter
+            public class NetworkWirelessConfiguration : NetworkWireless80211ConfigurationBase, IConverter
             {
                 public NetworkWirelessConfiguration()
                 {
@@ -340,6 +340,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public class Monitor_UpdateConfiguration
         {
             public uint Configuration;
+            public uint ConfigurationBlockIndex;
             public uint Length = 0;
             public byte[] Data = null;
 

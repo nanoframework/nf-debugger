@@ -5,7 +5,7 @@
 
 namespace nanoFramework.Tools.Debugger
 {
-    public class NetworkWirelessConfigurationBase : NetworkConfigurationBase
+    public class NetworkWireless80211ConfigurationBase : NetworkConfigurationBase
     {
         /// <summary>
         /// Type of authentication used on the wireless network 
