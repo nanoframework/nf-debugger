@@ -37,12 +37,12 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// DNS server 1 IPv4 address as 32-bit unsigned integer 
         /// </summary>
-        public uint IPv4DNS1Address;
+        public uint IPv4DNSAddress1;
 
         /// <summary>
         /// DNS server 2 IPv4 address as 32-bit unsigned integer 
         /// </summary>
-        public uint IPv4DNS2Address;
+        public uint IPv4DNSAddress2;
 
         /// <summary>
         /// Network IPv6 address as an array of 4 32-bit unsigned integers 
@@ -62,12 +62,12 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// DNS server 1 IPv6 address as an array of 4 32-bit unsigned integers 
         /// </summary>
-        public uint[] IPv6DNS1Address;
+        public uint[] IPv6DNSAddress1;
 
         /// <summary>
         /// DNS server 2 IPv6 address as an array of 4 32-bit unsigned integers
         /// </summary>
-        public uint[] IPv6DNS2Address;
+        public uint[] IPv6DNSAddress2;
 
         /// <summary>
         /// Address mode (static, DHCP or auto IP)

@@ -4,8 +4,11 @@
 //
 
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Text;
 
 namespace nanoFramework.Tools.Debugger
@@ -17,155 +20,69 @@ namespace nanoFramework.Tools.Debugger
         // all markers have 4 bytes length
 
         /// <summary>
-        /// Network configuration market
+        /// Network configuration marker
         /// </summary>
         public static string MarkerConfigurationNetwork_v1 = "CN1\0";
+
+        /// <summary>
+        /// Wireless network configuration marker
+        /// </summary>
+        public static string MarkerConfigurationWirelessNetwork_v1 = "WN1\0";
+
+        /// <summary>
+        /// Wireless AP configuration marker
+        /// </summary>
+        public static string MarkerConfigurationWirelessAP_v1 = "AP1\0";
+
         /////////////////////////////////////////////////////////////
 
-        public class NetworkConfigurationProperties
-        {
-            /// <summary>
-            /// MAC address for the network interface
-            /// </summary>
-            public byte[] MacAddress { get; set; }
+        private NetworkConfigurationProperties[] _networkConfigurations;
 
-            /// <summary>
-            /// Network IPv4 address 
-            /// </summary>
-            public IPAddress IPv4Address { get; set; }
-
-            /// <summary>
-            /// Network IPv4 subnet mask
-            /// </summary>
-            public IPAddress IPv4NetMask { get; set; }
-
-            /// <summary>
-            /// Network gateway IPv4 address
-            /// </summary>
-            public IPAddress IPv4GatewayAddress { get; set; }
-
-            /// <summary>
-            /// DNS server 1 IPv4 address
-            /// </summary>
-            public IPAddress IPv4DNS1Address { get; set; }
-
-            /// <summary>
-            /// DNS server 2 IPv4 address
-            /// </summary>
-            public IPAddress IPv4DNS2Address { get; set; }
-
-            /// <summary>
-            /// Network IPv6 address 
-            /// </summary>
-            public IPAddress IPv6Address { get; set; }
-
-            // Network IPv6 subnet mask
-            public IPAddress IPv6NetMask { get; set; }
-
-            // Network gateway IPv6 address
-            public IPAddress IPv6GatewayAddress { get; set; }
-
-            // DNS server 1 IPv6 address
-            public IPAddress IPv6DNS1Address { get; set; }
-
-            // DNS server 2 IPv6 address
-            public IPAddress IPv6DNS2Address { get; set; }
-
-            /// <summary>
-            /// Address mode (static, DHCP or auto IP)
-            /// </summary>
-            public AddressMode StartupAddressMode { get; set; }
-
-            public NetworkConfigurationProperties()
-            {
-
-            }
-
-            public NetworkConfigurationProperties(
-                byte[] macAddress,
-                uint ipv4Address,
-                uint ipv4NetMask,
-                uint ipv4GatewayAddress,
-                uint ipv4DNS1Address,
-                uint ipv4DNS2Address,
-                uint[] ipv6Address,
-                uint[] ipv6NetMask,
-                uint[] ipv6GatewayAddress,
-                uint[] ipv6DNS1Address,
-                uint[] ipv6DNS2Address,
-                byte startupAddressMode)
-            {
-                MacAddress = macAddress;
-
-                IPv4Address = new IPAddress(ipv4Address);
-                IPv4NetMask = new IPAddress(ipv4NetMask);
-                IPv4GatewayAddress = new IPAddress(ipv4GatewayAddress);
-                IPv4DNS1Address = new IPAddress(ipv4DNS1Address);
-                IPv4DNS2Address = new IPAddress(ipv4DNS2Address);
-
-                IPv6Address = ToIPv6Address(ipv6Address);
-                IPv6NetMask = ToIPv6Address(ipv6NetMask);
-                IPv6GatewayAddress = ToIPv6Address(ipv6GatewayAddress);
-                IPv6DNS1Address = ToIPv6Address(ipv6DNS1Address);
-                IPv6DNS2Address = ToIPv6Address(ipv6DNS2Address);
-
-                StartupAddressMode = (AddressMode)startupAddressMode;
-            }
-
-            // operator to allow cast_ing a NetworkConfigurationProperties object to NetworkConfigurationBase
-            public static explicit operator NetworkConfigurationBase(NetworkConfigurationProperties value)
-            {
-                var networkCondif = new NetworkConfigurationBase()
-                {
-                    Marker = Encoding.UTF8.GetBytes(MarkerConfigurationNetwork_v1),
-
-                    MacAddress = value.MacAddress,
-
-                    IPv4Address = FromIPv4Address(value.IPv4Address),
-                    IPv4NetMask = FromIPv4Address(value.IPv4NetMask),
-                    IPv4GatewayAddress = FromIPv4Address(value.IPv4GatewayAddress),
-                    IPv4DNS1Address = FromIPv4Address(value.IPv4DNS1Address),
-                    IPv4DNS2Address = FromIPv4Address(value.IPv4DNS2Address),
-
-                    IPv6Address = FromIPv6Address(value.IPv6Address),
-                    IPv6NetMask = FromIPv6Address(value.IPv6NetMask),
-                    IPv6GatewayAddress = FromIPv6Address(value.IPv6GatewayAddress),
-                    IPv6DNS1Address = FromIPv6Address(value.IPv6DNS1Address),
-                    IPv6DNS2Address = FromIPv6Address(value.IPv6DNS2Address),
-
-                    StartupAddressMode = (byte)value.StartupAddressMode
-                };
-
-                return networkCondif;
-            }
-
-        }
-
-        private NetworkConfigurationProperties _networkConfiguration;
-
-        public NetworkConfigurationProperties NetworkConfiguraton
+        /// <summary>
+        /// Collection of <see cref="NetworkConfigurationProperties"/> blocks in a target device.
+        /// </summary>
+        public NetworkConfigurationProperties[] NetworkConfigurations
         {
             get
             {
                 Debug.Assert(!IsUnknown);
-                return _networkConfiguration;
+                return _networkConfigurations;
             }
 
-            set { _networkConfiguration = value; }
+            set { _networkConfigurations = value; }
+        }
+
+        private NetworkWirelessConfigurationProperties[] _networkWirelessConfigurations;
+
+        /// <summary>
+        /// Collection of <see cref="NetworkWirelessConfigurationProperties"/> blocks in a target device.
+        /// </summary>
+        public NetworkWirelessConfigurationProperties[] NetworkWirelessConfigurations
+        {
+            get
+            {
+                Debug.Assert(!IsUnknown);
+                return _networkWirelessConfigurations;
+            }
+
+            set { _networkWirelessConfigurations = value; }
         }
 
         public bool IsUnknown => false;
 
         public DeviceConfiguration()
-            : this(new NetworkConfigurationProperties())
+            : this(new NetworkConfigurationProperties[0],
+                   new NetworkWirelessConfigurationProperties[0])
         {
         }
 
         public DeviceConfiguration(
-            NetworkConfigurationProperties networkConfiguraton
+            NetworkConfigurationProperties[] networkConfiguratons,
+            NetworkWirelessConfigurationProperties[] networkWirelessConfiguratons
             )
         {
-            _networkConfiguration = networkConfiguraton;
+            _networkConfigurations = networkConfiguratons;
+            _networkWirelessConfigurations = networkWirelessConfiguratons;
         }
 
         // operator to allow cast_ing a DeviceConfiguration object to DeviceConfigurationBase
@@ -173,7 +90,8 @@ namespace nanoFramework.Tools.Debugger
         {
             return new DeviceConfigurationBase()
             {
-                NetworkConfiguration = (NetworkConfigurationBase)value.NetworkConfiguraton
+                NetworkConfigurations = value.NetworkConfigurations.Select(i => (NetworkConfigurationBase)i).ToArray(),
+                NetworkWirelessConfigurations = value.NetworkWirelessConfigurations.Select(i => (NetworkWirelessConfigurationBase)i).ToArray()
             };
         }
 
@@ -224,5 +142,162 @@ namespace nanoFramework.Tools.Debugger
 
             return new uint[4];
         }
+
+        /////////////////////////////////////////////////////////////
+
+        public class NetworkConfigurationProperties : NetworkConfigurationPropertiesBase
+        {
+            public NetworkConfigurationProperties()
+            {
+
+            }
+
+            public NetworkConfigurationProperties(
+                byte[] macAddress,
+                uint ipv4Address,
+                uint ipv4NetMask,
+                uint ipv4GatewayAddress,
+                uint ipv4DNS1Address,
+                uint ipv4DNS2Address,
+                uint[] ipv6Address,
+                uint[] ipv6NetMask,
+                uint[] ipv6GatewayAddress,
+                uint[] ipv6DNS1Address,
+                uint[] ipv6DNS2Address,
+                byte startupAddressMode)
+            {
+                MacAddress = macAddress;
+
+                IPv4Address = new IPAddress(ipv4Address);
+                IPv4NetMask = new IPAddress(ipv4NetMask);
+                IPv4GatewayAddress = new IPAddress(ipv4GatewayAddress);
+                IPv4DNSAddress1 = new IPAddress(ipv4DNS1Address);
+                IPv4DNSAddress2 = new IPAddress(ipv4DNS2Address);
+
+                IPv6Address = ToIPv6Address(ipv6Address);
+                IPv6NetMask = ToIPv6Address(ipv6NetMask);
+                IPv6GatewayAddress = ToIPv6Address(ipv6GatewayAddress);
+                IPv6DNSAddress1 = ToIPv6Address(ipv6DNS1Address);
+                IPv6DNSAddress2 = ToIPv6Address(ipv6DNS2Address);
+
+                StartupAddressMode = (AddressMode)startupAddressMode;
+            }
+
+            // operator to allow cast_ing a NetworkConfigurationProperties object to NetworkConfigurationBase
+            public static explicit operator NetworkConfigurationBase(NetworkConfigurationProperties value)
+            {
+                var networkConfig = new NetworkConfigurationBase()
+                {
+                    Marker = Encoding.UTF8.GetBytes(MarkerConfigurationNetwork_v1),
+
+                    MacAddress = value.MacAddress,
+
+                    IPv4Address = FromIPv4Address(value.IPv4Address),
+                    IPv4NetMask = FromIPv4Address(value.IPv4NetMask),
+                    IPv4GatewayAddress = FromIPv4Address(value.IPv4GatewayAddress),
+                    IPv4DNSAddress1 = FromIPv4Address(value.IPv4DNSAddress1),
+                    IPv4DNSAddress2 = FromIPv4Address(value.IPv4DNSAddress2),
+
+                    IPv6Address = FromIPv6Address(value.IPv6Address),
+                    IPv6NetMask = FromIPv6Address(value.IPv6NetMask),
+                    IPv6GatewayAddress = FromIPv6Address(value.IPv6GatewayAddress),
+                    IPv6DNSAddress1 = FromIPv6Address(value.IPv6DNSAddress1),
+                    IPv6DNSAddress2 = FromIPv6Address(value.IPv6DNSAddress2),
+
+                    StartupAddressMode = (byte)value.StartupAddressMode
+                };
+
+                return networkConfig;
+            }
+
+        }
+
+        public class NetworkWirelessConfigurationProperties : NetworkWirelessConfigurationPropertiesBase
+        {
+            public NetworkWirelessConfigurationProperties()
+            {
+
+            }
+
+            public NetworkWirelessConfigurationProperties(
+                byte[] macAddress,
+                uint ipv4Address,
+                uint ipv4NetMask,
+                uint ipv4GatewayAddress,
+                uint ipv4DNS1Address,
+                uint ipv4DNS2Address,
+                uint[] ipv6Address,
+                uint[] ipv6NetMask,
+                uint[] ipv6GatewayAddress,
+                uint[] ipv6DNS1Address,
+                uint[] ipv6DNS2Address,
+                byte startupAddressMode,
+                byte authentication,
+                byte encryption,
+                byte radio,
+                string ssid,
+                string password)
+            {
+                MacAddress = macAddress;
+
+                IPv4Address = new IPAddress(ipv4Address);
+                IPv4NetMask = new IPAddress(ipv4NetMask);
+                IPv4GatewayAddress = new IPAddress(ipv4GatewayAddress);
+                IPv4DNSAddress1 = new IPAddress(ipv4DNS1Address);
+                IPv4DNSAddress2 = new IPAddress(ipv4DNS2Address);
+
+                IPv6Address = ToIPv6Address(ipv6Address);
+                IPv6NetMask = ToIPv6Address(ipv6NetMask);
+                IPv6GatewayAddress = ToIPv6Address(ipv6GatewayAddress);
+                IPv6DNSAddress1 = ToIPv6Address(ipv6DNS1Address);
+                IPv6DNSAddress2 = ToIPv6Address(ipv6DNS2Address);
+
+                StartupAddressMode = (AddressMode)startupAddressMode;
+
+                Authentication = (AuthenticationType)authentication;
+                Encryption = (EncryptionType)encryption;
+                Radio = (RadioType)radio;
+                Ssid = ssid;
+                Password = password;
+
+            }
+
+            // operator to allow cast_ing a NetworkWirelessConfigurationProperties object to NetworkConfigurationBase
+            public static explicit operator NetworkWirelessConfigurationBase(NetworkWirelessConfigurationProperties value)
+            {
+                var networkWirelessConfig = new NetworkWirelessConfigurationBase()
+                {
+                    Marker = Encoding.UTF8.GetBytes(MarkerConfigurationNetwork_v1),
+
+                    MacAddress = value.MacAddress,
+
+                    IPv4Address = FromIPv4Address(value.IPv4Address),
+                    IPv4NetMask = FromIPv4Address(value.IPv4NetMask),
+                    IPv4GatewayAddress = FromIPv4Address(value.IPv4GatewayAddress),
+                    IPv4DNSAddress1 = FromIPv4Address(value.IPv4DNSAddress1),
+                    IPv4DNSAddress2 = FromIPv4Address(value.IPv4DNSAddress2),
+
+                    IPv6Address = FromIPv6Address(value.IPv6Address),
+                    IPv6NetMask = FromIPv6Address(value.IPv6NetMask),
+                    IPv6GatewayAddress = FromIPv6Address(value.IPv6GatewayAddress),
+                    IPv6DNSAddress1 = FromIPv6Address(value.IPv6DNSAddress1),
+                    IPv6DNSAddress2 = FromIPv6Address(value.IPv6DNSAddress2),
+
+                    StartupAddressMode = (byte)value.StartupAddressMode,
+
+                    Authentication = (byte)value.Authentication,
+                    Encryption = (byte)value.Encryption,
+                    Radio = (byte)value.Radio,
+                    Ssid = value.Ssid,
+                    Password = value.Password,
+            };
+
+                return networkWirelessConfig;
+            }
+
+        }
+
+        /////////////////////////////////////////////////////////////
+
     }
 }

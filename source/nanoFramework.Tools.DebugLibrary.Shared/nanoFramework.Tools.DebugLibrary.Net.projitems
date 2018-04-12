@@ -14,9 +14,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)CRC32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DebuggerEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationOption.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\AddressMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NetworkWirelessConfigurationPropertiesBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NetworkWirelessConfigurationBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NetworkConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NetworkConfigurationBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EndPoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\CouldntOpenNanoFrameworkDeviceException.cs" />
@@ -41,6 +43,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)MFDeployTool\IAppDomainInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MFDeployTool\AppDomainInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MFDeployTool\EraseOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NetworkInformation\AddressMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NetworkInformation\AuthenticationType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NetworkInformation\EncryptionType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NetworkInformation\NetworkInterfaceType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NetworkInformation\RadioType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\NanoDeviceBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\INanoDevice.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\NanoDevice.cs" />

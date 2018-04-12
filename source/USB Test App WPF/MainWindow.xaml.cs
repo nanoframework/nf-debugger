@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -687,7 +688,7 @@ namespace Serial_Test_App_WPF
                      var deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
 
 
-                    Debug.WriteLine(deviceConfig.NetworkConfiguraton.ToStringForOutput());
+                    Debug.WriteLine(deviceConfig.NetworkConfigurations[0].ToStringForOutput());
 
                     //Debug.WriteLine(string.Empty);
                     //Debug.WriteLine(string.Empty);
@@ -741,12 +742,12 @@ namespace Serial_Test_App_WPF
                      // set new network configuration on the specific class
                      DeviceConfiguration.NetworkConfigurationProperties newDeviceNetworkConfiguration = new DeviceConfiguration.NetworkConfigurationProperties();
                      newDeviceNetworkConfiguration.MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 };
-                     newDeviceNetworkConfiguration.StartupAddressMode = DeviceConfiguration.AddressMode.DHCP;
+                     newDeviceNetworkConfiguration.StartupAddressMode = AddressMode.DHCP;
 
-                     newDeviceNetworkConfiguration.IPv4DNS1Address = IPAddress.Parse("192.168.1.254");
+                     newDeviceNetworkConfiguration.IPv4DNSAddress1 = IPAddress.Parse("192.168.1.254");
 
                      // write device configuration to device
-                     var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newDeviceNetworkConfiguration);
+                     var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newDeviceNetworkConfiguration, 0);
 
                      Debug.WriteLine("");
                      Debug.WriteLine("");
