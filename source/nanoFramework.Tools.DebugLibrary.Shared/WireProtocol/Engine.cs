@@ -3180,40 +3180,50 @@ namespace nanoFramework.Tools.Debugger
             return new DeviceConfiguration(networkConfigs, networkWirelessConfigs);
         }
 
-        public DeviceConfiguration.NetworkConfigurationProperties[] GetAllNetworkConfigurations()
+        public List<DeviceConfiguration.NetworkConfigurationProperties> GetAllNetworkConfigurations()
         {
             List<DeviceConfiguration.NetworkConfigurationProperties> networkConfigurations = new List<DeviceConfiguration.NetworkConfigurationProperties>();
 
-            DeviceConfiguration.NetworkConfigurationProperties config = null;
+            DeviceConfiguration.NetworkConfigurationProperties networkConfig = null;
             uint index = 0;
 
             do
             {
                 // get next network configuration block, if available
-                GetNetworkConfiguratonProperties(index++);
+                networkConfig = GetNetworkConfiguratonProperties(index++);
 
+                // add to list, if valid
+                if (!networkConfig.IsUnknown)
+                {
+                    networkConfigurations.Add(networkConfig);
+                }
             }
-            while (config?.StartupAddressMode != AddressMode.Invalid);
+            while (!networkConfig.IsUnknown);
 
-            return networkConfigurations.ToArray();
+            return networkConfigurations;
         }
 
-        public DeviceConfiguration.NetworkWireless80211ConfigurationProperties[] GetAllNetworkWirelessConfigurations()
+        public List<DeviceConfiguration.NetworkWireless80211ConfigurationProperties> GetAllNetworkWirelessConfigurations()
         {
             List<DeviceConfiguration.NetworkWireless80211ConfigurationProperties> networkWirelessConfigurations = new List<DeviceConfiguration.NetworkWireless80211ConfigurationProperties>();
 
-            DeviceConfiguration.NetworkWireless80211ConfigurationProperties config = null;
+            DeviceConfiguration.NetworkWireless80211ConfigurationProperties networkConfig = null;
             uint index = 0;
 
             do
             {
                 // get next network configuration block, if available
-                GetNetworkWirelessConfiguratonProperties(index++);
+                networkConfig = GetNetworkWirelessConfiguratonProperties(index++);
 
+                // add to list, if valid
+                if(!networkConfig.IsUnknown)
+                {
+                    networkWirelessConfigurations.Add(networkConfig);
+                }
             }
-            while (config?.StartupAddressMode != AddressMode.Invalid);
+            while (!networkConfig.IsUnknown);
 
-            return networkWirelessConfigurations.ToArray();
+            return networkWirelessConfigurations;
         }
 
         public DeviceConfiguration.NetworkConfigurationProperties GetNetworkConfiguratonProperties(uint configurationBlockIndex)
@@ -3228,9 +3238,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Monitor_QueryConfiguration.Reply cmdReply = reply.Payload as Commands.Monitor_QueryConfiguration.Reply;
-
-                if (cmdReply != null && cmdReply.Data != null)
+                if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
                 {
                     new Converter().Deserialize(networkConfiguration, cmdReply.Data);
 
@@ -3259,7 +3267,7 @@ namespace nanoFramework.Tools.Debugger
         {
             Debug.WriteLine("NetworkWirelessConfiguratonProperties");
 
-            IncomingMessage reply = GetDeviceConfiguration((uint)DeviceConfiguration.DeviceConfigurationOption.WirelessNetwork, configurationBlockIndex);
+            IncomingMessage reply = GetDeviceConfiguration((uint)DeviceConfiguration.DeviceConfigurationOption.Wireless80211Network, configurationBlockIndex);
 
             Commands.Monitor_QueryConfiguration.NetworkWirelessConfiguration networkWirelessConfiguration = new Commands.Monitor_QueryConfiguration.NetworkWirelessConfiguration();
 
@@ -3267,9 +3275,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Monitor_QueryConfiguration.Reply cmdReply = reply.Payload as Commands.Monitor_QueryConfiguration.Reply;
-
-                if (cmdReply != null && cmdReply.Data != null)
+                if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
                 {
                     new Converter().Deserialize(networkWirelessConfiguration, cmdReply.Data);
 
@@ -3301,7 +3307,7 @@ namespace nanoFramework.Tools.Debugger
             Commands.Monitor_QueryConfiguration cmd = new Commands.Monitor_QueryConfiguration
             {
                 Configuration = configuration,
-                ConfigurationBlockIndex = configurationBlockIndex
+                BlockIndex = configurationBlockIndex
             };
 
             return PerformSyncRequest(Commands.c_Monitor_QueryConfiguration, 0, cmd);
@@ -3386,7 +3392,6 @@ namespace nanoFramework.Tools.Debugger
                 // FIXME
             }
 
-
             // default to false
             return false;
         }
@@ -3396,9 +3401,9 @@ namespace nanoFramework.Tools.Debugger
         /// The configuration block is updated only with the changes for this configuration part.
         /// </summary>
         /// <param name="configuration">The configuration block</param>
-        /// <param name="configurationBlockIndex">The index of this configuration block</param>
+        /// <param name="blockIndex">The index of this configuration block</param>
         /// <returns></returns>
-        public bool UpdateDeviceConfiguration<T>(T configuration, uint configurationBlockIndex)
+        public bool UpdateDeviceConfiguration<T>(T configuration, uint blockIndex)
         {
             // Create cancellation token source
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -3411,11 +3416,31 @@ namespace nanoFramework.Tools.Debugger
                 // now update the specific configuration block
                 if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
                 {
-                    currentConfiguration.NetworkConfigurations[configurationBlockIndex] = configuration as DeviceConfiguration.NetworkConfigurationProperties;
+                    // validate request index
+                    if (currentConfiguration.NetworkConfigurations.ValidateIndex(blockIndex))
+                    {
+                        // if list is empty and request index is 0
+                        if (currentConfiguration.NetworkConfigurations.Count == 0 && blockIndex == 0)
+                        {
+                            currentConfiguration.NetworkConfigurations.Add(configuration as DeviceConfiguration.NetworkConfigurationProperties);
+                        }
+                        else
+                        {
+                            currentConfiguration.NetworkConfigurations[(int)blockIndex] = configuration as DeviceConfiguration.NetworkConfigurationProperties;
+                        }
+                    }
                 }
                 else if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkWireless80211ConfigurationProperties)))
                 {
-                    currentConfiguration.NetworkWirelessConfigurations[configurationBlockIndex] = configuration as DeviceConfiguration.NetworkWireless80211ConfigurationProperties;
+                    // if list is empty and request index is 0
+                    if (currentConfiguration.NetworkWirelessConfigurations.Count == 0 && blockIndex == 0)
+                    {
+                        currentConfiguration.NetworkWirelessConfigurations.Add(configuration as DeviceConfiguration.NetworkWireless80211ConfigurationProperties);
+                    }
+                    else
+                    {
+                        currentConfiguration.NetworkWirelessConfigurations[(int)blockIndex] = configuration as DeviceConfiguration.NetworkWireless80211ConfigurationProperties;
+                    }
                 }
 
                 if(UpdateDeviceConfiguration(currentConfiguration))

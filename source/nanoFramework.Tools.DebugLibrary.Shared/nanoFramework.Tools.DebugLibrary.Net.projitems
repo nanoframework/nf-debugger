@@ -26,6 +26,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DeviceNotConnectedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\RemotedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\CancellationTokenExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\DeviceConfigurationExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\FlashSectorDataExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DeploymentSectorExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\DebuggerExtensions.cs" />

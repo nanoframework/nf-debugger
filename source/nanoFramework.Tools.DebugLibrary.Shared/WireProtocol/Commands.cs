@@ -264,7 +264,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             public uint Configuration;
 
-            public uint ConfigurationBlockIndex;
+            public uint BlockIndex;
 
             public class Reply : IConverter
             {
@@ -340,7 +340,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public class Monitor_UpdateConfiguration
         {
             public uint Configuration;
-            public uint ConfigurationBlockIndex;
+            public uint BlockIndex;
             public uint Length = 0;
             public byte[] Data = null;
 

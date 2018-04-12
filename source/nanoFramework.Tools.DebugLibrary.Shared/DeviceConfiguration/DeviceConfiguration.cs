@@ -4,8 +4,7 @@
 //
 
 using System;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -36,53 +35,29 @@ namespace nanoFramework.Tools.Debugger
 
         /////////////////////////////////////////////////////////////
 
-        private NetworkConfigurationProperties[] _networkConfigurations;
-
         /// <summary>
         /// Collection of <see cref="NetworkConfigurationProperties"/> blocks in a target device.
         /// </summary>
-        public NetworkConfigurationProperties[] NetworkConfigurations
-        {
-            get
-            {
-                Debug.Assert(!IsUnknown);
-                return _networkConfigurations;
-            }
-
-            set { _networkConfigurations = value; }
-        }
-
-        private NetworkWireless80211ConfigurationProperties[] _networkWirelessConfigurations;
+        public List<NetworkConfigurationProperties> NetworkConfigurations { get; set; }
 
         /// <summary>
         /// Collection of <see cref="NetworkWireless80211ConfigurationProperties"/> blocks in a target device.
         /// </summary>
-        public NetworkWireless80211ConfigurationProperties[] NetworkWirelessConfigurations
-        {
-            get
-            {
-                Debug.Assert(!IsUnknown);
-                return _networkWirelessConfigurations;
-            }
-
-            set { _networkWirelessConfigurations = value; }
-        }
-
-        public bool IsUnknown => false;
+        public List<NetworkWireless80211ConfigurationProperties> NetworkWirelessConfigurations { get; set; }
 
         public DeviceConfiguration()
-            : this(new NetworkConfigurationProperties[0],
-                   new NetworkWireless80211ConfigurationProperties[0])
+            : this(new List<NetworkConfigurationProperties>(),
+                   new List<NetworkWireless80211ConfigurationProperties>())
         {
         }
 
         public DeviceConfiguration(
-            NetworkConfigurationProperties[] networkConfiguratons,
-            NetworkWireless80211ConfigurationProperties[] networkWirelessConfiguratons
+            List<NetworkConfigurationProperties> networkConfiguratons,
+            List<NetworkWireless80211ConfigurationProperties> networkWirelessConfiguratons
             )
         {
-            _networkConfigurations = networkConfiguratons;
-            _networkWirelessConfigurations = networkWirelessConfiguratons;
+            NetworkConfigurations = networkConfiguratons;
+            NetworkWirelessConfigurations = networkWirelessConfiguratons;
         }
 
         // operator to allow cast_ing a DeviceConfiguration object to DeviceConfigurationBase
@@ -147,6 +122,8 @@ namespace nanoFramework.Tools.Debugger
 
         public class NetworkConfigurationProperties : NetworkConfigurationPropertiesBase
         {
+            public bool IsUnknown { get; set; } = true;
+
             public NetworkConfigurationProperties()
             {
 
@@ -181,6 +158,9 @@ namespace nanoFramework.Tools.Debugger
                 IPv6DNSAddress2 = ToIPv6Address(ipv6DNS2Address);
 
                 StartupAddressMode = (AddressMode)startupAddressMode;
+
+                // reset unknown flag
+                IsUnknown = false;
             }
 
             // operator to allow cast_ing a NetworkConfigurationProperties object to NetworkConfigurationBase
@@ -214,6 +194,8 @@ namespace nanoFramework.Tools.Debugger
 
         public class NetworkWireless80211ConfigurationProperties : NetworkWireless80211ConfigurationPropertiesBase
         {
+            public bool IsUnknown { get; set; } = true;
+
             public NetworkWireless80211ConfigurationProperties()
             {
 
@@ -260,6 +242,8 @@ namespace nanoFramework.Tools.Debugger
                 Ssid = ssid;
                 Password = password;
 
+                // reset unknown flag
+                IsUnknown = false;
             }
 
             // operator to allow cast_ing a NetworkWirelessConfigurationProperties object to NetworkConfigurationBase
