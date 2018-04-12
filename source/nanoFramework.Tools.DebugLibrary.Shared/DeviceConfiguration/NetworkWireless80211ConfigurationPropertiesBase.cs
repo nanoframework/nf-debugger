@@ -4,7 +4,7 @@ using System.Net.NetworkInformation;
 
 namespace nanoFramework.Tools.Debugger
 {
-    public class NetworkWirelessConfigurationPropertiesBase : NetworkConfigurationPropertiesBase
+    public class NetworkWireless80211ConfigurationPropertiesBase : NetworkConfigurationPropertiesBase
     {
         public AuthenticationType Authentication { get; set; }
         public EncryptionType Encryption { get; set; }

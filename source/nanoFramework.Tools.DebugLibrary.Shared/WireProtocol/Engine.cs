@@ -3198,11 +3198,11 @@ namespace nanoFramework.Tools.Debugger
             return networkConfigurations.ToArray();
         }
 
-        public DeviceConfiguration.NetworkWirelessConfigurationProperties[] GetAllNetworkWirelessConfigurations()
+        public DeviceConfiguration.NetworkWireless80211ConfigurationProperties[] GetAllNetworkWirelessConfigurations()
         {
-            List<DeviceConfiguration.NetworkWirelessConfigurationProperties> networkWirelessConfigurations = new List<DeviceConfiguration.NetworkWirelessConfigurationProperties>();
+            List<DeviceConfiguration.NetworkWireless80211ConfigurationProperties> networkWirelessConfigurations = new List<DeviceConfiguration.NetworkWireless80211ConfigurationProperties>();
 
-            DeviceConfiguration.NetworkWirelessConfigurationProperties config = null;
+            DeviceConfiguration.NetworkWireless80211ConfigurationProperties config = null;
             uint index = 0;
 
             do
@@ -3255,7 +3255,7 @@ namespace nanoFramework.Tools.Debugger
             return networkConfigProperties;
         }
 
-        public DeviceConfiguration.NetworkWirelessConfigurationProperties GetNetworkWirelessConfiguratonProperties(uint configurationBlockIndex)
+        public DeviceConfiguration.NetworkWireless80211ConfigurationProperties GetNetworkWirelessConfiguratonProperties(uint configurationBlockIndex)
         {
             Debug.WriteLine("NetworkWirelessConfiguratonProperties");
 
@@ -3263,7 +3263,7 @@ namespace nanoFramework.Tools.Debugger
 
             Commands.Monitor_QueryConfiguration.NetworkWirelessConfiguration networkWirelessConfiguration = new Commands.Monitor_QueryConfiguration.NetworkWirelessConfiguration();
 
-            DeviceConfiguration.NetworkWirelessConfigurationProperties networkWirelessConfigProperties = new DeviceConfiguration.NetworkWirelessConfigurationProperties();
+            DeviceConfiguration.NetworkWireless80211ConfigurationProperties networkWirelessConfigProperties = new DeviceConfiguration.NetworkWireless80211ConfigurationProperties();
 
             if (reply != null)
             {
@@ -3280,7 +3280,7 @@ namespace nanoFramework.Tools.Debugger
                         networkWirelessConfiguration.StartupAddressMode = (byte)AddressMode.Invalid;
                     }
 
-                    networkWirelessConfigProperties = new DeviceConfiguration.NetworkWirelessConfigurationProperties(
+                    networkWirelessConfigProperties = new DeviceConfiguration.NetworkWireless80211ConfigurationProperties(
                                     networkWirelessConfiguration.MacAddress, networkWirelessConfiguration.IPv4Address,
                                     networkWirelessConfiguration.IPv4NetMask, networkWirelessConfiguration.IPv4GatewayAddress,
                                     networkWirelessConfiguration.IPv4DNSAddress1, networkWirelessConfiguration.IPv4DNSAddress2,
@@ -3403,23 +3403,22 @@ namespace nanoFramework.Tools.Debugger
             // Create cancellation token source
             CancellationTokenSource cts = new CancellationTokenSource();
 
-            // update the network class
-            var oldConfiguration = GetDeviceConfiguration(cts.Token);
+            // get the current configuration from the device
+            var currentConfiguration = GetDeviceConfiguration(cts.Token);
 
-            if (oldConfiguration != null)
+            if (currentConfiguration != null)
             {
-                // get the configuration
                 // now update the specific configuration block
                 if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
                 {
-                    oldConfiguration.NetworkConfigurations[configurationBlockIndex] = configuration as DeviceConfiguration.NetworkConfigurationProperties;
+                    currentConfiguration.NetworkConfigurations[configurationBlockIndex] = configuration as DeviceConfiguration.NetworkConfigurationProperties;
                 }
-                else if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkWirelessConfigurationProperties)))
+                else if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkWireless80211ConfigurationProperties)))
                 {
-                    oldConfiguration.NetworkWirelessConfigurations[configurationBlockIndex] = configuration as DeviceConfiguration.NetworkWirelessConfigurationProperties;
+                    currentConfiguration.NetworkWirelessConfigurations[configurationBlockIndex] = configuration as DeviceConfiguration.NetworkWireless80211ConfigurationProperties;
                 }
 
-                if(UpdateDeviceConfiguration(oldConfiguration))
+                if(UpdateDeviceConfiguration(currentConfiguration))
                 {
                     // done here
                     return true;
