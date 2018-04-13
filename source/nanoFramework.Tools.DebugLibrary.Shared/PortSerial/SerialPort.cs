@@ -706,7 +706,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                     if (bytesRead > 0)
                     {
-                        byte[] readBuffer = new byte[bytesToRead];
+                        byte[] readBuffer = new byte[bytesRead];
                         inputStreamReader?.ReadBytes(readBuffer);
 
                         return readBuffer;
