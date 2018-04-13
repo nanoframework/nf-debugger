@@ -3323,9 +3323,14 @@ namespace nanoFramework.Tools.Debugger
         {
             bool okToUploadConfig = false;
 
-            if(Capabilities.ConfigBlockRequiresErase)
+            // the requirement to erase flash before storing is dependent on CLR capabilities which is only available if the device is running nanoCLR
+            // when running nanoBooter those are not available
+            // currently the only target that doesn't have nanoBooter is ESP32, so we are assuming that the remaining ones (being STM32 based) use internal flash for storing configuration blocks
+            // if that is not the case, then the flash map won't show any config blocks and this step will be skipped 
+            if ((ConnectionSource == ConnectionSource.nanoCLR && Capabilities.ConfigBlockRequiresErase) ||
+                ConnectionSource == ConnectionSource.nanoBooter)
             { 
-                // this devices requires flash erase before updating the configuration block
+                // this devices probably requires flash erase before updating the configuration block
 
                 // we need the device memory map in order to know were to store this
                 if (FlashSectorMap.Count == 0)
@@ -3340,22 +3345,25 @@ namespace nanoFramework.Tools.Debugger
                 // get configuration sector details
                 var configSector = FlashSectorMap.FirstOrDefault(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG);
 
-                // store the current configuration in case we need to revert this for some reason
-                var readConfigSector = ReadMemory(configSector.m_StartAddress, configSector.m_NumBlocks * configSector.m_BytesPerBlock);
-
-                if (readConfigSector.Success)
+                // check if the device has a config sector
+                if (configSector.m_NumBlocks > 0)
                 {
-                    // start erasing the sector that holds the configuration block
-                    var eraseResult = EraseMemory(configSector.m_StartAddress, 1);
-                    if (eraseResult.Success)
+                    // store the current configuration in case we need to revert this for some reason
+                    var readConfigSector = ReadMemory(configSector.m_StartAddress, configSector.m_NumBlocks * configSector.m_BytesPerBlock);
+
+                    if (readConfigSector.Success)
                     {
-                        okToUploadConfig = true;
+                        // start erasing the sector that holds the configuration block
+                        var eraseResult = EraseMemory(configSector.m_StartAddress, 1);
+                        if (eraseResult.Success)
+                        {
+                            okToUploadConfig = true;
+                        }
                     }
-                }
-                else
-                {
-                    return false;
-
+                    else
+                    {
+                        return false;
+                    }
                 }
             }
             else
