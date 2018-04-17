@@ -16,8 +16,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationOption.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationBase.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NetworkWireless80211ConfigurationPropertiesBase.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NetworkWireless80211ConfigurationBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\Wireless80211ConfigurationPropertiesBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\Wireless80211Base.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NetworkConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NetworkConfigurationBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EndPoint.cs" />

@@ -303,18 +303,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 }
             }
 
-            public class NetworkWirelessConfiguration : NetworkWireless80211ConfigurationBase, IConverter
+            public class NetworkWirelessConfiguration : Wireless80211Base, IConverter
             {
                 public NetworkWirelessConfiguration()
                 {
                     Marker = new byte[4];
-                    MacAddress = new byte[6];
-                    IPv6Address = new uint[4];
-                    IPv6NetMask = new uint[4];
-                    IPv6GatewayAddress = new uint[4];
-                    IPv6DNSAddress1 = new uint[4];
-                    IPv6DNSAddress2 = new uint[4];
-                    StartupAddressMode = (byte)AddressMode.Invalid;
+                    Id = 0xFFFFFF;
                     Authentication = (byte)AuthenticationType.None ;
                     Encryption = (byte)EncryptionType.None;
                     Radio = (byte)RadioType.None;
@@ -323,13 +317,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
                 {
                     Marker = new byte[4];
-                    MacAddress = new byte[6];
-                    IPv6Address = new uint[4];
-                    IPv6NetMask = new uint[4];
-                    IPv6GatewayAddress = new uint[4];
-                    IPv6DNSAddress1 = new uint[4];
-                    IPv6DNSAddress2 = new uint[4];
-                    StartupAddressMode = (byte)AddressMode.Invalid;
+                    Id = 0xFFFFFF;
                     Authentication = (byte)AuthenticationType.None;
                     Encryption = (byte)EncryptionType.None;
                     Radio = (byte)RadioType.None;

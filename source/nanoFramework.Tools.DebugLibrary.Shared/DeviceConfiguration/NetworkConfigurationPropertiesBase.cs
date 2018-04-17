@@ -1,5 +1,9 @@
-﻿using System.Net;
-using System.Net.NetworkInformation;
+﻿//
+// Copyright (c) 2018 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+
+using System.Net;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -16,6 +20,7 @@ namespace nanoFramework.Tools.Debugger
         public IPAddress IPv6GatewayAddress { get; set; }
         public IPAddress IPv6NetMask { get; set; }
         public byte[] MacAddress { get; set; }
+        public NetworkInterfaceType InterfaceType { get; set; }
         public AddressMode StartupAddressMode { get; set; }
     }
 }

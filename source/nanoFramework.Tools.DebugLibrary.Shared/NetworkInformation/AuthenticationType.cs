@@ -4,11 +4,12 @@
 // See LICENSE file in the project root for full license information.
 //
 
-namespace System.Net.NetworkInformation
+namespace nanoFramework.Tools.Debugger
 {
-    /// <summary>
-    /// Specifies the authentication used in a wireless network.
-    /// </summary>
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // !!! KEEP IN SYNC WITH System.Net.NetworkInformation.AuthenticationType (in nanoFramework.System.Net) !!! //
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public enum AuthenticationType : byte
     {
         /// <summary>

@@ -4,11 +4,11 @@
 // See LICENSE file in the project root for full license information.
 //
 
-namespace System.Net.NetworkInformation
+namespace nanoFramework.Tools.Debugger
 {
-    /// <summary>
-    /// Specifies the type of radio that the wireless network uses.
-    /// </summary>
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    // !!! KEEP IN SYNC WITH System.Net.NetworkInformation.RadioType (in nanoFramework.System.Net) !!! //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
     public enum RadioType : byte
     {
         /// <summary>

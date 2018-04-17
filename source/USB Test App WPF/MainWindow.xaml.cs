@@ -742,6 +742,7 @@ namespace Serial_Test_App_WPF
                      // set new network configuration on the specific class
                      DeviceConfiguration.NetworkConfigurationProperties newDeviceNetworkConfiguration = new DeviceConfiguration.NetworkConfigurationProperties();
                      newDeviceNetworkConfiguration.MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 };
+                     newDeviceNetworkConfiguration.InterfaceType = nanoFramework.Tools.Debugger.NetworkInterfaceType.Ethernet;
                      newDeviceNetworkConfiguration.StartupAddressMode = AddressMode.DHCP;
 
                      newDeviceNetworkConfiguration.IPv4DNSAddress1 = IPAddress.Parse("192.168.1.254");
