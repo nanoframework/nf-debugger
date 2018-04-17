@@ -1,11 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Net;
-using System.Net.NetworkInformation;
+﻿//
+// Copyright (c) 2018 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+
+using System.ComponentModel.DataAnnotations;
 
 namespace nanoFramework.Tools.Debugger
 {
-    public class NetworkWireless80211ConfigurationPropertiesBase : NetworkConfigurationPropertiesBase
+    public class Wireless80211ConfigurationPropertiesBase
     {
+        public uint Id { get; set; }
         public AuthenticationType Authentication { get; set; }
         public EncryptionType Encryption { get; set; }
         public RadioType Radio { get; set; }

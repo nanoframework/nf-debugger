@@ -5,8 +5,23 @@
 
 namespace nanoFramework.Tools.Debugger
 {
-    public class NetworkWireless80211ConfigurationBase : NetworkConfigurationBase
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // !!! KEEP IN SYNC WITH System.Net.NetworkInformation.Wireless80211 (in nanoFramework.System.Net) !!! //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public class Wireless80211Base
     {
+        /// <summary>
+        /// This is the marker placeholder for this configuration block
+        /// 4 bytes length.
+        /// </summary>
+        public byte[] Marker;
+
+        /// <summary>
+        /// Id for the configuration
+        /// </summary>
+        public uint Id;
+        
         /// <summary>
         /// Type of authentication used on the wireless network 
         /// </summary>

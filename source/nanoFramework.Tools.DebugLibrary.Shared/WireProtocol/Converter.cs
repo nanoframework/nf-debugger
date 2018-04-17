@@ -226,6 +226,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 case Extensions.TypeExtensions.TypeCode.Boolean: ret = reader.ReadBoolean(); break;
                 case Extensions.TypeExtensions.TypeCode.Char: ret = reader.ReadChar(); break;
+
                 case Extensions.TypeExtensions.TypeCode.SByte: ret = reader.ReadSByte(); break;
                 case Extensions.TypeExtensions.TypeCode.Byte: ret = reader.ReadByte(); break;
                 case Extensions.TypeExtensions.TypeCode.Int16: ret = reader.ReadInt16(); break;

@@ -70,6 +70,11 @@ namespace nanoFramework.Tools.Debugger
         public uint[] IPv6DNSAddress2;
 
         /// <summary>
+        /// Network interface type
+        /// </summary>
+        public byte InterfaceType;
+
+        /// <summary>
         /// Address mode (static, DHCP or auto IP)
         /// </summary>
         public byte StartupAddressMode;

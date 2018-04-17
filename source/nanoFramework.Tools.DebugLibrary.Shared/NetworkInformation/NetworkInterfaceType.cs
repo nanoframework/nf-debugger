@@ -4,15 +4,12 @@
 // See LICENSE file in the project root for full license information.
 //
 
-namespace System.Net.NetworkInformation
+namespace nanoFramework.Tools.Debugger
 {
-    /// <summary>
-    /// Specifies the type of network interface used by the device.
-    /// </summary>
-    /// <remarks>
-    /// This Enum is exclusive of nanoFramework and it does not exist on the UWP API.
-    /// </remarks>
-    public enum NetworkInterfaceType
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // !!! KEEP IN SYNC WITH System.Net.NetworkInformation.NetworkInterfaceType (in nanoFramework.System.Net) !!! //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public enum NetworkInterfaceType : byte
     {
         /// <summary>
         /// The network interface type is unknown or not specified.

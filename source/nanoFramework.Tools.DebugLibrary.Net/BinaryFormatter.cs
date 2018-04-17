@@ -1929,7 +1929,7 @@ namespace nanoFramework.Tools.Debugger
             return LookupAssemblyHash(name.Name, name.Version);
         }
 
-        static public uint LookupAssemblyHash(string assemblyName, System.Version version)
+        static public uint LookupAssemblyHash(string assemblyName, Version version)
         {
             uint hash;
 

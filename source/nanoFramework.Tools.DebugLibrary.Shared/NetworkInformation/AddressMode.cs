@@ -3,14 +3,8 @@
 // See LICENSE file in the project root for full license information.
 //
 
-namespace System.Net.NetworkInformation
+namespace nanoFramework.Tools.Debugger
 {
-    /// <summary>
-    ///  Start up network IP address assigning modes
-    /// </summary>
-    /// <remarks>
-    /// This Enum is exclusive of nanoFramework and it does not exist on the UWP API.
-    /// </remarks>
     public enum AddressMode : byte
     {
         ////////////////////////////////////////////////////////////////////////////////////

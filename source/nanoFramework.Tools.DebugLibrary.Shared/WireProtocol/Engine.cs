@@ -3168,7 +3168,7 @@ namespace nanoFramework.Tools.Debugger
             }
 
             // get all wireless network configuration blocks
-            var networkWirelessConfigs = GetAllNetworkWirelessConfigurations();
+            var networkWirelessConfigs = GetAllWireless80211Configurations();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
             {
@@ -3203,27 +3203,27 @@ namespace nanoFramework.Tools.Debugger
             return networkConfigurations;
         }
 
-        public List<DeviceConfiguration.NetworkWireless80211ConfigurationProperties> GetAllNetworkWirelessConfigurations()
+        public List<DeviceConfiguration.Wireless80211ConfigurationProperties> GetAllWireless80211Configurations()
         {
-            List<DeviceConfiguration.NetworkWireless80211ConfigurationProperties> networkWirelessConfigurations = new List<DeviceConfiguration.NetworkWireless80211ConfigurationProperties>();
+            List<DeviceConfiguration.Wireless80211ConfigurationProperties> wireless80211Configurations = new List<DeviceConfiguration.Wireless80211ConfigurationProperties>();
 
-            DeviceConfiguration.NetworkWireless80211ConfigurationProperties networkConfig = null;
+            DeviceConfiguration.Wireless80211ConfigurationProperties wirelessConfigProperties = null;
             uint index = 0;
 
             do
             {
                 // get next network configuration block, if available
-                networkConfig = GetNetworkWirelessConfiguratonProperties(index++);
+                wirelessConfigProperties = GetWireless80211ConfiguratonProperties(index++);
 
                 // add to list, if valid
-                if(!networkConfig.IsUnknown)
+                if(!wirelessConfigProperties.IsUnknown)
                 {
-                    networkWirelessConfigurations.Add(networkConfig);
+                    wireless80211Configurations.Add(wirelessConfigProperties);
                 }
             }
-            while (!networkConfig.IsUnknown);
+            while (!wirelessConfigProperties.IsUnknown);
 
-            return networkWirelessConfigurations;
+            return wireless80211Configurations;
         }
 
         public DeviceConfiguration.NetworkConfigurationProperties GetNetworkConfiguratonProperties(uint configurationBlockIndex)
@@ -3256,50 +3256,36 @@ namespace nanoFramework.Tools.Debugger
                                     networkConfiguration.IPv6Address,
                                     networkConfiguration.IPv6NetMask, networkConfiguration.IPv6GatewayAddress,
                                     networkConfiguration.IPv6DNSAddress1, networkConfiguration.IPv6DNSAddress2,
-                                    networkConfiguration.StartupAddressMode);
+                                    networkConfiguration.InterfaceType, networkConfiguration.StartupAddressMode);
                 }
             }
 
             return networkConfigProperties;
         }
 
-        public DeviceConfiguration.NetworkWireless80211ConfigurationProperties GetNetworkWirelessConfiguratonProperties(uint configurationBlockIndex)
+        public DeviceConfiguration.Wireless80211ConfigurationProperties GetWireless80211ConfiguratonProperties(uint configurationBlockIndex)
         {
             Debug.WriteLine("NetworkWirelessConfiguratonProperties");
 
             IncomingMessage reply = GetDeviceConfiguration((uint)DeviceConfiguration.DeviceConfigurationOption.Wireless80211Network, configurationBlockIndex);
 
-            Commands.Monitor_QueryConfiguration.NetworkWirelessConfiguration networkWirelessConfiguration = new Commands.Monitor_QueryConfiguration.NetworkWirelessConfiguration();
+            Commands.Monitor_QueryConfiguration.NetworkWirelessConfiguration wirelessConfiguration = new Commands.Monitor_QueryConfiguration.NetworkWirelessConfiguration();
 
-            DeviceConfiguration.NetworkWireless80211ConfigurationProperties networkWirelessConfigProperties = new DeviceConfiguration.NetworkWireless80211ConfigurationProperties();
+            DeviceConfiguration.Wireless80211ConfigurationProperties wirelessConfigProperties = new DeviceConfiguration.Wireless80211ConfigurationProperties();
 
             if (reply != null)
             {
                 if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
                 {
-                    new Converter().Deserialize(networkWirelessConfiguration, cmdReply.Data);
+                    new Converter().Deserialize(wirelessConfiguration, cmdReply.Data);
 
-                    // sanity check for invalid configuration (can occur for example when flash is erased and reads as 0xFF)
-                    if (networkWirelessConfiguration.StartupAddressMode > (byte)AddressMode.AutoIP)
-                    {
-                        // fix this to invalid
-                        networkWirelessConfiguration.StartupAddressMode = (byte)AddressMode.Invalid;
-                    }
-
-                    networkWirelessConfigProperties = new DeviceConfiguration.NetworkWireless80211ConfigurationProperties(
-                                    networkWirelessConfiguration.MacAddress, networkWirelessConfiguration.IPv4Address,
-                                    networkWirelessConfiguration.IPv4NetMask, networkWirelessConfiguration.IPv4GatewayAddress,
-                                    networkWirelessConfiguration.IPv4DNSAddress1, networkWirelessConfiguration.IPv4DNSAddress2,
-                                    networkWirelessConfiguration.IPv6Address,
-                                    networkWirelessConfiguration.IPv6NetMask, networkWirelessConfiguration.IPv6GatewayAddress,
-                                    networkWirelessConfiguration.IPv6DNSAddress1, networkWirelessConfiguration.IPv6DNSAddress2,
-                                    networkWirelessConfiguration.StartupAddressMode,
-                                    networkWirelessConfiguration.Authentication, networkWirelessConfiguration.Encryption,
-                                    networkWirelessConfiguration.Radio, networkWirelessConfiguration.Ssid, networkWirelessConfiguration.Password);
+                    wirelessConfigProperties = new DeviceConfiguration.Wireless80211ConfigurationProperties(wirelessConfiguration.Id,
+                                    wirelessConfiguration.Authentication, wirelessConfiguration.Encryption,
+                                    wirelessConfiguration.Radio, wirelessConfiguration.Ssid, wirelessConfiguration.Password);
                 }
             }
 
-            return networkWirelessConfigProperties;
+            return wirelessConfigProperties;
         }
 
         private IncomingMessage GetDeviceConfiguration(uint configuration, uint configurationBlockIndex)
@@ -3438,16 +3424,16 @@ namespace nanoFramework.Tools.Debugger
                         }
                     }
                 }
-                else if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkWireless80211ConfigurationProperties)))
+                else if (configuration.GetType().Equals(typeof(DeviceConfiguration.Wireless80211ConfigurationProperties)))
                 {
                     // if list is empty and request index is 0
-                    if (currentConfiguration.NetworkWirelessConfigurations.Count == 0 && blockIndex == 0)
+                    if (currentConfiguration.Wireless80211Configurations.Count == 0 && blockIndex == 0)
                     {
-                        currentConfiguration.NetworkWirelessConfigurations.Add(configuration as DeviceConfiguration.NetworkWireless80211ConfigurationProperties);
+                        currentConfiguration.Wireless80211Configurations.Add(configuration as DeviceConfiguration.Wireless80211ConfigurationProperties);
                     }
                     else
                     {
-                        currentConfiguration.NetworkWirelessConfigurations[(int)blockIndex] = configuration as DeviceConfiguration.NetworkWireless80211ConfigurationProperties;
+                        currentConfiguration.Wireless80211Configurations[(int)blockIndex] = configuration as DeviceConfiguration.Wireless80211ConfigurationProperties;
                     }
                 }
 

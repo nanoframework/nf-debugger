@@ -10,6 +10,6 @@ namespace nanoFramework.Tools.Debugger
     {
         public NetworkConfigurationBase[] NetworkConfigurations;
 
-        public NetworkWireless80211ConfigurationBase[] NetworkWirelessConfigurations { get; internal set; }
+        public Wireless80211Base[] Wireless80211Configurations { get; internal set; }
     }
 }

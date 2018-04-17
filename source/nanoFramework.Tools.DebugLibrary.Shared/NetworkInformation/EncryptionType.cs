@@ -4,11 +4,11 @@
 // See LICENSE file in the project root for full license information.
 //
 
-namespace System.Net.NetworkInformation
+namespace nanoFramework.Tools.Debugger
 {
-    /// <summary>
-    /// Defines the available types of encryption for wireless networks.
-    /// </summary>
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // !!! KEEP IN SYNC WITH System.Net.NetworkInformation.EncryptionType (in nanoFramework.System.Net) !!! //
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
     public enum EncryptionType : byte
     {
         /// <summary>
