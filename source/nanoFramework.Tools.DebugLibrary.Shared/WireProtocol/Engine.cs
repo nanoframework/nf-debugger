@@ -3249,14 +3249,7 @@ namespace nanoFramework.Tools.Debugger
                         networkConfiguration.StartupAddressMode = (byte)AddressMode.Invalid;
                     }
 
-                    networkConfigProperties = new DeviceConfiguration.NetworkConfigurationProperties(
-                                    networkConfiguration.MacAddress, networkConfiguration.IPv4Address,
-                                    networkConfiguration.IPv4NetMask, networkConfiguration.IPv4GatewayAddress,
-                                    networkConfiguration.IPv4DNSAddress1, networkConfiguration.IPv4DNSAddress2,
-                                    networkConfiguration.IPv6Address,
-                                    networkConfiguration.IPv6NetMask, networkConfiguration.IPv6GatewayAddress,
-                                    networkConfiguration.IPv6DNSAddress1, networkConfiguration.IPv6DNSAddress2,
-                                    networkConfiguration.InterfaceType, networkConfiguration.StartupAddressMode);
+                    networkConfigProperties = new DeviceConfiguration.NetworkConfigurationProperties(networkConfiguration);
                 }
             }
 
@@ -3279,9 +3272,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     new Converter().Deserialize(wirelessConfiguration, cmdReply.Data);
 
-                    wirelessConfigProperties = new DeviceConfiguration.Wireless80211ConfigurationProperties(wirelessConfiguration.Id,
-                                    wirelessConfiguration.Authentication, wirelessConfiguration.Encryption,
-                                    wirelessConfiguration.Radio, wirelessConfiguration.Ssid, wirelessConfiguration.Password);
+                    wirelessConfigProperties = new DeviceConfiguration.Wireless80211ConfigurationProperties(wirelessConfiguration);
                 }
             }
 

@@ -75,6 +75,11 @@ namespace nanoFramework.Tools.Debugger
         public byte InterfaceType;
 
         /// <summary>
+        /// Specific configuration Id
+        /// </summary>
+        public uint SpecificConfigId;
+
+        /// <summary>
         /// Address mode (static, DHCP or auto IP)
         /// </summary>
         public byte StartupAddressMode;

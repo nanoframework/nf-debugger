@@ -303,7 +303,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 }
             }
 
-            public class NetworkWirelessConfiguration : Wireless80211Base, IConverter
+            public class NetworkWirelessConfiguration : Wireless80211ConfigurationBase, IConverter
             {
                 public NetworkWirelessConfiguration()
                 {

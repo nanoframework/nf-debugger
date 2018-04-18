@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -66,7 +67,7 @@ namespace nanoFramework.Tools.Debugger
             return new DeviceConfigurationBase()
             {
                 NetworkConfigurations = value.NetworkConfigurations.Select(i => (NetworkConfigurationBase)i).ToArray(),
-                Wireless80211Configurations = value.Wireless80211Configurations.Select(i => (Wireless80211Base)i).ToArray()
+                Wireless80211Configurations = value.Wireless80211Configurations.Select(i => (Wireless80211ConfigurationBase)i).ToArray()
             };
         }
 
@@ -122,6 +123,8 @@ namespace nanoFramework.Tools.Debugger
 
         public class NetworkConfigurationProperties : NetworkConfigurationPropertiesBase
         {
+            internal const uint EmptySpecificConfigValue = uint.MaxValue;
+
             public bool IsUnknown { get; set; } = true;
 
             public NetworkConfigurationProperties()
@@ -129,37 +132,33 @@ namespace nanoFramework.Tools.Debugger
 
             }
 
-            public NetworkConfigurationProperties(
-                byte[] macAddress,
-                uint ipv4Address,
-                uint ipv4NetMask,
-                uint ipv4GatewayAddress,
-                uint ipv4DNS1Address,
-                uint ipv4DNS2Address,
-                uint[] ipv6Address,
-                uint[] ipv6NetMask,
-                uint[] ipv6GatewayAddress,
-                uint[] ipv6DNS1Address,
-                uint[] ipv6DNS2Address,
-                byte interfaceType,
-                byte startupAddressMode)
+            public NetworkConfigurationProperties(NetworkConfigurationBase value)
             {
-                MacAddress = macAddress;
+                MacAddress = value.MacAddress;
 
-                IPv4Address = new IPAddress(ipv4Address);
-                IPv4NetMask = new IPAddress(ipv4NetMask);
-                IPv4GatewayAddress = new IPAddress(ipv4GatewayAddress);
-                IPv4DNSAddress1 = new IPAddress(ipv4DNS1Address);
-                IPv4DNSAddress2 = new IPAddress(ipv4DNS2Address);
+                IPv4Address = new IPAddress(value.IPv4Address);
+                IPv4NetMask = new IPAddress(value.IPv4NetMask);
+                IPv4GatewayAddress = new IPAddress(value.IPv4GatewayAddress);
+                IPv4DNSAddress1 = new IPAddress(value.IPv4DNSAddress1);
+                IPv4DNSAddress2 = new IPAddress(value.IPv4DNSAddress2);
 
-                IPv6Address = ToIPv6Address(ipv6Address);
-                IPv6NetMask = ToIPv6Address(ipv6NetMask);
-                IPv6GatewayAddress = ToIPv6Address(ipv6GatewayAddress);
-                IPv6DNSAddress1 = ToIPv6Address(ipv6DNS1Address);
-                IPv6DNSAddress2 = ToIPv6Address(ipv6DNS2Address);
+                IPv6Address = ToIPv6Address(value.IPv6Address);
+                IPv6NetMask = ToIPv6Address(value.IPv6NetMask);
+                IPv6GatewayAddress = ToIPv6Address(value.IPv6GatewayAddress);
+                IPv6DNSAddress1 = ToIPv6Address(value.IPv6DNSAddress1);
+                IPv6DNSAddress2 = ToIPv6Address(value.IPv6DNSAddress2);
 
-                InterfaceType = (NetworkInterfaceType)interfaceType;
-                StartupAddressMode = (AddressMode)startupAddressMode;
+                InterfaceType = (NetworkInterfaceType)value.InterfaceType;
+                StartupAddressMode = (AddressMode)value.StartupAddressMode;
+
+                if (value.SpecificConfigId == EmptySpecificConfigValue)
+                {
+                    SpecificConfigId =  null;
+                }
+                else
+                {
+                    SpecificConfigId =  value.SpecificConfigId;
+                }
 
                 // reset unknown flag
                 IsUnknown = false;
@@ -185,10 +184,11 @@ namespace nanoFramework.Tools.Debugger
                     IPv6GatewayAddress = FromIPv6Address(value.IPv6GatewayAddress),
                     IPv6DNSAddress1 = FromIPv6Address(value.IPv6DNSAddress1),
                     IPv6DNSAddress2 = FromIPv6Address(value.IPv6DNSAddress2),
-
                     InterfaceType = (byte)value.InterfaceType,
                     StartupAddressMode = (byte)value.StartupAddressMode
                 };
+
+                networkConfig.SpecificConfigId = value.SpecificConfigId ?? EmptySpecificConfigValue;
 
                 return networkConfig;
             }
@@ -204,30 +204,23 @@ namespace nanoFramework.Tools.Debugger
 
             }
 
-            public Wireless80211ConfigurationProperties(
-                uint id,
-                byte authentication,
-                byte encryption,
-                byte radio,
-                string ssid,
-                string password)
+            public Wireless80211ConfigurationProperties(Wireless80211ConfigurationBase config)
             {
-                Id = id;
-
-                Authentication = (AuthenticationType)authentication;
-                Encryption = (EncryptionType)encryption;
-                Radio = (RadioType)radio;
-                Ssid = ssid;
-                Password = password;
+                Id = config.Id;
+                Authentication = (AuthenticationType)config.Authentication;
+                Encryption = (EncryptionType)config.Encryption;
+                Radio = (RadioType)config.Radio;
+                Ssid = config.Ssid;
+                Password = config.Password;
 
                 // reset unknown flag
                 IsUnknown = false;
             }
 
             // operator to allow cast_ing a NetworkWirelessConfigurationProperties object to NetworkConfigurationBase
-            public static explicit operator Wireless80211Base(Wireless80211ConfigurationProperties value)
+            public static explicit operator Wireless80211ConfigurationBase(Wireless80211ConfigurationProperties value)
             {
-                var networkWirelessConfig = new Wireless80211Base()
+                var networkWirelessConfig = new Wireless80211ConfigurationBase()
                 {
                     Marker = Encoding.UTF8.GetBytes(MarkerConfigurationWireless80211_v1),
 
