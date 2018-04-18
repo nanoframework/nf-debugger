@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using System;
 using System.Net;
 
 namespace nanoFramework.Tools.Debugger
@@ -21,6 +22,7 @@ namespace nanoFramework.Tools.Debugger
         public IPAddress IPv6NetMask { get; set; }
         public byte[] MacAddress { get; set; }
         public NetworkInterfaceType InterfaceType { get; set; }
+        public Nullable<uint> SpecificConfigId;
         public AddressMode StartupAddressMode { get; set; }
     }
 }
