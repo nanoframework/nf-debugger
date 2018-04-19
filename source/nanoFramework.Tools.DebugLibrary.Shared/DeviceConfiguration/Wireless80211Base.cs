@@ -39,12 +39,22 @@ namespace nanoFramework.Tools.Debugger
 
         /// <summary>
         /// Network SSID
+        /// 32 bytes length.
         /// </summary>
-        public string Ssid;
+        public byte[] Ssid;
 
         /// <summary>
         /// Network password 
+        /// 64 bytes length.
         /// </summary>
-        public string Password;
+        public byte[] Password;
+
+        public Wireless80211ConfigurationBase()
+        {
+            // need to init these here to match the expected size on the struct to be sent to the device
+            Marker = new byte[4];
+            Ssid = new byte[32];
+            Password = new byte[64];
+        }
     }
 }

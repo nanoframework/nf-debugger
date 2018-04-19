@@ -210,8 +210,8 @@ namespace nanoFramework.Tools.Debugger
                 Authentication = (AuthenticationType)config.Authentication;
                 Encryption = (EncryptionType)config.Encryption;
                 Radio = (RadioType)config.Radio;
-                Ssid = config.Ssid;
-                Password = config.Password;
+                Ssid = Encoding.UTF8.GetString(config.Ssid).Trim('\0');
+                Password = Encoding.UTF8.GetString(config.Password).Trim('\0');
 
                 // reset unknown flag
                 IsUnknown = false;
@@ -225,13 +225,15 @@ namespace nanoFramework.Tools.Debugger
                     Marker = Encoding.UTF8.GetBytes(MarkerConfigurationWireless80211_v1),
 
                     Id = value.Id,
-
                     Authentication = (byte)value.Authentication,
                     Encryption = (byte)value.Encryption,
                     Radio = (byte)value.Radio,
-                    Ssid = value.Ssid,
-                    Password = value.Password,
-            };
+                };
+
+                // the following ones are strings so they need to be copied over to the array 
+                // this is required to when serializing the class the struct size matches the one in the native end
+                Array.Copy(Encoding.UTF8.GetBytes(value.Ssid), 0, networkWirelessConfig.Ssid, 0, value.Ssid.Length);
+                Array.Copy(Encoding.UTF8.GetBytes(value.Password), 0, networkWirelessConfig.Password, 0, value.Password.Length);
 
                 return networkWirelessConfig;
             }

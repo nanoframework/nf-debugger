@@ -312,7 +312,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     Authentication = (byte)AuthenticationType.None ;
                     Encryption = (byte)EncryptionType.None;
                     Radio = (byte)RadioType.None;
-            }
+                    Ssid = new byte[32];
+                    Password = new byte[64];
+                }
 
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
                 {
@@ -321,6 +323,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     Authentication = (byte)AuthenticationType.None;
                     Encryption = (byte)EncryptionType.None;
                     Radio = (byte)RadioType.None;
+                    Ssid = new byte[32];
+                    Password = new byte[64];
                 }
             }
         }

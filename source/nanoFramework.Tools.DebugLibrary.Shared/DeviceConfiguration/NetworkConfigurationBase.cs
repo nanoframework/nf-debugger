@@ -83,5 +83,11 @@ namespace nanoFramework.Tools.Debugger
         /// Address mode (static, DHCP or auto IP)
         /// </summary>
         public byte StartupAddressMode;
+
+        public NetworkConfigurationBase()
+        {
+            // need to init this here to match the expected size on the struct to be sent to the device
+            Marker = new byte[4];
+        }
     }
 }
