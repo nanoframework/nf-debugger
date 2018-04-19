@@ -739,16 +739,29 @@ namespace Serial_Test_App_WPF
                      //deviceConfig.NetworkConfiguraton.MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 };
                      //deviceConfig.NetworkConfiguraton.StartupAddressMode = DeviceConfiguration.AddressMode.DHCP;
 
-                     // set new network configuration on the specific class
-                     DeviceConfiguration.NetworkConfigurationProperties newDeviceNetworkConfiguration = new DeviceConfiguration.NetworkConfigurationProperties();
-                     newDeviceNetworkConfiguration.MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 };
-                     newDeviceNetworkConfiguration.InterfaceType = nanoFramework.Tools.Debugger.NetworkInterfaceType.Ethernet;
-                     newDeviceNetworkConfiguration.StartupAddressMode = AddressMode.DHCP;
+                     // update new network configuration
+                     DeviceConfiguration.NetworkConfigurationProperties newDeviceNetworkConfiguration = new DeviceConfiguration.NetworkConfigurationProperties
+                     {
+                         MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 },
+                         InterfaceType = nanoFramework.Tools.Debugger.NetworkInterfaceType.Ethernet,
+                         StartupAddressMode = AddressMode.DHCP,
 
-                     newDeviceNetworkConfiguration.IPv4DNSAddress1 = IPAddress.Parse("192.168.1.254");
+                         IPv4DNSAddress1 = IPAddress.Parse("192.168.1.254"),
+                     };
 
                      // write device configuration to device
                      var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newDeviceNetworkConfiguration, 0);
+
+                     // add new wireless 802.11 configuration
+                     DeviceConfiguration.Wireless80211ConfigurationProperties newWireless80211Configuration = new DeviceConfiguration.Wireless80211ConfigurationProperties()
+                     {
+                         Id = 44,
+                         Ssid = "Nice_Ssid",
+                         Password = "1234",
+                     };
+
+                     // write wireless configuration to device
+                     returnValue = device.DebugEngine.UpdateDeviceConfiguration(newWireless80211Configuration, 0);
 
                      Debug.WriteLine("");
                      Debug.WriteLine("");
