@@ -129,7 +129,23 @@ namespace nanoFramework.Tools.Debugger
 
             public NetworkConfigurationProperties()
             {
+                MacAddress = new byte[4];
 
+                IPv4Address = IPAddress.None;
+                IPv4NetMask = IPAddress.None;
+                IPv4GatewayAddress = IPAddress.None;
+                IPv4DNSAddress1 = IPAddress.None;
+                IPv4DNSAddress2 = IPAddress.None;
+
+                IPv6Address = IPAddress.None;
+                IPv6NetMask = IPAddress.None;
+                IPv6GatewayAddress = IPAddress.None;
+                IPv6DNSAddress1 = IPAddress.None;
+                IPv6DNSAddress2 = IPAddress.None;
+
+                InterfaceType = NetworkInterfaceType.Unknown;
+                StartupAddressMode = AddressMode.Invalid;
+                AutomaticDNS = true;
             }
 
             public NetworkConfigurationProperties(NetworkConfigurationBase value)
