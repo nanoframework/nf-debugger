@@ -23,6 +23,7 @@ namespace nanoFramework.Tools.Debugger
         public byte[] MacAddress { get; set; }
         public NetworkInterfaceType InterfaceType { get; set; }
         public Nullable<uint> SpecificConfigId;
+        public bool DynamicDNS;
         public AddressMode StartupAddressMode { get; set; }
     }
 }

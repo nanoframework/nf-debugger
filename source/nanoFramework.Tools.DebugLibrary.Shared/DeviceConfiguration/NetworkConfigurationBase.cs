@@ -80,6 +80,11 @@ namespace nanoFramework.Tools.Debugger
         public uint SpecificConfigId;
 
         /// <summary>
+        /// Dynamic DNS
+        /// </summary>
+        public byte DynamicDNS;
+
+        /// <summary>
         /// Address mode (static, DHCP or auto IP)
         /// </summary>
         public byte StartupAddressMode;
