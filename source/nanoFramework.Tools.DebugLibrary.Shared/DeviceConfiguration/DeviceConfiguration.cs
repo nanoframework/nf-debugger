@@ -150,6 +150,7 @@ namespace nanoFramework.Tools.Debugger
 
                 InterfaceType = (NetworkInterfaceType)value.InterfaceType;
                 StartupAddressMode = (AddressMode)value.StartupAddressMode;
+                DynamicDNS = value.DynamicDNS == 0 ? false : true;
 
                 if (value.SpecificConfigId == EmptySpecificConfigValue)
                 {
@@ -185,9 +186,10 @@ namespace nanoFramework.Tools.Debugger
                     IPv6DNSAddress1 = FromIPv6Address(value.IPv6DNSAddress1),
                     IPv6DNSAddress2 = FromIPv6Address(value.IPv6DNSAddress2),
                     InterfaceType = (byte)value.InterfaceType,
-                    StartupAddressMode = (byte)value.StartupAddressMode
+                    StartupAddressMode = (byte)value.StartupAddressMode,
                 };
 
+                networkConfig.DynamicDNS = value.DynamicDNS ? (byte)1 : (byte)0;
                 networkConfig.SpecificConfigId = value.SpecificConfigId ?? EmptySpecificConfigValue;
 
                 return networkConfig;
