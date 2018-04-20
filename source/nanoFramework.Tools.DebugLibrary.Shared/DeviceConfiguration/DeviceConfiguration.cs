@@ -150,7 +150,7 @@ namespace nanoFramework.Tools.Debugger
 
                 InterfaceType = (NetworkInterfaceType)value.InterfaceType;
                 StartupAddressMode = (AddressMode)value.StartupAddressMode;
-                DynamicDNS = value.DynamicDNS == 0 ? false : true;
+                AutomaticDNS = value.AutomaticDNS == 0 ? false : true;
 
                 if (value.SpecificConfigId == EmptySpecificConfigValue)
                 {
@@ -189,7 +189,7 @@ namespace nanoFramework.Tools.Debugger
                     StartupAddressMode = (byte)value.StartupAddressMode,
                 };
 
-                networkConfig.DynamicDNS = value.DynamicDNS ? (byte)1 : (byte)0;
+                networkConfig.AutomaticDNS = value.AutomaticDNS ? (byte)1 : (byte)0;
                 networkConfig.SpecificConfigId = value.SpecificConfigId ?? EmptySpecificConfigValue;
 
                 return networkConfig;
