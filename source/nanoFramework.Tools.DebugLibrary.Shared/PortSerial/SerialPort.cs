@@ -217,7 +217,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             // discard known system and unusable devices
             if (
-               deviceInformation.Id.StartsWith(@"\\?\ACPI")
+               deviceInformation.Id.StartsWith(@"\\?\ACPI") ||
+
+               // reported in https://github.com/nanoframework/Home/issues/332
+               // COM ports from Broadcom 20702 Bluetooth adapter
+               deviceInformation.Id.Contains(@"VID_0A5C+PID_21E1")
+               
                )
             {
                 // don't even bother with these
