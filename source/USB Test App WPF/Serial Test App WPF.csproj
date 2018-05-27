@@ -139,7 +139,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj">
-      <Project>{101D57AD-D22F-4905-A992-DE15E723F164}</Project>
+      <Project>{101d57ad-d22f-4905-a992-de15e723f164}</Project>
       <Name>nanoFramework.Tools.DebugLibrary.Net</Name>
     </ProjectReference>
   </ItemGroup>
