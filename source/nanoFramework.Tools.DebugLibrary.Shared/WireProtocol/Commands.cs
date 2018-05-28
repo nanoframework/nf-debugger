@@ -390,6 +390,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public const uint c_Debugging_TypeSys_Assemblies = 0x00020040; // Lists all the assemblies in the system.
         public const uint c_Debugging_TypeSys_AppDomains = 0x00020044; // Lists all the AppDomans loaded.
+        public const uint c_Debugging_TypeSys_InteropNativeAssemblies = 0x00020045; // Lists all the Interop Native Assemblies available in the device.
 
         public const uint c_Debugging_Resolve_Assembly = 0x00020050; // Resolves an assembly.
         public const uint c_Debugging_Resolve_Type = 0x00020051; // Resolves a type to a string.
@@ -1235,6 +1236,47 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
+        public class Debugging_TypeSys_InteropNativeAssemblies
+        {
+            public class NativeAssemblyDetails
+            {
+                // the fields bellow have to follow the exact type and order so that the reply of the device can be properly parsed
+
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                // NEED TO KEEP THESE IN SYNC WITH native 'NativeAssembly_Details' struct in WireProtocol_MonitorCommands.h //
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                /// <summary>
+                /// Checksum of the assembly.
+                /// </summary>
+                public uint CheckSum;
+                //public Version Version; // TODO add 'version info' in a future version
+                private byte[] _name = new byte[128];
+                
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                /// <summary>
+                /// Name of the assembly.
+                /// </summary>
+                public string Name => GetZeroTerminatedString(_name, true);
+            }
+
+            public class Reply : IConverter
+            {
+                public List<NativeAssemblyDetails> NativeInteropAssemblies;
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    // find out how many items are in the reply array 
+                    // size of the reply buffer divided by the size of NativeAssemblyDetails struct (4 + 128 * 1)
+                    // the 0 bellow is to be replaced by the version field when that's available on a future version
+                    int numOfAssemblies = size / (4 + 0 + 128 * 1);  
+
+                    NativeInteropAssemblies = Enumerable.Range(0, numOfAssemblies).Select(x => new NativeAssemblyDetails()).ToList();
+                }
+            }
+        }
+
         public class Debugging_Resolve_Type
         {
             public uint m_td = 0;
@@ -1637,6 +1679,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                     case c_Debugging_TypeSys_Assemblies: return new Debugging_TypeSys_Assemblies.Reply();
                     case c_Debugging_TypeSys_AppDomains: return new Debugging_TypeSys_AppDomains.Reply();
+                    case c_Debugging_TypeSys_InteropNativeAssemblies: return new Debugging_TypeSys_InteropNativeAssemblies.Reply();
 
                     case c_Debugging_Resolve_Type: return new Debugging_Resolve_Type.Reply();
                     case c_Debugging_Resolve_Field: return new Debugging_Resolve_Field.Reply();
@@ -1721,6 +1764,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                     case c_Debugging_TypeSys_Assemblies: return new Debugging_TypeSys_Assemblies();
                     case c_Debugging_TypeSys_AppDomains: return new Debugging_TypeSys_AppDomains();
+                    case c_Debugging_TypeSys_InteropNativeAssemblies: return new Debugging_TypeSys_InteropNativeAssemblies();
 
                     case c_Debugging_Resolve_Type: return new Debugging_Resolve_Type();
                     case c_Debugging_Resolve_Field: return new Debugging_Resolve_Field();
