@@ -2114,6 +2114,26 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
+        /// <summary>
+        /// Gets a list of the native assemblies available in the target device.
+        /// </summary>
+        /// <returns>A list of the native assemblies available in the target device</returns>
+        public List<Commands.Debugging_TypeSys_InteropNativeAssemblies.NativeAssemblyDetails> GetInteropNativeAssemblies()
+        {
+            Commands.Debugging_TypeSys_InteropNativeAssemblies cmd = new Commands.Debugging_TypeSys_InteropNativeAssemblies();
+
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_TypeSys_InteropNativeAssemblies, 0, cmd);
+
+            if (reply != null)
+            {
+                var nativeAssembliesList = reply.Payload as Commands.Debugging_TypeSys_InteropNativeAssemblies.Reply;
+
+                return nativeAssembliesList.NativeInteropAssemblies;
+            }
+
+            return null;
+        }
+
         public List<Commands.DebuggingResolveAssembly> ResolveAllAssemblies()
         {
             Commands.Debugging_TypeSys_Assemblies.Reply assemblies = GetAssemblies();
