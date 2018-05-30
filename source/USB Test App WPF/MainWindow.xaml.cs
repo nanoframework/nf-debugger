@@ -191,36 +191,6 @@ namespace Serial_Test_App_WPF
             (sender as Button).IsEnabled = true;
         }
 
-        private async void ListNativeAssembliesButton_Click(object sender, RoutedEventArgs e)
-        {
-            // disable button
-            (sender as Button).IsEnabled = false;
-
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-             {
-
-                 try
-                 {
-                     var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetInteropNativeAssemblies();
-
-                     Debug.WriteLine("Native Assembly list:");
-                     
-                     foreach (Commands.Debugging_TypeSys_InteropNativeAssemblies.NativeAssemblyDetails assembly in result)
-                     {
-                         Debug.WriteLine($" {assembly.Name} :: checksum 0x{assembly.CheckSum.ToString("X8")}");
-                     }
-                 }
-                 catch
-                 {
-
-                 }
-
-             }));
-
-            // enable button
-            (sender as Button).IsEnabled = true;
-        }
-
         private async void DeviceCapabilitesButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button

@@ -5,6 +5,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace nanoFramework.Tools.Debugger
@@ -137,17 +138,32 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
+        public struct NativeAssemblyProperties
+        {
+            public uint Checksum;
+            public Version Version; // TODO add 'version info' in a future version
+            public string Name;
+
+            public NativeAssemblyProperties(string name, uint checksum, Version version)
+            {
+                Checksum = checksum;
+                Name = name;
+                Version = version;
+            }
+        }
+
         private Capability m_capabilities;
         private SoftwareVersionProperties m_swVersion;
         private HalSystemInfoProperties m_halSystemInfo;
         private ClrInfoProperties m_clrInfo;
         private TargetInfoProperties m_targetReleaseInfo;
+        private List<NativeAssemblyProperties> m_nativeAssembliesInfo;
 
         private bool m_fUnknown;
 
         public CLRCapabilities()
             : this(Capability.None, new SoftwareVersionProperties(),
-                new HalSystemInfoProperties(), new ClrInfoProperties(), new TargetInfoProperties())
+                new HalSystemInfoProperties(), new ClrInfoProperties(), new TargetInfoProperties(), new List<NativeAssemblyProperties>())
         {
         }
 
@@ -156,7 +172,8 @@ namespace nanoFramework.Tools.Debugger
             SoftwareVersionProperties ver,
             HalSystemInfoProperties halSystemInfo,
             ClrInfoProperties clrInfo,
-            TargetInfoProperties solutionReleaseInfo
+            TargetInfoProperties solutionReleaseInfo,
+            List<NativeAssemblyProperties> nativeAssembliesInfo
             )
         {
             m_fUnknown = (capability == Capability.None);
@@ -166,6 +183,7 @@ namespace nanoFramework.Tools.Debugger
             m_halSystemInfo = halSystemInfo;
             m_clrInfo = clrInfo;
             m_targetReleaseInfo = solutionReleaseInfo;
+            m_nativeAssembliesInfo = nativeAssembliesInfo;
         }
 
         public HalSystemInfoProperties HalSystemInfo
@@ -201,6 +219,14 @@ namespace nanoFramework.Tools.Debugger
             {
                 Debug.Assert(!m_fUnknown);
                 return m_swVersion;
+            }
+        }
+        public List<NativeAssemblyProperties> NativeAssemblies
+        {
+            get
+            {
+                Debug.Assert(!m_fUnknown);
+                return m_nativeAssembliesInfo;
             }
         }
 

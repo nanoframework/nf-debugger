@@ -2114,26 +2114,6 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        /// <summary>
-        /// Gets a list of the native assemblies available in the target device.
-        /// </summary>
-        /// <returns>A list of the native assemblies available in the target device</returns>
-        public List<Commands.Debugging_TypeSys_InteropNativeAssemblies.NativeAssemblyDetails> GetInteropNativeAssemblies()
-        {
-            Commands.Debugging_TypeSys_InteropNativeAssemblies cmd = new Commands.Debugging_TypeSys_InteropNativeAssemblies();
-
-            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_TypeSys_InteropNativeAssemblies, 0, cmd);
-
-            if (reply != null)
-            {
-                var nativeAssembliesList = reply.Payload as Commands.Debugging_TypeSys_InteropNativeAssemblies.Reply;
-
-                return nativeAssembliesList.NativeInteropAssemblies;
-            }
-
-            return null;
-        }
-
         public List<Commands.DebuggingResolveAssembly> ResolveAllAssemblies()
         {
             Commands.Debugging_TypeSys_Assemblies.Reply assemblies = GetAssemblies();
@@ -3120,6 +3100,33 @@ namespace nanoFramework.Tools.Debugger
             return targetInfoProps;
         }
 
+        /// <summary>
+        /// Gets a list of the native assemblies available in the target device.
+        /// </summary>
+        /// <returns>A list of the native assemblies available in the target device</returns>
+        private List<CLRCapabilities.NativeAssemblyProperties> DiscoveryInteropNativeAssemblies()
+        {
+            IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityInteropNativeAssemblies);
+
+            Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies nativeInteropAssemblies = new Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies();
+
+            List<CLRCapabilities.NativeAssemblyProperties> nativeAssembliesProps = new List<CLRCapabilities.NativeAssemblyProperties>();
+
+            if (reply != null)
+            {
+                Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
+
+                if (cmdReply != null && cmdReply.m_data != null)
+                {
+                    new Converter().Deserialize(nativeInteropAssemblies, cmdReply.m_data);
+
+                    nativeAssembliesProps = nativeInteropAssemblies.NativeInteropAssemblies.Select(a => new CLRCapabilities.NativeAssemblyProperties(a.Name, a.CheckSum, a.AssemblyVersion.Version)).ToList();
+                }
+            }
+
+            return nativeAssembliesProps;
+        }
+
         private CLRCapabilities DiscoverCLRCapabilities(CancellationToken cancellationToken)
         {
             var clrFlags = DiscoverCLRCapabilityFlags();
@@ -3167,7 +3174,16 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            return new CLRCapabilities(clrFlags, softwareVersion, halSysInfo, clrInfo, solutionInfo);
+            var nativeAssembliesInfo = DiscoveryInteropNativeAssemblies();
+            // check for cancellation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancellation requested");
+                return null;
+            }
+
+            return new CLRCapabilities(clrFlags, softwareVersion, halSysInfo, clrInfo, solutionInfo, nativeAssembliesInfo);
         }
 
         #endregion
