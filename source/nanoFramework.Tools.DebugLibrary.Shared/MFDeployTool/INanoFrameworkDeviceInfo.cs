@@ -4,6 +4,8 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using System.Collections.Generic;
+
 namespace nanoFramework.Tools.Debugger
 {
     public interface INanoFrameworkDeviceInfo
@@ -23,5 +25,6 @@ namespace nanoFramework.Tools.Debugger
         string SolutionBuildInfo { get; }
         IAppDomainInfo[] AppDomains { get; }
         IAssemblyInfo[] Assemblies { get; }
+        List<CLRCapabilities.NativeAssemblyProperties> NativeAssemblies { get; }
     }
 }
