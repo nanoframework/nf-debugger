@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -39,6 +40,8 @@ namespace nanoFramework.Tools.Debugger
                 {
 
                     Valid = true;
+
+                    NativeAssemblies = Dbg.Capabilities.NativeAssemblies;
 
                     return true;
                 }
@@ -116,7 +119,7 @@ namespace nanoFramework.Tools.Debugger
             // default to failure
             return false;
         }
-
+        
         private Engine Dbg { get { return m_self.DebugEngine; } }
 
         public bool Valid { get; internal set; }
@@ -191,6 +194,8 @@ namespace nanoFramework.Tools.Debugger
             get { return m_AssemblyInfos.ToArray(); }
         }
 
+        public List<CLRCapabilities.NativeAssemblyProperties> NativeAssemblies { get; private set; } = new List<CLRCapabilities.NativeAssemblyProperties> ();
+
         public string ImageBuildDate => Dbg.Capabilities.SoftwareVersion.BuildDate;
 
         public string ImageCompilerInfo => Dbg.Capabilities.SoftwareVersion.CompilerInfo;
@@ -223,6 +228,12 @@ namespace nanoFramework.Tools.Debugger
                     foreach (IAssemblyInfo ai in Assemblies)
                     {
                         output.AppendLine(String.Format("  {0}, {1}", ai.Name, ai.Version));
+                    }
+
+                    output.AppendLine("Native Assemblies:");
+                    foreach (CLRCapabilities.NativeAssemblyProperties assembly in NativeAssemblies)
+                    {
+                        output.AppendLine($"  {assembly.Name} v{assembly.Version}, checksum 0x{assembly.Checksum.ToString("X8")}");
                     }
 
                     return output.ToString();

@@ -34,7 +34,6 @@
         <Button Content="Device Capabilites" HorizontalAlignment="Left" Margin="39,195,0,0" VerticalAlignment="Top" Width="110" Click="DeviceCapabilitesButton_Click" />
         <Button Content="Flash Map" HorizontalAlignment="Left" Margin="39,275,0,0" VerticalAlignment="Top" Width="110" Click="FlashMapButton_Click" />
         <Button Content="Resolve Assemblies" HorizontalAlignment="Left" Margin="39,235,0,0" VerticalAlignment="Top" Width="110" Click="ResolveAssembliesButton_Click" />
-        <Button Content="Native Assemblies" HorizontalAlignment="Left" Margin="39,313,0,0" VerticalAlignment="Top" Width="110" Click="ListNativeAssembliesButton_Click" />
 
         <Button Content="Pause Execution" HorizontalAlignment="Left" Margin="250,235,0,0" VerticalAlignment="Top" Width="98" Click="PauseExecutionButton_Click" />
         <Button Content="Resume Execution" HorizontalAlignment="Left" Margin="250,275,0,0" VerticalAlignment="Top" Width="98" Click="ResumeExecutionButton_Click" />

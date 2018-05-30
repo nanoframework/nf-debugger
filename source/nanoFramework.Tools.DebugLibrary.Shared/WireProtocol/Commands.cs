@@ -764,6 +764,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint c_CapabilityHalSystemInfo = 5;
             public const uint c_CapabilityClrInfo = 6;
             public const uint c_CapabilitySolutionReleaseInfo = 7;
+            public const uint c_CapabilityInteropNativeAssemblies = 8;
 
             public const uint c_CapabilityFlags_FloatingPort = 0x00000001;
             public const uint c_CapabilityFlags_SourceLevelDebugging = 0x00000002;
@@ -844,6 +845,44 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     m_TargetFrameworkVersion = new VersionStruct();
                 }
             }
+
+            public class NativeAssemblyDetails
+            {
+                // the fields bellow have to follow the exact type and order so that the reply of the device can be properly parsed
+
+                /////////////////////////////////////////////////////////////////////////////////////////
+                // NEED TO KEEP THESE IN SYNC WITH native 'NativeAssemblyDetails' struct in Debugger.h //
+                /////////////////////////////////////////////////////////////////////////////////////////
+
+                /// <summary>
+                /// Checksum of the assembly.
+                /// </summary>
+                public uint CheckSum;
+                public VersionStruct AssemblyVersion;
+                private byte[] _name = new byte[128];
+
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                /// <summary>
+                /// Name of the assembly.
+                /// </summary>
+                public string Name => GetZeroTerminatedString(_name, true);
+            }
+
+            public class NativeAssemblies : IConverter
+            {
+                public List<NativeAssemblyDetails> NativeInteropAssemblies;
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    // find out how many items are in the reply array 
+                    // size of the reply buffer divided by the size of NativeAssemblyDetails struct (4 + 4 * 2 + 128 * 1)
+                    int numOfAssemblies = size / (4 + 4 * 2 + 128 * 1);
+
+                    NativeInteropAssemblies = Enumerable.Range(0, numOfAssemblies).Select(x => new NativeAssemblyDetails()).ToList();
+                }
+            }
+
         }
 
         public class Debugging_Execution_SetCurrentAppDomain
@@ -1233,47 +1272,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             public class Reply : Debugging_Reply_Uint_Array
             {
-            }
-        }
-
-        public class Debugging_TypeSys_InteropNativeAssemblies
-        {
-            public class NativeAssemblyDetails
-            {
-                // the fields bellow have to follow the exact type and order so that the reply of the device can be properly parsed
-
-                //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                // NEED TO KEEP THESE IN SYNC WITH native 'NativeAssembly_Details' struct in WireProtocol_MonitorCommands.h //
-                //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-                /// <summary>
-                /// Checksum of the assembly.
-                /// </summary>
-                public uint CheckSum;
-                //public Version Version; // TODO add 'version info' in a future version
-                private byte[] _name = new byte[128];
-                
-                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-                /// <summary>
-                /// Name of the assembly.
-                /// </summary>
-                public string Name => GetZeroTerminatedString(_name, true);
-            }
-
-            public class Reply : IConverter
-            {
-                public List<NativeAssemblyDetails> NativeInteropAssemblies;
-
-                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
-                {
-                    // find out how many items are in the reply array 
-                    // size of the reply buffer divided by the size of NativeAssemblyDetails struct (4 + 128 * 1)
-                    // the 0 bellow is to be replaced by the version field when that's available on a future version
-                    int numOfAssemblies = size / (4 + 0 + 128 * 1);  
-
-                    NativeInteropAssemblies = Enumerable.Range(0, numOfAssemblies).Select(x => new NativeAssemblyDetails()).ToList();
-                }
             }
         }
 
@@ -1679,7 +1677,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                     case c_Debugging_TypeSys_Assemblies: return new Debugging_TypeSys_Assemblies.Reply();
                     case c_Debugging_TypeSys_AppDomains: return new Debugging_TypeSys_AppDomains.Reply();
-                    case c_Debugging_TypeSys_InteropNativeAssemblies: return new Debugging_TypeSys_InteropNativeAssemblies.Reply();
 
                     case c_Debugging_Resolve_Type: return new Debugging_Resolve_Type.Reply();
                     case c_Debugging_Resolve_Field: return new Debugging_Resolve_Field.Reply();
@@ -1764,7 +1761,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                     case c_Debugging_TypeSys_Assemblies: return new Debugging_TypeSys_Assemblies();
                     case c_Debugging_TypeSys_AppDomains: return new Debugging_TypeSys_AppDomains();
-                    case c_Debugging_TypeSys_InteropNativeAssemblies: return new Debugging_TypeSys_InteropNativeAssemblies();
 
                     case c_Debugging_Resolve_Type: return new Debugging_Resolve_Type();
                     case c_Debugging_Resolve_Field: return new Debugging_Resolve_Field();
