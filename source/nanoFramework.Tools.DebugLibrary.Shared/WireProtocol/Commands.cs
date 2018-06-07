@@ -701,7 +701,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             public const ushort c_STEP = c_STEP_IN | c_STEP_OUT | c_STEP_OVER;
 
-            public const uint c_PID_ANY = 0xFFFFFFFF;
+            public const int c_PID_ANY = 0x7FFFFFFF;
 
             public const uint c_DEPTH_EXCEPTION_FIRST_CHANCE = 0x00000000;
             public const uint c_DEPTH_EXCEPTION_USERS_CHANCE = 0x00000001;
@@ -717,7 +717,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             public const uint c_DEPTH_UNCAUGHT = 0xFFFFFFFF;
 
-            public ushort m_id;
+            public short m_id;
             public ushort m_flags;
 
             public uint m_pid;
