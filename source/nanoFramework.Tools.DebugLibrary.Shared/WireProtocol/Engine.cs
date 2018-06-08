@@ -61,7 +61,6 @@ namespace nanoFramework.Tools.Debugger
         ManualResetEvent m_evtPing;
         TypeSysLookup m_typeSysLookup;
         EngineState _state;
-        //bool m_fProcessExited;
 
         private Task _backgroundProcessor;
 
@@ -105,7 +104,6 @@ namespace nanoFramework.Tools.Debugger
             m_notifyNoise = new FifoBuffer();
             m_typeSysLookup = new TypeSysLookup();
             _state = new EngineState(this);
-            //m_fProcessExited = false;
 
             //default capabilities, used until clr can be queried.
             Capabilities = new CLRCapabilities();
@@ -155,6 +153,11 @@ namespace nanoFramework.Tools.Debugger
                 // connect to device 
                 if (await Device.ConnectAsync())
                 {
+                    if (!IsRunning)
+                    {
+                        // background processor is not running, start it
+                        ResumeProcessing();
+                    }
 
                     Commands.Monitor_Ping cmd = new Commands.Monitor_Ping();
 
@@ -264,49 +267,30 @@ namespace nanoFramework.Tools.Debugger
 
             while (!_backgroundProcessorCancellation.IsCancellationRequested && _state.IsRunning)
             {
-                if (await Device.ConnectAsync())
+                try
                 {
-                    try
+                    await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
+                }
+                catch (DeviceNotConnectedException)
+                {
+                    ProcessExited();
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    // look for I/O exception
+                    // 0x800703E3
+                    if (ex.HResult == -2147023901)
                     {
-                        await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
-                    }
-                    catch (DeviceNotConnectedException)
-                    {
-                        if (_backgroundProcessorCancellation.IsCancellationRequested || !_state.IsRunning)
-                        {
-                            return;
-                        }
-                        else
-                        {
-                            await Task.Delay(1000);
-                            await Device.ConnectAsync();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        if (_backgroundProcessorCancellation.IsCancellationRequested || !_state.IsRunning)
-                        {
-                            return;
-                        }
-                        else
-                        {
-
-                            if (ex.GetType().Equals(typeof(AggregateException)))
-                            {
-                                if (ex.GetBaseException().GetType().Name == typeof(DeviceNotConnectedException).Name)
-                                {
-                                    await Task.Delay(1000);
-                                    await Device.ConnectAsync();
-                                }
-                            }
-                            else if (ex.HResult == 0x80070006)
-                            {
-                                return;
-                            }
-                        }
+                        ProcessExited();
+                        break;
                     }
                 }
             }
+
+            _state.SetValue(EngineState.Value.Stopping, false);
+
+            Debug.WriteLine("**** EXIT IncomingMessagesListenerAsync ****");
         }
 
         public void Disconnect()
@@ -644,7 +628,9 @@ namespace nanoFramework.Tools.Debugger
 
         public void ProcessExited()
         {
-            throw new NotImplementedException();
+            Stop();
+
+            _eventProcessExit?.Invoke(this, null);
         }
 
         public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
@@ -673,8 +659,6 @@ namespace nanoFramework.Tools.Debugger
                     Task.WaitAll(_backgroundProcessor);
                 }
                 catch { }
-
-                _backgroundProcessor = null;
             }
         }
 
@@ -684,9 +668,10 @@ namespace nanoFramework.Tools.Debugger
 
             _state.SetValue(EngineState.Value.Resume, false);
 
-            if (_backgroundProcessor == null)
+            if ((_backgroundProcessor != null && _backgroundProcessor.IsCompleted) ||
+                (_backgroundProcessor == null))
             {
-                _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListenerAsync(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                    _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListenerAsync(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
             }
         }
 
