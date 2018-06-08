@@ -38,6 +38,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             return new Converter(Capabilities);
         }
 
+        private void ProcessExit()
+        {
+            App.ProcessExited();
+        }
+
         public async Task<bool> SendAsync(MessageRaw raw, CancellationToken cancellationToken)
         {
             _sendSemaphore.WaitOne();
@@ -94,6 +99,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             catch (TaskCanceledException)
             {
                 // don't do anything here, as this is expected
+            }
+            catch(DeviceNotConnectedException)
+            {
+                App.ProcessExited();
             }
             finally
             {
@@ -166,8 +175,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 // don't do anything here, as this is expected
             }
+            catch (DeviceNotConnectedException)
+            {
+                App.ProcessExited();
+            }
 
             return bytesToReadRequested - bytesToRead;
         }
+
     }
 }
