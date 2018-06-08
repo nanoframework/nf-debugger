@@ -92,6 +92,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Converter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\DeploymentBlock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Engine.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\EngineState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\FifoBuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\DeploymentSector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\IControllerRemote.cs" />
