@@ -44,6 +44,10 @@ namespace Serial_Test_App_WPF
                 bool connectResult = await device.DebugEngine.ConnectAsync(5000, true);
 
                 //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Start();
+                if(connectResult)
+                {
+                    device.DebugEngine.OnProcessExit += DebugEngine_OnProcessExit;
+                }
 
                 var di = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo();
 
@@ -58,6 +62,12 @@ namespace Serial_Test_App_WPF
             // enable button
             (sender as Button).IsEnabled = true;
 
+        }
+
+        private void DebugEngine_OnProcessExit(object sender, EventArgs e)
+        {
+            Engine engine = sender as Engine;
+            engine.Dispose();
         }
 
         private async void PingButton_Click(object sender, RoutedEventArgs e)

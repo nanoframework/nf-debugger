@@ -531,8 +531,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             }
             else
             {
-                // FIXME 
-                // NotifyDeviceNotConnected
+                throw new DeviceNotConnectedException();
             }
 
             return bytesWritten;
@@ -625,8 +624,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             }
             else
             {
-                // FIXME 
-                // NotifyDeviceNotConnected
+                throw new DeviceNotConnectedException();
             }
 
             // return empty byte array

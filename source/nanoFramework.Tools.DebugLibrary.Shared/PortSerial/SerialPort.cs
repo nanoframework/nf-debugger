@@ -619,10 +619,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // remove SerialDevice from NanoDeviceBase
                 device.DeviceBase = null;
 
-                // kill debug engine
-                device.DebugEngine.Stop();
-                device.DebugEngine = null;
-
                 EventHandlerForSerialDevice.Current.CloseDevice();
             }
         }
