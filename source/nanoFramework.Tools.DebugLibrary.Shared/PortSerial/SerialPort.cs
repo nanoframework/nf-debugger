@@ -43,6 +43,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         private List<NanoDeviceBase> _tentativeNanoFrameworkDevices = new List<NanoDeviceBase>();
 
+        DataWriter outputStreamWriter = null;
+        DataReader inputStreamReader = null;
+
+
         /// <summary>
         /// Creates an Serial debug client
         /// </summary>
@@ -661,16 +665,17 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // device must be connected
             if (EventHandlerForSerialDevice.Current.IsDeviceConnected && !cancellationToken.IsCancellationRequested)
             {
-                DataWriter outputStreamWriter = new DataWriter(EventHandlerForSerialDevice.Current.Device.OutputStream);
 
                 try
                 {
+                    outputStreamWriter = new DataWriter(EventHandlerForSerialDevice.Current.Device.OutputStream);
+
                     // write buffer to device
                     outputStreamWriter.WriteBytes(buffer);
 
-                    Task<UInt32> storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(cancellationToken.AddTimeout(waiTimeout));
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                    return await storeAsyncTask;
+                    return await outputStreamWriter.StoreAsync().AsTask(cancellationToken.AddTimeout(waiTimeout));
                 }
                 catch (TaskCanceledException)
                 {
@@ -701,10 +706,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // device must be connected
             if (EventHandlerForSerialDevice.Current.IsDeviceConnected && !cancellationToken.IsCancellationRequested)
             {
-                DataReader inputStreamReader = new DataReader(EventHandlerForSerialDevice.Current.Device.InputStream);
-
                 try
                 {
+                    inputStreamReader = new DataReader(EventHandlerForSerialDevice.Current.Device.InputStream);
+
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     Task<UInt32> loadAsyncTask = inputStreamReader.LoadAsync(bytesToRead).AsTask(cancellationToken.AddTimeout(waiTimeout));
 
                     UInt32 bytesRead = await loadAsyncTask;

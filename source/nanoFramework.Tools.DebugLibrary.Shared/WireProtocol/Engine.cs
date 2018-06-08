@@ -60,8 +60,6 @@ namespace nanoFramework.Tools.Debugger
         ManualResetEvent m_evtShutdown;
         ManualResetEvent m_evtPing;
         TypeSysLookup m_typeSysLookup;
-        EngineState _state;
-        //bool m_fProcessExited;
 
         private Task _backgroundProcessor;
 
@@ -81,12 +79,8 @@ namespace nanoFramework.Tools.Debugger
             // default to false
             IsCRC32EnabledForWireProtocol = false;
 
-            _state.SetValue(EngineState.Value.Starting, true);
-
             // start task to process background messages
             _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListenerAsync(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
-
-            _state.SetValue(EngineState.Value.Started, false);
 
             _pendingRequestsTimer = new Timer(ClearPendingRequests, null, 1000, 1000);
         }
@@ -104,8 +98,6 @@ namespace nanoFramework.Tools.Debugger
 
             m_notifyNoise = new FifoBuffer();
             m_typeSysLookup = new TypeSysLookup();
-            _state = new EngineState(this);
-            //m_fProcessExited = false;
 
             //default capabilities, used until clr can be queried.
             Capabilities = new CLRCapabilities();
@@ -120,7 +112,7 @@ namespace nanoFramework.Tools.Debugger
             _controlller = new Controller(this);
 
             Device = (INanoDevice)device;
-
+            
             Initialize();
         }
 
@@ -155,6 +147,11 @@ namespace nanoFramework.Tools.Debugger
                 // connect to device 
                 if (await Device.ConnectAsync())
                 {
+                    if (_backgroundProcessor.Status != TaskStatus.Running)
+                    {
+                        // background processor is not running, start it
+                        ResumeProcessing();
+                    }
 
                     Commands.Monitor_Ping cmd = new Commands.Monitor_Ping();
 
@@ -262,48 +259,28 @@ namespace nanoFramework.Tools.Debugger
         {
             var reassembler = new MessageReassembler(_controlller);
 
-            while (!_backgroundProcessorCancellation.IsCancellationRequested && _state.IsRunning)
+            while (!_backgroundProcessorCancellation.IsCancellationRequested)
             {
-                if (await Device.ConnectAsync())
+                try
                 {
-                    try
+                    await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
+                }
+                catch (DeviceNotConnectedException)
+                {
+                    ProcessExited();
+                }
+                catch (Exception ex)
+                {
+                    // look for I/O exception
+                    // 0x800703E3
+                    if (ex.HResult == -2147023901)
                     {
-                        await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
+                        ProcessExited();
                     }
-                    catch (DeviceNotConnectedException)
-                    {
-                        if (_backgroundProcessorCancellation.IsCancellationRequested || !_state.IsRunning)
-                        {
-                            return;
-                        }
-                        else
-                        {
-                            await Task.Delay(1000);
-                            await Device.ConnectAsync();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        if (_backgroundProcessorCancellation.IsCancellationRequested || !_state.IsRunning)
-                        {
-                            return;
-                        }
-                        else
-                        {
 
-                            if (ex.GetType().Equals(typeof(AggregateException)))
-                            {
-                                if (ex.GetBaseException().GetType().Name == typeof(DeviceNotConnectedException).Name)
-                                {
-                                    await Task.Delay(1000);
-                                    await Device.ConnectAsync();
-                                }
-                            }
-                            else if (ex.HResult == 0x80070006)
-                            {
-                                return;
-                            }
-                        }
+                    if (_backgroundProcessorCancellation.IsCancellationRequested)
+                    {
+                        break;
                     }
                 }
             }
@@ -644,7 +621,9 @@ namespace nanoFramework.Tools.Debugger
 
         public void ProcessExited()
         {
-            throw new NotImplementedException();
+            Stop();
+
+            _eventProcessExit?.Invoke(this, null);
         }
 
         public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
@@ -659,8 +638,6 @@ namespace nanoFramework.Tools.Debugger
 
         public void StopProcessing()
         {
-            _state.SetValue(EngineState.Value.Stopping, false);
-
             m_evtShutdown.Set();
 
             if (_backgroundProcessor != null)
@@ -673,8 +650,6 @@ namespace nanoFramework.Tools.Debugger
                     Task.WaitAll(_backgroundProcessor);
                 }
                 catch { }
-
-                _backgroundProcessor = null;
             }
         }
 
@@ -682,9 +657,7 @@ namespace nanoFramework.Tools.Debugger
         {
             m_evtShutdown.Reset();
 
-            _state.SetValue(EngineState.Value.Resume, false);
-
-            if (_backgroundProcessor == null)
+            if (_backgroundProcessor == null || _backgroundProcessor.IsCompleted)
             {
                 _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListenerAsync(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
             }
@@ -697,18 +670,8 @@ namespace nanoFramework.Tools.Debugger
                 m_evtShutdown.Set();
             }
 
-            if (_state.SetValue(EngineState.Value.Stopping, false))
-            {
-                StopProcessing();
-
-                //((IController)this).ClosePort();
-
-                _state.SetValue(EngineState.Value.Stopped, false);
-            }
+            StopProcessing();
         }
-
-        public bool IsRunning => _state.IsRunning;
-
 
         #region RPC Support
 
@@ -1011,10 +974,7 @@ namespace nanoFramework.Tools.Debugger
         {
             EndPointRegistration.InboundRequest ir = (EndPointRegistration.InboundRequest)obj;
 
-            if (IsRunning)
-            {
-                ir.Owner.m_ep.DispatchMessage(ir.m_msg);
-            }
+            ir.Owner.m_ep.DispatchMessage(ir.m_msg);
         }
 
         internal bool RpcReply(Commands.Debugging_Messaging_Address addr, byte[] data)
@@ -1081,11 +1041,7 @@ namespace nanoFramework.Tools.Debugger
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
             {
-                //Checking whether IsRunning and adding the request to m_requests
-                //needs to be atomic to avoid adding a request after the Engine
-                //has been stopped.
-
-                if (!IsRunning)
+                if(_backgroundProcessor.Status != TaskStatus.Running)
                 {
                     throw new ApplicationException("Engine is not running or process has exited.");
                 }
