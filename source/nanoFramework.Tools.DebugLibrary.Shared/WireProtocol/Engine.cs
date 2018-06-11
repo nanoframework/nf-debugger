@@ -214,7 +214,7 @@ namespace nanoFramework.Tools.Debugger
 
                 var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
 
-                if (tempCapabilities != null)
+                if (tempCapabilities != null && !tempCapabilities.IsUnknown)
                 {
                     Capabilities = tempCapabilities;
                     _controlller.Capabilities = Capabilities;
@@ -3095,21 +3095,23 @@ namespace nanoFramework.Tools.Debugger
 
             Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies nativeInteropAssemblies = new Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies();
 
-            List<CLRCapabilities.NativeAssemblyProperties> nativeAssembliesProps = new List<CLRCapabilities.NativeAssemblyProperties>();
-
             if (reply != null)
             {
-                Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
-
-                if (cmdReply != null && cmdReply.m_data != null)
+                if (reply.IsPositiveAcknowledge())
                 {
-                    new Converter().Deserialize(nativeInteropAssemblies, cmdReply.m_data);
+                    Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
 
-                    nativeAssembliesProps = nativeInteropAssemblies.NativeInteropAssemblies.Select(a => new CLRCapabilities.NativeAssemblyProperties(a.Name, a.CheckSum, a.AssemblyVersion.Version)).ToList();
+                    if (cmdReply != null && cmdReply.m_data != null)
+                    {
+                        new Converter().Deserialize(nativeInteropAssemblies, cmdReply.m_data);
+
+                        return nativeInteropAssemblies.NativeInteropAssemblies.Select(a => new CLRCapabilities.NativeAssemblyProperties(a.Name, a.CheckSum, a.AssemblyVersion.Version)).ToList();
+                    }
                 }
             }
 
-            return nativeAssembliesProps;
+            // device can't NEVER EVER report that no native assemblies are deployed
+            return null;
         }
 
         private CLRCapabilities DiscoverCLRCapabilities(CancellationToken cancellationToken)
@@ -3165,6 +3167,13 @@ namespace nanoFramework.Tools.Debugger
             {
                 // cancellation requested
                 Debug.WriteLine("cancellation requested");
+                return null;
+            }
+
+            // sanity check for NULL native assemblies
+            if (nativeAssembliesInfo == null)
+            {
+                Debug.WriteLine("device reporting no native assemblies deployed");
                 return null;
             }
 
