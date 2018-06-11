@@ -38,10 +38,7 @@ namespace nanoFramework.Tools.Debugger
                 // get assemblies from device
                 if (GetAssemblies())
                 {
-
                     Valid = true;
-
-                    NativeAssemblies = Dbg.Capabilities.NativeAssemblies;
 
                     return true;
                 }
@@ -194,7 +191,7 @@ namespace nanoFramework.Tools.Debugger
             get { return m_AssemblyInfos.ToArray(); }
         }
 
-        public List<CLRCapabilities.NativeAssemblyProperties> NativeAssemblies { get; private set; } = new List<CLRCapabilities.NativeAssemblyProperties> ();
+        public List<CLRCapabilities.NativeAssemblyProperties> NativeAssemblies => Dbg.Capabilities.NativeAssemblies;
 
         public string ImageBuildDate => Dbg.Capabilities.SoftwareVersion.BuildDate;
 
