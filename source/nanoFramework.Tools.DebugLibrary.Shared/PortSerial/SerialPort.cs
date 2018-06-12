@@ -589,8 +589,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // save for later
                     device.DeviceBase = EventHandlerForSerialDevice.Current.Device;
 
-                    // hack to get the port name here
-                    device.Description = EventHandlerForSerialDevice.Current.Device.PortName;
+                    // update the description only if it's empty
+                    if (string.IsNullOrEmpty(device.Description))
+                    {
+                        // hack to get the port name here
+                        device.Description = EventHandlerForSerialDevice.Current.Device.PortName;
+                    }
                 }
             }
 
