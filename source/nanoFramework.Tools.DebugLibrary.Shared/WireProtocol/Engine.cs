@@ -2129,7 +2129,13 @@ namespace nanoFramework.Tools.Debugger
                     if (message == null)
                     {
                         // can't happen, failing right now
-                        return null;
+                        break;
+                    }
+
+                    if(!message.IsPositiveAcknowledge())
+                    {
+                        // can't happen, failing right now
+                        break;
                     }
 
                     // reply is a match for request which m_seq is same as reply m_seqReply
@@ -2144,7 +2150,7 @@ namespace nanoFramework.Tools.Debugger
                     else
                     {
                         // failure
-                        return null;
+                        break;
                     }
                 }
             }

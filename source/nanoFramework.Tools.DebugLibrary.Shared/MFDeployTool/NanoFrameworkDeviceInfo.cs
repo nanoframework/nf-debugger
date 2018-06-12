@@ -86,31 +86,31 @@ namespace nanoFramework.Tools.Debugger
 
         private bool GetAssemblies()
         {
+            // clear assembly list
+            m_AssemblyInfos = new List<IAssemblyInfo>();
+
             List<Commands.DebuggingResolveAssembly> reply = Dbg.ResolveAllAssemblies();
 
-            if (reply != null)
+            foreach (Commands.DebuggingResolveAssembly resolvedAssm in reply)
             {
-                foreach (Commands.DebuggingResolveAssembly resolvedAssm in reply)
-                {
-                    AssemblyInfoFromResolveAssembly ai = new AssemblyInfoFromResolveAssembly(resolvedAssm);
+                AssemblyInfoFromResolveAssembly ai = new AssemblyInfoFromResolveAssembly(resolvedAssm);
 
-                    foreach (IAppDomainInfo adi in m_Domains)
+                foreach (IAppDomainInfo adi in m_Domains)
+                {
+                    if (Array.IndexOf<uint>(adi.AssemblyIndices, ai.Index) != -1)
                     {
-                        if (Array.IndexOf<uint>(adi.AssemblyIndices, ai.Index) != -1)
-                        {
-                            ai.AddDomain(adi);
-                        }
+                        ai.AddDomain(adi);
                     }
-
-                    m_AssemblyInfos.Add(ai);
                 }
 
-                // sanity check
-                if (m_AssemblyInfos.Count == reply.Count)
-                {
-                    // we have all the assemblies listed
-                    return true;
-                }
+                m_AssemblyInfos.Add(ai);
+            }
+
+            // sanity check
+            if (m_AssemblyInfos.Count == reply.Count)
+            {
+                // we have all the assemblies listed
+                return true;
             }
 
             // default to failure
