@@ -91,6 +91,8 @@ namespace nanoFramework.Tools.Debugger
 
         public object DeviceBase { get; internal set; }
 
+        public abstract void Disconnect();
+
         /// <summary>
         /// Get <see cref="INanoFrameworkDeviceInfo"/> from device.
         /// If the device information has been retrieved before this method returns the cached data, unless the force argument is true.
