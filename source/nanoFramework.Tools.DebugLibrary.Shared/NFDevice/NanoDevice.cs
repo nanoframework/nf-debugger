@@ -90,7 +90,7 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Disconnect nanoFramework device
         /// </summary>
-        public void Disconnect()
+        public override void Disconnect()
         {
             Parent.DisconnectDevice(this as NanoDeviceBase);
 
