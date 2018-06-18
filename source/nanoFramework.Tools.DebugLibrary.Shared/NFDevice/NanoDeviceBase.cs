@@ -20,26 +20,20 @@ namespace nanoFramework.Tools.Debugger
 {
     public abstract class NanoDeviceBase
     {
-        private Engine _debugEngine;
 
 
         /// <summary>
         /// nanoFramework debug engine.
         /// </summary>
         /// 
-        public Engine DebugEngine
+        public Engine DebugEngine { get; set; }
+
+        /// <summary>
+        /// Create a new debug engine for this nanoDevice.
+        /// </summary>
+        public void CreateDebugEngine()
         {
-            get
-            { 
-                if (_debugEngine == null)
-                {
-                    _debugEngine = new Engine(this);
-                }
-
-                return _debugEngine;
-            }
-
-            set => _debugEngine = value;
+            DebugEngine = new Engine(this);
         }
 
         /// <summary>
@@ -119,11 +113,16 @@ namespace nanoFramework.Tools.Debugger
         }
 
         /// <summary>
-        /// Attempts to communicate with the connected .Net Micro Framework device
+        /// Attempts to communicate with the connected nanoFramework device
         /// </summary>
         /// <returns></returns>
         public PingConnectionType Ping()
         {
+            if(DebugEngine == null)
+            {
+                throw new DeviceNotConnectedException();
+            }
+
             var reply = DebugEngine.GetConnectionSource();
 
             if (reply != null)

@@ -80,13 +80,6 @@ namespace nanoFramework.Tools.Debugger
             // default to false
             IsCRC32EnabledForWireProtocol = false;
 
-            _state.SetValue(EngineState.Value.Starting, true);
-
-            // start task to process background messages
-            _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListenerAsync(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
-
-            _state.SetValue(EngineState.Value.Started, false);
-
             _pendingRequestsTimer = new Timer(ClearPendingRequests, null, 1000, 1000);
         }
 
@@ -155,8 +148,21 @@ namespace nanoFramework.Tools.Debugger
                 {
                     if (!IsRunning)
                     {
-                        // background processor is not running, start it
-                        ResumeProcessing();
+                        if(_state.GetValue() == EngineState.Value.NotStarted)
+                        {
+                            // background processor was never started
+                            _state.SetValue(EngineState.Value.Starting, true);
+
+                            // start task to process background messages
+                            _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListenerAsync(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+
+                            _state.SetValue(EngineState.Value.Started, false);
+                        }
+                        else
+                        {
+                            // background processor is not running, start it
+                            ResumeProcessing();
+                        }
                     }
 
                     Commands.Monitor_Ping cmd = new Commands.Monitor_Ping();
@@ -293,28 +299,6 @@ namespace nanoFramework.Tools.Debugger
             Debug.WriteLine("**** EXIT IncomingMessagesListenerAsync ****");
         }
 
-        public void Disconnect()
-        {
-            // better do this inside of try/catch because we can't be sure that the device is actually connected or that the 
-            // operation can be successful
-            try
-            {
-                // cancel background processors, if they are running
-                _noiseHandlingCancellation.Cancel();
-
-                _backgroundProcessorCancellation.Cancel();
-
-                // update flag
-                IsConnected = false;
-
-                // update CRC32 support flag
-                IsCRC32EnabledForWireProtocol = false;
-
-                Debug.WriteLine("Device disconnected");
-            }
-            catch { }
-        }
-
         public DateTime LastActivity
         {
             get
@@ -405,11 +389,6 @@ namespace nanoFramework.Tools.Debugger
                     {
                         _cancellationTokenSource.Cancel();
                         _cancellationTokenSource.Dispose();
-
-                        if (IsConnected)
-                        {
-                            Device.Disconnect();
-                        }
                     }
                     catch { }
                 }
@@ -652,13 +631,7 @@ namespace nanoFramework.Tools.Debugger
             if (_backgroundProcessor != null)
             {
                 _backgroundProcessorCancellation.Cancel();
-
-                // need to wrap this in try-catch to catch possible AggregateExceptions
-                try
-                {
-                    Task.WaitAll(_backgroundProcessor);
-                }
-                catch { }
+                _cancellationTokenSource.Cancel();
             }
         }
 
@@ -1374,7 +1347,6 @@ namespace nanoFramework.Tools.Debugger
             Commands.MonitorReboot cmd = new Commands.MonitorReboot();
 
             bool fThrowOnCommunicationFailureSav = ThrowOnCommunicationFailure;
-            bool disconnectRequired = false;
 
             ThrowOnCommunicationFailure = false;
 
@@ -1389,26 +1361,11 @@ namespace nanoFramework.Tools.Debugger
                 cmd.flags = (uint)RebootOptions.NormalReboot;
             }
 
-            // if this is a 'normal reboot' device will go away and we better disconnect from the device
-            if(cmd.flags  == (uint)RebootOptions.NormalReboot)
-            {
-                disconnectRequired = true;
-            }
-
             try
             {
                 m_evtPing.Reset();
 
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
-
-                // need to disconnect from the device?
-                if (disconnectRequired)
-                {
-                    // cancel background thread
-                    _backgroundProcessorCancellation.Cancel();
-
-                    Device.Disconnect();
-                }
             }
             finally
             {

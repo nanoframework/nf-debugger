@@ -124,20 +124,13 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// <param name="deviceSelector">The AQS used to find this device</param>
         /// <returns>True if the device was successfully opened, false if the device could not be opened for well known reasons.
         /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
-        public async Task<bool> OpenDeviceAsync(DeviceInformation deviceInfo, string deviceSelector, SerialDevice existingDevice)
+        public async Task<bool> OpenDeviceAsync(DeviceInformation deviceInfo, string deviceSelector)
         {
             await Task.Delay(250);
 
             bool successfullyOpenedDevice = false;
 
-            if (existingDevice == null)
-            {
-                _device = await SerialDevice.FromIdAsync(deviceInfo.Id);
-            }
-            else
-            {
-                _device = existingDevice;
-            }
+            _device = await SerialDevice.FromIdAsync(deviceInfo.Id);
 
             try
             {
@@ -153,14 +146,14 @@ namespace nanoFramework.Tools.Debugger.Serial
 
                     // adjust settings for serial port
                     _device.BaudRate = 115200;
-					_device.DataBits = 8;
-                    
-                     /////////////////////////////////////////////////////////////
+                    _device.DataBits = 8;
+
+                    /////////////////////////////////////////////////////////////
                     // need to FORCE the parity setting to _NONE_ because        
                     // the default on the current ST Link is different causing 
                     // the communication to fail
                     /////////////////////////////////////////////////////////////
-                   _device.Parity = SerialParity.None;
+                    _device.Parity = SerialParity.None;
 
                     _device.WriteTimeout = TimeSpan.FromMilliseconds(1000);
                     _device.ReadTimeout = TimeSpan.FromMilliseconds(1000);
@@ -243,7 +236,7 @@ namespace nanoFramework.Tools.Debugger.Serial
             {
                 CloseCurrentlyConnectedDevice();
             }
-            else if ((eventArgs.Status == DeviceAccessStatus.Allowed) && (_deviceInformation != null) && _isEnabledAutoReconnect)
+            else if ((eventArgs.Status == DeviceAccessStatus.Allowed) && (_deviceInformation != null))
             {
             }
         }
