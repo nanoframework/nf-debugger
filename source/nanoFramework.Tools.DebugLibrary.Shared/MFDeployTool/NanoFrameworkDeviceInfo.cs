@@ -8,9 +8,6 @@ using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Linq;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -207,26 +204,33 @@ namespace nanoFramework.Tools.Debugger
                 {
                     StringBuilder output = new StringBuilder();
 
-                    output.AppendLine(String.Format("HAL build info: {0}, {1}", HalBuildVersion?.ToString(), HalBuildInfo));
-                    output.AppendLine(String.Format($"Image build @ { ImageBuildDate } { ImageCompilerInfo } v{ ImageCompilerVersion.ToString() }"));
-                    output.AppendLine(String.Format("OEM Product codes (vendor, model, SKU): {0}, {1}, {2}", OEM.ToString(), Model.ToString(), SKU.ToString()));
+                    output.AppendLine($"HAL build info: {HalBuildVersion?.ToString()}, {HalBuildInfo}");
+                    output.AppendLine();
+                    output.AppendLine($"Image build @ { ImageBuildDate } { ImageCompilerInfo } v{ ImageCompilerVersion.ToString() }");
+                    output.AppendLine();
+                    output.AppendLine($"OEM Product codes (vendor, model, SKU): {OEM.ToString()}, {Model.ToString()}, {SKU.ToString()}");
+                    output.AppendLine();
                     output.AppendLine("Serial Numbers (module, system):");
                     output.AppendLine("  " + ModuleSerialNumber);
                     output.AppendLine("  " + SystemSerialNumber);
-                    output.AppendLine(String.Format("Solution Build Info: {0}, {1}", SolutionBuildVersion?.ToString(), SolutionBuildInfo));
+                    output.AppendLine();
+                    output.AppendLine($"Solution Build Info: {SolutionBuildVersion?.ToString()}, {SolutionBuildInfo}");
 
+                    output.AppendLine();
                     output.AppendLine("AppDomains:");
                     foreach (IAppDomainInfo adi in AppDomains)
                     {
-                        output.AppendLine(String.Format("  {0}, id={1}", adi.Name, adi.ID));
+                        output.AppendLine($"  {adi.Name}, id={adi.ID}");
                     }
 
+                    output.AppendLine();
                     output.AppendLine("Assemblies:");
                     foreach (IAssemblyInfo ai in Assemblies)
                     {
-                        output.AppendLine(String.Format("  {0}, {1}", ai.Name, ai.Version));
+                        output.AppendLine($"  {ai.Name}, {ai.Version}");
                     }
 
+                    output.AppendLine();
                     output.AppendLine("Native Assemblies:");
                     foreach (CLRCapabilities.NativeAssemblyProperties assembly in NativeAssemblies)
                     {
