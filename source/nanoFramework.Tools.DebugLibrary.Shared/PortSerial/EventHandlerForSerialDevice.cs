@@ -47,7 +47,6 @@ namespace nanoFramework.Tools.Debugger.Serial
         private bool _watcherStarted;
 
         private bool _isBackgroundTask;
-        private bool _isEnabledAutoReconnect;
 
         // A pointer back to the calling app.  This is needed to reach methods and events there 
 #if WINDOWS_UWP
@@ -191,21 +190,6 @@ namespace nanoFramework.Tools.Debugger.Serial
             }
         }
 
-        /// <summary>
-        /// True if EventHandlerForSerialEclo will attempt to reconnect to the device once it is plugged into the computer again
-        /// </summary>
-        public bool IsEnabledAutoReconnect
-        {
-            get
-            {
-                return _isEnabledAutoReconnect;
-            }
-            set
-            {
-                _isEnabledAutoReconnect = value;
-            }
-        }
-
         private void Device_ErrorReceived(SerialDevice sender, ErrorReceivedEventArgs args)
         {
             //throw new NotImplementedException();
@@ -225,11 +209,7 @@ namespace nanoFramework.Tools.Debugger.Serial
             _deviceInformation = null;
             _deviceSelector = null;
 
-            _isEnabledAutoReconnect = true;
-
             Debug.WriteLine($"##################");
-            Current._device?.Dispose();
-            Current._device = null;
         }
 
         /// <summary>
@@ -241,8 +221,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             _watcherStarted = false;
             _watcherSuspended = false;
-            _isEnabledAutoReconnect = true;
-            this._isBackgroundTask = isBackgroundTask;
+            _isBackgroundTask = isBackgroundTask;
         }
 
         /// <summary>
@@ -270,17 +249,17 @@ namespace nanoFramework.Tools.Debugger.Serial
                 {
                     // This closes the handle to the device
                     _device.Dispose();
+                    _device = null;
                 });
 
-                // need to wrap this in try-catch to catch possible AggregateExceptions
+                //need to wrap this in try-catch to catch possible AggregateExceptions
                 try
                 {
                     Task.WaitAll(new Task[] { closeTask }, TimeSpan.FromMilliseconds(1000));
                 }
                 catch { }
 
-                _device = null;
-            }
+                }
         }
 
         /// <summary>
@@ -376,7 +355,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// <param name="deviceInfo"></param>
         private void OnDeviceAdded(DeviceWatcher sender, DeviceInformation deviceInfo)
         {
-            if ((_deviceInformation != null) && (deviceInfo.Id == _deviceInformation.Id) && !IsDeviceConnected && _isEnabledAutoReconnect)
+            if ((_deviceInformation != null) && (deviceInfo.Id == _deviceInformation.Id) && !IsDeviceConnected)
             {
             }
         }

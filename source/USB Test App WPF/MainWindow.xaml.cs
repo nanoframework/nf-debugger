@@ -41,6 +41,11 @@ namespace Serial_Test_App_WPF
             {
                 var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
 
+                if(device.DebugEngine == null)
+                {
+                    device.CreateDebugEngine();
+                }
+
                 bool connectResult = await device.DebugEngine.ConnectAsync(5000, true);
 
                 //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Start();
@@ -108,6 +113,8 @@ namespace Serial_Test_App_WPF
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Stop();
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Dispose();
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine = null;
+
+                    ((DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex] as NanoDevice<NanoSerialDevice>).Disconnect();
                 }
                 catch
                 {
@@ -506,6 +513,10 @@ namespace Serial_Test_App_WPF
                     (sender as Button).IsEnabled = true;
 
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(nanoFramework.Tools.Debugger.RebootOptions.NormalReboot);
+
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Stop();
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Dispose();
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine = null;
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");

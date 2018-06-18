@@ -93,6 +93,8 @@ namespace nanoFramework.Tools.Debugger
         public void Disconnect()
         {
             Parent.DisconnectDevice(this as NanoDeviceBase);
+
+            DeviceBase = null;
         }
     }
 }
