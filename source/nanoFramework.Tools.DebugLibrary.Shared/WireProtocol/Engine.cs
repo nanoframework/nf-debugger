@@ -526,17 +526,13 @@ namespace nanoFramework.Tools.Debugger
 
                 if (reply != null)
                 {
-                    // remove from store
+                    // this a reply to a request: remove it from store
                     _requestsStore.Remove(reply.OutgoingMessage.Header);
 
                     // resolve the response
                     reply.TaskCompletionSource.TrySetResult(message);
 
                     return true;
-                }
-                else
-                {
-                    reply.TaskCompletionSource.TrySetResult(null);
                 }
             }
             else
