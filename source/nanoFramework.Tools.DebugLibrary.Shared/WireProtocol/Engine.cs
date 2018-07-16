@@ -1252,7 +1252,7 @@ namespace nanoFramework.Tools.Debugger
                 Commands.Monitor_WriteMemory cmd = new Commands.Monitor_WriteMemory();
 
                 // get packet length, either the maximum allowed size or whatever is still available to TX
-                int packetLength = Math.Min(1024, count);
+                int packetLength = Math.Min((int)WireProtocolPacketSize, count);
 
                 cmd.PrepareForSend(address, buf, position, packetLength);
 
