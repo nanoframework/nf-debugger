@@ -279,7 +279,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                 // Notify callback that we're about to close the device
                 deviceCloseCallback?.Invoke(this, deviceInformation);
 
-                Debug.WriteLine($"Closing device {deviceInformation.Id}");
+                NanoDevicesEventSource.Log.CloseDevice(deviceInformation.Id);
             }
         }
 
