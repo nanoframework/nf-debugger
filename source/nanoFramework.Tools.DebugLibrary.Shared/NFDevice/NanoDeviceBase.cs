@@ -448,10 +448,10 @@ namespace nanoFramework.Tools.Debugger
                         // check if cancellation was requested 
                         if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
 
-                        int buflen = len > 1024 ? 1024 : (int)len;
+                        uint buflen = len > DebugEngine.WireProtocolPacketSize ? DebugEngine.WireProtocolPacketSize : (uint)len;
                         byte[] data = new byte[buflen];
 
-                        if (block.data.Read(data, 0, buflen) <= 0)
+                        if (block.data.Read(data, 0, (int)buflen) <= 0)
                         {
                             return new Tuple<uint, bool>(0, false);
                         }
@@ -574,18 +574,16 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<bool> DeployMFUpdateAsync(StorageFile zipFile, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
         {
-            const int c_PacketSize = 1024;
-
             if (zipFile.IsAvailable)
             {
-                byte[] packet = new byte[c_PacketSize];
+                byte[] packet = new byte[DebugEngine.WireProtocolPacketSize];
                 try
                 {
                     int handle = -1;
                     int idx = 0;
 
                     var fileInfo = await zipFile.GetBasicPropertiesAsync();
-                    int numPkts = ((int)fileInfo.Size + c_PacketSize - 1) / c_PacketSize;
+                    uint numPkts = (uint)(fileInfo.Size + DebugEngine.WireProtocolPacketSize - 1) / DebugEngine.WireProtocolPacketSize;
 
                     byte[] hashData = UTF8Encoding.UTF8.GetBytes(zipFile.Name + fileInfo.DateModified.ToString());
 
@@ -596,7 +594,7 @@ namespace nanoFramework.Tools.Debugger
 
                     //Debug.WriteLine(updateId);
 
-                    handle = DebugEngine.StartUpdate("NetMF", 4, 4, updateId, 0, 0, (uint)fileInfo.Size, (uint)c_PacketSize, 0);
+                    handle = DebugEngine.StartUpdate("NetMF", 4, 4, updateId, 0, 0, (uint)fileInfo.Size, (uint)DebugEngine.WireProtocolPacketSize, 0);
                     if (handle > -1)
                     {
                         uint authType;

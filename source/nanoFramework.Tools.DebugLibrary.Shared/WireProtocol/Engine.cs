@@ -137,6 +137,11 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public bool IsCRC32EnabledForWireProtocol { get; internal set; }
 
+        /// <summary>
+        /// Wire Protocol packet size. Default is 1024.
+        /// </summary>
+        public uint WireProtocolPacketSize { get; internal set; } = 1024;
+
         public bool StopDebuggerOnConnect { get; set; }
 
         public async Task<bool> ConnectAsync(int timeout, bool force = false, ConnectionSource connectionSource = ConnectionSource.Unknown)
@@ -188,6 +193,28 @@ namespace nanoFramework.Tools.Debugger
                         IsTargetBigEndian = (reply.m_dbg_flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
 
                         IsCRC32EnabledForWireProtocol = (reply.m_dbg_flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
+
+                        // get Wire Protocol packet size
+                        switch(reply.m_dbg_flags & Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_Position)
+                        {
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0128:
+                                WireProtocolPacketSize = 128;
+                                break;
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0256:
+                                WireProtocolPacketSize = 256;
+                                break;
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0512:
+                                WireProtocolPacketSize = 512;
+                                break;
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_1024:
+                                WireProtocolPacketSize = 1024;
+                                break;
+
+                            default:
+                                // unsupported packet size
+                                throw new NotSupportedException("Wire Protocol packet size reported by target device is not supported.");
+                        }
+
 
                         // update flag
                         IsConnected = true;
