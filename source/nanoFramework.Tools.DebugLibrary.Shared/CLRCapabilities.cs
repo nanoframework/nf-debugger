@@ -31,7 +31,12 @@ namespace nanoFramework.Tools.Debugger
             /// This flag indicates that the device requires em erase command before updating the configuration block.
             /// </summary>
             ConfigBlockRequiresErase = 0x00000800,
-        }
+
+            /// <summary>
+            /// This flag indicates that the device has nanoBooter.
+            /// </summary>
+            HasNanoBooter = 0x00001000,
+    }
 
         public struct SoftwareVersionProperties
         {
@@ -326,6 +331,15 @@ namespace nanoFramework.Tools.Debugger
             {
                 Debug.Assert(!m_fUnknown);
                 return (m_capabilities & Capability.ConfigBlockRequiresErase) != 0;
+            }
+        }
+
+        public bool HasNanoBooter
+        {
+            get
+            {
+                Debug.Assert(!m_fUnknown);
+                return (m_capabilities & Capability.HasNanoBooter) != 0;
             }
         }
 
