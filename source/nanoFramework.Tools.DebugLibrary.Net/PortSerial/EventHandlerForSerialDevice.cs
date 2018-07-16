@@ -115,9 +115,7 @@ namespace nanoFramework.Tools.Debugger.Serial
                     successfullyOpenedDevice = true;
 
                     _deviceInformation = deviceInfo;
-                    this._deviceSelector = deviceSelector;
-
-                    Debug.WriteLine($"Device {_deviceInformation.Id} opened");
+                    _deviceSelector = deviceSelector;
 
                     // adjust settings for serial port
                     _device.BaudRate = 115200;
@@ -167,9 +165,6 @@ namespace nanoFramework.Tools.Debugger.Serial
                 else
                 {
                     successfullyOpenedDevice = false;
-
-                    // Most likely the device is opened by another app, but cannot be sure
-                    Debug.WriteLine($"Unknown error, possibly opened by another app : {deviceInfo.Id}");
                 }
             }
             // catch all because the device open might fail for a number of reasons

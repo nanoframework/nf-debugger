@@ -128,7 +128,7 @@ namespace Test_App_UWP
             // disable button
             (sender as Button).IsEnabled = false;
 
-            App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.Disconnect();
+            App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].Disconnect();
 
             // enable button
             (sender as Button).IsEnabled = true;

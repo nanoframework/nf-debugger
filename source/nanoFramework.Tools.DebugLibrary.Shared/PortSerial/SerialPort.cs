@@ -235,9 +235,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                
                )
             {
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(deviceInformation.Id));
+
                 // don't even bother with these
                 return;
             }
+
+            OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(deviceInformation.Id));
 
             // search the device list for a device with a matching interface ID
             var serialMatch = FindDevice(deviceInformation.Id);
@@ -248,7 +252,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 var serialDevice = new SerialDeviceInformation(deviceInformation, deviceSelector);
                 _serialDevices.Add(serialDevice);
 
-                Debug.WriteLine("New Serial device: " + deviceInformation.Id);
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.CandidateDevice(deviceInformation.Id));
 
                 // search the nanoFramework device list for a device with a matching interface ID
                 var nanoFrameworkDeviceMatch = FindNanoFrameworkDevice(deviceInformation.Id);
@@ -273,7 +277,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                             //add device to the collection
                             NanoFrameworkDevices.Add(FindNanoFrameworkDevice(newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id));
-                            Debug.WriteLine($"New Serial device: {newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}");
+
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}"));
 
                             // done here, clear tentative list
                             _tentativeNanoFrameworkDevices.Clear();
@@ -285,7 +290,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         // clear tentative list
                         _tentativeNanoFrameworkDevices.Clear();
 
-                        Debug.WriteLine("Serial device removed: " + deviceInformation.Id);
+                        OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
 
                         _serialDevices.Remove(serialDevice);
                     }
@@ -297,6 +302,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             // Removes the device entry from the internal list; therefore the UI
             var deviceEntry = FindDevice(deviceId);
+
+            OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceDeparture(deviceId));
 
             _serialDevices.Remove(deviceEntry);
 
@@ -397,15 +404,17 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                     foreach (NanoDeviceBase device in _tentativeNanoFrameworkDevices)
                     {
-                        Debug.WriteLine($"Checking device: {(((NanoDevice<NanoSerialDevice>)device).Device.DeviceInformation.DeviceInformation.Id)}");
-
                         var nFDeviceIsValid = await CheckValidNanoFrameworkSerialDeviceAsync(((NanoDevice<NanoSerialDevice>)device).Device.DeviceInformation).ConfigureAwait(true);
 
                         if (nFDeviceIsValid)
                         {
-                            Debug.WriteLine($"New Serial device: {device.Description} {(((NanoDevice<NanoSerialDevice>)device).Device.DeviceInformation.DeviceInformation.Id)}");
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{device.Description} {(((NanoDevice<NanoSerialDevice>)device).Device.DeviceInformation.DeviceInformation.Id)}"));
 
                             NanoFrameworkDevices.Add(device);
+                        }
+                        else
+                        {
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(((NanoDevice<NanoSerialDevice>)device).Device.DeviceInformation.DeviceInformation.Id));
                         }
                     }
 
@@ -415,7 +424,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // clean list of tentative nanoFramework Devices
                     _tentativeNanoFrameworkDevices.Clear();
 
-                    Debug.WriteLine($"Serial device enumeration completed. Found {NanoFrameworkDevices.Count} devices");
+                    OnLogMessageAvailable(NanoDevicesEventSource.Log.SerialDeviceEnumerationCompleted(NanoFrameworkDevices.Count));
 
                     // fire event that Serial enumeration is complete 
                     OnDeviceEnumerationCompleted();
@@ -430,7 +439,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             var name = deviceInformation.DeviceInformation.Name;
             var serialNumber = GetSerialNumber(deviceInformation.DeviceInformation.Id);
 
-            Debug.WriteLine($"Checking Device {deviceInformation.DeviceInformation.Id}");
+            OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice(deviceInformation.DeviceInformation.Id));
 
             var tentativeDevice = await SerialDevice.FromIdAsync(deviceInformation.DeviceInformation.Id);
 
@@ -466,7 +475,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         }
                         else
                         {
-                            Debug.WriteLine($"Couldn't find nano device {EventHandlerForSerialDevice.Current.DeviceInformation.Id} with serial {serialNumber}");
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Couldn't find nano device {EventHandlerForSerialDevice.Current.DeviceInformation.Id} with serial {serialNumber}"));
                         }
                     }
                     else
@@ -496,9 +505,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
                 else
                 {
- 
+
                     // Most likely the device is opened by another app, but cannot be sure
-                    Debug.WriteLine($"Unknown error, possibly opened by another app : {deviceInformation.DeviceInformation.Id}");
+                    OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Unknown error, possibly opened by another app : {deviceInformation.DeviceInformation.Id}"));
                 }
             }
             // catch all because the device open might fail for a number of reasons
@@ -678,7 +687,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
             }
 
-            return await EventHandlerForSerialDevice.Current.OpenDeviceAsync(serialDeviceInfo.DeviceInformation, serialDeviceInfo.DeviceSelector);
+            bool openDeviceResult = await EventHandlerForSerialDevice.Current.OpenDeviceAsync(serialDeviceInfo.DeviceInformation, serialDeviceInfo.DeviceSelector);
+
+            if (openDeviceResult)
+            {
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.OpenDevice(serialDeviceInfo.DeviceInformation.Id));
+            }
+            else
+            {
+                // Most likely the device is opened by another app, but cannot be sure
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Unknown error opening {serialDeviceInfo.DeviceInformation.Id}, possibly opened by another app"));
+            }
+
+            return openDeviceResult;
         }
 
         public void DisconnectDevice(NanoDeviceBase device)
@@ -691,6 +712,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 // cancel all IO operations
                 CancelAllIoTasks();
+
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.CloseDevice(deviceCheck?.DeviceInformation.Id));
 
                 // close device
                 EventHandlerForSerialDevice.Current.CloseDevice();

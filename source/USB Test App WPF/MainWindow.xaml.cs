@@ -114,7 +114,7 @@ namespace Serial_Test_App_WPF
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Dispose();
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine = null;
 
-                    ((DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex] as NanoDevice<NanoSerialDevice>).Disconnect();
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].Disconnect();
                 }
                 catch
                 {
@@ -517,6 +517,8 @@ namespace Serial_Test_App_WPF
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Stop();
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Dispose();
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine = null;
+
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].Disconnect();
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");

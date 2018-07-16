@@ -140,9 +140,9 @@ namespace nanoFramework.Tools.Debugger.Serial
                     successfullyOpenedDevice = true;
 
                     _deviceInformation = deviceInfo;
-                    this._deviceSelector = deviceSelector;
+                    _deviceSelector = deviceSelector;
 
-                    Debug.WriteLine($"Device {_deviceInformation.Id} opened");
+                    NanoDevicesEventSource.Log.OpenDevice(_deviceInformation.Id);
 
                     // adjust settings for serial port
                     _device.BaudRate = 115200;
@@ -200,18 +200,18 @@ namespace nanoFramework.Tools.Debugger.Serial
                     switch (deviceAccessStatus)
                     {
                         case DeviceAccessStatus.DeniedByUser:
-                            Debug.WriteLine($"Access to the device was blocked by the user : {deviceInfo.Id}");
+                            NanoDevicesEventSource.Log.CriticalError($"Access to the device was blocked by the user : {deviceInfo.Id}");
                             break;
 
                         case DeviceAccessStatus.DeniedBySystem:
                             // This status is most likely caused by app permissions (did not declare the device in the app's package.appxmanifest)
                             // This status does not cover the case where the device is already opened by another app.
-                            Debug.WriteLine($"Access to the device was blocked by the system : {deviceInfo.Id}");
+                            NanoDevicesEventSource.Log.CriticalError($"Access to the device was blocked by the system : {deviceInfo.Id}");
                             break;
 
                         default:
                             // Most likely the device is opened by another app, but cannot be sure
-                            Debug.WriteLine($"Unknown error, possibly opened by another app : {deviceInfo.Id}");
+                            NanoDevicesEventSource.Log.CriticalError($"Unknown error, possibly opened by another app : {deviceInfo.Id}");
                             break;
                     }
                 }

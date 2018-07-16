@@ -208,8 +208,6 @@ namespace nanoFramework.Tools.Debugger.Serial
 
             _deviceInformation = null;
             _deviceSelector = null;
-
-            Debug.WriteLine($"##################");
         }
 
         /// <summary>
@@ -232,7 +230,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// The close will not wait for any IO completion callbacks to be called, so the close call may complete before any of
         /// the IO completion callbacks are called.
         /// The pending IO operations will still call their respective completion callbacks with either a task 
-        /// canceled error or the operation completed.
+        /// cancelled error or the operation completed.
         /// </summary>
         private void CloseCurrentlyConnectedDevice()
         {
@@ -240,8 +238,6 @@ namespace nanoFramework.Tools.Debugger.Serial
             {
                 // Notify callback that we're about to close the device
                 _deviceCloseCallback?.Invoke(this, _deviceInformation);
-
-                Debug.WriteLine($"Closing device {_deviceInformation?.Id}");
 
                 // dispose on a Task to give it a timeout to perform the Dispose()
                 // this is required to be able to actually close devices that get stuck with pending tasks on the in/output streams

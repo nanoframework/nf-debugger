@@ -6,6 +6,7 @@ using PropertyChanged;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
@@ -50,7 +51,16 @@ namespace Serial_Test_App_WPF.ViewModel
             if (SerialDebugService != null)
             {
                 SerialDebugService.SerialDebugClient.DeviceEnumerationCompleted += SerialDebugClient_DeviceEnumerationCompleted;
+
+                SerialDebugService.SerialDebugClient.LogMessageAvailable += SerialDebugClient_LogMessageAvailable;
             }
+        }
+
+        private void SerialDebugClient_LogMessageAvailable(object sender, StringEventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+                Debug.WriteLine(e.EventText);
+            }));
         }
 
         private void SerialDebugClient_DeviceEnumerationCompleted(object sender, EventArgs e)
