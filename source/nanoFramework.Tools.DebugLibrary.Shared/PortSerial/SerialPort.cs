@@ -225,14 +225,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <param name="deviceSelector">The AQS used to find this device</param>
         private async void AddDeviceToList(DeviceInformation deviceInformation, String deviceSelector)
         {
+            // device black listed
             // discard known system and unusable devices
+            // 
             if (
                deviceInformation.Id.StartsWith(@"\\?\ACPI") ||
 
                // reported in https://github.com/nanoframework/Home/issues/332
                // COM ports from Broadcom 20702 Bluetooth adapter
-               deviceInformation.Id.Contains(@"VID_0A5C+PID_21E1")
-               
+               deviceInformation.Id.Contains(@"VID_0A5C+PID_21E1") || 
+
+               // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
+               // COM ports from Broadcom 20702 Bluetooth adapter
+                deviceInformation.Id.Contains(@"VID&00010057_PID&0023")
                )
             {
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(deviceInformation.Id));
