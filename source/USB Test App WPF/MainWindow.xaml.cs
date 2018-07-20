@@ -289,18 +289,17 @@ namespace Serial_Test_App_WPF
             (sender as Button).IsEnabled = false;
 
             List<byte[]> assemblies = new List<byte[]>(4);
-            // test data
-            // mscorlib v(36500 bytes)
-            // Windows.Storage.Streams v(6180 bytes)
-            // Windows.Devices.SerialCommunication v(3172 bytes)
-            // SerialCommunication v1.0.6578.34099(1180 bytes)
+            // test data (equivalent to deploying the Blinky test app)
+            // mscorlib v1.0.0.0 (38448 bytes)
+            // nanoFramework.Runtime.Events v1.0.0.0 (2568 bytes)
+            // Windows.Devices.Gpio v1.0.0.0 (3800 bytes)
+            // Blinky v1.0.0.0 (752 bytes)
             // assemblies to device...total size in bytes is 47032.
 
-            var p1Size = 36500;
-            var p2Size = 6180;
-            var p3Size = 3172;
-            var p4Size = 1180;
-
+            var p1Size = 38448;
+            var p2Size = 2568;
+            var p3Size = 3800;
+            var p4Size = 752;
 
             assemblies.Add(new byte[p1Size]);
             assemblies[0][0] = 0x5;

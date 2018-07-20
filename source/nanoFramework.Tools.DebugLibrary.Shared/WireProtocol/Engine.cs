@@ -2689,6 +2689,17 @@ namespace nanoFramework.Tools.Debugger
                 // apply a filter so that we take only the blocks flag for deployment 
                 var deploymentBlob = flashSectorMap.Where(s => ((s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)).Select(s => s.ToDeploymentSector()).ToList();
 
+                // rough check if there is enough room to deploy
+                if(deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size) < deployLength)
+                {
+                    // compose error message
+                    string errorMessage = $"Deployment storage (total size: {deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size)} bytes) was not large enough to fit assemblies to deploy (total size: {deployLength} bytes)";
+
+                    progress?.Report(errorMessage);
+
+                    throw new Exception(errorMessage);
+                }
+
                 while (assemblies.Count > 0)
                 {
                     //
@@ -2709,31 +2720,42 @@ namespace nanoFramework.Tools.Debugger
                     while (remainingBytes > 0)
                     {
                         // find the next sector with available space
-                        var sector = deploymentBlob.First(s => s.AvailableSpace > 0);
+                        var sector = deploymentBlob.FirstOrDefault(s => s.AvailableSpace > 0);
 
-                        int positionInSector = sector.Size - sector.AvailableSpace;
-                        int bytesToCopy = Math.Min(sector.AvailableSpace, remainingBytes);
+                        // check if there is available space
+                        if (sector == null)
+                        {
+                            // couldn't find any more free blocks
+                            break;
+                        }
+                        else
+                        {
+                            int positionInSector = sector.Size - sector.AvailableSpace;
+                            int bytesToCopy = Math.Min(sector.AvailableSpace, remainingBytes);
 
-                        byte[] tempBuffer = new byte[bytesToCopy];
+                            byte[] tempBuffer = new byte[bytesToCopy];
 
-                        Array.Copy(assemblies.First(), tempBuffer, bytesToCopy);
-                        sector.DeploymentData = tempBuffer;
+                            Array.Copy(assemblies.First(), tempBuffer, bytesToCopy);
+                            sector.DeploymentData = tempBuffer;
 
-                        remainingBytes -= bytesToCopy;
-                        currentPosition += bytesToCopy;
+                            remainingBytes -= bytesToCopy;
+                            currentPosition += bytesToCopy;
+                        }
                     }
 
                     if (remainingBytes == 0)
                     {
-                        // asembly fully stored for deployment, remove it from the list
+                        // assembly fully stored for deployment, remove it from the list
                         assemblies.RemoveAt(0);
                     }
                     else
                     {
-                        // couldn't find enough space to deploy assembly!!
-                        progress?.Report($"Deployment storage (total size: {deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size)} bytes) was not large enough to fit assemblies to deploy (total size: {deployLength} bytes)");
+                        // shouldn't happen, but couldn't find enough space to deploy all the assemblies!!
+                        string errorMessage = $"Couldn't find a free deployment block to complete the deployment (remaining: {remainingBytes} bytes)";
 
-                        return false;
+                        progress?.Report(errorMessage);
+
+                        throw new Exception(errorMessage);
                     }
                 }
 
