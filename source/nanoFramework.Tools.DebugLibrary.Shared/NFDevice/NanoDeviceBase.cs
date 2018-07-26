@@ -311,6 +311,13 @@ namespace nanoFramework.Tools.Debugger
                         break;
 
                     case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG:
+                        if (EraseOptions.Configuration == (options & EraseOptions.Configuration))
+                        {
+                            eraseSectors.Add(flashSectorData);
+                            total++;
+                        }
+                        break;
+
                     case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE:
                         if (EraseOptions.Firmware == (options & EraseOptions.Firmware))
                         {
