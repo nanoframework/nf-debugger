@@ -1,20 +1,10 @@
-/*
-  In App.xaml:
-  <Application.Resources>
-      <vm:ViewModelLocator xmlns:vm="clr-namespace:Serial_Test_App_WPF"
-                           x:Key="Locator" />
-  </Application.Resources>
-  
-  In the View:
-  DataContext="{Binding Source={StaticResource Locator}, Path=ViewModelName}"
+//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
 
-  You can also use Blend to do all this with the tool's support.
-  See http://www.galasoft.ch/mvvm
-*/
-
-using GalaSoft.MvvmLight;
+using CommonServiceLocator;
 using GalaSoft.MvvmLight.Ioc;
-using Microsoft.Practices.ServiceLocation;
 
 namespace Serial_Test_App_WPF.ViewModel
 {
