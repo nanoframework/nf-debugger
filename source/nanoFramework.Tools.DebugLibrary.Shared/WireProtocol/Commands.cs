@@ -317,9 +317,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 {
                     Marker = new byte[4];
                     Id = 0xFFFFFF;
-                    Authentication = (byte)AuthenticationType.None ;
-                    Encryption = (byte)EncryptionType.None;
-                    Radio = (byte)RadioType.None;
+                    Authentication = 0;
+                    Encryption = 0;
+                    Radio = 0;
                     Ssid = new byte[32];
                     Password = new byte[64];
                 }
@@ -328,9 +328,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 {
                     Marker = new byte[4];
                     Id = 0xFFFFFF;
-                    Authentication = (byte)AuthenticationType.None;
-                    Encryption = (byte)EncryptionType.None;
-                    Radio = (byte)RadioType.None;
+                    Authentication = 0;
+                    Encryption = 0;
+                    Radio = 0;
                     Ssid = new byte[32];
                     Password = new byte[64];
                 }

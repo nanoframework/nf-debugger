@@ -4,6 +4,8 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using System.ComponentModel.DataAnnotations;
+
 namespace nanoFramework.Tools.Debugger
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -12,24 +14,27 @@ namespace nanoFramework.Tools.Debugger
     public enum RadioType : byte
     {
         /// <summary>
-        /// Not defined.
-        /// </summary>
-        None = 0,
-        /// <summary>
         /// 802.11a-compatible radio.
         /// </summary>
+        [Display(Description = "802.11a")]
         _802_11a = 1,
+
         /// <summary>
         /// 802.11b-compatible radio.
         /// </summary>
+        [Display(Description = "802.11b")]
         _802_11b = 2,
+
         /// <summary>
         /// 802.11g-compatible radio.
         /// </summary>
+        [Display(Description = "802.11g")]
         _802_11g = 4,
+
         /// <summary>
         /// 802.11n-compatible radio.
         /// </summary>
+        [Display(Description = "802.11n")]
         _802_11n = 8,
     }
 }
