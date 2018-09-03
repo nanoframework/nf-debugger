@@ -3,10 +3,12 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using PropertyChanged;
 using System.ComponentModel.DataAnnotations;
 
 namespace nanoFramework.Tools.Debugger
 {
+    [AddINotifyPropertyChangedInterface]
     public class Wireless80211ConfigurationPropertiesBase
     {
         public uint Id { get; set; }

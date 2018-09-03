@@ -3,11 +3,13 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using PropertyChanged;
 using System;
 using System.Net;
 
 namespace nanoFramework.Tools.Debugger
 {
+    [AddINotifyPropertyChangedInterface]
     public class NetworkConfigurationPropertiesBase
     {
         public IPAddress IPv4Address { get; set; }
@@ -25,5 +27,11 @@ namespace nanoFramework.Tools.Debugger
         public Nullable<uint> SpecificConfigId;
         public bool AutomaticDNS;
         public AddressMode StartupAddressMode { get; set; }
+
+        public NetworkConfigurationPropertiesBase()
+        {
+            MacAddress = new byte[] { 0, 0, 0, 0, 0, 0 };
+            InterfaceType = NetworkInterfaceType.Ethernet;
+        }
     }
 }
