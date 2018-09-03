@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using PropertyChanged;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -121,13 +122,14 @@ namespace nanoFramework.Tools.Debugger
 
         /////////////////////////////////////////////////////////////
 
+        [AddINotifyPropertyChangedInterface]
         public class NetworkConfigurationProperties : NetworkConfigurationPropertiesBase
         {
             internal const uint EmptySpecificConfigValue = uint.MaxValue;
 
             public bool IsUnknown { get; set; } = true;
 
-            public NetworkConfigurationProperties()
+            public NetworkConfigurationProperties() : base()
             {
 
             }
@@ -197,6 +199,7 @@ namespace nanoFramework.Tools.Debugger
 
         }
 
+        [AddINotifyPropertyChangedInterface]
         public class Wireless80211ConfigurationProperties : Wireless80211ConfigurationPropertiesBase
         {
             public bool IsUnknown { get; set; } = true;

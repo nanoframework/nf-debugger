@@ -146,6 +146,9 @@ For .NET look for the respective Nuget package.</PackageReleaseNotes>
     <PackageReference Include="NuGet.Build.Packaging">
       <Version>0.2.2</Version>
     </PackageReference>
+    <PackageReference Include="PropertyChanged.Fody">
+      <Version>2.5.9</Version>
+    </PackageReference>
     <PackageReference Include="System.Threading.Tasks.Extensions">
       <Version>4.5.1</Version>
     </PackageReference>
@@ -155,6 +158,9 @@ For .NET look for the respective Nuget package.</PackageReleaseNotes>
   </ItemGroup>
   <ItemGroup>
     <None Include="key.snk" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="FodyWeavers.xml" />
   </ItemGroup>
   <Import Project="..\nanoFramework.Tools.DebugLibrary.Shared\nanoFramework.Tools.DebugLibrary.Net.projitems" Label="Shared" />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

@@ -60,6 +60,9 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
   <ItemGroup>
     <Reference Include="PresentationFramework" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="PropertyChanged, Version=2.5.9.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
+      <HintPath>..\packages\PropertyChanged.Fody.2.5.9\lib\net452\PropertyChanged.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Runtime" />
@@ -93,7 +96,9 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
   <ItemGroup>
     <Analyzer Include="..\packages\UwpDesktop.10.0.14393.3\analyzers\dotnet\UwpDesktopAnalyzer.dll" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="FodyWeavers.xml" />
+  </ItemGroup>
   <Import Project="..\nanoFramework.Tools.DebugLibrary.Shared\nanoFramework.Tools.DebugLibrary.Net.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
@@ -103,7 +108,9 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
     <Error Condition="!Exists('..\packages\UwpDesktop.10.0.14393.3\build\portable-net45+uap\UwpDesktop.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\UwpDesktop.10.0.14393.3\build\portable-net45+uap\UwpDesktop.targets'))" />
     <Error Condition="!Exists('..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.props'))" />
     <Error Condition="!Exists('..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.targets'))" />
+    <Error Condition="!Exists('..\packages\Fody.3.2.0\build\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.3.2.0\build\Fody.targets'))" />
   </Target>
   <Import Project="..\packages\UwpDesktop.10.0.14393.3\build\portable-net45+uap\UwpDesktop.targets" Condition="Exists('..\packages\UwpDesktop.10.0.14393.3\build\portable-net45+uap\UwpDesktop.targets')" />
   <Import Project="..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.targets" Condition="Exists('..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.targets')" />
+  <Import Project="..\packages\Fody.3.2.0\build\Fody.targets" Condition="Exists('..\packages\Fody.3.2.0\build\Fody.targets')" />
 </Project>
