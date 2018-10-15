@@ -8,8 +8,6 @@ using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -27,68 +25,95 @@ namespace nanoFramework.Tools.Debugger
             Valid = false;
         }
 
-        public async Task<bool> GetDeviceInfo()
+        public bool GetDeviceInfo()
         {
-            // TODO replace with token argument
-            CancellationTokenSource cancelTSource = new CancellationTokenSource();
-
-
             if (!Dbg.IsConnectedTonanoCLR) return false;
 
             // get app domains from device
-            await GetAppDomainsAsync(cancelTSource.Token);
+            if (GetAppDomains())
+            {
+                // get assemblies from device
+                if (GetAssemblies())
+                {
+                    Valid = true;
 
-            // get assemblies from device
-            await GetAssembliesAsync(cancelTSource.Token);
+                    return true;
+                }
+            }
 
-            Valid = true;
-
-            return true;
+            return false;
         }
 
-        private async Task GetAppDomainsAsync(CancellationToken cancellationToken)
+        private bool GetAppDomains()
         {
             if (Dbg.Capabilities.AppDomains)
             {
-                Commands.Debugging_TypeSys_AppDomains.Reply domainsReply = await Dbg.GetAppDomainsAsync();
+                Commands.Debugging_TypeSys_AppDomains.Reply domainsReply = Dbg.GetAppDomains();
                 // TODO add cancellation token code
 
                 if (domainsReply != null)
                 {
                     foreach (uint id in domainsReply.Data)
                     {
-                        Commands.Debugging_Resolve_AppDomain.Reply reply = await Dbg.ResolveAppDomainAsync(id);
+                        Commands.Debugging_Resolve_AppDomain.Reply reply = Dbg.ResolveAppDomain(id);
                         // TODO add cancellation token code
                         if (reply != null)
                         {
                             m_Domains.Add(new AppDomainInfo(id, reply));
                         }
                     }
+
+                    // sanity check
+                    if (m_Domains.Count == domainsReply.Data.Length)
+                    {
+                        // we have all the domains listed
+                        return true;
+                    }
                 }
+
+                // default to failure
+                return false;
+            }
+            else
+            {
+                // no app domains, so we are good here
+                return true;
             }
         }
 
-        private async Task GetAssembliesAsync(CancellationToken cancellationToken)
+        private bool GetAssemblies()
         {
-            List<Commands.DebuggingResolveAssembly> reply = await Dbg.ResolveAllAssembliesAsync(cancellationToken);
+            // clear assembly list
+            m_AssemblyInfos = new List<IAssemblyInfo>();
 
-            if (reply != null)
-                foreach (Commands.DebuggingResolveAssembly resolvedAssm in reply)
+            List<Commands.DebuggingResolveAssembly> reply = Dbg.ResolveAllAssemblies();
+
+            foreach (Commands.DebuggingResolveAssembly resolvedAssm in reply)
+            {
+                AssemblyInfoFromResolveAssembly ai = new AssemblyInfoFromResolveAssembly(resolvedAssm);
+
+                foreach (IAppDomainInfo adi in m_Domains)
                 {
-                    AssemblyInfoFromResolveAssembly ai = new AssemblyInfoFromResolveAssembly(resolvedAssm);
-
-                    foreach (IAppDomainInfo adi in m_Domains)
+                    if (Array.IndexOf<uint>(adi.AssemblyIndices, ai.Index) != -1)
                     {
-                        if (Array.IndexOf<uint>(adi.AssemblyIndices, ai.Index) != -1)
-                        {
-                            ai.AddDomain(adi);
-                        }
+                        ai.AddDomain(adi);
                     }
-
-                    m_AssemblyInfos.Add(ai);
                 }
-        }
 
+                m_AssemblyInfos.Add(ai);
+            }
+
+            // sanity check
+            if (m_AssemblyInfos.Count == reply.Count)
+            {
+                // we have all the assemblies listed
+                return true;
+            }
+
+            // default to failure
+            return false;
+        }
+        
         private Engine Dbg { get { return m_self.DebugEngine; } }
 
         public bool Valid { get; internal set; }
@@ -163,7 +188,11 @@ namespace nanoFramework.Tools.Debugger
             get { return m_AssemblyInfos.ToArray(); }
         }
 
+        public List<CLRCapabilities.NativeAssemblyProperties> NativeAssemblies => Dbg.Capabilities.NativeAssemblies;
+
         public string ImageBuildDate => Dbg.Capabilities.SoftwareVersion.BuildDate;
+
+        public string ImageCompilerInfo => Dbg.Capabilities.SoftwareVersion.CompilerInfo;
 
         public Version ImageCompilerVersion => Dbg.Capabilities.SoftwareVersion.CompilerVersion;
 
@@ -175,24 +204,37 @@ namespace nanoFramework.Tools.Debugger
                 {
                     StringBuilder output = new StringBuilder();
 
-                    output.AppendLine(String.Format("HAL build info: {0}, {1}", HalBuildVersion?.ToString(), HalBuildInfo?.TrimEnd('\0')));
-                    output.AppendLine(String.Format($"Image build @ {ImageBuildDate.TrimEnd('\0')} GNU ARM GCC v{ ImageCompilerVersion.ToString() }"));
-                    output.AppendLine(String.Format("OEM Product codes (vendor, model, SKU): {0}, {1}, {2}", OEM.ToString(), Model.ToString(), SKU.ToString()));
+                    output.AppendLine($"HAL build info: {HalBuildVersion?.ToString()}, {HalBuildInfo}");
+                    output.AppendLine();
+                    output.AppendLine($"Image build @ { ImageBuildDate } { ImageCompilerInfo } v{ ImageCompilerVersion.ToString() }");
+                    output.AppendLine();
+                    output.AppendLine($"OEM Product codes (vendor, model, SKU): {OEM.ToString()}, {Model.ToString()}, {SKU.ToString()}");
+                    output.AppendLine();
                     output.AppendLine("Serial Numbers (module, system):");
-                    output.AppendLine("  " + ModuleSerialNumber?.TrimEnd('\0'));
-                    output.AppendLine("  " + SystemSerialNumber?.TrimEnd('\0'));
-                    output.AppendLine(String.Format("Solution Build Info: {0}, {1}", SolutionBuildVersion?.ToString(), SolutionBuildInfo?.TrimEnd('\0')));
+                    output.AppendLine("  " + ModuleSerialNumber);
+                    output.AppendLine("  " + SystemSerialNumber);
+                    output.AppendLine();
+                    output.AppendLine($"Solution Build Info: {SolutionBuildVersion?.ToString()}, {SolutionBuildInfo}");
 
+                    output.AppendLine();
                     output.AppendLine("AppDomains:");
                     foreach (IAppDomainInfo adi in AppDomains)
                     {
-                        output.AppendLine(String.Format("  {0}, id={1}", adi.Name, adi.ID));
+                        output.AppendLine($"  {adi.Name}, id={adi.ID}");
                     }
 
+                    output.AppendLine();
                     output.AppendLine("Assemblies:");
                     foreach (IAssemblyInfo ai in Assemblies)
                     {
-                        output.AppendLine(String.Format("  {0}, {1}", ai.Name, ai.Version));
+                        output.AppendLine($"  {ai.Name}, {ai.Version}");
+                    }
+
+                    output.AppendLine();
+                    output.AppendLine("Native Assemblies:");
+                    foreach (CLRCapabilities.NativeAssemblyProperties assembly in NativeAssemblies)
+                    {
+                        output.AppendLine($"  {assembly.Name} v{assembly.Version}, checksum 0x{assembly.Checksum.ToString("X8")}");
                     }
 
                     return output.ToString();

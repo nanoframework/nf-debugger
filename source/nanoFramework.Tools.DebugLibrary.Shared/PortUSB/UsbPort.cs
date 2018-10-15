@@ -33,7 +33,6 @@ namespace nanoFramework.Tools.Debugger.Usb
 
         // counter of device watchers completed
         private int deviceWatchersCompletedCount = 0;
-        private bool isAllDevicesEnumerated = false;
 
         private object cancelIoLock = new object();
         private static SemaphoreSlim semaphore;
@@ -128,7 +127,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             // Start all device watchers
             watchersStarted = true;
             deviceWatchersCompletedCount = 0;
-            isAllDevicesEnumerated = false;
+            IsDevicesEnumerationComplete = false;
 
             foreach (DeviceWatcher deviceWatcher in mapDeviceWatchersToDeviceSelector.Keys)
             {
@@ -206,7 +205,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             // search the device list for a device with a matching interface ID
             var usbMatch = FindDevice(deviceInformation.Id);
 
-            Debug.WriteLine("New USB device: " + deviceInformation.Id);
+            OnLogMessageAvailable(NanoDevicesEventSource.Log.CandidateDevice(deviceInformation.Id));
 
             // Add the device if it's new
             if (usbMatch == null)
@@ -225,7 +224,6 @@ namespace nanoFramework.Tools.Debugger.Usb
                     //newMFDevice.DeviceInformation = new UsbDeviceInformation(deviceInformation, deviceSelector);
                     newNanoFrameworkDevice.Device.DeviceInformation = new UsbDeviceInformation(deviceInformation, deviceSelector);
                     newNanoFrameworkDevice.Parent = this;
-                    newNanoFrameworkDevice.DebugEngine = new Engine(this, newNanoFrameworkDevice);
                     newNanoFrameworkDevice.Transport = TransportType.Usb;
 
                     // Add the new element to the end of the list of devices
@@ -238,7 +236,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                         // the device description format is kept to maintain backwards compatibility
                         newNanoFrameworkDevice.Description = EventHandlerForUsbDevice.Current.DeviceInformation.Name + "_" + await GetDeviceDescriptor(5);
 
-                        Debug.WriteLine("Add new nanoFramework device to list: " + newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
+                        NanoDevicesEventSource.Log.ValidDevice(newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
 
                         // done here, close device
                         EventHandlerForUsbDevice.Current.CloseDevice();
@@ -250,6 +248,8 @@ namespace nanoFramework.Tools.Debugger.Usb
                         NanoFrameworkDevices.Remove(newNanoFrameworkDevice as NanoDeviceBase);
                         UsbDevices.Remove(newNanoFrameworkDevice.Device.DeviceInformation);
 
+                        NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id);
+
                         // can't do anything with this one, better dispose it
                         newNanoFrameworkDevice.Dispose();
                     }
@@ -257,13 +257,6 @@ namespace nanoFramework.Tools.Debugger.Usb
                 else
                 {
                     // this NanoFramework device is already on the list
-                    // stop the dispose countdown!
-                    nanoFrameworkDeviceMatch.StopCountdownForDispose();
-
-                    // set port parent
-                    //(mfDeviceMatch as MFDevice<MFUsbDevice>).Device.Parent = this;
-                    //// instantiate a debug engine
-                    //(mfDeviceMatch as MFDevice<MFUsbDevice>).Device.DebugEngine = new Engine(this, (mfDeviceMatch as MFDevice<MFUsbDevice>));
                 }
             }
         }
@@ -273,36 +266,14 @@ namespace nanoFramework.Tools.Debugger.Usb
             // Removes the device entry from the internal list; therefore the UI
             var deviceEntry = FindDevice(deviceId);
 
-            Debug.WriteLine("USB device removed: " + deviceId);
+            NanoDevicesEventSource.Log.DeviceDeparture(deviceId);
 
             UsbDevices.Remove(deviceEntry);
-
-            // start thread to dispose and remove device from collection if it doesn't enumerate again in 2 seconds
-            Task.Factory.StartNew(() =>
-            {
-                // get device
-                var device = FindNanoFrameworkDevice(deviceId);
-
-                if (device != null)
-                {
-                    // set device to dispose if it doesn't come back in 2 seconds
-                    device.StartCountdownForDispose();
-
-                    // hold here for the same time as the default timer of the dispose timer
-                    new ManualResetEvent(false).WaitOne(TimeSpan.FromSeconds(2.5));
-
-                    // check is object was disposed
-                    if((device as NanoDevice<NanoUsbDevice>).KillFlag)
-                    {
-                        // yes, remove it from collection
-                        NanoFrameworkDevices.Remove(device);
-
-                        Debug.WriteLine("Removing device " + device.Description);
-
-                        device = null;
-                    }
-                }
-            });
+            // get device
+            var device = FindNanoFrameworkDevice(deviceId);
+            // yes, remove it from collection
+            NanoFrameworkDevices.Remove(device);
+            device = null;
         }
 
         private void ClearDeviceEntries()
@@ -376,10 +347,10 @@ namespace nanoFramework.Tools.Debugger.Usb
 
             if (deviceWatchersCompletedCount == mapDeviceWatchersToDeviceSelector.Count)
             {
-                Debug.WriteLine($"USB device enumeration completed. Found { UsbDevices.Count } devices");
+                NanoDevicesEventSource.Log.UsbDeviceEnumerationCompleted(UsbDevices.Count);
 
                 // all watchers have completed enumeration
-                isAllDevicesEnumerated = true;
+                IsDevicesEnumerationComplete = true;
 
                 // fire event that USB enumeration is complete 
                 OnDeviceEnumerationCompleted();
@@ -462,12 +433,12 @@ namespace nanoFramework.Tools.Debugger.Usb
 
         #endregion
 
-        public async Task<bool> ConnectDeviceAsync(NanoDeviceBase device)
+        public Task<bool> ConnectDeviceAsync(NanoDeviceBase device)
         {
-            return await ConnectUsbDeviceAsync((device as NanoDevice<NanoUsbDevice>).Device.DeviceInformation as UsbDeviceInformation);
+            return ConnectUsbDeviceAsync((device as NanoDevice<NanoUsbDevice>).Device.DeviceInformation as UsbDeviceInformation);
         }
 
-        private async Task<bool> ConnectUsbDeviceAsync(UsbDeviceInformation usbDeviceInfo)
+        private Task<bool> ConnectUsbDeviceAsync(UsbDeviceInformation usbDeviceInfo)
         {
             // try to determine if we already have this device opened.
             if (EventHandlerForUsbDevice.Current != null)
@@ -475,14 +446,14 @@ namespace nanoFramework.Tools.Debugger.Usb
                 // device matches
                 if (EventHandlerForUsbDevice.Current.DeviceInformation == usbDeviceInfo.DeviceInformation)
                 {
-                    return true;
+                    return Task.FromResult(true);
                 }
             }
 
             // Create an EventHandlerForDevice to watch for the device we are connecting to
             EventHandlerForUsbDevice.CreateNewEventHandlerForDevice();
 
-            return await EventHandlerForUsbDevice.Current.OpenDeviceAsync(usbDeviceInfo.DeviceInformation, usbDeviceInfo.DeviceSelector);
+            return EventHandlerForUsbDevice.Current.OpenDeviceAsync(usbDeviceInfo.DeviceInformation, usbDeviceInfo.DeviceSelector);
         }
 
         public void DisconnectDevice(NanoDeviceBase device)
@@ -536,7 +507,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                 try
                 {
 
-                    // Don't start any IO if the task has been canceled
+                    // Don't start any IO if the task has been cancelled
                     lock (cancelIoLock)
                     {
                         // set this makes sure that an exception is thrown when the cancellation token is set
@@ -544,7 +515,7 @@ namespace nanoFramework.Tools.Debugger.Usb
 
                         // Now the buffer data is actually flushed out to the device.
                         // We should implement a cancellation Token here so we are able to stop the task operation explicitly if needed
-                        // The completion function should still be called so that we can properly handle a canceled task
+                        // The completion function should still be called so that we can properly handle a cancelled task
                         storeAsyncTask = writer.StoreAsync().AsTask(linkedCancelationToken);
                     }
 
@@ -562,8 +533,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             }
             else
             {
-                // FIXME 
-                // NotifyDeviceNotConnected
+                throw new DeviceNotConnectedException();
             }
 
             return bytesWritten;
@@ -595,20 +565,18 @@ namespace nanoFramework.Tools.Debugger.Usb
 
                 Task<UInt32> loadAsyncTask;
 
-                //Debug.WriteLine("### waiting");
                 await semaphore.WaitAsync();
-                //Debug.WriteLine("### got it");
 
                 try
                 {
-                    //// Don't start any IO if the task has been canceled
+                    //// Don't start any IO if the task has been cancelled
                     //lock (cancelIoLock)
                     //{
                     //    // set this makes sure that an exception is thrown when the cancellation token is set
                     //    linkedCancelationToken.ThrowIfCancellationRequested();
 
                     //    // We should implement a cancellation Token here so we are able to stop the task operation explicitly if needed
-                    //    // The completion function should still be called so that we can properly handle a canceled task
+                    //    // The completion function should still be called so that we can properly handle a cancelled task
                     //    loadAsyncTask = reader.LoadAsync(bytesToRead).AsTask(linkedCancelationToken);
                     //}
 
@@ -649,15 +617,13 @@ namespace nanoFramework.Tools.Debugger.Usb
                 finally
                 {
                     semaphore.Release();
-                    //Debug.WriteLine("### released");
                 }
 
                 //return reader;
             }
             else
             {
-                // FIXME 
-                // NotifyDeviceNotConnected
+                throw new DeviceNotConnectedException();
             }
 
             // return empty byte array
@@ -665,6 +631,5 @@ namespace nanoFramework.Tools.Debugger.Usb
         }
 
         #endregion
-
     }
 }

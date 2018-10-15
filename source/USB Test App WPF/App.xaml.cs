@@ -3,7 +3,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using Microsoft.Practices.ServiceLocation;
+using CommonServiceLocator;
 using nanoFramework.ANT.Services.NanoFrameworkService;
 using nanoFramework.Tools.Debugger;
 using Serial_Test_App_WPF.ViewModel;

@@ -8,8 +8,8 @@ namespace nanoFramework.Tools.Debugger
 {
     public enum PingConnectionType
     {
-        NanoCLR,
-        NanoBooter,
+        nanoCLR,
+        nanoBooter,
         NoConnection,
     }
 }

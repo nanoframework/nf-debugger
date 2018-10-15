@@ -13,7 +13,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public interface IController
     {
-        Packet NewPacket();
+        ushort GetNextSequenceId();
 
         void StopProcessing();
 
@@ -25,8 +25,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         Converter CreateConverter();
 
-        Task<bool> QueueOutputAsync(MessageRaw raw, CancellationToken cancellationToken);
-
-        Task<uint> SendRawBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken);
+        Task<bool> SendAsync(MessageRaw raw, CancellationToken cancellationToken);
     }
 }

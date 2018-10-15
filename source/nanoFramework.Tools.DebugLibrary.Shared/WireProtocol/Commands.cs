@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -27,8 +28,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Monitor_DeploymentMap = 0x0000000B;
         public const uint c_Monitor_FlashSectorMap = 0x0000000C;
         public const uint c_Monitor_OemInfo = 0x0000000E;
+        public const uint c_Monitor_QueryConfiguration = 0x0000000F;
+        public const uint c_Monitor_UpdateConfiguration = 0x00000010;
 
-        public class Monitor_Message //vvv : IConverter
+        public class Monitor_Message : IConverter
         {
             public byte[] m_data = null;
 
@@ -39,8 +42,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             public override string ToString()
             {
-                // FIXME
-                return ""; //Encoding.UTF8.GetString(m_data);
+                Boolean completed;
+                Int32 bytesUsed, charsUsed;
+                var chars = new Char[m_data.Length];
+
+                Encoding.UTF8.GetDecoder().Convert(m_data, 0, m_data.Length, chars, 0, m_data.Length, false, out bytesUsed, out charsUsed, out completed);
+                return new String(chars, 0, charsUsed);
             }
         }
 
@@ -89,6 +96,17 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint c_Ping_DbgFlag_Stop = 0x00000001;
             public const uint c_Ping_DbgFlag_BigEndian = 0x02000002;
             public const uint c_Ping_DbgFlag_AppExit = 0x00000004;
+
+            // flags specific to Wire Protocol capabilities
+            public const uint c_Ping_WPFlag_SupportsCRC32 = 0x00000010;
+
+            // Wire Protocol packet size (3rd position)
+            public const uint Monitor_Ping_c_PacketSize_Position = 0x00000F00;
+            // default packet size is 1024
+            public const uint Monitor_Ping_c_PacketSize_1024 = 0x00000100;
+            public const uint Monitor_Ping_c_PacketSize_0512 = 0x00000200;
+            public const uint Monitor_Ping_c_PacketSize_0256 = 0x00000300;
+            public const uint Monitor_Ping_c_PacketSize_0128 = 0x00000400;
 
             public uint m_source;
             public uint m_dbg_flags;
@@ -221,14 +239,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        public class Monitor_Reboot
+        public class MonitorReboot
         {
-            public const uint c_NormalReboot = 0;
-            public const uint c_EnterBootloader = 1;
-            public const uint c_ClrRebootOnly = 2;
-            public const uint c_ClrWaitForDbg = 4;
-
-            public uint m_flags = 0;
+            public uint flags = 0;
         }
 
         public class Monitor_DeploymentMap
@@ -252,6 +265,96 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     m_map = Enumerable.Range(0, num).Select(x => new DeploymentData()).ToList();
 
                 }
+            }
+        }
+
+        public class Monitor_QueryConfiguration
+        {
+            public uint Configuration;
+
+            public uint BlockIndex;
+
+            public class Reply : IConverter
+            {
+                public byte[] Data = null;
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    Data = new byte[size];
+                }
+            }
+
+            public class NetworkConfiguration : NetworkConfigurationBase, IConverter
+            {
+                public NetworkConfiguration()
+                {
+                    Marker = new byte[4];
+                    MacAddress = new byte[6];
+                    IPv6Address = new uint[4];
+                    IPv6NetMask = new uint[4];
+                    IPv6GatewayAddress = new uint[4];
+                    IPv6DNSAddress1 = new uint[4];
+                    IPv6DNSAddress2 = new uint[4];
+                    StartupAddressMode = (byte)AddressMode.Invalid;
+                }
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    Marker = new byte[4];
+                    MacAddress = new byte[6];
+                    IPv6Address = new uint[4];
+                    IPv6NetMask = new uint[4];
+                    IPv6GatewayAddress = new uint[4];
+                    IPv6DNSAddress1 = new uint[4];
+                    IPv6DNSAddress2 = new uint[4];
+                    StartupAddressMode = (byte)AddressMode.Invalid;
+                }
+            }
+
+            public class NetworkWirelessConfiguration : Wireless80211ConfigurationBase, IConverter
+            {
+                public NetworkWirelessConfiguration()
+                {
+                    Marker = new byte[4];
+                    Id = 0xFFFFFF;
+                    Authentication = 0;
+                    Encryption = 0;
+                    Radio = 0;
+                    Ssid = new byte[32];
+                    Password = new byte[64];
+                }
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    Marker = new byte[4];
+                    Id = 0xFFFFFF;
+                    Authentication = 0;
+                    Encryption = 0;
+                    Radio = 0;
+                    Ssid = new byte[32];
+                    Password = new byte[64];
+                }
+            }
+        }
+
+        public class Monitor_UpdateConfiguration
+        {
+            public uint Configuration;
+            public uint BlockIndex;
+            public uint Length = 0;
+            public byte[] Data = null;
+
+            public class Reply
+            {
+                public uint ErrorCode;
+            };
+
+            public void PrepareForSend(byte[] data, int length)
+            {
+                Length = (uint)length;
+                Data = new byte[length];
+
+                Array.Copy(data, 0, Data, 0, length);
             }
         }
 
@@ -295,6 +398,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public const uint c_Debugging_TypeSys_Assemblies = 0x00020040; // Lists all the assemblies in the system.
         public const uint c_Debugging_TypeSys_AppDomains = 0x00020044; // Lists all the AppDomans loaded.
+        public const uint c_Debugging_TypeSys_InteropNativeAssemblies = 0x00020045; // Lists all the Interop Native Assemblies available in the device.
 
         public const uint c_Debugging_Resolve_Assembly = 0x00020050; // Resolves an assembly.
         public const uint c_Debugging_Resolve_Type = 0x00020051; // Resolves a type to a string.
@@ -311,10 +415,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Debugging_MFUpdate_GetMissingPkts = 0x00020061; // 
 
         public const uint c_Debugging_UpgradeToSsl = 0x00020069; // 
-
-        public const uint c_Debugging_Lcd_NewFrame = 0x00020070; // Reports a new frame sent to the LCD.
-        public const uint c_Debugging_Lcd_NewFrameData = 0x00020071; // Reports a new frame sent to the LCD, with its contents.
-        public const uint c_Debugging_Lcd_GetFrame = 0x00020072; // Requests the current frame.
 
         public const uint c_Debugging_Button_Report = 0x00020080; // Reports a button press/release.
         public const uint c_Debugging_Button_Inject = 0x00020081; // Injects a button press/release.
@@ -343,32 +443,81 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        public class Debugging_Execution_ChangeConditions
+        public class DebuggingExecutionChangeConditions
         {
-            public const uint c_Unused00000001 = 0x00000001;
-            public const uint c_Unused00000002 = 0x00000002;
-            public const uint c_Unused00000004 = 0x00000004;
-            public const uint c_LcdSendFrame = 0x00000100;
-            public const uint c_LcdSendFrameNotification = 0x00000200;
-            public const uint c_State_Initialize = 0x00000000;
-            public const uint c_State_ProgramRunning = 0x00000400;
-            public const uint c_State_ProgramExited = 0x00000800;
-            public const uint c_State_Mask = 0x00000c00;
-            public const uint c_BreakpointsDisabled = 0x00001000;
-            public const int c_fDebugger_Quiet = 0x00010000; // Do not spew debug text to the debugger
-            public const uint c_PauseTimers = 0x04000000; // Threads associated with timers are created in "suspended" mode.
-            public const uint c_NoCompaction = 0x08000000; // Don't perform compaction during execution.
-            public const uint c_SourceLevelDebugging = 0x10000000;
-            public const uint c_RebootPending = 0x20000000;
-            public const uint c_Enabled = 0x40000000;
-            public const uint c_Stopped = 0x80000000;
-
-            public uint m_set = 0;
-            public uint m_reset = 0;
-
-            public class Reply
+            [Flags]
+            /// <summary>
+            /// State for debugger execution on target.
+            /// </summary>
+            public enum State : uint
             {
-                public uint m_current = 0;
+                /////////////////////////////////////////////////////////////////////////////////////////////////
+                // NEED TO KEEP THESE IN SYNC WITH native 'CLR_RT_ExecutionEngine' struct in nanoCLR_Runtime.h //
+                // constants there start with c_fDebugger_NNNNNNNNNNN
+                /////////////////////////////////////////////////////////////////////////////////////////////////
+
+                /// <summary>
+                /// Device is in initialization state
+                /// </summary>
+                Initialize =            0x00000000,
+
+                /// <summary>
+                /// Device has a program running
+                /// </summary>
+                ProgramRunning =        0x00000400,
+
+                /// <summary>
+                /// Device has exited a previously running program
+                /// </summary>
+                ProgramExited =         0x00000800,
+
+                /// <summary>
+                /// Breakpoints are disabled in the device
+                /// </summary>
+                BreakpointsDisabled =   0x00001000,
+
+                /// <summary>
+                /// No debugger text is to be sent by target device
+                /// </summary>
+                DebuggerQuiet =         0x00010000,
+
+                /// <summary>
+                /// Threads associated with timers are created in "suspended" mode.
+                /// </summary>
+                PauseTimers =           0x04000000,
+
+                /// <summary>
+                /// No compaction is to be performed during execution.
+                /// </summary>
+                NoCompaction =          0x08000000,
+
+                /// <summary>
+                /// Enable source level debugging
+                /// </summary>
+                SourceLevelDebugging =  0x10000000,
+
+                /// <summary>
+                /// The debugger is enabled
+                /// </summary>
+                DebuggerEnabled =       0x40000000,
+
+                /// <summary>
+                /// Debugger is stopped
+                /// </summary>
+                Stopped =               0x80000000,
+
+                Unknown =               0xFFFFFFFF,
+            }
+
+            internal const State StateMask = (State.ProgramRunning | State.ProgramExited);
+
+            // these need to be uint type (basic) so that they are properly converted to payload in the outgoing message
+            public uint FlagsToSet = 0;
+            public uint FlagsToReset = 0;
+
+            public  class Reply
+            {
+                public uint CurrentState = (uint)State.Unknown;
             }
         }
 
@@ -560,7 +709,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             public const ushort c_STEP = c_STEP_IN | c_STEP_OUT | c_STEP_OVER;
 
-            public const uint c_PID_ANY = 0xFFFFFFFF;
+            public const int c_PID_ANY = 0x7FFFFFFF;
 
             public const uint c_DEPTH_EXCEPTION_FIRST_CHANCE = 0x00000000;
             public const uint c_DEPTH_EXCEPTION_USERS_CHANCE = 0x00000001;
@@ -576,7 +725,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             public const uint c_DEPTH_UNCAUGHT = 0xFFFFFFFF;
 
-            public ushort m_id;
+            public short m_id;
             public ushort m_flags;
 
             public uint m_pid;
@@ -618,12 +767,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public class Debugging_Execution_QueryCLRCapabilities
         {
             public const uint c_CapabilityFlags = 1;
-            public const uint c_CapabilityLCD = 2;
             public const uint c_CapabilitySoftwareVersion = 3;
 
             public const uint c_CapabilityHalSystemInfo = 5;
             public const uint c_CapabilityClrInfo = 6;
             public const uint c_CapabilitySolutionReleaseInfo = 7;
+            public const uint c_CapabilityInteropNativeAssemblies = 8;
 
             public const uint c_CapabilityFlags_FloatingPort = 0x00000001;
             public const uint c_CapabilityFlags_SourceLevelDebugging = 0x00000002;
@@ -647,16 +796,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 }
             }
 
-            public class LCD
-            {
-                public uint m_width;
-                public uint m_height;
-                public uint m_bpp;
-            }
             public class SoftwareVersion
             {
-                public byte[] m_buildDate = new byte[22];
-                public uint m_compilerVersion;
+                public byte[] BuildDate = new byte[22];
+                public byte[] CompilerInfo = new byte[16];
+                public uint CompilerVersion;
             }
 
             public class OEM_MODEL_SKU
@@ -709,6 +853,44 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     m_TargetFrameworkVersion = new VersionStruct();
                 }
             }
+
+            public class NativeAssemblyDetails
+            {
+                // the fields bellow have to follow the exact type and order so that the reply of the device can be properly parsed
+
+                /////////////////////////////////////////////////////////////////////////////////////////
+                // NEED TO KEEP THESE IN SYNC WITH native 'NativeAssemblyDetails' struct in Debugger.h //
+                /////////////////////////////////////////////////////////////////////////////////////////
+
+                /// <summary>
+                /// Checksum of the assembly.
+                /// </summary>
+                public uint CheckSum;
+                public VersionStruct AssemblyVersion;
+                private byte[] _name = new byte[128];
+
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                /// <summary>
+                /// Name of the assembly.
+                /// </summary>
+                public string Name => GetZeroTerminatedString(_name, true);
+            }
+
+            public class NativeAssemblies : IConverter
+            {
+                public List<NativeAssemblyDetails> NativeInteropAssemblies;
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    // find out how many items are in the reply array 
+                    // size of the reply buffer divided by the size of NativeAssemblyDetails struct (4 + 4 * 2 + 128 * 1)
+                    int numOfAssemblies = size / (4 + 4 * 2 + 128 * 1);
+
+                    NativeInteropAssemblies = Enumerable.Range(0, numOfAssemblies).Select(x => new NativeAssemblyDetails()).ToList();
+                }
+            }
+
         }
 
         public class Debugging_Execution_SetCurrentAppDomain
@@ -1156,7 +1338,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             public uint Idx = 0;
 
-            [IgnoreDataMemberAttribute]
+            [IgnoreDataMember]
             public Reply Result;
 
             public struct Version
@@ -1197,9 +1379,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 public byte[] NameBuffer = new byte[512]; // char
                 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                [IgnoreDataMemberAttribute]
+                [IgnoreDataMember]
                 private string _name;
-                [IgnoreDataMemberAttribute]
+                [IgnoreDataMember]
                 private string _path;
 
                 private void EnsureName()
@@ -1289,44 +1471,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         return Commands.GetZeroTerminatedString(m_szName, false);
                     }
                 }
-            }
-        }
-
-        public class Debugging_Lcd_FrameData : IConverter
-        {
-            public class Header
-            {
-                public ushort m_widthInWords;
-                public ushort m_heightInPixels;
-            }
-
-            public Header m_header = null;
-            public uint[] m_data = null;
-
-            public void PrepareForDeserialize(int size, byte[] data, Converter converter)
-            {
-                m_header = new Header();
-
-                converter.Deserialize(m_header, data);
-
-                int sizeData = m_header.m_heightInPixels * m_header.m_widthInWords;
-
-                m_data = new uint[sizeData];
-            }
-        }
-
-        public class Debugging_Lcd_NewFrame
-        {
-        }
-
-        public class Debugging_Lcd_NewFrameData : Debugging_Lcd_FrameData
-        {
-        }
-
-        public class Debugging_Lcd_GetFrame
-        {
-            public class Reply : Debugging_Lcd_FrameData
-            {
             }
         }
 
@@ -1501,9 +1645,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_MemoryMap: return new Monitor_MemoryMap.Reply();
                     case c_Monitor_DeploymentMap: return new Monitor_DeploymentMap.Reply();
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap.Reply();
+                    case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration.Reply();
+                    case c_Monitor_UpdateConfiguration: return new Monitor_UpdateConfiguration.Reply();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr.Reply();
-                    case c_Debugging_Execution_ChangeConditions: return new Debugging_Execution_ChangeConditions.Reply();
+                    case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions.Reply();
                     case c_Debugging_Execution_Allocate: return new Debugging_Execution_Allocate.Reply();
                     case c_Debugging_Execution_BreakpointStatus: return new Debugging_Execution_BreakpointStatus.Reply();
                     case c_Debugging_Execution_QueryCLRCapabilities: return new Debugging_Execution_QueryCLRCapabilities.Reply();
@@ -1547,8 +1693,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Debugging_Resolve_VirtualMethod: return new Debugging_Resolve_VirtualMethod.Reply();
                     case c_Debugging_Resolve_AppDomain: return new Debugging_Resolve_AppDomain.Reply();
 
-                    case c_Debugging_Lcd_GetFrame: return new Debugging_Lcd_GetFrame.Reply();
-
                     case c_Debugging_Messaging_Query: return new Debugging_Messaging_Query.Reply();
                     case c_Debugging_Messaging_Send: return new Debugging_Messaging_Send.Reply();
                     case c_Debugging_Messaging_Reply: return new Debugging_Messaging_Reply.Reply();
@@ -1572,12 +1716,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_EraseMemory: return new Monitor_EraseMemory();
                     case c_Monitor_Execute: return new Monitor_Execute();
                     case c_Monitor_MemoryMap: return new Monitor_MemoryMap();
-                    case c_Monitor_Reboot: return new Monitor_Reboot();
+                    case c_Monitor_Reboot: return new MonitorReboot();
                     case c_Monitor_DeploymentMap: return new Monitor_DeploymentMap();
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap();
+                    case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr();
-                    case c_Debugging_Execution_ChangeConditions: return new Debugging_Execution_ChangeConditions();
+                    case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions();
                     case c_Debugging_Execution_SecurityKey: return new Debugging_Execution_SecurityKey();
                     case c_Debugging_Execution_Unlock: return new Debugging_Execution_Unlock();
                     case c_Debugging_Execution_Allocate: return new Debugging_Execution_Allocate();
@@ -1631,10 +1776,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Debugging_Resolve_Assembly: return new DebuggingResolveAssembly();
                     case c_Debugging_Resolve_VirtualMethod: return new Debugging_Resolve_VirtualMethod();
                     case c_Debugging_Resolve_AppDomain: return new Debugging_Resolve_AppDomain();
-
-                    case c_Debugging_Lcd_NewFrame: return new Debugging_Lcd_NewFrame();
-                    case c_Debugging_Lcd_NewFrameData: return new Debugging_Lcd_NewFrameData();
-                    case c_Debugging_Lcd_GetFrame: return new Debugging_Lcd_GetFrame();
 
                     case c_Debugging_Button_Report: return new Debugging_Button_Report();
                     case c_Debugging_Button_Inject: return new Debugging_Button_Inject();

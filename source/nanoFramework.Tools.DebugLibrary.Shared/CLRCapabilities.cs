@@ -5,6 +5,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace nanoFramework.Tools.Debugger
@@ -25,36 +26,43 @@ namespace nanoFramework.Tools.Debugger
             Profiling_Allocations = 0x00000080,
             Profiling_Calls = 0x00000100,
             ThreadCreateEx = 0x00000400,
-        }
 
-        public struct LCDCapabilities
-        {
-            public readonly uint Width;
-            public readonly uint Height;
-            public readonly uint BitsPerPixel;
+            /// <summary>
+            /// This flag indicates that the device requires em erase command before updating the configuration block.
+            /// </summary>
+            ConfigBlockRequiresErase = 0x00000800,
 
-            public LCDCapabilities(uint width, uint height, uint bitsPerPixel)
-            {
-                Width = width;
-                Height = height;
-                BitsPerPixel = bitsPerPixel;
-            }
-        }
+            /// <summary>
+            /// This flag indicates that the device has nanoBooter.
+            /// </summary>
+            HasNanoBooter = 0x00001000,
+    }
 
         public struct SoftwareVersionProperties
         {
             public readonly string BuildDate;
+            public readonly string CompilerInfo;
             public readonly Version CompilerVersion;
 
-            public SoftwareVersionProperties(byte[] buildDate, uint compVersion)
+            public SoftwareVersionProperties(byte[] buildDate, byte[] compilerInfo, uint compVersion)
             {
+                // parse build date from byte[]
                 char[] chars = new char[buildDate.Length];
                 int i = 0;
                 for (i = 0; i < chars.Length && buildDate[i] != 0; i++)
                 {
                     chars[i] = (char)buildDate[i];
                 }
-                BuildDate = new string(chars, 0, i);
+                BuildDate = (new string(chars, 0, i)).TrimEnd('\0');
+
+                // parse compiler info from byte[]
+                chars = new char[compilerInfo.Length];
+                i = 0;
+                for (i = 0; i < chars.Length && compilerInfo[i] != 0; i++)
+                {
+                    chars[i] = (char)compilerInfo[i];
+                }
+                CompilerInfo = new string(chars, 0, i);
 
                 // this is the compiler version in coded format: MAJOR x 10000 + MINOR x 100 + PATCH
                 // example: v6.3.1 shows as 6 x 10000 + 3 x 100 + 1 = 60301
@@ -92,8 +100,8 @@ namespace nanoFramework.Tools.Debugger
                 halVersion = hv; halVendorInfo = hvi;
                 oemCode = oc; modelCode = mc; skuCode = sc;
 
-                moduleSerialNumber = BytesToHexString(mSerNumBytes);
-                systemSerialNumber = BytesToHexString(sSerNumBytes);
+                moduleSerialNumber = BytesToHexString(mSerNumBytes).TrimEnd('\0');
+                systemSerialNumber = BytesToHexString(sSerNumBytes).TrimEnd('\0');
             }
 
             private static string BytesToHexString(byte[] bytes)
@@ -131,42 +139,56 @@ namespace nanoFramework.Tools.Debugger
             public TargetInfoProperties(Version v, string i)
             {
                 targetVersion = v;
-                targetVendorInfo = i;
+                targetVendorInfo = i.TrimEnd('\0');
+            }
+        }
+
+        public struct NativeAssemblyProperties
+        {
+            public uint Checksum;
+            public Version Version; // TODO add 'version info' in a future version
+            public string Name;
+
+            public NativeAssemblyProperties(string name, uint checksum, Version version)
+            {
+                Checksum = checksum;
+                Name = name;
+                Version = version;
             }
         }
 
         private Capability m_capabilities;
-        private LCDCapabilities m_lcd;
         private SoftwareVersionProperties m_swVersion;
         private HalSystemInfoProperties m_halSystemInfo;
         private ClrInfoProperties m_clrInfo;
         private TargetInfoProperties m_targetReleaseInfo;
+        private List<NativeAssemblyProperties> m_nativeAssembliesInfo;
 
         private bool m_fUnknown;
 
         public CLRCapabilities()
-            : this(Capability.None, new LCDCapabilities(), new SoftwareVersionProperties(),
-                new HalSystemInfoProperties(), new ClrInfoProperties(), new TargetInfoProperties())
+            : this(Capability.None, new SoftwareVersionProperties(),
+                new HalSystemInfoProperties(), new ClrInfoProperties(), new TargetInfoProperties(), new List<NativeAssemblyProperties>())
         {
         }
 
         public CLRCapabilities(
             Capability capability,
-            LCDCapabilities lcd,
             SoftwareVersionProperties ver,
             HalSystemInfoProperties halSystemInfo,
             ClrInfoProperties clrInfo,
-            TargetInfoProperties solutionReleaseInfo
+            TargetInfoProperties solutionReleaseInfo,
+            List<NativeAssemblyProperties> nativeAssembliesInfo
             )
         {
             m_fUnknown = (capability == Capability.None);
             m_capabilities = capability;
-            m_lcd = lcd;
             m_swVersion = ver;
 
             m_halSystemInfo = halSystemInfo;
             m_clrInfo = clrInfo;
             m_targetReleaseInfo = solutionReleaseInfo;
+            m_nativeAssembliesInfo = nativeAssembliesInfo;
         }
 
         public HalSystemInfoProperties HalSystemInfo
@@ -204,6 +226,14 @@ namespace nanoFramework.Tools.Debugger
                 return m_swVersion;
             }
         }
+        public List<NativeAssemblyProperties> NativeAssemblies
+        {
+            get
+            {
+                Debug.Assert(!m_fUnknown);
+                return m_nativeAssembliesInfo;
+            }
+        }
 
         public bool FloatingPoint
         {
@@ -229,15 +259,6 @@ namespace nanoFramework.Tools.Debugger
             {
                 Debug.Assert(!m_fUnknown);
                 return (m_capabilities & Capability.ThreadCreateEx) != 0;
-            }
-        }
-
-        public LCDCapabilities LCD
-        {
-            get
-            {
-                Debug.Assert(!m_fUnknown);
-                return m_lcd;
             }
         }
 
@@ -301,6 +322,24 @@ namespace nanoFramework.Tools.Debugger
             {
                 Debug.Assert(!m_fUnknown);
                 return (m_capabilities & Capability.Profiling_Calls) != 0;
+            }
+        }
+
+        public bool ConfigBlockRequiresErase
+        {
+            get
+            {
+                Debug.Assert(!m_fUnknown);
+                return (m_capabilities & Capability.ConfigBlockRequiresErase) != 0;
+            }
+        }
+
+        public bool HasNanoBooter
+        {
+            get
+            {
+                Debug.Assert(!m_fUnknown);
+                return (m_capabilities & Capability.HasNanoBooter) != 0;
             }
         }
 

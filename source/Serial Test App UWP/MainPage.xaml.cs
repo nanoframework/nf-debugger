@@ -32,13 +32,13 @@ namespace Test_App_UWP
             // disable button
             (sender as Button).IsEnabled = false;
 
-            bool connectResult = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.ConnectAsync(3, 1000);
+            bool connectResult = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.ConnectAsync(3000, true);
 
-            //var di = await App.NETMFUsbDebugClient.MFDevices[0].GetDeviceInfoAsync();
+            var di = App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].GetDeviceInfo();
 
             Debug.WriteLine("");
             Debug.WriteLine("");
-            //Debug.WriteLine(di.ToString());
+            Debug.WriteLine(di.ToString());
             Debug.WriteLine("");
             Debug.WriteLine("");
 
@@ -55,11 +55,11 @@ namespace Test_App_UWP
             var r = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.ReadBufferAsync(10, TimeSpan.FromMilliseconds(1000), new System.Threading.CancellationToken());
         }
 
-        private async void pingButton_Click(object sender, RoutedEventArgs e)
+        private void pingButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
-            var p = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].PingAsync();
+            var p = App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].Ping();
 
             Debug.WriteLine("");
             Debug.WriteLine("");
@@ -71,12 +71,12 @@ namespace Test_App_UWP
             (sender as Button).IsEnabled = true;
         }
 
-        private async void printMemoryMapButton_Click(object sender, RoutedEventArgs e)
+        private void printMemoryMapButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
-            var mm = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.GetMemoryMapAsync();
+            var mm = App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.GetMemoryMap();
 
             Debug.WriteLine("");
             Debug.WriteLine("");
@@ -88,12 +88,12 @@ namespace Test_App_UWP
             (sender as Button).IsEnabled = true;
         }
 
-        private async void printFlashSectorMapButton_Click(object sender, RoutedEventArgs e)
+        private void printFlashSectorMapButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
-            var fm = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.GetFlashSectorMapAsync();
+            var fm = App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.GetFlashSectorMap();
             //var fm = await App.NETMFUsbDebugClient.MFDevices[0].DebugEngine.GetAssembliesAsync();
 
             Debug.WriteLine("");
@@ -128,18 +128,18 @@ namespace Test_App_UWP
             // disable button
             (sender as Button).IsEnabled = false;
 
-            App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.Disconnect();
+            App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].Disconnect();
 
             // enable button
             (sender as Button).IsEnabled = true;
         }
 
-        private async void oemInfoButton_Click(object sender, RoutedEventArgs e)
+        private void oemInfoButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
-            var oemInfo = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.GetMonitorOemInfo();
+            var oemInfo = App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.GetMonitorOemInfo();
 
             Debug.WriteLine("");
             Debug.WriteLine("");
@@ -151,12 +151,12 @@ namespace Test_App_UWP
             (sender as Button).IsEnabled = true;
         }
 
-        private async void IsInitButton_Click(object sender, RoutedEventArgs e)
+        private void IsInitButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
-            var result = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.IsDeviceInInitializeStateAsync();
+            var result = App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.IsDeviceInInitializeState();
 
             Debug.WriteLine("");
             Debug.WriteLine("");
@@ -193,7 +193,7 @@ namespace Test_App_UWP
                     assemblies.Add(buffer);
                 }
 
-                var result = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.DeploymentExecuteAsync(assemblies, false);
+                var result = App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.DeploymentExecute(assemblies, false);
 
                 Debug.WriteLine("");
                 Debug.WriteLine($">>> Deployment result: {result} <<<<");
@@ -204,6 +204,23 @@ namespace Test_App_UWP
             {
 
             }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private void DeviceInfoButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            var di = App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].GetDeviceInfo(true);
+
+            Debug.WriteLine("");
+            Debug.WriteLine("");
+            Debug.WriteLine(di.ToString());
+            Debug.WriteLine("");
+            Debug.WriteLine("");
 
             // enable button
             (sender as Button).IsEnabled = true;

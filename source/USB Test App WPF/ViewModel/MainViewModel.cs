@@ -1,10 +1,17 @@
+//
+// Copyright (c) 2017 The nanoFramework project contributors
+// See LICENSE file in the project root for full license information.
+//
+
 using GalaSoft.MvvmLight;
 using nanoFramework.ANT.Services.NanoFrameworkService;
 using nanoFramework.Tools.Debugger;
 using nanoFramework.Tools.Debugger.WireProtocol;
+using PropertyChanged;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
@@ -23,7 +30,9 @@ namespace Serial_Test_App_WPF.ViewModel
     /// See http://www.galasoft.ch/mvvm
     /// </para>
     /// </summary>
+    [AddINotifyPropertyChangedInterface]
     public class MainViewModel : ViewModelBase
+
     {
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
@@ -40,14 +49,23 @@ namespace Serial_Test_App_WPF.ViewModel
             ////}
         }
 
-        public INFSerialDebugClientService SerialDebugService { get; set; } = null;
+        public INFSerialDebugClientService SerialDebugService { get; set; }
 
         public void OnSerialDebugServiceChanged()
         {
             if (SerialDebugService != null)
             {
                 SerialDebugService.SerialDebugClient.DeviceEnumerationCompleted += SerialDebugClient_DeviceEnumerationCompleted;
+
+                SerialDebugService.SerialDebugClient.LogMessageAvailable += SerialDebugClient_LogMessageAvailable;
             }
+        }
+
+        private void SerialDebugClient_LogMessageAvailable(object sender, StringEventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+                Debug.WriteLine(e.EventText);
+            }));
         }
 
         private void SerialDebugClient_DeviceEnumerationCompleted(object sender, EventArgs e)

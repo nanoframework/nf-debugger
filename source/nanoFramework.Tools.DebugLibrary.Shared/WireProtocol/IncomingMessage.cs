@@ -4,104 +4,68 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class IncomingMessage
     {
-        IController m_parent;
+        IController _parent;
 
-        MessageRaw m_raw;
-        MessageBase m_base;
+        MessageRaw _raw;
+        MessageBase _base;
 
         public IncomingMessage(IController parent, MessageRaw raw, MessageBase messageBase)
         {
-            m_parent = parent;
-            m_raw = raw;
-            m_base = messageBase;
+            _parent = parent;
+            _raw = raw;
+            _base = messageBase;
         }
 
-        public MessageRaw Raw
-        {
-            get
-            {
-                return m_raw;
-            }
-        }
+        public MessageRaw Raw => _raw;
 
-        public MessageBase Base
-        {
-            get
-            {
-                return m_base;
-            }
-        }
+        public MessageBase Base => _base;
 
-        public IController Parent
-        {
-            get
-            {
-                return m_parent;
-            }
-        }
+        public IController Parent => _parent;
 
-        public Packet Header
-        {
-            get
-            {
-                return m_base.Header;
-            }
-        }
+        public Packet Header => _base.Header;
 
         public object Payload
         {
             get
             {
-                return m_base.Payload;
+                return _base.Payload;
             }
             set
             {
                 object payload = null;
 
-                if (m_raw.Payload != null)
+                if (_raw.Payload != null)
                 {
                     if (value != null)
                     {
-                        new Converter(m_parent.Capabilities).Deserialize(value, m_raw.Payload);
+                        new Converter(_parent.Capabilities).Deserialize(value, _raw.Payload);
                         payload = value;
                     }
                     else
                     {
-                        payload = m_raw.Payload.Clone();
+                        payload = _raw.Payload.Clone();
                     }
                 }
 
-                m_base.Payload = payload;
+                _base.Payload = payload;
             }
-        }
-
-        static public bool IsPositiveAcknowledge(IncomingMessage reply)
-        {
-            return reply != null && ((reply.Header.Flags & WireProtocol.Flags.c_ACK) != 0);
-        }
-
-        static public async Task<bool> ReplyBadPacketAsync(IController ctrl, uint flags, CancellationToken cancellationToken)
-        {
-            //What is this for? Nack + Ping?  What can the nanoCLR possibly do with this information?
-            OutgoingMessage msg = new OutgoingMessage(ctrl, new WireProtocol.Converter(), Commands.c_Monitor_Ping, Flags.c_NonCritical | Flags.c_NACK | flags, null);
-
-            return await msg.SendAsync(cancellationToken);
         }
 
         public async Task<bool> ReplyAsync(Converter converter, uint flags, object payload, CancellationToken cancellationToken)
         {
+            // FIXME
 
-            OutgoingMessage msgReply = new OutgoingMessage(this, converter, flags, payload);
+            //OutgoingMessage msgReply = new OutgoingMessage(this, converter, flags, payload);
 
-            return await msgReply.SendAsync(cancellationToken);
+            //return await msgReply.SendAsync(cancellationToken);
+            return false;
         }
     }
 }

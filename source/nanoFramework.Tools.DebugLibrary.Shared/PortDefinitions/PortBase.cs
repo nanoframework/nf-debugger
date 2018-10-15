@@ -47,6 +47,22 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public abstract event EventHandler DeviceEnumerationCompleted;
 
+        /// <summary>
+        /// Flag to signal that devices enumeration is complete.
+        /// </summary>
+        public bool IsDevicesEnumerationComplete { get; internal set; } = false;
+
         public ObservableCollection<NanoDeviceBase> NanoFrameworkDevices { get; protected set; }
+
+        /// <summary>
+        /// Event that is raised when a log message is available.
+        /// </summary>
+        public event EventHandler<StringEventArgs> LogMessageAvailable;
+
+        public void OnLogMessageAvailable(string message)
+        {
+            LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
+        }
+
     }
 }

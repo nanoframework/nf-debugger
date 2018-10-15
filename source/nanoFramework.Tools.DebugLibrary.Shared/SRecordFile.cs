@@ -40,7 +40,7 @@ namespace nanoFramework.Tools.Debugger
 
             var textLines = await FileIO.ReadLinesAsync(file);
 
-            foreach(string line in textLines)
+            foreach (string line in textLines)
             {
                 int lineNum = 0;
 

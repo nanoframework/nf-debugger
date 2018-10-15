@@ -6,7 +6,6 @@
 
 using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
@@ -23,20 +22,10 @@ namespace nanoFramework.Tools.Debugger
             {
                 Transport = TransportType.Usb;
             }
-
-            SuicideTimer = new Timer((state) =>
+            else if (Device is NanoSerialDevice)
             {
-                Task.Factory.StartNew(() => 
-                {
-                    // set kill flag
-                    KillFlag = true;
-
-                    DebugEngine.Dispose();
-
-                    Dispose(false);
-                });
-
-            }, null, Timeout.Infinite, Timeout.Infinite);
+                Transport = TransportType.Serial;
+            }
         }
 
         #region Disposable implementation
@@ -101,9 +90,11 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Disconnect nanoFramework device
         /// </summary>
-        public void Disconnect()
+        public override void Disconnect()
         {
             Parent.DisconnectDevice(this as NanoDeviceBase);
+
+            DeviceBase = null;
         }
     }
 }

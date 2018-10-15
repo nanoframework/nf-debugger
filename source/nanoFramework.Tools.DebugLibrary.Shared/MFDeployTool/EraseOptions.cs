@@ -17,6 +17,8 @@ namespace nanoFramework.Tools.Debugger
         Firmware = 0x08,
         UpdateStorage = 0x10,
         SimpleStorage = 0x20,
-        All = SimpleStorage | UpdateStorage | Firmware | FileSystem | UserStorage | Deployment
+        Configuration = 0x40,
+
+        All = SimpleStorage | UpdateStorage | Firmware | FileSystem | UserStorage | Deployment | Configuration
     }
 }

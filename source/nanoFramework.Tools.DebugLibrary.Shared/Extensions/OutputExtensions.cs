@@ -7,6 +7,7 @@ using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,7 +16,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
     public static class OutputExtensions
     {
         /// <summary>
-        /// Prints a nicely formated output of a MemoryMap array.
+        /// Prints a nicely formatted output of a MemoryMap array.
         /// </summary>
         /// <param name="range"></param>
         /// <returns></returns>
@@ -81,16 +82,31 @@ namespace nanoFramework.Tools.Debugger.Extensions
                     output.AppendLine(" Start        Size (kB)           Usage");
                     output.AppendLine("--------------------------------------------");
 
+                    // nanoBooter
                     output.AppendLine(
                         $" {string.Format("0x{0:X08}", range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).m_StartAddress)}" +
                         $"   {string.Format("0x{0:X06}", range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock))}" +
                         $" {range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock).ToMemorySizeFormart()}" +
                         $"   {range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).UsageAsString()}");
+
+                    // output config line only if it's available on the target
+                    if (range.Count(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG) > 0)
+                    {
+                        output.AppendLine(
+                            $" {string.Format("0x{0:X08}", range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG).m_StartAddress)}" +
+                            $"   {string.Format("0x{0:X06}", range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock))}" +
+                            $" {range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock).ToMemorySizeFormart()}" +
+                            $"   {range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG).UsageAsString()}");
+                    }
+
+                    // nanoCLR
                     output.AppendLine(
                         $" {string.Format("0x{0:X08}", range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).m_StartAddress)}" +
                         $"   {string.Format("0x{0:X06}", range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock))}" +
                         $" {range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock).ToMemorySizeFormart()}" +
                         $"   {range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).UsageAsString()}");
+
+                    // deployment
                     output.AppendLine(
                         $" {string.Format("0x{0:X08}", range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT).m_StartAddress)}" +
                         $"   {string.Format("0x{0:X06}", range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock))}" +
@@ -133,6 +149,55 @@ namespace nanoFramework.Tools.Debugger.Extensions
             catch { }
 
             return "Invalid or empty map data.";
+        }
+
+        public static string ToStringForOutput(this DeviceConfiguration.NetworkConfigurationProperties networkConfiguration)
+        {
+            StringBuilder output = new StringBuilder();
+
+            if (networkConfiguration.StartupAddressMode != AddressMode.Invalid)
+            {
+                output.AppendLine("IPv4 configuration");
+                output.AppendLine("------------------------------------");
+                output.AppendLine($"address: {networkConfiguration.IPv4Address.ToString()}");
+                output.AppendLine($"subnet mask: {networkConfiguration.IPv4NetMask.ToString()}");
+                output.AppendLine($"gateway: {networkConfiguration.IPv4GatewayAddress.ToString()}");
+                output.AppendLine($"DNS server 1: {networkConfiguration.IPv4DNSAddress1.ToString()}");
+                output.AppendLine($"DNS server 2: {networkConfiguration.IPv4DNSAddress2.ToString()}");
+
+                output.AppendLine("");
+                output.AppendLine("IPv6 configuration");
+                output.AppendLine("------------------------------------");
+                output.AppendLine($"address: {networkConfiguration.IPv6Address.ToString()}");
+                output.AppendLine($"subnet mask: {networkConfiguration.IPv6NetMask.ToString()}");
+                output.AppendLine($"gateway: {networkConfiguration.IPv6GatewayAddress.ToString()}");
+                output.AppendLine($"DNS server 1: {networkConfiguration.IPv6DNSAddress1.ToString()}");
+                output.AppendLine($"DNS server 2: {networkConfiguration.IPv6DNSAddress2.ToString()}");
+
+                output.AppendLine("");
+                output.Append("IP configuration: ");
+
+                switch (networkConfiguration.StartupAddressMode)
+                {
+                    case AddressMode.Static:
+                        output.AppendLine("IP configuration: Static");
+                        break;
+
+                    case AddressMode.DHCP:
+                        output.AppendLine("IP configuration: DHCP");
+                        break;
+
+                    case AddressMode.AutoIP:
+                        output.AppendLine("IP configuration: auto IP");
+                        break;
+                }
+
+                return output.ToString();
+            }
+            else
+            {
+                return "IP configuration is invalid";
+            }
         }
 
         private static string ToMemorySizeFormart(this long value)

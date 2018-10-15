@@ -16,7 +16,7 @@ namespace nanoFramework.Tools.Debugger.Usb
     /// This class handles the required changes and operation of an UsbDevice when a specific app event
     /// is raised (app suspension and resume) or when the device is disconnected. The device watcher events are also handled here.
     /// </summary>
-    public class EventHandlerForUsbDevice
+    public partial class EventHandlerForUsbDevice
     {
         /// <summary>
         /// Allows for singleton EventHandlerForUSBDevice
@@ -205,100 +205,6 @@ namespace nanoFramework.Tools.Debugger.Usb
         }
 
         /// <summary>
-        /// This method opens the device using the WinRT Usb API. After the device is opened, save the device
-        /// so that it can be used across scenarios.
-        ///
-        /// It is important that the FromIdAsync call is made on the UI thread because the consent prompt can only be displayed
-        /// on the UI thread.
-        /// 
-        /// This method is used to reopen the device after the device reconnects to the computer and when the app resumes.
-        /// </summary>
-        /// <param name="deviceInfo">Device information of the device to be opened</param>
-        /// <param name="deviceSelector">The AQS used to find this device</param>
-        /// <returns>True if the device was successfully opened, false if the device could not be opened for well known reasons.
-        /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
-        public async Task<bool> OpenDeviceAsync(DeviceInformation deviceInfo, String deviceSelector)
-        {
-            device = await Windows.Devices.Usb.UsbDevice.FromIdAsync(deviceInfo.Id);
-
-            bool successfullyOpenedDevice = false;
-
-            try
-            { 
-                // Device could have been blocked by user or the device has already been opened by another app.
-                if (device != null)
-                {
-                    successfullyOpenedDevice = true;
-
-                    deviceInformation = deviceInfo;
-                    this.deviceSelector = deviceSelector;
-
-                    Debug.WriteLine($"Device {deviceInformation.Id} opened");
-
-                    // Notify registered callback handle that the device has been opened
-                    deviceConnectedCallback?.Invoke(this, deviceInformation);
-
-                    // Background tasks are not part of the app, so app events will not have an affect on the device
-                    if (!isBackgroundTask && (appSuspendEventHandler == null || appResumeEventHandler == null))
-                    {
-                        RegisterForAppEvents();
-                    }
-
-                    // User can block the device after it has been opened in the Settings charm. We can detect this by registering for the 
-                    // DeviceAccessInformation.AccessChanged event
-                    if (deviceAccessEventHandler == null)
-                    {
-                        RegisterForDeviceAccessStatusChange();
-                    }
-
-                    // Create and register device watcher events for the device to be opened unless we're reopening the device
-                    if (deviceWatcher == null)
-                    {
-                        deviceWatcher = DeviceInformation.CreateWatcher(deviceSelector);
-
-                        RegisterForDeviceWatcherEvents();
-                    }
-
-                    if (!watcherStarted)
-                    {
-                        // Start the device watcher after we made sure that the device is opened.
-                        StartDeviceWatcher();
-                    }
-                }
-                else
-                {
-                    successfullyOpenedDevice = false;
-
-                    //notificationStatus = NotifyType.ErrorMessage;
-
-                    var deviceAccessStatus = DeviceAccessInformation.CreateFromId(deviceInfo.Id).CurrentStatus;
-
-                    switch (deviceAccessStatus)
-                    {
-                        case DeviceAccessStatus.DeniedByUser:
-                            Debug.WriteLine($"Access to the device was blocked by the user : {deviceInfo.Id}");
-                            break;
-
-                        case DeviceAccessStatus.DeniedBySystem:
-                            // This status is most likely caused by app permissions (did not declare the device in the app's package.appxmanifest)
-                            // This status does not cover the case where the device is already opened by another app.
-                            Debug.WriteLine($"Access to the device was blocked by the system : {deviceInfo.Id}");
-                            break;
-
-                        default:
-                            // Most likely the device is opened by another app, but cannot be sure
-                            Debug.WriteLine($"Unknown error, possibly opened by another app : {deviceInfo.Id}");
-                            break;
-                    }
-                }
-            }
-            // catch all because the device open might fail for a number of reasons
-            catch { }
-
-            return successfullyOpenedDevice;
-        }
-
-        /// <summary>
         /// Closes the device, stops the device watcher, stops listening for app events, and resets object state to before a device
         /// was ever connected.
         /// </summary>
@@ -373,7 +279,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                 // Notify callback that we're about to close the device
                 deviceCloseCallback?.Invoke(this, deviceInformation);
 
-                Debug.WriteLine($"Closing device {deviceInformation.Id}");
+                NanoDevicesEventSource.Log.CloseDevice(deviceInformation.Id);
             }
         }
 
@@ -426,21 +332,6 @@ namespace nanoFramework.Tools.Debugger.Usb
 
             deviceWatcher.Removed -= deviceRemovedEventHandler;
             deviceRemovedEventHandler = null;
-        }
-
-        /// <summary>
-        /// Listen for any changed in device access permission. The user can block access to the device while the device is in use.
-        /// If the user blocks access to the device while the device is opened, the device's handle will be closed automatically by
-        /// the system; it is still a good idea to close the device explicitly so that resources are cleaned up.
-        /// 
-        /// Note that by the time the AccessChanged event is raised, the device handle may already be closed by the system.
-        /// </summary>
-        private void RegisterForDeviceAccessStatusChange()
-        {
-            deviceAccessInformation = DeviceAccessInformation.CreateFromId(deviceInformation.Id);
-
-            deviceAccessEventHandler = new TypedEventHandler<DeviceAccessInformation, DeviceAccessChangedEventArgs>(OnDeviceAccessChanged);
-            deviceAccessInformation.AccessChanged += deviceAccessEventHandler;
         }
 
         private void UnregisterFromDeviceAccessStatusChange()
@@ -551,21 +442,5 @@ namespace nanoFramework.Tools.Debugger.Usb
             }
         }
 
-        /// <summary>
-        /// Close the device if the device access was denied by anyone (system or the user) and reopen it if permissions are allowed again
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="eventArgs"></param>
-        private void OnDeviceAccessChanged(DeviceAccessInformation sender, DeviceAccessChangedEventArgs eventArgs)
-        {
-            if ((eventArgs.Status == DeviceAccessStatus.DeniedBySystem)
-                || (eventArgs.Status == DeviceAccessStatus.DeniedByUser))
-            {
-                CloseCurrentlyConnectedDevice();
-            }
-            else if ((eventArgs.Status == DeviceAccessStatus.Allowed) && (deviceInformation != null) && isEnabledAutoReconnect)
-            {
-            }
-        }
     }
 }

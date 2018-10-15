@@ -273,17 +273,17 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public virtual Task<RuntimeValue> GetFieldAsync(uint offset, uint fd)
+        public virtual RuntimeValue GetField(uint offset, uint fd)
         {
             return null;
         }
 
-        public virtual Task<RuntimeValue> GetElementAsync(uint index)
+        public virtual RuntimeValue GetElement(uint index)
         {
             return null;
         }
 
-        internal virtual Task SetStringValueAsync(string val)
+        internal virtual void SetStringValue(string val)
         {
             throw new NotImplementedException();
         }
@@ -348,24 +348,24 @@ namespace nanoFramework.Tools.Debugger
             return (RuntimeValue)MemberwiseClone();
         }
 
-        protected async Task<bool> SetBlockAsync(uint dt, byte[] data)
+        protected bool SetBlock(uint dt, byte[] data)
         {
             bool fRes;
 
             if (IsArrayReference)
             {
-                fRes = await m_eng.SetArrayElementAsync(m_handle.m_arrayref_referenceID, m_handle.m_arrayref_index, data);
+                fRes = m_eng.SetArrayElement(m_handle.m_arrayref_referenceID, m_handle.m_arrayref_index, data);
             }
             else
             {
-                fRes = await m_eng.SetBlockAsync(m_handle.m_referenceID, dt, data);
+                fRes = m_eng.SetBlock(m_handle.m_referenceID, dt, data);
             }
 
             return fRes;
         }
 
 
-        public async Task<RuntimeValue> AssignAsync(uint referenceIdDirect)
+        public RuntimeValue Assign(uint referenceIdDirect)
         {
             if (IsPrimitive)
             {
@@ -375,10 +375,10 @@ namespace nanoFramework.Tools.Debugger
             // referenceIdDirect is the data pointer for the CLR_RT_HeapBlock.  We subtract 4 to point to the id 
             // portion of the heapblock.  For the second parameter we need to use the direct reference because
             // ReferenceId will return null in this case since the value has not been assigned yet.
-            return await m_eng.AssignRuntimeValueAsync(referenceIdDirect - 4, ReferenceIdDirect - 4);
+            return m_eng.AssignRuntimeValue(referenceIdDirect - 4, ReferenceIdDirect - 4);
         }
 
-        public async Task<RuntimeValue> AssignAsync(RuntimeValue val)
+        public RuntimeValue Assign(RuntimeValue val)
         {
             RuntimeValue retval = null;
 
@@ -393,7 +393,7 @@ namespace nanoFramework.Tools.Debugger
                     Array.Copy(val.m_handle.m_builtinValue, data, data.Length);
                 }
 
-                if (await SetBlockAsync(dt, data))
+                if (SetBlock(dt, data))
                 {
                     retval = this;
                 }
@@ -416,7 +416,7 @@ namespace nanoFramework.Tools.Debugger
                     throw new InvalidCastException("The two runtime values are incompatible");
                 }
 
-                retval = await AssignAsync(val != null ? val.ReferenceIdDirect : 0);
+                retval = Assign(val != null ? val.ReferenceIdDirect : 0);
             }
 
             return retval;

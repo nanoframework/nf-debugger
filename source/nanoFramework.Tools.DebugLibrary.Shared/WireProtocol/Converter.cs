@@ -83,10 +83,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             while (t != null)
             {
-                foreach (FieldInfo f in t.GetRuntimeFields().Where(f => (f.Attributes == FieldAttributes.Public || f.Attributes == FieldAttributes.Private)))
+                foreach (FieldInfo f in t.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
                 {
-                    // check if field has IgnoreDataMember attribute
-                    if (f.CustomAttributes.Where(ca => ca.AttributeType == typeof(IgnoreDataMemberAttribute)).Count() == 0)
+                    // only process fields that are not marked with IgnoreDataMember attribute
+                    if (f.GetCustomAttribute<IgnoreDataMemberAttribute>(false) == null)
                     {
                         InternalSerializeInstance(writer, f.GetValue(o));
                     }
@@ -147,7 +147,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         IList list = (IList)o;
 
                         // go through each list item and serialize it
-                        foreach(object arrItem in list)
+                        foreach (object arrItem in list)
                         {
                             InternalSerializeInstance(writer, arrItem);
                         }
@@ -174,38 +174,22 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         private void InternalDeserializeFieldsHelper(BinaryReader reader, object o, Type t)
         {
-            if (t.GetTypeInfo().BaseType != typeof(object))
+            if (t.GetTypeInfo().BaseType != null)
             {
                 InternalDeserializeFieldsHelper(reader, o, t.GetTypeInfo().BaseType);
             }
 
-            foreach (FieldInfo f in t.GetRuntimeFields().Where(f => (f.Attributes == FieldAttributes.Public || f.Attributes == FieldAttributes.Private)))
+            foreach (var f in t.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                // check if field has IgnoreDataMember attribute
-                if (f.CustomAttributes.Where(ca => ca.AttributeType == typeof(IgnoreDataMemberAttribute)).Count() == 0)
+                // only process fields that are not marked with IgnoreDataMember attribute
+                if (f.GetCustomAttribute<IgnoreDataMemberAttribute>(false) == null)
                 {
+                    Type ft = f.FieldType;
+                    object objValue = f.GetValue(o);
 
-                    // check if this field has been processed
-                    if (!processedTypeFields.Contains(f.Name))
-                    {
-                        Type ft = f.FieldType;
-                        //Debug.WriteLine("Deserializing field " + f.Name + " of type " + ft.Name);
+                    objValue = InternalDeserializeInstance(reader, objValue, ft);
 
-                        // add field name to list of processed fields
-                        // see list declaration
-                        processedTypeFields.Add(f.Name);
-
-                        object objValue = f.GetValue(o);
-
-                        objValue = InternalDeserializeInstance(reader, objValue, ft);
-
-                        f.SetValue(o, objValue);
-                    }
-                    else
-                    {
-                        // skipping this field
-                        //Debug.WriteLine("Skipping " + f.Name );
-                    }
+                    f.SetValue(o, objValue);
                 }
             }
         }
@@ -242,6 +226,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 case Extensions.TypeExtensions.TypeCode.Boolean: ret = reader.ReadBoolean(); break;
                 case Extensions.TypeExtensions.TypeCode.Char: ret = reader.ReadChar(); break;
+
                 case Extensions.TypeExtensions.TypeCode.SByte: ret = reader.ReadSByte(); break;
                 case Extensions.TypeExtensions.TypeCode.Byte: ret = reader.ReadByte(); break;
                 case Extensions.TypeExtensions.TypeCode.Int16: ret = reader.ReadInt16(); break;
@@ -289,12 +274,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     else if (t.GetRuntimeProperties().FirstOrDefault(n => n.Name == "Count") != null)
                     {
                         // type implements Count property so it's a list
-                        
+
                         // cast to IList
                         IList list = (IList)o;
 
                         // go through each list item and deserialize it
-                        for(int i = 0; i < list.Count; i++)
+                        for (int i = 0; i < list.Count; i++)
                         {
                             list[i] = InternalDeserializeInstance(reader, list[i], list[i].GetType());
                         }

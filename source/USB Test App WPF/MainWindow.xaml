@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Serial_Test_App_WPF"
         xmlns:ViewModel="clr-namespace:Serial_Test_App_WPF.ViewModel" x:Class="Serial_Test_App_WPF.MainWindow"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
+        Title="MainWindow" Height="374" Width="525">
     <Window.Resources>
         <DataTemplate x:Key="NanoDevicesItemTemplate">
             <TextBlock Text="{Binding Path=Description}"/>
@@ -23,16 +23,29 @@
                 <DataGridTextColumn Binding="{Binding Description}"/>
             </DataGrid.Columns>
         </DataGrid>
-        <Button Content="Connect" HorizontalAlignment="Left" Margin="250,77,0,0" VerticalAlignment="Top" Width="75" Click="ConnectDeviceButton_ClickAsync"/>
-        <Button Content="Disconnect" HorizontalAlignment="Left" Margin="250,102,0,0" VerticalAlignment="Top" Width="75" Click="DisconnectDeviceButton_Click"/>
-        <Button Content="Reboot" HorizontalAlignment="Left" Margin="250,135,0,0" VerticalAlignment="Top" Width="75" Click="RebootDeviceButton_Click"/>
+        <Button Content="Connect" HorizontalAlignment="Left" Margin="250,77,0,0" VerticalAlignment="Top" Width="98" Click="ConnectDeviceButton_ClickAsync"/>
+        <Button Content="Disconnect" HorizontalAlignment="Left" Margin="250,102,0,0" VerticalAlignment="Top" Width="98" Click="DisconnectDeviceButton_Click"/>
+        <Button Content="Ping" HorizontalAlignment="Left" Margin="250,129,0,0" VerticalAlignment="Top" Width="98" Click="PingButton_Click" />
 
-        <Button Content="Ping" HorizontalAlignment="Left" Margin="39,195,0,0" VerticalAlignment="Top" Width="75" Click="PingButton_Click" />
-        <Button Content="Is Initialized" HorizontalAlignment="Left" Margin="154,195,0,0" VerticalAlignment="Top" Width="75" Click="IsInitializedButton_Click" />
-        <Button Content="Resolve Assemblies" HorizontalAlignment="Left" Margin="39,235,0,0" VerticalAlignment="Top" Width="75" Click="ResolveAssembliesButton_Click" />
-        <Button Content="Deploy Test" HorizontalAlignment="Left" Margin="154,235,0,0" VerticalAlignment="Top" Width="75" Click="DeployTestButton_Click" />
-        <Button Content="Flash Map" HorizontalAlignment="Left" Margin="39,275,0,0" VerticalAlignment="Top" Width="75" Click="FlashMapButton_Click" />
-        <Button Content="Resume Execution" HorizontalAlignment="Left" Margin="155,275,0,0" VerticalAlignment="Top" Width="75" Click="ResumeExecutionButton_Click" />
+        <Button Content="Get Execution" HorizontalAlignment="Left" Margin="250,195,0,0" VerticalAlignment="Top" Width="98" Click="GetExecutionModeButton_Click"/>
+        <Button Content="Deploy Test" HorizontalAlignment="Left" Margin="162,235,0,0" VerticalAlignment="Top" Width="75" Click="DeployTestButton_Click" />
+        <Button Content="Get Deployment Map" HorizontalAlignment="Left" Margin="162,275,0,0" VerticalAlignment="Top" Width="75" Click="GetDeploymentMapButton_Click" />
+
+        <Button Content="Device Capabilites" HorizontalAlignment="Left" Margin="39,195,0,0" VerticalAlignment="Top" Width="110" Click="DeviceCapabilitesButton_Click" />
+        <Button Content="Flash Map" HorizontalAlignment="Left" Margin="39,275,0,0" VerticalAlignment="Top" Width="110" Click="FlashMapButton_Click" />
+        <Button Content="Resolve Assemblies" HorizontalAlignment="Left" Margin="39,235,0,0" VerticalAlignment="Top" Width="110" Click="ResolveAssembliesButton_Click" />
+
+        <Button Content="Pause Execution" HorizontalAlignment="Left" Margin="250,235,0,0" VerticalAlignment="Top" Width="98" Click="PauseExecutionButton_Click" />
+        <Button Content="Resume Execution" HorizontalAlignment="Left" Margin="250,275,0,0" VerticalAlignment="Top" Width="98" Click="ResumeExecutionButton_Click" />
+
+        <Button Content="Reboot CLR" HorizontalAlignment="Left" Margin="378,77,0,0" VerticalAlignment="Top" Width="98" Click="RebootDeviceButton_Click"/>
+        <Button Content="Soft Reboot" HorizontalAlignment="Left" Margin="378,102,0,0" VerticalAlignment="Top" Width="98" Click="SoftRebootDeviceButton_Click"/>
+        <Button Content="Reboot + Debug" HorizontalAlignment="Left" Margin="378,129,0,0" VerticalAlignment="Top" Width="98" Click="RebootAndDebugDeviceButton_Click"/>
+        <Button Content="Stop Processing" HorizontalAlignment="Left" Margin="378,195,0,0" VerticalAlignment="Top" Width="98" Click="StopProcessingButton_Click"/>
+        <Button Content="Erase Deployment" HorizontalAlignment="Left" Margin="378,235,0,0" VerticalAlignment="Top" Width="98" Click="EraseDeploymentButton_Click" />
+        <Button Content="Is Init State" HorizontalAlignment="Left" Margin="162,195,0,0" VerticalAlignment="Top" Width="75" Click="IsInitStateButton_Click" />
+        <Button Content="Get Device Config" HorizontalAlignment="Left" Margin="378,275,0,0" VerticalAlignment="Top" Width="98" Click="GetDeviceConfigButton_Click" />
+        <Button Content="Set Device Config" HorizontalAlignment="Left" Margin="378,313,0,0" VerticalAlignment="Top" Width="98" Click="SetDeviceConfigButton_Click" />
 
 
     </Grid>
