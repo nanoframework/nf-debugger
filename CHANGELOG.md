@@ -118,6 +118,7 @@
 
 **Documentation and other chores:**
 
+- Merge 'develop' to Release 1.0.0 [\#167](https://github.com/nanoframework/nf-debugger/pull/167)
 - Revert "Improvements in engine process exit and termination" [\#146](https://github.com/nanoframework/nf-debugger/pull/146)
 
 ## [0.4.0-preview026](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview026) (2017-09-28)
