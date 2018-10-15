@@ -77,7 +77,7 @@ before_deploy:
 
       Push-AppveyorArtifact $env:APPVEYOR_BUILD_FOLDER\source\nanoFramework.Tools.DebugLibrary.Net\bin\Release\nanoFramework.Tools.Debugger.Net.$env:GitVersion_NuGetVersionV2.nupkg
 
-      Push-AppveyorArtifact $env:APPVEYOR_BUILD_FOLDER\source\nanoFramework.Tools.DebugLibrary.Net\bin\Release\nanoFramework.Tools.Debugger.UWP.$env:GitVersion_NuGetVersionV2.nupkg
+      Push-AppveyorArtifact $env:APPVEYOR_BUILD_FOLDER\source\nanoFramework.Tools.DebugLibrary.UWP\bin\Release\nanoFramework.Tools.Debugger.UWP.$env:GitVersion_NuGetVersionV2.nupkg
 
 # requires APPVEYOR_DISCORD_WEBHOOK_URL enviroment variable set with Discord webhook URL
 on_failure:
