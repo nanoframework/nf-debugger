@@ -1,4 +1,4 @@
-[![Discord](https://img.shields.io/discord/478725473862549535.svg)](https://discord.gg/gCyBu8T)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/nanoframework/Home/blob/master/LICENSE) [![#yourfirstpr](https://img.shields.io/badge/first--timers--only-friendly-blue.svg)](https://github.com/nanoframework/Home/blob/master/CONTRIBUTING.md) [![Discord](https://img.shields.io/discord/478725473862549535.svg)](https://discord.gg/gCyBu8T)
 
 
 ![nanoFramework logo](https://github.com/nanoframework/Home/blob/master/resources/logo/nanoFramework-repo-logo.png)
@@ -15,6 +15,12 @@ This repo contains:
 - **nanoFramework** debugger library for UWP
 - **nanoFramework** debugger library for .NET
 
+## Build status
+
+| Component | Build Status | NuGet Package (.NET) | NuGet Package (.UWP) |
+|:-|---|---|---|
+| Debugger Library | [![Build status](https://ci.appveyor.com/api/projects/status/ut8h2hjxe1fvusnj/branch/develop?svg=true)](https://ci.appveyor.com/project/nfbot/nf-debugger/branch/develop) | [![NuGet](https://img.shields.io/nuget/vpre/nanoFramework.Tools.Debugger.Net.svg)](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/) | | [![NuGet](https://img.shields.io/nuget/vpre/nanoFramework.Tools.Debugger.UWP.svg)](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.UWP/)  |
+| Debugger Library (preview) | [![Build status](https://ci.appveyor.com/api/projects/status/ut8h2hjxe1fvusnj/branch/develop?svg=true)](https://ci.appveyor.com/project/nfbot/nf-debugger/branch/develop) | [![MyGet Pre Release](https://img.shields.io/myget/nanoframework-dev/vpre/nanoFramework.Tools.Debugger.Net.svg)](https://www.myget.org/feed/nanoframework-dev/package/nuget/nanoFramework.Tools.Debugger.Net) | [![MyGet Pre Release](https://img.shields.io/myget/nanoframework-dev/vpre/nanoFramework.Tools.Debugger.UWP.svg)](https://www.myget.org/feed/nanoframework-dev/package/nuget/nanoFramework.Tools.Debugger.UWP) |
 
 ## Feedback and documentation
 
