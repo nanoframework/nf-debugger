@@ -1,8 +1,7 @@
 # Change Log
 
-## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
-
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview026...HEAD)
+## [v1.0.0](https://github.com/nanoframework/nf-debugger/tree/v1.0.0) (2018-10-15)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview026...v1.0.0)
 
 **Implemented enhancements:**
 
