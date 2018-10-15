@@ -9,6 +9,8 @@ image: Visual Studio 2017
 
 skip_tags: false
 
+skip_branch_with_pr: true
+
 test: off
 
 pull_requests:
@@ -103,6 +105,8 @@ for:
   - provider: NuGet
     api_key: $(NuGetToken)
     skip_symbols: true
+    on:
+      appveyor_repo_tag: true
   - provider: GitHub
     tag: v$(GitVersion_NuGetVersionV2)
     release: nanoFramework Debugger Library v$(gitversion_semver)
@@ -147,6 +151,8 @@ for:
   - provider: NuGet
     api_key: $(NuGetToken)
     skip_symbols: true
+    on:
+      appveyor_repo_tag: true
   - provider: GitHub
     tag: v$(GitVersion_NuGetVersionV2)
     release: nanoFramework Debugger Library v$(gitversion_semver)
