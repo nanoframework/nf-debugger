@@ -1337,7 +1337,11 @@ namespace nanoFramework.Tools.Debugger
                 timeout = (int)(length / (16 * 1024)) * eraseTimeout16kSector + 2 * extraTimeoutForErase;
             }
 
-            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_EraseMemory, 0, cmd);
+            // minimum timeout required for ESP32
+            if (timeout < 10000)
+                timeout = 10000;
+
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_EraseMemory, 0, cmd, timeout);
 
             if (reply != null)
             {
