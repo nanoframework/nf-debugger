@@ -129,7 +129,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj">
-      <Project>{970bdc72-755c-436b-b8ea-5810c990ad0d}</Project>
+      <Project>{21e5a6a5-f4f7-411a-80dc-f49e62d8a7c3}</Project>
       <Name>nanoFramework.Tools.DebugLibrary.UWP</Name>
     </ProjectReference>
   </ItemGroup>

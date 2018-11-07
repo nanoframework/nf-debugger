@@ -16,7 +16,7 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <PackageId>nanoFramework.Tools.Debugger.Net</PackageId>
-    <PackageVersion>$(GitVersion_NuGetVersionV2)</PackageVersion>
+    <PackageVersion>$(NuGetPackageVersion)</PackageVersion>
     <Description>This .NET library provides a debug client for nanoFramework devices using USB or Serial connection to a board.</Description>
     <Authors>nanoFramework project contributors</Authors>
     <Title>nanoFramework debug library for .NET</Title>
@@ -109,8 +109,10 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
     <Error Condition="!Exists('..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.props'))" />
     <Error Condition="!Exists('..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.targets'))" />
     <Error Condition="!Exists('..\packages\Fody.3.2.0\build\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.3.2.0\build\Fody.targets'))" />
+    <Error Condition="!Exists('..\packages\Nerdbank.GitVersioning.2.2.13\build\Nerdbank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Nerdbank.GitVersioning.2.2.13\build\Nerdbank.GitVersioning.targets'))" />
   </Target>
   <Import Project="..\packages\UwpDesktop.10.0.14393.3\build\portable-net45+uap\UwpDesktop.targets" Condition="Exists('..\packages\UwpDesktop.10.0.14393.3\build\portable-net45+uap\UwpDesktop.targets')" />
   <Import Project="..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.targets" Condition="Exists('..\packages\NuGet.Build.Packaging.0.2.2\build\NuGet.Build.Packaging.targets')" />
   <Import Project="..\packages\Fody.3.2.0\build\Fody.targets" Condition="Exists('..\packages\Fody.3.2.0\build\Fody.targets')" />
+  <Import Project="..\packages\Nerdbank.GitVersioning.2.2.13\build\Nerdbank.GitVersioning.targets" Condition="Exists('..\packages\Nerdbank.GitVersioning.2.2.13\build\Nerdbank.GitVersioning.targets')" />
 </Project>
