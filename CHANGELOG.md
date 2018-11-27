@@ -6,6 +6,7 @@
 
 **Documentation and other chores:**
 
+- Update NuGet packages [\#172](https://github.com/nanoframework/nf-debugger/pull/172)
 - Update Minimum and Target version for UWP [\#171](https://github.com/nanoframework/nf-debugger/pull/171) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
 
 ## [v1.0.1-preview-012](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-012) (2018-11-07)
