@@ -2,7 +2,14 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview008...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-012...HEAD)
+
+**Documentation and other chores:**
+
+- Update Minimum and Target version for UWP [\#171](https://github.com/nanoframework/nf-debugger/pull/171) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
+
+## [v1.0.1-preview-012](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-012) (2018-11-07)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview008...v1.0.1-preview-012)
 
 **Documentation and other chores:**
 
