@@ -46,8 +46,8 @@ steps:
   persistCredentials: true
 
 - script: |
-    git config --global user.email 'nfbot'
-    git config --global user.name 'nanoframework@outlook.com'
+    git config --global user.email 'nanoframework@outlook.com'
+    git config --global user.name 'nfbot'
   displayName: Setup git identity
 
 - task: NuGetToolInstaller@0
