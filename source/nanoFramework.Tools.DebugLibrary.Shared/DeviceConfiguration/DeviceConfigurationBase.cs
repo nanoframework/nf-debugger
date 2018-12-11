@@ -11,5 +11,7 @@ namespace nanoFramework.Tools.Debugger
         public NetworkConfigurationBase[] NetworkConfigurations;
 
         public Wireless80211ConfigurationBase[] Wireless80211Configurations { get; internal set; }
+
+        public X509CaRootBundleBase[] X509CaRootBundle { get; internal set; }
     }
 }

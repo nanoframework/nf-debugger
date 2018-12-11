@@ -32,6 +32,11 @@ namespace nanoFramework.Tools.Debugger
             WirelessNetworkAP = 3,
 
             /// <summary>
+            /// X509 Certificate block
+            /// </summary>
+            X509Certificate = 4,
+
+            /// <summary>
             /// All configuration blocks
             /// </summary>
             All = 255,
