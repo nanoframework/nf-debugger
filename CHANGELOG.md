@@ -1,8 +1,11 @@
 # Change Log
 
-## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
+## [v1.0.1-preview-022](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-022) (2018-12-19)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-012...v1.0.1-preview-022)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-012...HEAD)
+**Implemented enhancements:**
+
+- Add new entries to Serial Devices black list [\#175](https://github.com/nanoframework/nf-debugger/pull/175)
 
 **Documentation and other chores:**
 
