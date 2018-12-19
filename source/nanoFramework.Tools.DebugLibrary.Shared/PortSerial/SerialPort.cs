@@ -237,7 +237,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
                // COM ports from Broadcom 20702 Bluetooth adapter
-                deviceInformation.Id.Contains(@"VID&00010057_PID&0023")
+               deviceInformation.Id.Contains(@"VID&00010057_PID&0023") || 
+
+               // reported in Discord channel
+               deviceInformation.Id.Contains(@"VID&0001009e_PID&400a") ||
+
+               // this seems to cover virtual COM ports from Bluetooth devices
+               deviceInformation.Id.Contains("BTHENUM")
                )
             {
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(deviceInformation.Id));
