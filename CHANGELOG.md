@@ -1,7 +1,7 @@
 # Change Log
 
-## [v1.0.1-preview-022](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-022) (2018-12-19)
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-012...v1.0.1-preview-022)
+## [v1.0.1-preview-023](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-023) (2018-12-19)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-012...v1.0.1-preview-023)
 
 **Implemented enhancements:**
 
