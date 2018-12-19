@@ -138,12 +138,23 @@ steps:
   displayName: Copy Changelog
 
 # push new changelog to GitHub repo
-- script: |
-      git add CHANGELOG.md
-      git commit -m "Update CHANGELOG for v$(NBGV_Version)" -m"***NO_CI***"
-      git push origin "HEAD:$(Build.SourceBranchName)" --porcelain
-  workingDirectory: $(System.DefaultWorkingDirectory)
-  condition: and( succeeded(), not( startsWith(variables['Build.SourceBranch'], 'refs/pull') ), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ) )
+- task: PowerShell@2
+  inputs:
+      targetType: 'inline'
+      script: |
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG for v$(NBGV_Version)" -m"***NO_CI***"
+
+          git config user.email ${{ parameters.gitEmail }}
+          git config user.name ${{ parameters.gitUser }}
+          
+          # compute authorization header in format "AUTHORIZATION: basic 'encoded token'"
+          # 'encoded token' is the Base64 of the string "nfbot:personal-token"
+          $auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$(GitHubToken)"))))"
+
+          git -c http.extraheader="AUTHORIZATION: $auth" push origin "HEAD:$(Build.SourceBranchName)"
+
+  condition: and( succeeded(), not( startsWith(variables['Build.SourceBranch'], 'refs/pull') ), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), not( startsWith(variables['Build.SourceBranchName'], 'master') ) )
   displayName: Push changelog to GitHub
 
 # update could build number (only possible if this is not a PR from a fork)
