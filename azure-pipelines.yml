@@ -205,7 +205,7 @@ steps:
     githubTargetCommitsh: $(Build.SourceVersion)
     githubReleaseDraft: true
     githubReleasePrerelease: true
-    githubReuseDraftOnly: true
+    githubReuseDraftOnly: false
     githubReuseRelease: true
     githubEditRelease: true
     githubReleaseAsset: '$(Build.ArtifactStagingDirectory)/*.nupkg'
