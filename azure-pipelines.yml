@@ -197,15 +197,15 @@ steps:
 - task: GitHubReleasePublish@1
   inputs:
     githubEndpoint: 'nanoframework'
-    githubOwner: 'nanoframework'
-    githubRepositoryName: $(repoName)
+    githubOwner: 'nanoframework
+    githubRepositoryName: nf-debugger
     githubTag: v$(MY_NUGET_VERSION)
     githubReleaseTitle: 'nanoFramework Debugger Library v$(MY_NUGET_VERSION)'
     githubReleaseNotes: 'Check the [changelog]($(Build.Repository.Uri)/blob/$(Build.SourceBranchName)/CHANGELOG.md).<br><br><h4>Install from nanoFramework MyGet development feed</h4><br>The following NuGet packages are available for download from this release:<br>:package: [.NET](https://www.nuget.org/packages/$(nugetPackageName)/$(MY_NUGET_VERSION)) v$(MY_NUGET_VERSION)<br>:package: [UWP](https://www.myget.org/feed/nanoframework-dev/package/nuget/nanoFramework.Tools.Debugger.UWP/$(MY_NUGET_VERSION)) v$(MY_NUGET_VERSION)'
     githubTargetCommitsh: $(Build.SourceVersion)
     githubReleaseDraft: true
     githubReleasePrerelease: true
-    githubReuseDraftOnly: false
+    githubReuseDraftOnly: true
     githubReuseRelease: true
     githubEditRelease: true
     githubReleaseAsset: '$(Build.ArtifactStagingDirectory)/*.nupkg'
@@ -217,7 +217,7 @@ steps:
   inputs:
     githubEndpoint: 'nanoframework'
     githubOwner: 'nanoframework'
-    githubRepositoryName: $(repoName)
+    githubRepositoryName: nf-debugger
     githubTag: v$(MY_NUGET_VERSION)
     githubReleaseTitle: 'nanoFramework Debugger Library v$(MY_NUGET_VERSION)'
     githubReleaseNotes: 'Check the [changelog]($(Build.Repository.Uri)/blob/$(Build.SourceBranchName)/CHANGELOG.md).<br><br><h4>Install from NuGet</h4><br>The following NuGet packages are available for download from this release:<br>:package: [.NET](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/$(MY_NUGET_VERSION)) v$(MY_NUGET_VERSION) v$(MY_NUGET_VERSION)<br>:package: [UWP](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.UWP/$(MY_NUGET_VERSION)) v$(MY_NUGET_VERSION)'
