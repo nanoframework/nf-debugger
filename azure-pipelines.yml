@@ -197,7 +197,7 @@ steps:
 - task: GitHubReleasePublish@1
   inputs:
     githubEndpoint: 'nanoframework'
-    githubOwner: 'nanoframework
+    githubOwner: 'nanoframework'
     githubRepositoryName: 'nf-debugger'
     githubTag: v$(MY_NUGET_VERSION)
     githubReleaseTitle: 'nanoFramework Debugger Library v$(MY_NUGET_VERSION)'
