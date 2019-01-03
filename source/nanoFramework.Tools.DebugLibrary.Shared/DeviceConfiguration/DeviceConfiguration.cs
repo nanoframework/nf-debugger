@@ -35,6 +35,11 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public static string MarkerConfigurationWireless80211AP_v1 = "AP1\0";
 
+        /// <summary>
+        /// X509 CA Root bundle configuration marker
+        /// </summary>
+        public static string MarkerConfigurationX509CaRootBundle_v1 = "XB1\0";
+
         /////////////////////////////////////////////////////////////
 
         /// <summary>
@@ -47,19 +52,27 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public List<Wireless80211ConfigurationProperties> Wireless80211Configurations { get; set; }
 
+        /// <summary>
+        /// Collection of <see cref="Wireless80211ConfigurationProperties"/> blocks in a target device.
+        /// </summary>
+        public List<X509CaRootBundleProperties> X509Certificates { get; set; }
+
         public DeviceConfiguration()
             : this(new List<NetworkConfigurationProperties>(),
-                   new List<Wireless80211ConfigurationProperties>())
+                   new List<Wireless80211ConfigurationProperties>(),
+                   new List<X509CaRootBundleProperties>())
         {
         }
 
         public DeviceConfiguration(
             List<NetworkConfigurationProperties> networkConfiguratons,
-            List<Wireless80211ConfigurationProperties> networkWirelessConfiguratons
+            List<Wireless80211ConfigurationProperties> networkWirelessConfiguratons,
+            List<X509CaRootBundleProperties> x509Certificates
             )
         {
             NetworkConfigurations = networkConfiguratons;
             Wireless80211Configurations = networkWirelessConfiguratons;
+            X509Certificates = x509Certificates;
         }
 
         // operator to allow cast_ing a DeviceConfiguration object to DeviceConfigurationBase
@@ -68,7 +81,8 @@ namespace nanoFramework.Tools.Debugger
             return new DeviceConfigurationBase()
             {
                 NetworkConfigurations = value.NetworkConfigurations.Select(i => (NetworkConfigurationBase)i).ToArray(),
-                Wireless80211Configurations = value.Wireless80211Configurations.Select(i => (Wireless80211ConfigurationBase)i).ToArray()
+                Wireless80211Configurations = value.Wireless80211Configurations.Select(i => (Wireless80211ConfigurationBase)i).ToArray(),
+                X509CaRootBundle = value.X509Certificates.Select(i => (X509CaRootBundleBase)i).ToArray()
             };
         }
 
@@ -243,6 +257,41 @@ namespace nanoFramework.Tools.Debugger
                 return networkWirelessConfig;
             }
 
+        }
+
+
+        [AddINotifyPropertyChangedInterface]
+        public class X509CaRootBundleProperties : X509CaRootBundlePropertiesBase
+        {
+            public bool IsUnknown { get; set; } = true;
+
+            public X509CaRootBundleProperties()
+            {
+
+            }
+
+            public X509CaRootBundleProperties(X509CaRootBundleBase certificate)
+            {
+                CertificateSize = (uint)certificate.Certificate.Length;
+                Certificate = certificate.Certificate;
+
+                // reset unknown flag
+                IsUnknown = false;
+            }
+
+            // operator to allow cast_ing a X509CaRootBundleBaseProperties object to X509CaRootBundleBase
+            public static explicit operator X509CaRootBundleBase(X509CaRootBundleProperties value)
+            {
+                var x509Certificate = new X509CaRootBundleBase()
+                {
+                    Marker = Encoding.UTF8.GetBytes(MarkerConfigurationX509CaRootBundle_v1),
+
+                    CertificateSize = (uint)value.Certificate.Length,
+                    Certificate = value.Certificate,
+                };
+
+                return x509Certificate;
+            }
         }
 
         /////////////////////////////////////////////////////////////

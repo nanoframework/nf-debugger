@@ -335,6 +335,23 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     Password = new byte[64];
                 }
             }
+
+            public class X509CaRootBundleConfig : X509CaRootBundleBase, IConverter
+            {
+                public X509CaRootBundleConfig()
+                {
+                    Marker = new byte[4];
+                    CertificateSize = 0xFFFF;
+                    Certificate = new byte[64];
+                }
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    Marker = new byte[4];
+                    CertificateSize = 0xFFFF;
+                    Certificate = new byte[size - 4 - 4];
+                }
+            }
         }
 
         public class Monitor_UpdateConfiguration
@@ -342,6 +359,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public uint Configuration;
             public uint BlockIndex;
             public uint Length = 0;
+            public uint Offset = 0;
             public byte[] Data = null;
 
             public class Reply
@@ -349,12 +367,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 public uint ErrorCode;
             };
 
-            public void PrepareForSend(byte[] data, int length)
+            public void PrepareForSend(byte[] data, int length, int offset = 0)
             {
                 Length = (uint)length;
                 Data = new byte[length];
 
-                Array.Copy(data, 0, Data, 0, length);
+                Offset = (uint)offset;
+
+                Array.Copy(data, offset, Data, 0, length);
             }
         }
 

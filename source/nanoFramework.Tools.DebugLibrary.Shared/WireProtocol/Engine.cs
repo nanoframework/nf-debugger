@@ -3219,7 +3219,17 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            return new DeviceConfiguration(networkConfigs, networkWirelessConfigs);
+            // get all wireless network configuration blocks
+            var x509Certificates = GetAllX509Certificates();
+            // check for cancellation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancellation requested");
+                return null;
+            }
+
+            return new DeviceConfiguration(networkConfigs, networkWirelessConfigs, x509Certificates);
         }
 
         public List<DeviceConfiguration.NetworkConfigurationProperties> GetAllNetworkConfigurations()
@@ -3266,6 +3276,29 @@ namespace nanoFramework.Tools.Debugger
             while (!wirelessConfigProperties.IsUnknown);
 
             return wireless80211Configurations;
+        }
+
+        public List<DeviceConfiguration.X509CaRootBundleProperties> GetAllX509Certificates()
+        {
+            List<DeviceConfiguration.X509CaRootBundleProperties> x509Certificates = new List<DeviceConfiguration.X509CaRootBundleProperties>();
+
+            DeviceConfiguration.X509CaRootBundleProperties x509CertificatesProperties = null;
+            uint index = 0;
+
+            do
+            {
+                // get next X509 certificate configuration block, if available
+                x509CertificatesProperties = GetX509CertificatesProperties(index++);
+
+                // add to list, if valid
+                if(!x509CertificatesProperties.IsUnknown)
+                {
+                    x509Certificates.Add(x509CertificatesProperties);
+                }
+            }
+            while (!x509CertificatesProperties.IsUnknown);
+
+            return x509Certificates;
         }
 
         public DeviceConfiguration.NetworkConfigurationProperties GetNetworkConfiguratonProperties(uint configurationBlockIndex)
@@ -3321,6 +3354,29 @@ namespace nanoFramework.Tools.Debugger
             return wirelessConfigProperties;
         }
 
+        public DeviceConfiguration.X509CaRootBundleProperties GetX509CertificatesProperties(uint configurationBlockIndex)
+        {
+            Debug.WriteLine("X509CertificateProperties");
+
+            IncomingMessage reply = GetDeviceConfiguration((uint)DeviceConfiguration.DeviceConfigurationOption.X509Certificate, configurationBlockIndex);
+
+            Commands.Monitor_QueryConfiguration.X509CaRootBundleConfig x509Certificate = new Commands.Monitor_QueryConfiguration.X509CaRootBundleConfig();
+
+            DeviceConfiguration.X509CaRootBundleProperties x509CertificateProperties = new DeviceConfiguration.X509CaRootBundleProperties();
+
+            if (reply != null)
+            {
+                if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
+                {
+                    new Converter().Deserialize(x509Certificate, cmdReply.Data);
+
+                    x509CertificateProperties = new DeviceConfiguration.X509CaRootBundleProperties(x509Certificate);
+                }
+            }
+
+            return x509CertificateProperties;
+        }
+
         private IncomingMessage GetDeviceConfiguration(uint configuration, uint configurationBlockIndex)
         {
             Commands.Monitor_QueryConfiguration cmd = new Commands.Monitor_QueryConfiguration
@@ -3341,6 +3397,7 @@ namespace nanoFramework.Tools.Debugger
         public bool UpdateDeviceConfiguration(DeviceConfiguration configuration)
         {
             bool okToUploadConfig = false;
+            Commands.Monitor_FlashSectorMap.FlashSectorData configSector = new Commands.Monitor_FlashSectorMap.FlashSectorData();
 
             // the requirement to erase flash before storing is dependent on CLR capabilities which is only available if the device is running nanoCLR
             // when running nanoBooter those are not available
@@ -3362,7 +3419,7 @@ namespace nanoFramework.Tools.Debugger
                 }
 
                 // get configuration sector details
-                var configSector = FlashSectorMap.FirstOrDefault(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG);
+                configSector = FlashSectorMap.FirstOrDefault(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG);
 
                 // check if the device has a config sector
                 if (configSector.m_NumBlocks > 0)
@@ -3396,27 +3453,58 @@ namespace nanoFramework.Tools.Debugger
                 // serialize the configuration block
                 var configurationSerialized = CreateConverter().Serialize(((DeviceConfigurationBase)configuration));
 
-                // prepare command to upload new configuration
-                Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration
+                // counters to manage the chunked update process
+                int count = configurationSerialized.Length;
+                int position = 0;
+
+                // flag to signal the update operation success/failure
+                bool updateFailed = true;
+
+                while (count > 0)
                 {
-                    Configuration = (uint)DeviceConfiguration.DeviceConfigurationOption.All
-                };
-                cmd.PrepareForSend(configurationSerialized, configurationSerialized.Length);
-
-                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_UpdateConfiguration, 0, cmd);
-
-                if (reply != null)
-                {
-                    Commands.Monitor_UpdateConfiguration.Reply cmdReply = reply.Payload as Commands.Monitor_UpdateConfiguration.Reply;
-
-                    if (reply.IsPositiveAcknowledge() && cmdReply.ErrorCode == 0)
+                    Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration
                     {
-                        return true;
+                        Configuration = (uint)DeviceConfiguration.DeviceConfigurationOption.All
+                    };
+
+                    // get packet length, either the maximum allowed size or whatever is still available to TX
+                    int packetLength = Math.Min((int)WireProtocolPacketSize, count);
+
+                    cmd.PrepareForSend(configurationSerialized, packetLength, position);
+
+                    IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_UpdateConfiguration, 0, cmd);
+
+                    if (reply != null)
+                    {
+                        Commands.Monitor_UpdateConfiguration.Reply cmdReply = reply.Payload as Commands.Monitor_UpdateConfiguration.Reply;
+
+                        if (!reply.IsPositiveAcknowledge() || cmdReply.ErrorCode != 0)
+                        {
+                            break;
+                        }
+
+                        count -= packetLength;
+                        position += packetLength;
+
+                        if(count == 0)
+                        {
+                            // update was OK, switch flag
+                            updateFailed = false;
+                        }
                     }
                 }
 
-                // write failed, try to replace back the old config?
-                // FIXME
+                if(updateFailed)
+                {
+                    // failed to upload new configuration
+                    // revert back old one
+
+                    // TODO
+                }
+                else
+                {
+                    return true;
+                }
             }
 
             // default to false
@@ -3469,15 +3557,27 @@ namespace nanoFramework.Tools.Debugger
                         currentConfiguration.Wireless80211Configurations[(int)blockIndex] = configuration as DeviceConfiguration.Wireless80211ConfigurationProperties;
                     }
                 }
+                else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
+                {
+                    // if list is empty and request index is 0
+                    if (currentConfiguration.X509Certificates.Count == 0 && blockIndex == 0)
+                    {
+                        currentConfiguration.X509Certificates.Add(configuration as DeviceConfiguration.X509CaRootBundleProperties);
+                    }
+                    else
+                    {
+                        currentConfiguration.X509Certificates[(int)blockIndex] = configuration as DeviceConfiguration.X509CaRootBundleProperties;
+                    }
+                }
 
-                if(UpdateDeviceConfiguration(currentConfiguration))
+                if (UpdateDeviceConfiguration(currentConfiguration))
                 {
                     // done here
                     return true;
                 }
                 else
                 {
-                    // write failed, the old configuration is supposed to have been reverted by 
+                    // write failed, the old configuration it's supposed to have been reverted by now
                 }
             }
 
