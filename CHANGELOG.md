@@ -4,6 +4,10 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-037...HEAD)
 
+**Implemented enhancements:**
+
+- Improve SerialDevice creation [\#179](https://github.com/nanoframework/nf-debugger/pull/179)
+
 **Documentation and other chores:**
 
 - Update references and dependencies [\#178](https://github.com/nanoframework/nf-debugger/pull/178)
