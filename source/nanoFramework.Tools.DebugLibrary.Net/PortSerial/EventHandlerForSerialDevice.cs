@@ -3,8 +3,9 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using nanoFramework.Tools.Debugger.Extensions;
 using System;
-using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
@@ -105,10 +106,17 @@ namespace nanoFramework.Tools.Debugger.Serial
         {
             bool successfullyOpenedDevice = false;
 
-            _device = await SerialDevice.FromIdAsync(deviceInfo.Id);
-
             try
             {
+                // need to wrap the call to FromIdAsync on a task with a timed cancellation token to force a constrained execution time 
+                // as this API call can block execution when an exception occurs inside it (the real reason is undetermined, seems to be with the driver) 
+                // has reportedly been seen with Bluetooth virtual serial ports and some ESP32 serial interfaces
+
+                var cts = new CancellationTokenSource();
+                cts.CancelAfter(1000);
+
+                _device = await SerialDevice.FromIdAsync(deviceInfo.Id).AsTask(cts.Token).CancelAfterAsync(1000, cts);
+
                 // Device could have been blocked by user or the device has already been opened by another app.
                 if (_device != null)
                 {
