@@ -452,10 +452,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice(deviceInformation.DeviceInformation.Id));
 
-            var tentativeDevice = await SerialDevice.FromIdAsync(deviceInformation.DeviceInformation.Id);
+            SerialDevice tentativeDevice = null;
 
             try
             {
+                // need to wrap the call to FromIdAsync on a task with a timed cancellation token to force a constrained execution time 
+                // as this API call can block execution when an exception occurs inside it (the real reason is undetermined, seems to be with the driver) 
+                // has reportedly been seen with Bluetooth virtual serial ports and some ESP32 serial interfaces
+
+                var cts = new CancellationTokenSource();
+                cts.CancelAfter(1000);
+
+                tentativeDevice = await SerialDevice.FromIdAsync(deviceInformation.DeviceInformation.Id).AsTask(cts.Token).CancelAfterAsync(1000, cts);
+
                 // Device could have been blocked by user or the device has already been opened by another app.
                 if (tentativeDevice != null)
                 {
@@ -531,8 +540,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // this is required to be able to actually close devices that get stuck with pending tasks on the in/output streams
                 var closeTask = Task.Factory.StartNew(() =>
                 {
-                    // This closes the handle to the device
-                    tentativeDevice?.Dispose();
+                // This closes the handle to the device
+                tentativeDevice?.Dispose();
                     tentativeDevice = null;
                 });
             }
