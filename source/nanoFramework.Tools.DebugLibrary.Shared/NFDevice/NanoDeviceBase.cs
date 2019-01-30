@@ -353,12 +353,6 @@ namespace nanoFramework.Tools.Debugger
 
                 var rebootOptions = RebootOptions.ClrOnly;
 
-                // if we've just erase the deployment area there is no more app so the execution engine can't be gracefully stopped
-                if ((options & EraseOptions.Deployment) == EraseOptions.Deployment)
-                {
-                    rebootOptions |= RebootOptions.NoShutdown;
-                }
-
                 DebugEngine.RebootDevice(rebootOptions);
             }
 
