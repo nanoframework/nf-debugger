@@ -2,7 +2,14 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-037...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-040...HEAD)
+
+**Implemented enhancements:**
+
+- Remove NoShutdown from RebootOptions [\#180](https://github.com/nanoframework/nf-debugger/pull/180) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
+
+## [v1.0.1-preview-040](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-040) (2019-01-28)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-037...v1.0.1-preview-040)
 
 **Implemented enhancements:**
 
