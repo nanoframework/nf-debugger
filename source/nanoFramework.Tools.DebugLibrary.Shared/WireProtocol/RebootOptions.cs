@@ -30,11 +30,6 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Wait for debugger.
         /// </summary>
-        WaitForDebugger = 4,
-
-        /// <summary>
-        /// Don't perform graceful execution engine shutdown.
-        /// </summary>
-        NoShutdown = 8,
+        WaitForDebugger = 4
     };
 }
