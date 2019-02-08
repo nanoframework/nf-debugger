@@ -48,10 +48,15 @@ namespace nanoFramework.Tools.Debugger.Extensions
                     }
                     return output.ToString();
                 }
-            }
-            catch { }
 
-            return "Invalid or empty map data.";
+                return "Empty map data.";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception when parsing memory map data: {ex.Message + Environment.NewLine + ex.StackTrace}");
+            }
+
+            return "Exception when trying to parse memory map data.";
         }
 
         public static string ToStringForOutput(this List<Commands.Monitor_FlashSectorMap.FlashSectorData> range)
@@ -82,12 +87,15 @@ namespace nanoFramework.Tools.Debugger.Extensions
                     output.AppendLine(" Start        Size (kB)           Usage");
                     output.AppendLine("--------------------------------------------");
 
-                    // nanoBooter
-                    output.AppendLine(
-                        $" {string.Format("0x{0:X08}", range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).m_StartAddress)}" +
-                        $"   {string.Format("0x{0:X06}", range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock))}" +
-                        $" {range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock).ToMemorySizeFormart()}" +
-                        $"   {range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).UsageAsString()}");
+                    // output nanoBooter, only if it's available on the target
+                    if (range.Exists(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP))
+                    {
+                        output.AppendLine(
+                            $" {string.Format("0x{0:X08}", range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).m_StartAddress)}" +
+                            $"   {string.Format("0x{0:X06}", range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock))}" +
+                            $" {range.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock).ToMemorySizeFormart()}" +
+                            $"   {range.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).UsageAsString()}");
+                    }
 
                     // output config line only if it's available on the target
                     if (range.Count(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG) > 0)
@@ -115,10 +123,15 @@ namespace nanoFramework.Tools.Debugger.Extensions
 
                     return output.ToString();
                 }
-            }
-            catch { }
 
-            return "Invalid or empty map data.";
+                return "Empty map data.";
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Exception when parsing flash map data: {ex.Message + Environment.NewLine + ex.StackTrace}");
+            }
+
+            return "Exception when trying to parse flash map data.";
         }
 
         public static string ToStringForOutput(this List<Commands.Monitor_DeploymentMap.DeploymentData> range)
