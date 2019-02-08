@@ -2,7 +2,18 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-040...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-043...HEAD)
+
+**Implemented enhancements:**
+
+- Fix FlashSectorData ToString [\#181](https://github.com/nanoframework/nf-debugger/pull/181)
+
+**Fixed bugs:**
+
+- Fix FlashSectorData ToString [\#181](https://github.com/nanoframework/nf-debugger/pull/181)
+
+## [v1.0.1-preview-043](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-043) (2019-01-30)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-040...v1.0.1-preview-043)
 
 **Implemented enhancements:**
 
