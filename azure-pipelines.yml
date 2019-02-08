@@ -144,8 +144,8 @@ steps:
           git add CHANGELOG.md
           git commit -m "Update CHANGELOG for v$(NBGV_Version)" -m"***NO_CI***"
 
-          git config user.email ${{ parameters.gitEmail }}
-          git config user.name ${{ parameters.gitUser }}
+          git config user.email 'nanoframework@outlook.com'
+          git config user.name 'nfbot'
           
           # compute authorization header in format "AUTHORIZATION: basic 'encoded token'"
           # 'encoded token' is the Base64 of the string "nfbot:personal-token"
