@@ -25,7 +25,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Creates an Serial debug client
         /// </summary>
-        public SerialPort(Application callerApp)
+        public SerialPort(Application callerApp, bool startDeviceWatchers = true)
         {
             _mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, String>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
@@ -36,7 +36,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             Task.Factory.StartNew(() =>
             {
-                StartSerialDeviceWatchers();
+                if (startDeviceWatchers)
+                {
+                    StartSerialDeviceWatchers();
+                }
             });
         }
     }

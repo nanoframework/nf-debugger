@@ -59,6 +59,24 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public event EventHandler<StringEventArgs> LogMessageAvailable;
 
+        /// <summary>
+        /// Starts the device watchers.
+        /// If they are already started this operation won't have any effect.
+        /// </summary>
+        public abstract void StartDeviceWatchers();
+
+        /// <summary>
+        /// Stops the device watchers.
+        /// If they are already stopped this operation won't have any effect.
+        /// </summary>
+        public abstract void StopDeviceWatchers();
+
+        /// <summary>
+        /// Performs a re-scan of the connected devices.
+        /// This operation resets the list of available devices and attempts to validate if a connected device it's a nanoDevice.
+        /// </summary>
+        public abstract void ReScanDevices();
+
         public void OnLogMessageAvailable(string message)
         {
             LogMessageAvailable?.Invoke(this, new StringEventArgs(message));

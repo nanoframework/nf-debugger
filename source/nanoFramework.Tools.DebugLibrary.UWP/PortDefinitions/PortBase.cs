@@ -13,14 +13,14 @@ namespace nanoFramework.Tools.Debugger
 {
     public abstract partial class PortBase
     {
-        public static PortBase CreateInstanceForSerial(string displayName, Application callerApp)
+        public static PortBase CreateInstanceForSerial(string displayName, Application callerApp, bool startDeviceWatchers = true)
         {
-            return new SerialPort(callerApp);
+            return new SerialPort(callerApp, startDeviceWatchers);
         }
 
-        public static PortBase CreateInstanceForUsb(string displayName, Application callerApp)
+        public static PortBase CreateInstanceForUsb(string displayName, Application callerApp, bool startDeviceWatchers = true)
         {
-            return new UsbPort(callerApp);
+            return new UsbPort(callerApp, startDeviceWatchers);
         }
     }
 }
