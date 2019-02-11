@@ -143,24 +143,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
         private async void PingButton_Click(object sender, RoutedEventArgs e)
         {
-            // disable button
-            (sender as Button).IsEnabled = false;
-
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
-
-                var p = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].Ping();
-
-                Debug.WriteLine("");
-                Debug.WriteLine("");
-                Debug.WriteLine("Ping response: " + p.ToString());
-                Debug.WriteLine("");
-                Debug.WriteLine("");
-
-            }));
-
-            // enable button
-            (sender as Button).IsEnabled = true;
-        }
+}
 
         private object await(MainViewModel mainViewModel)
         {
@@ -405,14 +388,14 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                 await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
 
-                    var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.DeploymentExecute(assemblies, false);
+                    var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.DeploymentExecute(assemblies, true);
 
                     Debug.WriteLine($">>> Deployment result: {result} <<<<");
 
 
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
+                    //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
 
-                    Task.Delay(1000).Wait();
+                    //Task.Delay(1000).Wait();
 
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo(true);
 
@@ -879,6 +862,21 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                  }
 
              }));
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private async void ReScanDevices_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+
+                (DataContext as MainViewModel).SerialDebugService.SerialDebugClient.ReScanDevices();
+
+            }));
 
             // enable button
             (sender as Button).IsEnabled = true;

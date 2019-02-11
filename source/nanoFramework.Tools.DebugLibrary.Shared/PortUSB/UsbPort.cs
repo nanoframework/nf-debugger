@@ -45,7 +45,7 @@ namespace nanoFramework.Tools.Debugger.Usb
         /// <summary>
         /// Creates an USB debug client
         /// </summary>
-        public UsbPort(Application callerApp)
+        public UsbPort(Application callerApp, bool startDeviceWatchers = true)
         {
             mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, String>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
@@ -59,7 +59,10 @@ namespace nanoFramework.Tools.Debugger.Usb
 
             Task.Factory.StartNew(() =>
             {
-                StartUsbDeviceWatchers();
+                if (startDeviceWatchers)
+                {
+                    StartUsbDeviceWatchers();
+                }
             });
         }
 
@@ -115,14 +118,13 @@ namespace nanoFramework.Tools.Debugger.Usb
         public void StartUsbDeviceWatchers()
         {
             // Initialize the USB device watchers to be notified when devices are connected/removed
-            InitializeDeviceWatchers();
-            StartDeviceWatchers();
+            StartDeviceWatchersInternal();
         }
 
         /// <summary>
         /// Starts all device watchers including ones that have been individually stopped.
         /// </summary>
-        private void StartDeviceWatchers()
+        private void StartDeviceWatchersInternal()
         {
             // Start all device watchers
             watchersStarted = true;
@@ -149,7 +151,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             if (watchersStarted)
             {
                 watchersSuspended = true;
-                StopDeviceWatchers();
+                StopDeviceWatchersInternal();
             }
             else
             {
@@ -173,7 +175,7 @@ namespace nanoFramework.Tools.Debugger.Usb
         /// <summary>
         /// Stops all device watchers.
         /// </summary>
-        private void StopDeviceWatchers()
+        private void StopDeviceWatchersInternal()
         {
             // Stop all device watchers
             foreach (DeviceWatcher deviceWatcher in mapDeviceWatchersToDeviceSelector.Keys)
@@ -628,6 +630,21 @@ namespace nanoFramework.Tools.Debugger.Usb
 
             // return empty byte array
             return new byte[0];
+        }
+
+        public override void StartDeviceWatchers()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void StopDeviceWatchers()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void ReScanDevices()
+        {
+            throw new NotImplementedException();
         }
 
         #endregion
