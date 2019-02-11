@@ -554,7 +554,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             // dev note: this temporary connection to the device, because it actually connects with the device and sends data, has to be carried on it's own without reusing anything from the EventHandlerForSerialDevice otherwise it would break it
             // this operation sends a valid ping request and waits for a reply from the connected COM port
-            // considering that the Ping request is valid and properly formatted we are just checking if there is a reply from the device and if it has the expected length
+            // considering that the Ping request is valid and properly formatted we are checking:
+            // - if there is a reply from the device
+            // - if it has the expected length 
+            // - if the packet starts with the MARKER_PACKET_V1
             // this might look as an oversimplification or simplistic but it's quite safe
 
             try
@@ -640,8 +643,18 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                         if (bytesRead == 32)
                         {
-                            // at this point we are just happy to get the expected number of bytes from a valid nanoDevice
-                            return true;
+                            byte[] readBuffer = new byte[bytesRead];
+                            inputStreamReader?.ReadBytes(readBuffer);
+
+                            // minimal check: the received package has to start with the MARKER_PACKET_V1
+                            var marker = Packet.MARKER_PACKET_V1.ToCharArray().Select(c => (byte)c).ToArray();
+
+                            // compare 
+                            if (readBuffer.Take(Packet.MARKER_PACKET_V1.Length).SequenceEqual(marker))
+                            {
+                                // looks good!
+                                return true;
+                            }
                         }
                     }
                     catch (TaskCanceledException)
