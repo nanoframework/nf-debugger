@@ -293,21 +293,14 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
                          Debug.WriteLine(string.Empty);
                          Debug.WriteLine(string.Empty);
-                         Debug.WriteLine("--------------------------------");
-                         Debug.WriteLine("::        Memory Map          ::");
-                         Debug.WriteLine("--------------------------------");
                          Debug.WriteLine(deviceMemoryMap.ToString());
 
                          Debug.WriteLine(string.Empty);
                          Debug.WriteLine(string.Empty);
-                         Debug.WriteLine("-----------------------------------------------------------");
-                         Debug.WriteLine("::                   Flash Sector Map                    ::");
-                         Debug.WriteLine("-----------------------------------------------------------");
                          Debug.WriteLine(deviceFlashSectorMap.ToString());
 
                          Debug.WriteLine(string.Empty);
                          Debug.WriteLine(string.Empty);
-                         Debug.WriteLine("Deployment Map");
                          Debug.WriteLine(deviceDeploymentMap.ToString());
 
                      }
