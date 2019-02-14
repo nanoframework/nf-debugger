@@ -6,6 +6,7 @@
 
 **Implemented enhancements:**
 
+- Tidy output of device capabilites listings [\#184](https://github.com/nanoframework/nf-debugger/pull/184)
 - Update CreateInstanceForSerial constructor for .NET lib [\#183](https://github.com/nanoframework/nf-debugger/pull/183)
 - Improvements device discovery and PortBase classes [\#182](https://github.com/nanoframework/nf-debugger/pull/182)
 - Fix FlashSectorData ToString [\#181](https://github.com/nanoframework/nf-debugger/pull/181)
