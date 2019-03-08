@@ -13,6 +13,7 @@
 
 **Fixed bugs:**
 
+- Fix update network config [\#185](https://github.com/nanoframework/nf-debugger/pull/185)
 - Fix FlashSectorData ToString [\#181](https://github.com/nanoframework/nf-debugger/pull/181)
 
 ## [v1.0.1-preview-043](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-043) (2019-01-30)
