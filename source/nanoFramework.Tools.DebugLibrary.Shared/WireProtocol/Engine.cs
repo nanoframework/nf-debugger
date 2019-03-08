@@ -3523,69 +3523,179 @@ namespace nanoFramework.Tools.Debugger
             // Create cancellation token source
             CancellationTokenSource cts = new CancellationTokenSource();
 
-            // get the current configuration from the device
-            var currentConfiguration = GetDeviceConfiguration(cts.Token);
-
-            if (currentConfiguration != null)
+            if(Capabilities.ConfigBlockRequiresErase)
             {
-                // now update the specific configuration block
-                if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
+                // this device requires erasing the configuration block before updating it
+
+                // get the current configuration from the device
+                var currentConfiguration = GetDeviceConfiguration(cts.Token);
+
+                if (currentConfiguration != null)
                 {
-                    // validate request index
-                    if (currentConfiguration.NetworkConfigurations.ValidateIndex(blockIndex))
+                    // now update the specific configuration block
+                    if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
+                    {
+                        // validate request index
+                        if (currentConfiguration.NetworkConfigurations.ValidateIndex(blockIndex))
+                        {
+                            // if list is empty and request index is 0
+                            if (currentConfiguration.NetworkConfigurations.Count == 0 && blockIndex == 0)
+                            {
+                                currentConfiguration.NetworkConfigurations.Add(configuration as DeviceConfiguration.NetworkConfigurationProperties);
+                            }
+                            else
+                            {
+                                currentConfiguration.NetworkConfigurations[(int)blockIndex] = configuration as DeviceConfiguration.NetworkConfigurationProperties;
+                            }
+                        }
+                    }
+                    else if (configuration.GetType().Equals(typeof(DeviceConfiguration.Wireless80211ConfigurationProperties)))
                     {
                         // if list is empty and request index is 0
-                        if (currentConfiguration.NetworkConfigurations.Count == 0 && blockIndex == 0)
+                        if (currentConfiguration.Wireless80211Configurations.Count == 0 && blockIndex == 0)
                         {
-                            currentConfiguration.NetworkConfigurations.Add(configuration as DeviceConfiguration.NetworkConfigurationProperties);
+                            currentConfiguration.Wireless80211Configurations.Add(configuration as DeviceConfiguration.Wireless80211ConfigurationProperties);
                         }
                         else
                         {
-                            currentConfiguration.NetworkConfigurations[(int)blockIndex] = configuration as DeviceConfiguration.NetworkConfigurationProperties;
+                            currentConfiguration.Wireless80211Configurations[(int)blockIndex] = configuration as DeviceConfiguration.Wireless80211ConfigurationProperties;
+                        }
+                    }
+                    else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
+                    {
+                        // if list is empty and request index is 0
+                        if (currentConfiguration.X509Certificates.Count == 0 && blockIndex == 0)
+                        {
+                            currentConfiguration.X509Certificates.Add(configuration as DeviceConfiguration.X509CaRootBundleProperties);
+                        }
+                        else
+                        {
+                            currentConfiguration.X509Certificates[(int)blockIndex] = configuration as DeviceConfiguration.X509CaRootBundleProperties;
+                        }
+                    }
+
+                    if (UpdateDeviceConfiguration(currentConfiguration))
+                    {
+                        // done here
+                        return true;
+                    }
+                    else
+                    {
+                        // write failed, the old configuration it's supposed to have been reverted by now
+                    }
+                }
+            }
+            else
+            {
+                // no need to erase configuration block, just update what's required
+
+                // serialize the configuration block
+                var configurationSerialized = GetDeviceConfigurationSerialized(configuration);
+
+                // counters to manage the chunked update process
+                int count = configurationSerialized.Length;
+                int position = 0;
+
+                // flag to signal the update operation success/failure
+                bool updateFailed = true;
+
+                while (count > 0)
+                {
+                    Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration
+                    {
+                        Configuration = (uint)GetDeviceConfigurationOption(configuration)
+                    };
+
+                    // get packet length, either the maximum allowed size or whatever is still available to TX
+                    int packetLength = Math.Min((int)WireProtocolPacketSize, count);
+
+                    cmd.PrepareForSend(configurationSerialized, packetLength, position);
+
+                    IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_UpdateConfiguration, 0, cmd);
+
+                    if (reply != null)
+                    {
+                        Commands.Monitor_UpdateConfiguration.Reply cmdReply = reply.Payload as Commands.Monitor_UpdateConfiguration.Reply;
+
+                        if (!reply.IsPositiveAcknowledge() || cmdReply.ErrorCode != 0)
+                        {
+                            break;
+                        }
+
+                        count -= packetLength;
+                        position += packetLength;
+
+                        if (count == 0)
+                        {
+                            // update was OK, switch flag
+                            updateFailed = false;
                         }
                     }
                 }
-                else if (configuration.GetType().Equals(typeof(DeviceConfiguration.Wireless80211ConfigurationProperties)))
-                {
-                    // if list is empty and request index is 0
-                    if (currentConfiguration.Wireless80211Configurations.Count == 0 && blockIndex == 0)
-                    {
-                        currentConfiguration.Wireless80211Configurations.Add(configuration as DeviceConfiguration.Wireless80211ConfigurationProperties);
-                    }
-                    else
-                    {
-                        currentConfiguration.Wireless80211Configurations[(int)blockIndex] = configuration as DeviceConfiguration.Wireless80211ConfigurationProperties;
-                    }
-                }
-                else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
-                {
-                    // if list is empty and request index is 0
-                    if (currentConfiguration.X509Certificates.Count == 0 && blockIndex == 0)
-                    {
-                        currentConfiguration.X509Certificates.Add(configuration as DeviceConfiguration.X509CaRootBundleProperties);
-                    }
-                    else
-                    {
-                        currentConfiguration.X509Certificates[(int)blockIndex] = configuration as DeviceConfiguration.X509CaRootBundleProperties;
-                    }
-                }
 
-                if (UpdateDeviceConfiguration(currentConfiguration))
+                if (updateFailed)
                 {
-                    // done here
-                    return true;
+                    // failed to upload new configuration
+                    // revert back old one
+
+                    // TODO
                 }
                 else
                 {
-                    // write failed, the old configuration it's supposed to have been reverted by now
+                    return true;
                 }
+
             }
 
             // default to false
             return false;
+
         }
 
-        #endregion
+        private byte[] GetDeviceConfigurationSerialized<T>(T configuration)
+        {   
+            if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
+            {
+                var configBase = configuration as DeviceConfiguration.NetworkConfigurationProperties;
+                return CreateConverter().Serialize((NetworkConfigurationBase)configBase);
+            }
+            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.Wireless80211ConfigurationProperties)))
+            {
+                var configBase = configuration as DeviceConfiguration.Wireless80211ConfigurationProperties;
+                return CreateConverter().Serialize((Wireless80211ConfigurationBase)configBase);
+            }
+            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
+            {
+                var configBase = configuration as DeviceConfiguration.X509CaRootBundleProperties;
+                return CreateConverter().Serialize((X509CaRootBundlePropertiesBase)configBase);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
 
-    }
+        private DeviceConfiguration.DeviceConfigurationOption GetDeviceConfigurationOption<T>(T configuration)
+        {
+            if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
+            {
+                return DeviceConfiguration.DeviceConfigurationOption.Network;
+            }
+            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.Wireless80211ConfigurationProperties)))
+            {
+                return DeviceConfiguration.DeviceConfigurationOption.Wireless80211Network;
+            }
+            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
+            {
+                return DeviceConfiguration.DeviceConfigurationOption.X509Certificate;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+    #endregion
+
+}
 }
