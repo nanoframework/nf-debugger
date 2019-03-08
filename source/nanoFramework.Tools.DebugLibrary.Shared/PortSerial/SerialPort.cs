@@ -613,10 +613,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 // dispose on a Task to perform the Dispose()
                 // this is required to be able to actually close devices that get stuck with pending tasks on the in/output streams
-                var closeTask = Task.Factory.StartNew(() =>
+                var task = Task.Factory.StartNew(() =>
                 {
-                // This closes the handle to the device
-                tentativeDevice?.Dispose();
+                    // This closes the handle to the device
+                    tentativeDevice?.Dispose();
                     tentativeDevice = null;
                 });
             }
@@ -698,7 +698,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         // write pingHeader to device
                         outputStreamWriter.WriteBytes(pingHeader);
 
-                        storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(cts.Token.AddTimeout(new TimeSpan(0, 0, 1)));
+                        storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(cts.Token.AddTimeout(new TimeSpan(0, 0, 2)));
 
                         var txBytes = await storeAsyncTask;
 
@@ -706,13 +706,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         // write pingPayload to device
                         outputStreamWriter.WriteBytes(pingPayload);
 
-                        storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(cts.Token.AddTimeout(new TimeSpan(0, 0, 1)));
+                        storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(cts.Token.AddTimeout(new TimeSpan(0, 0, 2)));
 
                         txBytes = await storeAsyncTask;
 
                         //////////////////////////////////////////////////
                         // read answer (32 bytes)
-                        loadAsyncTask = inputStreamReader.LoadAsync(32).AsTask(cts.Token.AddTimeout(new TimeSpan(0, 0, 1)));
+                        loadAsyncTask = inputStreamReader.LoadAsync(32).AsTask(cts.Token.AddTimeout(new TimeSpan(0, 0, 2)));
 
                         UInt32 bytesRead = await loadAsyncTask;
 
@@ -744,10 +744,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     {
                         // detach stream
                         outputStreamWriter?.DetachStream();
+                        outputStreamWriter?.Dispose();
                         outputStreamWriter = null;
 
                         // detach stream
                         inputStreamReader?.DetachStream();
+                        inputStreamReader?.Dispose();
                         inputStreamReader = null;
                     }
                 }
