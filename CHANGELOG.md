@@ -14,6 +14,7 @@
 
 **Fixed bugs:**
 
+- Fix getting configuration blocks [\#187](https://github.com/nanoframework/nf-debugger/pull/187)
 - Fix update network config [\#185](https://github.com/nanoframework/nf-debugger/pull/185)
 - Fix FlashSectorData ToString [\#181](https://github.com/nanoframework/nf-debugger/pull/181)
 
