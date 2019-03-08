@@ -3244,10 +3244,19 @@ namespace nanoFramework.Tools.Debugger
                 // get next network configuration block, if available
                 networkConfig = GetNetworkConfiguratonProperties(index++);
 
-                // add to list, if valid
-                if (!networkConfig.IsUnknown)
+                // was there an answer?
+                if (networkConfig != null)
                 {
-                    networkConfigurations.Add(networkConfig);
+                    // add to list, if valid
+                    if (!networkConfig.IsUnknown)
+                    {
+                        networkConfigurations.Add(networkConfig);
+                    }
+                }
+                else
+                {
+                    // no reply from device or no more config blocks available
+                    break;
                 }
             }
             while (!networkConfig.IsUnknown);
@@ -3267,10 +3276,19 @@ namespace nanoFramework.Tools.Debugger
                 // get next network configuration block, if available
                 wirelessConfigProperties = GetWireless80211ConfiguratonProperties(index++);
 
-                // add to list, if valid
-                if(!wirelessConfigProperties.IsUnknown)
+                // was there an answer?
+                if (wirelessConfigProperties != null)
                 {
-                    wireless80211Configurations.Add(wirelessConfigProperties);
+                    // add to list, if valid
+                    if (!wirelessConfigProperties.IsUnknown)
+                    {
+                        wireless80211Configurations.Add(wirelessConfigProperties);
+                    }
+                }
+                else
+                {
+                    // no reply from device or no more config blocks available
+                    break;
                 }
             }
             while (!wirelessConfigProperties.IsUnknown);
@@ -3290,10 +3308,19 @@ namespace nanoFramework.Tools.Debugger
                 // get next X509 certificate configuration block, if available
                 x509CertificatesProperties = GetX509CertificatesProperties(index++);
 
-                // add to list, if valid
-                if(!x509CertificatesProperties.IsUnknown)
+                // was there an answer?
+                if (x509CertificatesProperties != null)
                 {
-                    x509Certificates.Add(x509CertificatesProperties);
+                    // add to list, if valid
+                    if (!x509CertificatesProperties.IsUnknown)
+                    {
+                        x509Certificates.Add(x509CertificatesProperties);
+                    }
+                }
+                else
+                {
+                    // no reply from device or no more config blocks available
+                    break;
                 }
             }
             while (!x509CertificatesProperties.IsUnknown);
@@ -3309,22 +3336,25 @@ namespace nanoFramework.Tools.Debugger
 
             Commands.Monitor_QueryConfiguration.NetworkConfiguration networkConfiguration = new Commands.Monitor_QueryConfiguration.NetworkConfiguration();
 
-            DeviceConfiguration.NetworkConfigurationProperties networkConfigProperties = new DeviceConfiguration.NetworkConfigurationProperties();
+            DeviceConfiguration.NetworkConfigurationProperties networkConfigProperties = null;
 
             if (reply != null)
             {
-                if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
+                if (reply.IsPositiveAcknowledge())
                 {
-                    new Converter().Deserialize(networkConfiguration, cmdReply.Data);
-
-                    // sanity check for invalid configuration (can occur for example when flash is erased and reads as 0xFF)
-                    if (networkConfiguration.StartupAddressMode > (byte)AddressMode.AutoIP)
+                    if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
                     {
-                        // fix this to invalid
-                        networkConfiguration.StartupAddressMode = (byte)AddressMode.Invalid;
-                    }
+                        new Converter().Deserialize(networkConfiguration, cmdReply.Data);
 
-                    networkConfigProperties = new DeviceConfiguration.NetworkConfigurationProperties(networkConfiguration);
+                        // sanity check for invalid configuration (can occur for example when flash is erased and reads as 0xFF)
+                        if (networkConfiguration.StartupAddressMode > (byte)AddressMode.AutoIP)
+                        {
+                            // fix this to invalid
+                            networkConfiguration.StartupAddressMode = (byte)AddressMode.Invalid;
+                        }
+
+                        networkConfigProperties = new DeviceConfiguration.NetworkConfigurationProperties(networkConfiguration);
+                    }
                 }
             }
 
@@ -3339,15 +3369,18 @@ namespace nanoFramework.Tools.Debugger
 
             Commands.Monitor_QueryConfiguration.NetworkWirelessConfiguration wirelessConfiguration = new Commands.Monitor_QueryConfiguration.NetworkWirelessConfiguration();
 
-            DeviceConfiguration.Wireless80211ConfigurationProperties wirelessConfigProperties = new DeviceConfiguration.Wireless80211ConfigurationProperties();
+            DeviceConfiguration.Wireless80211ConfigurationProperties wirelessConfigProperties = null;
 
             if (reply != null)
             {
-                if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
+                if (reply.IsPositiveAcknowledge())
                 {
-                    new Converter().Deserialize(wirelessConfiguration, cmdReply.Data);
+                    if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
+                    {
+                        new Converter().Deserialize(wirelessConfiguration, cmdReply.Data);
 
-                    wirelessConfigProperties = new DeviceConfiguration.Wireless80211ConfigurationProperties(wirelessConfiguration);
+                        wirelessConfigProperties = new DeviceConfiguration.Wireless80211ConfigurationProperties(wirelessConfiguration);
+                    }
                 }
             }
 
@@ -3362,15 +3395,18 @@ namespace nanoFramework.Tools.Debugger
 
             Commands.Monitor_QueryConfiguration.X509CaRootBundleConfig x509Certificate = new Commands.Monitor_QueryConfiguration.X509CaRootBundleConfig();
 
-            DeviceConfiguration.X509CaRootBundleProperties x509CertificateProperties = new DeviceConfiguration.X509CaRootBundleProperties();
+            DeviceConfiguration.X509CaRootBundleProperties x509CertificateProperties = null;
 
             if (reply != null)
             {
-                if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
+                if (reply.IsPositiveAcknowledge())
                 {
-                    new Converter().Deserialize(x509Certificate, cmdReply.Data);
+                    if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
+                    {
+                        new Converter().Deserialize(x509Certificate, cmdReply.Data);
 
-                    x509CertificateProperties = new DeviceConfiguration.X509CaRootBundleProperties(x509Certificate);
+                        x509CertificateProperties = new DeviceConfiguration.X509CaRootBundleProperties(x509Certificate);
+                    }
                 }
             }
 
