@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2017 The nanoFramework project contributors
 // Portions Copyright (c) Microsoft Corporation.  All rights reserved.
 // See LICENSE file in the project root for full license information.
@@ -2697,7 +2697,7 @@ namespace nanoFramework.Tools.Debugger
                 if(deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size) < deployLength)
                 {
                     // compose error message
-                    string errorMessage = $"Deployment storage (total size: {deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size)} bytes) was not large enough to fit assemblies to deploy (total size: {deployLength} bytes)";
+                    string errorMessage = $"Deployment storage (available size: {deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size)} bytes) is not large enough for assemblies to deploy (total size: {deployLength} bytes).";
 
                     progress?.Report(errorMessage);
 
@@ -2755,7 +2755,7 @@ namespace nanoFramework.Tools.Debugger
                     else
                     {
                         // shouldn't happen, but couldn't find enough space to deploy all the assemblies!!
-                        string errorMessage = $"Couldn't find a free deployment block to complete the deployment (remaining: {remainingBytes} bytes)";
+                        string errorMessage = $"Couldn't find a free deployment block to complete the deployment (remaining: {remainingBytes} bytes).";
 
                         progress?.Report(errorMessage);
 
@@ -2771,7 +2771,7 @@ namespace nanoFramework.Tools.Debugger
                     var eraseResult = EraseMemory((uint)block.StartAddress, 1);
                     if (!eraseResult.Success)
                     {
-                        progress?.Report(($"FAILED to erase device memory @0x{block.StartAddress.ToString("X8")} with Length=0x{block.Size.ToString("X8")}"));
+                        progress?.Report(($"Error erasing device memory @ 0x{block.StartAddress.ToString("X8")}."));
 
                         return false;
                     }
@@ -2779,13 +2779,13 @@ namespace nanoFramework.Tools.Debugger
                     var writeResult = WriteMemory((uint)block.StartAddress, block.DeploymentData);
                     if (!writeResult.Success)
                     {
-                        progress?.Report(($"FAILED to write device memory @0x{block.StartAddress.ToString("X8")} with Length={block.Size.ToString("X8")}"));
+                        progress?.Report(($"Error writing to device memory @ 0x{block.StartAddress.ToString("X8")} ({block.DeploymentData.Length} bytes)."));
 
                         return false;
                     }
 
                     // report progress
-                    // progress?.Report($"Deployed assemblies for a total size of {blocksToDeploy.Sum(b => b.Size)} bytes");
+                    progress?.Report($"Deployed assemblies with a total size of {blocksToDeploy.Sum(b => b.Size)} bytes.");
                 }
 
                 // deployment successful
@@ -2793,7 +2793,10 @@ namespace nanoFramework.Tools.Debugger
             }
 
             // invalid flash map
-            // TODO provide feedback to user
+            progress?.Report("Error retrieving device flash map.");
+
+            throw new Exception("Error retrieving device flash map.");
+            
             return false;
         }
 
@@ -2886,7 +2889,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (Capabilities.IncrementalDeployment)
             {
-                progress?.Report("Incrementally deploying assemblies to device");
+                progress?.Report("Incrementally deploying assemblies to the device");
 
                 fDeployedOK = DeploymentExecuteIncremental(assemblies, progress);
             }
@@ -2900,11 +2903,11 @@ namespace nanoFramework.Tools.Debugger
 
             if (!fDeployedOK)
             {
-                progress?.Report("Assemblies not successfully deployed to device.");
+                progress?.Report("Error deploying assemblies to the device.");
             }
             else
             {
-                progress?.Report("Assemblies successfully deployed to device.");
+                progress?.Report("Assemblies successfully deployed to the device.");
 
                 if (fRebootAfterDeploy)
                 {
@@ -3733,5 +3736,5 @@ namespace nanoFramework.Tools.Debugger
 
     #endregion
 
-}
+    }
 }
