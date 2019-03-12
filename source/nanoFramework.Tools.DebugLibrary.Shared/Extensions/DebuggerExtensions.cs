@@ -21,7 +21,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
             if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
                 // engine is in initialised state if it's not running a program or if the program execution is stopped (after having running one)
-                var filteredResult = result & (WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramExited | WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramRunning;
+                var filteredResult = result & (WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramExited | WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramRunning);
 
                 Debug.WriteLine($"Device state is: {filteredResult.OutputDeviceExecutionState()}.");
 
