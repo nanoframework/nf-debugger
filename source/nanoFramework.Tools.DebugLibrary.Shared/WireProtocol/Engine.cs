@@ -2796,8 +2796,6 @@ namespace nanoFramework.Tools.Debugger
             progress?.Report("Error retrieving device flash map.");
 
             throw new Exception("Error retrieving device flash map.");
-            
-            return false;
         }
 
         private bool DeploymentExecuteFull(List<byte[]> assemblies, IProgress<string> progress)
