@@ -2807,18 +2807,20 @@ namespace nanoFramework.Tools.Debugger
 
                 foreach (DeploymentBlock block in blocksToDeploy)
                 {
-                    var eraseResult = EraseMemory((uint)block.StartAddress, 1);
-                    if (!eraseResult.Success)
+                    (uint ErrorCode, bool Success) memoryOperationResult;
+
+                    memoryOperationResult = EraseMemory((uint)block.StartAddress, 1);
+                    if (!memoryOperationResult.Success)
                     {
-                        progress?.Report(($"Error erasing device memory @ 0x{block.StartAddress.ToString("X8")}."));
+                        progress?.Report(($"Error erasing device memory @ 0x{block.StartAddress.ToString("X8")}. Error code: {memoryOperationResult.ErrorCode}."));
 
                         return false;
                     }
 
-                    var writeResult = WriteMemory((uint)block.StartAddress, block.DeploymentData);
-                    if (!writeResult.Success)
+                    memoryOperationResult = WriteMemory((uint)block.StartAddress, block.DeploymentData);
+                    if (!memoryOperationResult.Success)
                     {
-                        progress?.Report(($"Error writing to device memory @ 0x{block.StartAddress.ToString("X8")} ({block.DeploymentData.Length} bytes)."));
+                        progress?.Report(($"Error writing to device memory @ 0x{block.StartAddress.ToString("X8")} ({block.DeploymentData.Length} bytes). Error code: {memoryOperationResult.ErrorCode}."));
 
                         return false;
                     }
