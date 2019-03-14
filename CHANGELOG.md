@@ -6,6 +6,8 @@
 
 **Implemented enhancements:**
 
+- Work on DeploymentExecuteIncremental [\#189](https://github.com/nanoframework/nf-debugger/pull/189)
+- Add output to help debug device state [\#188](https://github.com/nanoframework/nf-debugger/pull/188)
 - Improve disconnection of SerialDevice [\#186](https://github.com/nanoframework/nf-debugger/pull/186)
 - Tidy output of device capabilites listings [\#184](https://github.com/nanoframework/nf-debugger/pull/184)
 - Update CreateInstanceForSerial constructor for .NET lib [\#183](https://github.com/nanoframework/nf-debugger/pull/183)
