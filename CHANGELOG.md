@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-043...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-061...HEAD)
+
+**Implemented enhancements:**
+
+- Add new method UpdateDebugFlags [\#191](https://github.com/nanoframework/nf-debugger/pull/191) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
+- Add output of error codes on WriteMemory [\#190](https://github.com/nanoframework/nf-debugger/pull/190)
+
+## [v1.0.1-preview-061](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-061) (2019-03-12)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-043...v1.0.1-preview-061)
 
 **Implemented enhancements:**
 
