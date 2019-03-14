@@ -274,6 +274,45 @@ namespace nanoFramework.Tools.Debugger
             return true;
         }
 
+        public bool UpdateDebugFlags()
+        {
+            if (IsConnected)
+            {
+                Commands.Monitor_Ping cmd = new Commands.Monitor_Ping();
+
+                cmd.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
+                cmd.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
+
+                IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd);
+
+                if (msg == null || msg?.Payload == null)
+                {
+                    // update flag
+                    IsConnected = false;
+
+                    // done here
+                    return false;
+                }
+
+                if (m_silent)
+                {
+                    SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
+                }
+
+                // resume execution for older clients, since server tools no longer do this.
+                if (!StopDebuggerOnConnect && (msg != null && msg.Payload == null))
+                {
+                    ResumeExecution();
+                }
+
+                // done here
+                return true;
+            }
+
+            // device isn't connected
+            return false;
+        }
+
         private void ClearPendingRequests(object state)
         {
             var requestsToCancel = _requestsStore.FindAllToCancel();
