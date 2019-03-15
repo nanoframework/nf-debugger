@@ -2826,8 +2826,11 @@ namespace nanoFramework.Tools.Debugger
                     }
 
                     // report progress
-                    progress?.Report($"Deployed assemblies with a total size of {blocksToDeploy.Sum(b => b.Size)} bytes.");
+                    progress?.Report($"Deployed { block.DeploymentData.Length }/{ blocksToDeploy.Sum(b => b.Size) } bytes.");
                 }
+
+                // report progress
+                progress?.Report($"Deployed assemblies with a total size of {blocksToDeploy.Sum(b => b.Size)} bytes.");
 
                 // deployment successful
                 return true;
