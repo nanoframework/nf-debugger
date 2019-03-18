@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2017 The nanoFramework project contributors
 // Portions Copyright (c) Microsoft Corporation.  All rights reserved.
 // See LICENSE file in the project root for full license information.
@@ -221,7 +221,6 @@ namespace nanoFramework.Tools.Debugger
         /// </returns>
         public async Task<bool> EraseAsync(EraseOptions options, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
         {
-            bool ret = false;
             bool fReset = false;
 
             if (DebugEngine == null) throw new NanoFrameworkDeviceNoResponseException();
@@ -246,8 +245,6 @@ namespace nanoFramework.Tools.Debugger
             if (reply == null) throw new NanoFrameworkDeviceNoResponseException();
 
             Commands.Monitor_Ping.Reply ping = DebugEngine.GetConnectionSource();
-
-            ret = true;
 
             long total = 0;
             long value = 0;
@@ -335,7 +332,12 @@ namespace nanoFramework.Tools.Debugger
 
                 var eraseResult = DebugEngine.EraseMemory(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
 
-                ret &= eraseResult.Success;
+                if(!eraseResult.Success)
+                {
+                    // operation failed
+                    // don't bother continuing
+                    return false;
+                }
 
                 value++;
             }
@@ -356,7 +358,7 @@ namespace nanoFramework.Tools.Debugger
                 DebugEngine.RebootDevice(rebootOptions);
             }
 
-            return ret;
+            return true;
         }
 
         public async Task<bool> DeployUpdateAsync(StorageFile comprFilePath, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
