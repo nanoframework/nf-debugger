@@ -2,7 +2,14 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-061...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-064...HEAD)
+
+**Fixed bugs:**
+
+- Fix progress output on DeploymentExecuteIncremental [\#192](https://github.com/nanoframework/nf-debugger/pull/192)
+
+## [v1.0.1-preview-064](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-064) (2019-03-14)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-061...v1.0.1-preview-064)
 
 **Implemented enhancements:**
 
