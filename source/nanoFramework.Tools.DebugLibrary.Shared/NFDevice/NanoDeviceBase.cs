@@ -328,13 +328,15 @@ namespace nanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in eraseSectors)
             {
-                progress?.Report(new ProgressReport(value, total, string.Format("Erasing sector 0x{0:x08}", flashSectorData.m_StartAddress)));
+                progress?.Report(new ProgressReport(value, total, $"Erasing sector 0x{flashSectorData.m_StartAddress.ToString("X8")}."));
 
-                var eraseResult = DebugEngine.EraseMemory(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
+                var (ErrorCode, Success) = DebugEngine.EraseMemory(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
 
-                if(!eraseResult.Success)
+                if(!Success)
                 {
                     // operation failed
+                    progress?.Report(new ProgressReport(value, total, $"Error erasing sector @ 0x{flashSectorData.m_StartAddress.ToString("X8")}. Error code: {ErrorCode}."));
+                    
                     // don't bother continuing
                     return false;
                 }
