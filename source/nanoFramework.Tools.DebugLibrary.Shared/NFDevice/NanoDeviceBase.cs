@@ -225,9 +225,15 @@ namespace nanoFramework.Tools.Debugger
 
             if (DebugEngine == null) throw new NanoFrameworkDeviceNoResponseException();
 
-            if (!await DebugEngine.ConnectAsync(500, true))
+            // check if the device is responsive
+            var isPresent = Ping();
+            if (Ping() == PingConnectionType.NoConnection)
             {
-                throw new NanoFrameworkDeviceNoResponseException();
+                // it's not, try reconnect
+                if (!await DebugEngine.ConnectAsync(5000, true))
+                {
+                    throw new NanoFrameworkDeviceNoResponseException();
+                }
             }
 
             if (!IsClrDebuggerEnabled || 0 != (options & EraseOptions.Firmware))
