@@ -2,7 +2,14 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-066...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-068...HEAD)
+
+**Implemented enhancements:**
+
+- Improvements in EraseAsync [\#194](https://github.com/nanoframework/nf-debugger/pull/194) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
+
+## [v1.0.1-preview-068](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-068) (2019-03-18)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-066...v1.0.1-preview-068)
 
 **Fixed bugs:**
 
