@@ -2,7 +2,18 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-068...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-070...HEAD)
+
+**Implemented enhancements:**
+
+- Work on ReadMemory command [\#195](https://github.com/nanoframework/nf-debugger/pull/195) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
+
+**Documentation and other chores:**
+
+- Update NuGet packages [\#196](https://github.com/nanoframework/nf-debugger/pull/196)
+
+## [v1.0.1-preview-070](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-070) (2019-03-19)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-068...v1.0.1-preview-070)
 
 **Implemented enhancements:**
 
