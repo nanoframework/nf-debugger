@@ -10,6 +10,7 @@ using Serial_Test_App_WPF.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -874,5 +875,89 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             // enable button
             (sender as Button).IsEnabled = true;
         }
+
+        private async void ReadTestButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                // Create cancellation token source
+                CancellationTokenSource cts = new CancellationTokenSource();
+
+                var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
+
+                // get memory map
+                var memoryMap = device.DebugEngine.GetMemoryMap();
+
+                // get flash map
+                var flashSectorMap = device.DebugEngine.GetFlashSectorMap();
+
+                // setup array for binary output
+                byte[] binaryOutput = new byte[memoryMap.First(m => (m.m_flags & Commands.Monitor_MemoryMap.c_FLASH) == Commands.Monitor_MemoryMap.c_FLASH).m_length];
+                var flashStartAddress = memoryMap.First(m => (m.m_flags & Commands.Monitor_MemoryMap.c_FLASH) == Commands.Monitor_MemoryMap.c_FLASH).m_address;
+
+                // bootloader
+                if (flashSectorMap.Exists(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP))
+                {
+                    var startAddress = flashSectorMap.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).m_StartAddress;
+                    var length = (uint)flashSectorMap.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock);
+
+                    var bootloaderOperation = device.DebugEngine.ReadMemory(startAddress, length);
+                    if(bootloaderOperation.Success)
+                    {
+                        // copy to array
+                        Array.Copy(bootloaderOperation.Buffer, 0, binaryOutput, startAddress - flashStartAddress, length);
+                    }
+                    else
+                    {
+                        // check error code
+                    }
+                }
+
+                // configuration
+                //var configSector = flashSectorMap.Where(s => ((s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG)).Select(s => s.ToDeploymentSector()).ToList();
+                
+                // CLR
+                if (flashSectorMap.Exists(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE))
+                {
+                    var startAddress = flashSectorMap.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).m_StartAddress;
+                    var length = (uint)flashSectorMap.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock);
+
+                    var clrOperation = device.DebugEngine.ReadMemory(startAddress, length);
+                    if (clrOperation.Success)
+                    {
+                        // copy to array
+                        Array.Copy(clrOperation.Buffer, 0, binaryOutput, startAddress - flashStartAddress, length);
+                    }
+                    else
+                    {
+                        // check error code
+                    }
+                }
+
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    Debug.WriteLine($">>> read flash memory completed <<<<");
+
+
+                    //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
+
+                    //Task.Delay(1000).Wait();
+
+                    //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo(true);
+
+                }));
+            }
+            catch
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
     }
 }

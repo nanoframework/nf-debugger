@@ -1240,7 +1240,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        private (byte[] Buffer, bool Success) ReadMemory(uint address, uint length, uint offset)
+        private (byte[] Buffer, uint ErrorCode, bool Success) ReadMemory(uint address, uint length, uint offset)
         {
             byte[] buffer = new byte[length];
 
@@ -1252,31 +1252,34 @@ namespace nanoFramework.Tools.Debugger
                 cmd.m_length = length;
 
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_ReadMemory, 0, cmd);
-                if (reply == null)
+
+                if (reply != null)
                 {
-                    return (new byte[0], false);
+                    Commands.Monitor_ReadMemory.Reply cmdReply = reply.Payload as Commands.Monitor_ReadMemory.Reply;
+
+                    if (!reply.IsPositiveAcknowledge() || cmdReply.ErrorCode != 0)
+                    {
+                        return (new byte[0], cmdReply.ErrorCode, false);
+                    }
+
+                    uint actualLength = Math.Min((uint)cmdReply.m_data.Length, length);
+
+                    Array.Copy(cmdReply.m_data, 0, buffer, (int)offset, (int)actualLength);
+
+                    address += actualLength;
+                    length -= actualLength;
+                    offset += actualLength;
                 }
-
-                Commands.Monitor_ReadMemory.Reply cmdReply = reply.Payload as Commands.Monitor_ReadMemory.Reply;
-
-                if (cmdReply == null || cmdReply.m_data == null)
+                else
                 {
-                    return (new byte[0], false);
+                    return (new byte[0], 0, false);
                 }
-
-                uint actualLength = Math.Min((uint)cmdReply.m_data.Length, length);
-
-                Array.Copy(cmdReply.m_data, 0, buffer, (int)offset, (int)actualLength);
-
-                address += actualLength;
-                length -= actualLength;
-                offset += actualLength;
             }
 
-            return (buffer, true);
+            return (buffer, 0, true);
         }
 
-        public (byte[] Buffer, bool Success) ReadMemory(uint address, uint length)
+        public (byte[] Buffer, uint ErrorCode, bool Success) ReadMemory(uint address, uint length)
         {
             return ReadMemory(address, length, 0);
         }
