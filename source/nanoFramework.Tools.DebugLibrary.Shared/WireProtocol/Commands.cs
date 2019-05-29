@@ -7,12 +7,40 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Runtime.Serialization;
 using System.Text;
 
 namespace nanoFramework.Tools.Debugger.WireProtocol
 {
+    public enum AccessMemoryErrorCodes : uint
+    {
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // NEED TO KEEP THESE IN SYNC WITH native 'AccessMemoryErrorCodes' enum in Debugger.h //
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// No error
+        /// </summary>
+        NoError = 0x0000,
+
+        /// <summary>
+        /// Permission denied
+        /// </summary>
+        PermissionDenied = 0x0010,
+
+        /// <summary>
+        /// Failed to allocate buffer to execute operation
+        /// </summary>
+        FailedToAllocateReadBuffer = 0x0020,
+
+        /// <summary>
+        /// Breakpoints are disabled in the device
+        /// </summary>
+        RequestedOperationFailed = 0x0030,
+
+        Unknown = 0xFFFF,
+    }
+
     public class Commands
     {
         public const uint c_Monitor_Ping = 0x00000000; // The payload is empty, this command is used to let the other side know we are here...
@@ -139,11 +167,15 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             public class Reply : IConverter
             {
+                public uint ErrorCode;
                 public byte[] m_data = null;
 
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
                 {
-                    m_data = new byte[size];
+                    ErrorCode = 0;
+
+                    // buffer length is: size - sizeof(ErrorCode)
+                    m_data = new byte[size - 4];
                 }
             }
         }
