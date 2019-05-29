@@ -143,7 +143,24 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
         private async void PingButton_Click(object sender, RoutedEventArgs e)
         {
-}
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+
+                var p = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].Ping();
+
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine("Ping response: " + p.ToString());
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+
+            }));
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
 
         private object await(MainViewModel mainViewModel)
         {
