@@ -200,7 +200,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             (sender as Button).IsEnabled = false;
 
             await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-             {
+            {
 
                  try
                  {
@@ -227,8 +227,16 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                      }
                      else if ((deviceState & Commands.DebuggingExecutionChangeConditions.State.ProgramExited) == Commands.DebuggingExecutionChangeConditions.State.ProgramExited)
                      {
-                         Debug.WriteLine($">>> Device it's idle after exiting from a program execution <<<<");
+                         if ((deviceState & Commands.DebuggingExecutionChangeConditions.State.ResolutionFailed) == Commands.DebuggingExecutionChangeConditions.State.ResolutionFailed)
+                         {
+                             Debug.WriteLine($">>> Device can't start execution because type resolution has failed <<<<");
+                         }
+                         else
+                         {
+                             Debug.WriteLine($">>> Device it's idle after exiting from a program execution <<<<");
+                         }
                      }
+
                  }
                  catch
                  {

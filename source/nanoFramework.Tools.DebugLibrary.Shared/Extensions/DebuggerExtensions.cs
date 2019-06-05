@@ -81,6 +81,29 @@ namespace nanoFramework.Tools.Debugger.Extensions
             }
         }
 
+        /// <summary>
+        /// Check if device execution state is: stopped on type resolution failed.
+        /// </summary>
+        /// <param name="debugEngine"></param>
+        /// <returns></returns>
+        public static bool IsDeviceStoppedOnTypeResolutionFailed(this Engine debugEngine)
+        {
+            var result = debugEngine.GetExecutionMode();
+
+            if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
+            {
+                var filteredResult = result & WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ResolutionFailed;
+
+                Debug.WriteLine($"Device state is: {filteredResult.OutputDeviceExecutionState()}.");
+
+                return (filteredResult == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ResolutionFailed);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         internal static string OutputDeviceExecutionState(this WireProtocol.Commands.DebuggingExecutionChangeConditions.State state)
         {
             if (state == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
@@ -104,7 +127,14 @@ namespace nanoFramework.Tools.Debugger.Extensions
             }
             else if ((state & WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramExited) == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramExited)
             {
-               return "idle after exiting a program execution or start-up failure";
+                if ((state & WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ResolutionFailed) == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ResolutionFailed)
+                {
+                    return "couldn't start execution because type resolution has failed";
+                }
+                else
+                {
+                    return "idle after exiting a program execution or start-up failure";
+                }
             }
 
             // should NEVER get here
