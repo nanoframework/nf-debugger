@@ -6,6 +6,7 @@
 
 **Implemented enhancements:**
 
+- Add support for type resolution failed flag [\#197](https://github.com/nanoframework/nf-debugger/pull/197)
 - Work on ReadMemory command [\#195](https://github.com/nanoframework/nf-debugger/pull/195) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
 
 **Documentation and other chores:**
