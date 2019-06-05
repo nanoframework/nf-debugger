@@ -514,6 +514,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 Initialize =            0x00000000,
 
                 /// <summary>
+                /// Type resolution has failed
+                /// </summary>
+                ResolutionFailed =      0x00000001,
+
+                /// <summary>
                 /// Device has a program running
                 /// </summary>
                 ProgramRunning =        0x00000400,
