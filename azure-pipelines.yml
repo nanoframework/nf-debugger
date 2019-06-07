@@ -49,6 +49,14 @@ steps:
     git config --global user.name 'nfbot'
   displayName: Setup git identity
 
+- task: SonarCloudPrepare@1
+  inputs:
+    SonarCloud: 'sonarcloud'
+    organization: 'nanoframework'
+    scannerMode: 'MSBuild'
+    projectKey: 'nanoframework_nf-debugger'
+  displayName: 'Prepare analysis on SonarCloud'
+
 - task: NuGetToolInstaller@0
 
 - task: NuGetCommand@2
@@ -84,6 +92,14 @@ steps:
 #   inputs:
 #     platform: '$(buildPlatform)'
 #     configuration: '$(buildConfiguration)'
+
+- task: SonarCloudAnalyze@1
+  displayName: 'Run Code Analysis'
+
+- task: SonarCloudPublish@1
+  inputs:
+    pollingTimeoutSec: '300'
+  displayName: 'Publish Quality Gate Result'
 
 - task: PowerShell@2
   inputs:
