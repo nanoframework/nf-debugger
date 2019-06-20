@@ -3138,7 +3138,12 @@ namespace nanoFramework.Tools.Debugger
                 {
                     new Converter().Deserialize(targetInfo, cmdReply.m_data);
 
-                    targetInfoProps = new CLRCapabilities.TargetInfoProperties(targetInfo.Version, targetInfo.Info);
+                    targetInfoProps = new CLRCapabilities.TargetInfoProperties(
+                                                                        targetInfo.Version,
+                                                                        targetInfo.Info,
+                                                                        targetInfo.TargetName, 
+                                                                        targetInfo.PlatformName
+                                                                        );
                 }
             }
 

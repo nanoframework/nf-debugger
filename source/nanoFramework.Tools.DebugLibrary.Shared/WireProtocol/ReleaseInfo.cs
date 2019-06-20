@@ -14,23 +14,29 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         // these constants reflect the size of the struct NFReleaseInfo in native code @ nanoHAL_ReleaseInfo.h
         private const int c_sizeOfVersion = 8;
         private const int c_sizeOfInfo = 128;
+        private const int c_sizeOfTargetName = 32;
+        private const int c_sizeOfPlatformName = 32;
 
         private VersionStruct _version;
-        private byte[] _info;
+        private byte[] _rawInfo;
 
         public ReleaseInfo()
         {
             _version = new VersionStruct();
-            _info = new byte[c_sizeOfInfo - c_sizeOfVersion];
+            _rawInfo = new byte[c_sizeOfInfo + c_sizeOfTargetName + c_sizeOfPlatformName];
         }
 
         public void PrepareForDeserialize(int size, byte[] data, Converter converter)
         {
-            _info = new byte[c_sizeOfInfo - c_sizeOfVersion];
+            _rawInfo = new byte[c_sizeOfInfo + c_sizeOfTargetName + c_sizeOfPlatformName];
         }
 
         public Version Version => _version.Version;
 
-        public string Info => Encoding.UTF8.GetString(_info, 0, _info.Length).TrimEnd('\0');
+        public string Info => Encoding.UTF8.GetString(_rawInfo, 0, c_sizeOfInfo).TrimEnd('\0');
+
+        public string TargetName => Encoding.UTF8.GetString(_rawInfo, c_sizeOfInfo, c_sizeOfTargetName).TrimEnd('\0');
+
+        public string PlatformName => Encoding.UTF8.GetString(_rawInfo, c_sizeOfInfo + c_sizeOfTargetName, c_sizeOfPlatformName).TrimEnd('\0');
     }
 }

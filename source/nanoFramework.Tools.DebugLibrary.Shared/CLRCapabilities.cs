@@ -133,13 +133,17 @@ namespace nanoFramework.Tools.Debugger
 
         public struct TargetInfoProperties
         {
-            public readonly Version targetVersion;
-            public readonly string targetVendorInfo;
+            public readonly Version Version;
+            public readonly string VendorInfo;
+            public readonly string TargetName;
+            public readonly string PlatformName;
 
-            public TargetInfoProperties(Version v, string i)
+            public TargetInfoProperties(Version version, string info, string target, string platform)
             {
-                targetVersion = v;
-                targetVendorInfo = i.TrimEnd('\0');
+                Version = version;
+                VendorInfo = info.TrimEnd('\0');
+                TargetName = target.TrimEnd('\0');
+                PlatformName = platform.TrimEnd('\0');
             }
         }
 
