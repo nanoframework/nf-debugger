@@ -183,9 +183,9 @@ namespace nanoFramework.Tools.Debugger
             get { return Dbg.Capabilities.SolutionReleaseInfo.TargetName; }
         }
 
-        public string PlatformName
+        public string Platform
         {
-            get { return Dbg.Capabilities.SolutionReleaseInfo.PlatformName; }
+            get { return Dbg.Capabilities.SolutionReleaseInfo.Platform; }
         }
 
         public IAppDomainInfo[] AppDomains
@@ -216,7 +216,7 @@ namespace nanoFramework.Tools.Debugger
 
                     output.AppendLine($"HAL build info: {HalBuildVersion?.ToString()}, {HalBuildInfo}");
                     output.AppendLine($"Target: {TargetName?.ToString()}");
-                    output.AppendLine($"Platform: {PlatformName?.ToString()}");
+                    output.AppendLine($"Platform: {Platform?.ToString()}");
                     output.AppendLine();
                     output.AppendLine($"Image build @ { ImageBuildDate } { ImageCompilerInfo } v{ ImageCompilerVersion.ToString() }");
                     output.AppendLine();
