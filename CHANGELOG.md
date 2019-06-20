@@ -2,7 +2,14 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.1.0-preview.11...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.0-preview.11...HEAD)
+
+**Implemented enhancements:**
+
+- Work TargetName and Platform properties [\#200](https://github.com/nanoframework/nf-debugger/pull/200) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
+
+## [v1.2.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.2.0-preview.11) (2019-06-20)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.1.0-preview.11...v1.2.0-preview.11)
 
 **Implemented enhancements:**
 
@@ -199,7 +206,6 @@
 - Rework event handlers for partial classes [\#60](https://github.com/nanoframework/nf-debugger/pull/60)
 - Rework MonitorReboot [\#59](https://github.com/nanoframework/nf-debugger/pull/59)
 - Rework device watcher [\#58](https://github.com/nanoframework/nf-debugger/pull/58)
-- Improve code in Deploy incremental method [\#31](https://github.com/nanoframework/nf-debugger/pull/31)
 
 **Fixed bugs:**
 
@@ -280,6 +286,7 @@
 
 **Fixed bugs:**
 
+- Fix issue with Reboot command [\#42](https://github.com/nanoframework/nf-debugger/pull/42)
 - Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
 
 ## [0.4.0-preview019](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview019) (2017-07-19)
@@ -289,7 +296,6 @@
 
 - Improvements in test app [\#38](https://github.com/nanoframework/nf-debugger/pull/38)
 - Improvements in flash map output [\#36](https://github.com/nanoframework/nf-debugger/pull/36)
-- Remove ConfigureAwait from calls [\#29](https://github.com/nanoframework/nf-debugger/pull/29)
 
 ## [0.4.0-preview018](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview018) (2017-06-30)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview017...0.4.0-preview018)
@@ -312,6 +318,10 @@
 ## [0.4.0-preview016](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview016) (2017-06-23)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview015...0.4.0-preview016)
 
+**Implemented enhancements:**
+
+- Improve code in Deploy incremental method [\#31](https://github.com/nanoframework/nf-debugger/pull/31)
+
 ## [0.4.0-preview015](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview015) (2017-06-23)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview014...0.4.0-preview015)
 
@@ -328,6 +338,7 @@
 
 **Implemented enhancements:**
 
+- Remove ConfigureAwait from calls [\#29](https://github.com/nanoframework/nf-debugger/pull/29)
 - Add error code to reply of access memory commands [\#28](https://github.com/nanoframework/nf-debugger/pull/28)
 
 ## [0.4.0-preview013](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview013) (2017-06-22)
@@ -336,10 +347,6 @@
 **Implemented enhancements:**
 
 - Work on DeploymentExecuteIncrementalAsync [\#27](https://github.com/nanoframework/nf-debugger/pull/27)
-
-**Fixed bugs:**
-
-- Fix issue with Reboot command [\#42](https://github.com/nanoframework/nf-debugger/pull/42)
 
 ## [0.4.0-preview012](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview012) (2017-06-21)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview011...0.4.0-preview012)
