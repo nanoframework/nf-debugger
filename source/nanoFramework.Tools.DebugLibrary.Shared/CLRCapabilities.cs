@@ -136,14 +136,14 @@ namespace nanoFramework.Tools.Debugger
             public readonly Version Version;
             public readonly string VendorInfo;
             public readonly string TargetName;
-            public readonly string PlatformName;
+            public readonly string Platform;
 
             public TargetInfoProperties(Version version, string info, string target, string platform)
             {
                 Version = version;
                 VendorInfo = info.TrimEnd('\0');
                 TargetName = target.TrimEnd('\0');
-                PlatformName = platform.TrimEnd('\0');
+                Platform = platform.TrimEnd('\0');
             }
         }
 

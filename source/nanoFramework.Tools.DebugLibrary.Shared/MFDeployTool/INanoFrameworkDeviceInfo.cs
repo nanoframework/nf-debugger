@@ -16,6 +16,8 @@ namespace nanoFramework.Tools.Debugger
         byte OEM { get; }
         byte Model { get; }
         ushort SKU { get; }
+        string TargetName { get; }
+        string Platform { get; }
         string ModuleSerialNumber { get; }
         string SystemSerialNumber { get; }
         System.Version ClrBuildVersion { get; }
