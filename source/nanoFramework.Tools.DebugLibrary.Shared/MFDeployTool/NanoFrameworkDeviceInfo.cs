@@ -170,12 +170,22 @@ namespace nanoFramework.Tools.Debugger
 
         public System.Version SolutionBuildVersion
         {
-            get { return Dbg.Capabilities.SolutionReleaseInfo.targetVersion; }
+            get { return Dbg.Capabilities.SolutionReleaseInfo.Version; }
         }
 
         public string SolutionBuildInfo
         {
-            get { return Dbg.Capabilities.SolutionReleaseInfo.targetVendorInfo; }
+            get { return Dbg.Capabilities.SolutionReleaseInfo.VendorInfo; }
+        }
+
+        public string TargetName
+        {
+            get { return Dbg.Capabilities.SolutionReleaseInfo.TargetName; }
+        }
+
+        public string PlatformName
+        {
+            get { return Dbg.Capabilities.SolutionReleaseInfo.PlatformName; }
         }
 
         public IAppDomainInfo[] AppDomains
@@ -205,6 +215,8 @@ namespace nanoFramework.Tools.Debugger
                     StringBuilder output = new StringBuilder();
 
                     output.AppendLine($"HAL build info: {HalBuildVersion?.ToString()}, {HalBuildInfo}");
+                    output.AppendLine($"Target: {TargetName?.ToString()}");
+                    output.AppendLine($"Platform: {PlatformName?.ToString()}");
                     output.AppendLine();
                     output.AppendLine($"Image build @ { ImageBuildDate } { ImageCompilerInfo } v{ ImageCompilerVersion.ToString() }");
                     output.AppendLine();
