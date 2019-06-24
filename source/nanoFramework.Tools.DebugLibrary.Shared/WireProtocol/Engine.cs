@@ -1435,6 +1435,9 @@ namespace nanoFramework.Tools.Debugger
                 m_evtPing.Reset();
 
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
+                
+                // force connected state to false
+                IsConnected = false;
             }
             finally
             {
