@@ -2,7 +2,14 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.0-preview.11...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.13...HEAD)
+
+**Fixed bugs:**
+
+- Fix bug with connected state upon reboot [\#201](https://github.com/nanoframework/nf-debugger/pull/201)
+
+## [v1.2.1-preview.13](https://github.com/nanoframework/nf-debugger/tree/v1.2.1-preview.13) (2019-06-20)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.0-preview.11...v1.2.1-preview.13)
 
 **Implemented enhancements:**
 
@@ -111,10 +118,6 @@
 
 ## [v1.0.1-preview-012](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-012) (2018-11-07)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview008...v1.0.1-preview-012)
-
-**Documentation and other chores:**
-
-- Update dependencies [\#170](https://github.com/nanoframework/nf-debugger/pull/170)
 
 ## [v1.0.1-preview008](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview008) (2018-10-31)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.0...v1.0.1-preview008)
@@ -240,6 +243,7 @@
 
 **Documentation and other chores:**
 
+- Update dependencies [\#170](https://github.com/nanoframework/nf-debugger/pull/170)
 - Merge 'develop' to Release 1.0.0 [\#167](https://github.com/nanoframework/nf-debugger/pull/167)
 - Revert "Improvements in engine process exit and termination" [\#146](https://github.com/nanoframework/nf-debugger/pull/146)
 
@@ -358,10 +362,6 @@
 ## [0.4.0-preview011](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview011) (2017-06-14)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview010...0.4.0-preview011)
 
-**Implemented enhancements:**
-
-- Add field to expose flags as enum [\#25](https://github.com/nanoframework/nf-debugger/pull/25)
-
 ## [0.4.0-preview010](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview010) (2017-06-14)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview009...0.4.0-preview010)
 
@@ -410,6 +410,7 @@
 
 **Implemented enhancements:**
 
+- Add field to expose flags as enum [\#25](https://github.com/nanoframework/nf-debugger/pull/25)
 - Add strong name to debug assemblies [\#13](https://github.com/nanoframework/nf-debugger/pull/13)
 - Improvements to debugger component [\#12](https://github.com/nanoframework/nf-debugger/pull/12)
 - Further work on debug library [\#11](https://github.com/nanoframework/nf-debugger/pull/11)
