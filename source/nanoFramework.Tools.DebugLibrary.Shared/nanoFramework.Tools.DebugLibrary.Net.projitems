@@ -10,6 +10,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)BitStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Capabilities\Nxp.TargetCapabilities.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Capabilities\TiCC32xx.TargetCapabilities.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Capabilities\Esp32.TargetCapabilities.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Capabilities\Stm32.TargetCapabilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CLRCapabilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CRC32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DebuggerEventSource.cs" />

@@ -12,6 +12,16 @@ namespace nanoFramework.Tools.Debugger
 {
     public class CLRCapabilities
     {
+        /// <summary>
+        /// Value of rotate right operation to get the platform capabilities as an integer.
+        /// </summary>
+        private static int s_platformCapabilitiesPosition = 16;
+
+        /// <summary>
+        /// Value of rotate right operation to get the target capabilities as an integer.
+        /// </summary>
+        private static int s_targetCapabilitiesPosition = 18;
+
         [Flags]
         public enum Capability : ulong
         {
@@ -36,7 +46,21 @@ namespace nanoFramework.Tools.Debugger
             /// This flag indicates that the device has nanoBooter.
             /// </summary>
             HasNanoBooter = 0x00001000,
-    }
+
+            /// <summary>
+            /// These bits are generic and are meant to be used to store platform specific capabilities.
+            /// They should be parsed at the above layer to extract the real meaning out of them.
+            /// </summary>
+            PlatformCapabiliy_0 = 0x00010000,
+            PlatformCapabiliy_1 = 0x00020000,
+
+            /// <summary>
+            /// These bits are generic and are meant to be used to store target specific capabilities.
+            /// They should be parsed at the above layer to extract the real meaning out of them.
+            /// </summary>
+            TargetCapabiliy_0 = 0x00040000,
+            TargetCapabiliy_1 = 0x00080000,
+        }
 
         public struct SoftwareVersionProperties
         {
@@ -344,6 +368,29 @@ namespace nanoFramework.Tools.Debugger
             {
                 Debug.Assert(!m_fUnknown);
                 return (m_capabilities & Capability.HasNanoBooter) != 0;
+            }
+        }
+
+        public byte PlatformCapabilities
+        {
+            get
+            {
+                Debug.Assert(!m_fUnknown);
+                var platformCapabilites = (ulong)(m_capabilities & (Capability.PlatformCapabiliy_0 | Capability.PlatformCapabiliy_1));
+                var value = platformCapabilites >> s_platformCapabilitiesPosition;
+                return (byte)value;
+            }
+        }
+
+
+        public byte TargetCapabilities
+        {
+            get
+            {
+                Debug.Assert(!m_fUnknown);
+                var targetCapabilites = (ulong)(m_capabilities & (Capability.TargetCapabiliy_0 | Capability.TargetCapabiliy_1));
+                var value = targetCapabilites >> s_targetCapabilitiesPosition;
+                return (byte)value;
             }
         }
 

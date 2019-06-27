@@ -329,6 +329,16 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                          Debug.WriteLine(string.Empty);
                          Debug.WriteLine(deviceDeploymentMap.ToString());
 
+                         Debug.WriteLine(string.Empty);
+                         Debug.WriteLine(string.Empty);
+                         Debug.WriteLine($"Target capabilities: { deviceInfo.TargetCapabilities }");
+
+                         Debug.WriteLine(string.Empty);
+                         Debug.WriteLine(string.Empty);
+                         Debug.WriteLine($"Platform capabilities: { deviceInfo.PlatformCapabilities }");
+
+                         Debug.WriteLine(string.Empty);
+                         Debug.WriteLine(string.Empty);
                      }
                      else
                      {
