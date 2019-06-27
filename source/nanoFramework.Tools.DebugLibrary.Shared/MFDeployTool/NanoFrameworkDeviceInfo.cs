@@ -188,6 +188,16 @@ namespace nanoFramework.Tools.Debugger
             get { return Dbg.Capabilities.SolutionReleaseInfo.Platform; }
         }
 
+        public byte PlatformCapabilities
+        {
+            get { return Dbg.Capabilities.PlatformCapabilities; }
+        }
+
+        public byte TargetCapabilities
+        {
+            get { return Dbg.Capabilities.TargetCapabilities; }
+        }
+
         public IAppDomainInfo[] AppDomains
         {
             get { return m_Domains.ToArray(); }

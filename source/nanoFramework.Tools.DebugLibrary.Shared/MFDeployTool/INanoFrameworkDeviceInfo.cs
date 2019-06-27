@@ -28,5 +28,7 @@ namespace nanoFramework.Tools.Debugger
         IAppDomainInfo[] AppDomains { get; }
         IAssemblyInfo[] Assemblies { get; }
         List<CLRCapabilities.NativeAssemblyProperties> NativeAssemblies { get; }
+        byte PlatformCapabilities { get; }
+        byte TargetCapabilities { get; }
     }
 }
