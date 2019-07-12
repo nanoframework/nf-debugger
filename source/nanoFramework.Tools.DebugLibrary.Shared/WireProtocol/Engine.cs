@@ -2810,6 +2810,7 @@ namespace nanoFramework.Tools.Debugger
 
                 // get the block list to deploy (not empty)
                 var blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
+                var deployedBytes = 0;
 
                 foreach (DeploymentBlock block in blocksToDeploy)
                 {
@@ -2831,8 +2832,10 @@ namespace nanoFramework.Tools.Debugger
                         return false;
                     }
 
+                    deployedBytes += block.DeploymentData.Length;
+
                     // report progress
-                    progress?.Report($"Deployed { block.DeploymentData.Length }/{ blocksToDeploy.Sum(b => b.Size) } bytes.");
+                    progress?.Report($"Deployed { deployedBytes }/{ blocksToDeploy.Sum(b => b.Size) } bytes.");
                 }
 
                 // report progress
