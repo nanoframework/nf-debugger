@@ -1435,9 +1435,13 @@ namespace nanoFramework.Tools.Debugger
                 m_evtPing.Reset();
 
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
-                
-                // force connected state to false
-                IsConnected = false;
+
+                // if reboot options end on a hard reboot, force connection state to disconnected
+                if (((RebootOptions)cmd.flags == RebootOptions.EnterBootloader) ||
+                    ((RebootOptions)cmd.flags == RebootOptions.NormalReboot))
+                {
+                    IsConnected = false;
+                }
             }
             finally
             {
