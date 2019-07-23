@@ -145,7 +145,7 @@ namespace nanoFramework.Tools.Debugger.Serial
                     NanoDevicesEventSource.Log.OpenDevice(_deviceInformation.Id);
 
                     // adjust settings for serial port
-                    _device.BaudRate = 115200;
+                    _device.BaudRate = 921600;
                     _device.DataBits = 8;
 
                     /////////////////////////////////////////////////////////////

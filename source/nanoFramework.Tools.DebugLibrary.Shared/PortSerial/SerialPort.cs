@@ -544,7 +544,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 if (tentativeDevice != null)
                 {
                     // adjust settings for serial port
-                    tentativeDevice.BaudRate = 115200;
+                    tentativeDevice.BaudRate = 921600;
                     tentativeDevice.DataBits = 8;
 
                     /////////////////////////////////////////////////////////////
