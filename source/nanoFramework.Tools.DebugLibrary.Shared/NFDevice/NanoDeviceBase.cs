@@ -129,6 +129,9 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
+                // there is a reply, so the device _has_ to be connected
+                DebugEngine.IsConnected = true;
+
                 switch (reply.m_source)
                 {
                     case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
