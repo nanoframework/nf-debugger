@@ -2,7 +2,14 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.17...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.19...HEAD)
+
+**Documentation and other chores:**
+
+- Update serial baud rate to 921600 [\#204](https://github.com/nanoframework/nf-debugger/pull/204) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
+
+## [v1.2.1-preview.19](https://github.com/nanoframework/nf-debugger/tree/v1.2.1-preview.19) (2019-07-13)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.17...v1.2.1-preview.19)
 
 **Fixed bugs:**
 
@@ -223,10 +230,10 @@
 - Improvements with communication stability [\#64](https://github.com/nanoframework/nf-debugger/pull/64)
 - Moved IsDevicesEnumerationComplete [\#63](https://github.com/nanoframework/nf-debugger/pull/63)
 - Exposed property to signal device enumeration completed [\#62](https://github.com/nanoframework/nf-debugger/pull/62)
+- Add ConfigAwait to async calls [\#61](https://github.com/nanoframework/nf-debugger/pull/61)
 - Rework event handlers for partial classes [\#60](https://github.com/nanoframework/nf-debugger/pull/60)
 - Rework MonitorReboot [\#59](https://github.com/nanoframework/nf-debugger/pull/59)
 - Rework device watcher [\#58](https://github.com/nanoframework/nf-debugger/pull/58)
-- Exposed compiler details for device capabilities [\#45](https://github.com/nanoframework/nf-debugger/pull/45)
 
 **Fixed bugs:**
 
@@ -288,6 +295,10 @@
 ## [0.4.0-preview023](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview023) (2017-09-25)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview022...0.4.0-preview023)
 
+**Implemented enhancements:**
+
+- Exposed compiler details for device capabilities [\#45](https://github.com/nanoframework/nf-debugger/pull/45)
+
 ## [0.4.0-preview022](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview022) (2017-09-11)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview021...0.4.0-preview022)
 
@@ -319,7 +330,6 @@
 
 **Implemented enhancements:**
 
-- Add ConfigAwait to async calls [\#61](https://github.com/nanoframework/nf-debugger/pull/61)
 - Fixed issues with device add/removal [\#33](https://github.com/nanoframework/nf-debugger/pull/33)
 
 ## [0.4.0-preview017](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview017) (2017-06-29)
