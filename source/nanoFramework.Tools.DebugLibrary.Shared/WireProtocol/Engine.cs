@@ -1203,10 +1203,9 @@ namespace nanoFramework.Tools.Debugger
 
         public Commands.Monitor_OemInfo.Reply GetMonitorOemInfo()
         {
-            // TODO replace with token argument
-            CancellationTokenSource cancelTSource = new CancellationTokenSource();
+            Commands.Monitor_OemInfo cmd = new Commands.Monitor_OemInfo();
 
-            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_OemInfo, 0, null);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_OemInfo, 0, cmd);
 
             if (reply != null)
             {

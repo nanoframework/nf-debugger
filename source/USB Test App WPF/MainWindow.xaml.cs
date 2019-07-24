@@ -994,5 +994,34 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             (sender as Button).IsEnabled = true;
         }
 
+        private async void OemInfoButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+
+            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+
+                var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
+
+
+                var oemInfo = device.DebugEngine.GetMonitorOemInfo();
+
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine($"OEM info: {oemInfo.m_releaseInfo.Info}");
+                Debug.WriteLine("");
+                Debug.WriteLine($"Platform: {oemInfo.m_releaseInfo.PlatformName}");
+                Debug.WriteLine("");
+                Debug.WriteLine($"Target: {oemInfo.m_releaseInfo.TargetName}");
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+
+            }));
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+
+        }
     }
 }
