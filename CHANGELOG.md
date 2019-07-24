@@ -2,7 +2,14 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.3.0-preview.11...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.3.0-preview.14...HEAD)
+
+**Fixed bugs:**
+
+- Fix OemInfo command [\#206](https://github.com/nanoframework/nf-debugger/pull/206)
+
+## [v1.3.0-preview.14](https://github.com/nanoframework/nf-debugger/tree/v1.3.0-preview.14) (2019-07-23)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.3.0-preview.11...v1.3.0-preview.14)
 
 **Implemented enhancements:**
 
@@ -137,7 +144,6 @@
 **Implemented enhancements:**
 
 - Add new entries to Serial Devices black list [\#175](https://github.com/nanoframework/nf-debugger/pull/175)
-- Work on update device config [\#173](https://github.com/nanoframework/nf-debugger/pull/173) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
 
 **Documentation and other chores:**
 
@@ -163,6 +169,7 @@
 
 **Implemented enhancements:**
 
+- Work on update device config [\#173](https://github.com/nanoframework/nf-debugger/pull/173) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
 - Add PropertyChangedInterface to device configuration classes [\#165](https://github.com/nanoframework/nf-debugger/pull/165)
 - Add Display.Description atrribute to network enums [\#164](https://github.com/nanoframework/nf-debugger/pull/164)
 - Add new device ID to black list [\#161](https://github.com/nanoframework/nf-debugger/pull/161)
@@ -232,6 +239,7 @@
 - Stability improvements [\#70](https://github.com/nanoframework/nf-debugger/pull/70)
 - Work on Wire Protocol and VS debugging support [\#69](https://github.com/nanoframework/nf-debugger/pull/69)
 - Work on MessageReassembler [\#68](https://github.com/nanoframework/nf-debugger/pull/68)
+- Rename PingConnectionType for coherence [\#67](https://github.com/nanoframework/nf-debugger/pull/67)
 - Remove LCDCapabilities [\#66](https://github.com/nanoframework/nf-debugger/pull/66)
 - Improvements with communication stability [\#64](https://github.com/nanoframework/nf-debugger/pull/64)
 - Moved IsDevicesEnumerationComplete [\#63](https://github.com/nanoframework/nf-debugger/pull/63)
@@ -271,7 +279,6 @@
 - Work on MessageReassembler [\#68](https://github.com/nanoframework/nf-debugger/pull/68)
 - Fix declaration of Monitor\_Message [\#65](https://github.com/nanoframework/nf-debugger/pull/65)
 - Correct WriteMemoryAsync [\#56](https://github.com/nanoframework/nf-debugger/pull/56)
-- Fix issue with Reboot command [\#42](https://github.com/nanoframework/nf-debugger/pull/42)
 
 **Documentation and other chores:**
 
@@ -284,6 +291,7 @@
 **Fixed bugs:**
 
 - Improve init state detection [\#48](https://github.com/nanoframework/nf-debugger/pull/48)
+- Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
 
 ## [0.4.0-preview025](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview025) (2017-09-26)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview024...0.4.0-preview025)
@@ -304,7 +312,6 @@
 
 **Implemented enhancements:**
 
-- Rename PingConnectionType for coherence [\#67](https://github.com/nanoframework/nf-debugger/pull/67)
 - Exposed compiler details for device capabilities [\#45](https://github.com/nanoframework/nf-debugger/pull/45)
 
 ## [0.4.0-preview022](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview022) (2017-09-11)
@@ -313,6 +320,7 @@
 **Implemented enhancements:**
 
 - Correct method names [\#44](https://github.com/nanoframework/nf-debugger/pull/44)
+- Fixed issues with device add/removal [\#33](https://github.com/nanoframework/nf-debugger/pull/33)
 
 ## [0.4.0-preview021](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview021) (2017-09-06)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview020...0.4.0-preview021)
@@ -322,7 +330,7 @@
 
 **Fixed bugs:**
 
-- Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
+- Fix issue with Reboot command [\#42](https://github.com/nanoframework/nf-debugger/pull/42)
 
 ## [0.4.0-preview019](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview019) (2017-07-19)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview018...0.4.0-preview019)
@@ -334,10 +342,6 @@
 
 ## [0.4.0-preview018](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview018) (2017-06-30)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview017...0.4.0-preview018)
-
-**Implemented enhancements:**
-
-- Fixed issues with device add/removal [\#33](https://github.com/nanoframework/nf-debugger/pull/33)
 
 ## [0.4.0-preview017](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview017) (2017-06-29)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview016...0.4.0-preview017)
