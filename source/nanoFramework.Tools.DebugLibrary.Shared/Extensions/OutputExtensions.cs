@@ -29,11 +29,11 @@ namespace nanoFramework.Tools.Debugger.Extensions
                 if (range != null && range.Count > 0)
                 {
                     // header
-                    output.AppendLine("--------------------------------");
-                    output.AppendLine("::        Memory Map          ::");
-                    output.AppendLine("--------------------------------");
+                    output.AppendLine("++++++++++++++++++++++++++++++++");
+                    output.AppendLine("++        Memory Map          ++");
+                    output.AppendLine("++++++++++++++++++++++++++++++++");
                     output.AppendLine("  Type     Start       Size");
-                    output.AppendLine("--------------------------------");
+                    output.AppendLine("++++++++++++++++++++++++++++++++");
 
                     foreach (Commands.Monitor_MemoryMap.Range item in range)
                     {
@@ -72,13 +72,13 @@ namespace nanoFramework.Tools.Debugger.Extensions
                 if (range != null && range.Count > 0)
                 {
                     // header
-                    output.AppendLine("---------------------------------------------------------------");
-                    output.AppendLine("::                   Flash Sector Map                        ::");
-                    output.AppendLine("---------------------------------------------------------------");
+                    output.AppendLine("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+                    output.AppendLine("++                   Flash Sector Map                        ++");
+                    output.AppendLine("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
                     
                     // output in list format, ordered by region
                     output.AppendLine("  Region     Start      Blocks   Bytes/Block    Usage");
-                    output.AppendLine("---------------------------------------------------------------");
+                    output.AppendLine("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 
                     int i = 0;
 
@@ -91,14 +91,14 @@ namespace nanoFramework.Tools.Debugger.Extensions
                     output.AppendLine();
 
                     // header
-                    output.AppendLine("---------------------------------------------------");
-                    output.AppendLine("::              Storage Usage Map                ::");
-                    output.AppendLine("---------------------------------------------------");
+                    output.AppendLine("+++++++++++++++++++++++++++++++++++++++++++++++++++");
+                    output.AppendLine("++              Storage Usage Map                ++");
+                    output.AppendLine("+++++++++++++++++++++++++++++++++++++++++++++++++++");
 
                     // output in list format, ordered by deployment usage
 
                     output.AppendLine("  Start        Size (kB)           Usage");
-                    output.AppendLine("---------------------------------------------------");
+                    output.AppendLine("+++++++++++++++++++++++++++++++++++++++++++++++++++");
 
                     // output nanoBooter, only if it's available on the target
                     if (range.Exists(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP))
@@ -184,7 +184,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
             if (networkConfiguration.StartupAddressMode != AddressMode.Invalid)
             {
                 output.AppendLine("IPv4 configuration");
-                output.AppendLine("------------------------------------");
+                output.AppendLine("++++++++++++++++++++++++++++++++++++");
                 output.AppendLine($"address: {networkConfiguration.IPv4Address.ToString()}");
                 output.AppendLine($"subnet mask: {networkConfiguration.IPv4NetMask.ToString()}");
                 output.AppendLine($"gateway: {networkConfiguration.IPv4GatewayAddress.ToString()}");
@@ -193,7 +193,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
 
                 output.AppendLine("");
                 output.AppendLine("IPv6 configuration");
-                output.AppendLine("------------------------------------");
+                output.AppendLine("++++++++++++++++++++++++++++++++++++");
                 output.AppendLine($"address: {networkConfiguration.IPv6Address.ToString()}");
                 output.AppendLine($"subnet mask: {networkConfiguration.IPv6NetMask.ToString()}");
                 output.AppendLine($"gateway: {networkConfiguration.IPv6GatewayAddress.ToString()}");
