@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2017 The nanoFramework project contributors
 // Portions Copyright (c) Microsoft Corporation.  All rights reserved.
 // See LICENSE file in the project root for full license information.
@@ -33,10 +33,31 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public Version Version => _version.Version;
 
-        public string Info => Encoding.UTF8.GetString(_rawInfo, 0, c_sizeOfInfo).TrimEnd('\0');
+        public string Info
+        {
+            get
+            {
+                var myString = Encoding.UTF8.GetString(_rawInfo, 0, c_sizeOfInfo);
+                return myString.Substring(0, myString.IndexOf('\0'));
+            }
+        }
 
-        public string TargetName => Encoding.UTF8.GetString(_rawInfo, c_sizeOfInfo, c_sizeOfTargetName).TrimEnd('\0');
+        public string TargetName
+        {
+            get
+            {
+                var myString = Encoding.UTF8.GetString(_rawInfo, c_sizeOfInfo, c_sizeOfTargetName);
+                return myString.Substring(0, myString.IndexOf('\0'));
+            }
+        }
 
-        public string PlatformName => Encoding.UTF8.GetString(_rawInfo, c_sizeOfInfo + c_sizeOfTargetName, c_sizeOfPlatformName).TrimEnd('\0');
+        public string PlatformName
+        {
+            get
+            {
+                var myString = Encoding.UTF8.GetString(_rawInfo, c_sizeOfInfo + c_sizeOfTargetName, c_sizeOfPlatformName);
+                return myString.Substring(0, myString.IndexOf('\0'));
+            }
+        }
     }
 }
