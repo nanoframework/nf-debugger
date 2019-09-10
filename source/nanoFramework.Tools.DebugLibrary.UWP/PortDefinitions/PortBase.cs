@@ -15,7 +15,7 @@ namespace nanoFramework.Tools.Debugger
     {
         public static PortBase CreateInstanceForSerial(string displayName, Application callerApp, bool startDeviceWatchers = true)
         {
-            return new SerialPort(callerApp, startDeviceWatchers);
+            return new SerialPortManager(callerApp, startDeviceWatchers);
         }
 
         public static PortBase CreateInstanceForUsb(string displayName, Application callerApp, bool startDeviceWatchers = true)

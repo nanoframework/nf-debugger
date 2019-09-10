@@ -7,11 +7,11 @@ using nanoFramework.Tools.Debugger.PortSerial;
 
 namespace nanoFramework.Tools.Debugger
 {
-    public abstract partial class PortBase
+    public abstract partial class PortBase : PortMessageBase
     {
         public static PortBase CreateInstanceForSerial(string displayName, object callerApp = null, bool startDeviceWatchers = true)
         {
-            return new SerialPort(callerApp, startDeviceWatchers);
+            return new SerialPortManager(callerApp, startDeviceWatchers);
         }
     }
 }

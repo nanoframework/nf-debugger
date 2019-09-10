@@ -107,7 +107,7 @@ namespace nanoFramework.Tools.Debugger
 
         private void InitializeLocal(NanoDeviceBase device)
         {
-            _portDefinition = device.Parent;
+            _portDefinition = device.ConnectionPort;
             _controlller = new Controller(this);
 
             Device = (INanoDevice)device;
@@ -175,7 +175,7 @@ namespace nanoFramework.Tools.Debugger
                     cmd.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
                     cmd.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
 
-                    IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd);
+                    IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
 
                     if (msg == null || msg?.Payload == null)
                     {
@@ -271,7 +271,7 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            return true;
+            return IsConnected;
         }
 
         public bool UpdateDebugFlags()

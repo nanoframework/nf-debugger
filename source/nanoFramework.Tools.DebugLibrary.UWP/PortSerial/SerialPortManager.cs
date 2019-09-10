@@ -20,19 +20,19 @@ using Windows.UI.Xaml;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
-    public partial class SerialPort : PortBase, IPort
+    public partial class SerialPortManager : PortBase
     {
         /// <summary>
         /// Creates an Serial debug client
         /// </summary>
-        public SerialPort(Application callerApp, bool startDeviceWatchers = true)
+        public SerialPortManager(Application callerApp, bool startDeviceWatchers = true)
         {
             _mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, String>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
             _serialDevices = new List<Serial.SerialDeviceInformation>();
 
             // set caller app property
-            EventHandlerForSerialDevice.CallerApp = callerApp;
+            CallerApp = callerApp;
 
             Task.Factory.StartNew(() =>
             {
