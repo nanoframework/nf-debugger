@@ -225,7 +225,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                     var newNanoFrameworkDevice = new NanoDevice<NanoUsbDevice>();
                     //newMFDevice.DeviceInformation = new UsbDeviceInformation(deviceInformation, deviceSelector);
                     newNanoFrameworkDevice.Device.DeviceInformation = new UsbDeviceInformation(deviceInformation, deviceSelector);
-                    newNanoFrameworkDevice.Parent = this;
+                    newNanoFrameworkDevice.ConnectionPort = this;
                     newNanoFrameworkDevice.Transport = TransportType.Usb;
 
                     // Add the new element to the end of the list of devices
@@ -435,9 +435,9 @@ namespace nanoFramework.Tools.Debugger.Usb
 
         #endregion
 
-        public Task<bool> ConnectDeviceAsync(NanoDeviceBase device)
+        public Task<bool> ConnectDeviceAsync()
         {
-            return ConnectUsbDeviceAsync((device as NanoDevice<NanoUsbDevice>).Device.DeviceInformation as UsbDeviceInformation);
+            return ConnectUsbDeviceAsync(null);
         }
 
         private Task<bool> ConnectUsbDeviceAsync(UsbDeviceInformation usbDeviceInfo)
@@ -470,7 +470,7 @@ namespace nanoFramework.Tools.Debugger.Usb
 
         public DateTime LastActivity { get; set; }
 
-        public void DisconnectDevice(UsbDevice device)
+        public void DisconnectDevice()
         {
             EventHandlerForUsbDevice.Current.CloseDevice();
         }

@@ -44,12 +44,27 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Port here this device is connected.
         /// </summary>
-        public IPort Parent { get; set; }
+        public IPort ConnectionPort { get; set; }
 
         /// <summary>
         /// Device description.
         /// </summary>
         public string Description { get; set; }
+
+        /// <summary>
+        /// Target name.
+        /// </summary>
+        public string TargetName { get; internal set; }
+
+        /// <summary>
+        /// Target platform.
+        /// </summary>
+        public string Platform { get; internal set; }
+
+        /// <summary>
+        /// Device serial number (if define on the target).
+        /// </summary>
+        public string SerialNumber { get; internal set; }
 
         /// <summary>
         /// Detailed info about the NanoFramework device hardware, solution and CLR.

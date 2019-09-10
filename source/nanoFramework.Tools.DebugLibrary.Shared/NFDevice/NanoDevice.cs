@@ -50,7 +50,10 @@ namespace nanoFramework.Tools.Debugger
 
                         DebugEngine?.Dispose();
                     }
-                    catch { }
+                    catch
+                    {
+                        // required to catch exceptions from Engine dispose calls
+                    }
                 }
 
                 disposed = true;
@@ -77,11 +80,11 @@ namespace nanoFramework.Tools.Debugger
         {
             if (Device is NanoUsbDevice)
             {
-                return await Parent.ConnectDeviceAsync(this as NanoDeviceBase);
+                return await ConnectionPort.ConnectDeviceAsync();
             }
             else if (Device is NanoSerialDevice)
             {
-                return await Parent.ConnectDeviceAsync(this as NanoDeviceBase);
+                return await ConnectionPort.ConnectDeviceAsync();
             }
 
             return false;
@@ -92,7 +95,7 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public override void Disconnect()
         {
-            Parent.DisconnectDevice(this as NanoDeviceBase);
+            ConnectionPort.DisconnectDevice();
 
             DeviceBase = null;
         }

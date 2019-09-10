@@ -68,11 +68,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\SrecParseResult.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\NanoUsbDevice.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortDefinitions\IPort.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PortDefinitions\PortMessageBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortDefinitions\PortBase.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PortSerial\EventHandlerForSerialDevice.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortSerial\SerialDeviceInformation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortSerial\SerialDeviceProperties.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortSerial\SerialPort.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PortSerial\SerialPortManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Runtime\ReflectionDefinition.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Runtime\RunTimeValue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Runtime\RuntimeValue_Array.cs" />
