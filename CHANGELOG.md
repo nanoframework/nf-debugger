@@ -2,7 +2,14 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.3.1-preview.18...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.4.0-preview.11...HEAD)
+
+**Implemented enhancements:**
+
+- Improvements in deployment [\#210](https://github.com/nanoframework/nf-debugger/pull/210)
+
+## [v1.4.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.4.0-preview.11) (2019-09-10)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.3.1-preview.18...v1.4.0-preview.11)
 
 **Implemented enhancements:**
 
