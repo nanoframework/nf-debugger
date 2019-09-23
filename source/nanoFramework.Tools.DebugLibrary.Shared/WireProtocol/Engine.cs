@@ -2749,7 +2749,7 @@ namespace nanoFramework.Tools.Debugger
 
                     progress?.Report(errorMessage);
 
-                    throw new Exception(errorMessage);
+                    return false;
                 }
 
                 while (assemblies.Count > 0)
@@ -2807,7 +2807,7 @@ namespace nanoFramework.Tools.Debugger
 
                         progress?.Report(errorMessage);
 
-                        throw new Exception(errorMessage);
+                        return false;
                     }
                 }
 
@@ -2819,7 +2819,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     (uint ErrorCode, bool Success) memoryOperationResult;
 
-                    memoryOperationResult = EraseMemory((uint)block.StartAddress, 1);
+                    memoryOperationResult = EraseMemory((uint)block.StartAddress, (uint)block.Size);
                     if (!memoryOperationResult.Success)
                     {
                         progress?.Report(($"Error erasing device memory @ 0x{block.StartAddress.ToString("X8")}. Error code: {memoryOperationResult.ErrorCode}."));
@@ -2851,7 +2851,7 @@ namespace nanoFramework.Tools.Debugger
             // invalid flash map
             progress?.Report("Error retrieving device flash map.");
 
-            throw new Exception("Error retrieving device flash map.");
+            return false;
         }
 
         private bool DeploymentExecuteFull(List<byte[]> assemblies, IProgress<string> progress)
