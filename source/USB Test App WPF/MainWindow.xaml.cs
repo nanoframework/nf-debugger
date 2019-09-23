@@ -394,11 +394,6 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
             var totalSize = p1Size + p2Size + p3Size + p4Size;
 
-            var largePackets = totalSize / (1024 - 8);
-
-            Debug.WriteLine($">>> Sending : {totalSize} bytes.<<<<");
-            Debug.WriteLine($">>> This is {largePackets} 1k packets plus  bytes.<<<<");
-
             try
             {
                 //// add mscorlib
@@ -416,17 +411,27 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
                 await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
+                    var debugEngine = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine;
+
+                    var largePackets = totalSize / (debugEngine.WireProtocolPacketSize - 8);
+
+                    var packetSize = debugEngine.WireProtocolPacketSize == 1024 ? "1k" : $"({ debugEngine.WireProtocolPacketSize / 1024}bytes";
+
+                    Debug.WriteLine($">>> Sending : {totalSize} bytes.<<<<");
+                    Debug.WriteLine($">>> This is {packetSize} packets plus something bytes.<<<<");
 
                     var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.DeploymentExecute(assemblies, true);
 
                     Debug.WriteLine($">>> Deployment result: {result} <<<<");
 
+                    if (result)
+                    {
+                        //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
 
-                    //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
+                        //Task.Delay(1000).Wait();
 
-                    //Task.Delay(1000).Wait();
-
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo(true);
+                        (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo(true);
+                    }
 
                 }));
             }
@@ -1007,15 +1012,24 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
                 var oemInfo = device.DebugEngine.GetMonitorOemInfo();
 
-                Debug.WriteLine("");
-                Debug.WriteLine("");
-                Debug.WriteLine($"OEM info: {oemInfo.m_releaseInfo.Info}");
-                Debug.WriteLine("");
-                Debug.WriteLine($"Platform: {oemInfo.m_releaseInfo.PlatformName}");
-                Debug.WriteLine("");
-                Debug.WriteLine($"Target: {oemInfo.m_releaseInfo.TargetName}");
-                Debug.WriteLine("");
-                Debug.WriteLine("");
+                if (oemInfo != null)
+                {
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"OEM info: {oemInfo.m_releaseInfo.Info}");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"Platform: {oemInfo.m_releaseInfo.PlatformName}");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"Target: {oemInfo.m_releaseInfo.TargetName}");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                }
+                else
+                {
+                    Debug.WriteLine("");
+                    Debug.WriteLine("no OEM info available");
+                    Debug.WriteLine("");
+                }
 
             }));
 

@@ -228,6 +228,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     || (deviceWatcher.Status == DeviceWatcherStatus.EnumerationCompleted))
                 {
                     deviceWatcher.Stop();
+
+                    // need to wait for the watcher to be stopped before proceeding to the next 
+                    // 3 attempts
+                    for(int i = 0; i < 3; i++)
+                    {
+                        if( deviceWatcher.Status == DeviceWatcherStatus.Stopped || deviceWatcher.Status == DeviceWatcherStatus.Aborted)
+                        {
+                            // this is OK now
+                            break;
+                        }
+
+                        Thread.Sleep(300 * i);
+                    }
                 }
             }
 
