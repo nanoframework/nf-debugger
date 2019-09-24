@@ -229,31 +229,6 @@ steps:
   condition: ne( variables['StartReleaseCandidate'], true )
   displayName: Get NuGet build number
 
-- powershell: |
-    # get subject and commit message for commit
-    $commitMessage = git log --format='%B' -1
-
-    # need to flatten message by removing new lines
-    $commitMessage = $commitMessage -replace "`r`n", " "
-
-    if($commitMessage -like "*PUBLISH_RELEASE*")
-    {
-      # set variable
-      Write-Host "$("##vso[task.setvariable variable=RELEASE_DRAFT;isOutput=true]")False"
-      Write-Host "$("##vso[task.setvariable variable=RELEASE_VERSION;isOutput=true]")True"
-      Write-Host "Release draft: FALSE"
-    }
-    else
-    {
-      # set variable
-      Write-Host "$("##vso[task.setvariable variable=RELEASE_DRAFT;isOutput=true]")True"
-      Write-Host "$("##vso[task.setvariable variable=RELEASE_VERSION;isOutput=true]")False"
-      Write-Host "Release draft: TRUE"
-    }
-  name: SetReleaseDraftVar
-  condition: ne( variables['StartReleaseCandidate'], true )
-  displayName: Set release draft var
-
 - task: UseRubyVersion@0
   inputs:
     versionSpec: '= 2.5' 
