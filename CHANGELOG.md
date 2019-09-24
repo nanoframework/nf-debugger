@@ -1,8 +1,7 @@
 # Change Log
 
-## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
-
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.4.0-preview.11...HEAD)
+## [v1.4.0-preview.13](https://github.com/nanoframework/nf-debugger/tree/v1.4.0-preview.13) (2019-09-23)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.4.0-preview.11...v1.4.0-preview.13)
 
 **Implemented enhancements:**
 
@@ -125,7 +124,6 @@
 - Work on DeploymentExecuteIncremental [\#189](https://github.com/nanoframework/nf-debugger/pull/189)
 - Add output to help debug device state [\#188](https://github.com/nanoframework/nf-debugger/pull/188)
 - Improve disconnection of SerialDevice [\#186](https://github.com/nanoframework/nf-debugger/pull/186)
-- Tidy output of device capabilites listings [\#184](https://github.com/nanoframework/nf-debugger/pull/184)
 - Update CreateInstanceForSerial constructor for .NET lib [\#183](https://github.com/nanoframework/nf-debugger/pull/183)
 - Improvements device discovery and PortBase classes [\#182](https://github.com/nanoframework/nf-debugger/pull/182)
 - Fix FlashSectorData ToString [\#181](https://github.com/nanoframework/nf-debugger/pull/181)
@@ -165,6 +163,10 @@
 - Add new entries to Serial Devices black list [\#175](https://github.com/nanoframework/nf-debugger/pull/175)
 - Work on update device config [\#173](https://github.com/nanoframework/nf-debugger/pull/173) [[Breaking-Change](https://github.com/nanoframework/nf-debugger/labels/Breaking-Change)]
 
+**Fixed bugs:**
+
+- Fix issue with WP buffer length [\#159](https://github.com/nanoframework/nf-debugger/pull/159)
+
 **Documentation and other chores:**
 
 - Update NuGet packages [\#172](https://github.com/nanoframework/nf-debugger/pull/172)
@@ -189,6 +191,7 @@
 
 **Implemented enhancements:**
 
+- Tidy output of device capabilites listings [\#184](https://github.com/nanoframework/nf-debugger/pull/184)
 - Add PropertyChangedInterface to device configuration classes [\#165](https://github.com/nanoframework/nf-debugger/pull/165)
 - Add Display.Description atrribute to network enums [\#164](https://github.com/nanoframework/nf-debugger/pull/164)
 - Add new device ID to black list [\#161](https://github.com/nanoframework/nf-debugger/pull/161)
@@ -272,7 +275,6 @@
 
 - Add new erase option for configuration block [\#162](https://github.com/nanoframework/nf-debugger/pull/162)
 - Improve code to validate deployment before actually commiting it [\#160](https://github.com/nanoframework/nf-debugger/pull/160)
-- Fix issue with WP buffer length [\#159](https://github.com/nanoframework/nf-debugger/pull/159)
 - Fix bug in Engine.ProcessMessage [\#155](https://github.com/nanoframework/nf-debugger/pull/155)
 - Fix issue with SerialDevice description [\#151](https://github.com/nanoframework/nf-debugger/pull/151)
 - Fix issues with wireless config save/load [\#135](https://github.com/nanoframework/nf-debugger/pull/135)
@@ -389,6 +391,7 @@
 **Implemented enhancements:**
 
 - Fix bug with deployment blob building [\#30](https://github.com/nanoframework/nf-debugger/pull/30)
+- Add error code to reply of access memory commands [\#28](https://github.com/nanoframework/nf-debugger/pull/28)
 
 **Fixed bugs:**
 
@@ -400,7 +403,6 @@
 **Implemented enhancements:**
 
 - Remove ConfigureAwait from calls [\#29](https://github.com/nanoframework/nf-debugger/pull/29)
-- Add error code to reply of access memory commands [\#28](https://github.com/nanoframework/nf-debugger/pull/28)
 
 ## [0.4.0-preview013](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview013) (2017-06-22)
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview012...0.4.0-preview013)
