@@ -3,18 +3,13 @@
 // See LICENSE file in the project root for full license information.
 //
 using nanoFramework.Tools.Debugger.Extensions;
-using nanoFramework.Tools.Debugger.Serial;
-using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
-using Windows.Foundation;
 using Windows.Storage.Streams;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
@@ -29,6 +24,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private readonly SerialPortManager _portManager;
 
         public SerialDevice Device { get; internal set; }
+
+        // valid baud rates
+        public static readonly List<uint> ValidBaudRates = new List<uint>() { 921600, 460800, 115200 };
+
+        public uint BaudRate { get; internal set; }
 
         public NanoDevice<NanoSerialDevice> NanoDevice { get; }
 
@@ -59,6 +59,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             _portManager = portManager ?? throw new ArgumentNullException(nameof(portManager));
             NanoDevice = serialDevice ?? throw new ArgumentNullException(nameof(serialDevice));
+
+            // init default baud rate with 1st value
+            BaudRate =  ValidBaudRates[0];
 
             ResetReadCancellationTokenSource();
             ResetSendCancellationTokenSource();
@@ -98,7 +101,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     successfullyOpenedDevice = true;
 
                     // adjust settings for serial port
-                    Device.BaudRate = 921600;
+                    // baud rate is coming from the property
+                    Device.BaudRate = BaudRate;
                     Device.DataBits = 8;
 
                     /////////////////////////////////////////////////////////////
