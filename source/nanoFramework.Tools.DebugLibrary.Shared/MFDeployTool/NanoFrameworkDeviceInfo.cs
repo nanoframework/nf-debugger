@@ -261,7 +261,10 @@ namespace nanoFramework.Tools.Debugger
 
                     return output.ToString();
                 }
-                catch { };
+                catch
+                {
+                    // catch everything, doesn't matter
+                }
             }
 
             return "DeviceInfo is not valid!";

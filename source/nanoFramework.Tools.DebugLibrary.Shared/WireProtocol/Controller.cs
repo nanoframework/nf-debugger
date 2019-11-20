@@ -104,6 +104,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 App.ProcessExited();
             }
+            catch
+            {
+                // catch everything else here, doesn't matter
+                return false;
+            }
             finally
             {
                 _sendSemaphore.Release();
@@ -178,6 +183,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             catch (TaskCanceledException)
             {
                 // don't do anything here, as this is expected
+            }
+            catch
+            {
+                // catch everything else, doesn't matter
+                return 0;
             }
 
             return bytesToReadRequested - bytesToRead;
