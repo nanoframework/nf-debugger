@@ -148,9 +148,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     successfullyOpenedDevice = false;
                 }
             }
-            // catch all because the device open might fail for a number of reasons
-            catch (Exception ex)
+            catch
             {
+                // catch all because the device open might fail for a number of reasons
             }
 
             return successfullyOpenedDevice;
@@ -378,7 +378,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
-                        throw;
+                        return 0;
                     }
                     finally
                     {
@@ -439,7 +439,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"ReadBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
-                        throw;
+                        return new byte[0];
                     }
                     finally
                     {

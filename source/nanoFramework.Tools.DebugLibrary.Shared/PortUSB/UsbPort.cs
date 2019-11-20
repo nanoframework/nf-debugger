@@ -415,7 +415,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             }
             catch (Exception)
             {
-
+                // catch everything else, doesn't matter
             }
 
             // if we get here something went wrong above, so we don't have a descriptor
@@ -532,6 +532,11 @@ namespace nanoFramework.Tools.Debugger.Usb
                 {
                     // this is expected to happen, don't do anything with this 
                 }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"SendRawBufferAsync-USB-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                    return 0;
+                }
             }
             else
             {
@@ -616,12 +621,16 @@ namespace nanoFramework.Tools.Debugger.Usb
                 {
                     // this is expected to happen, don't do anything with this 
                 }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"ReadBufferAsync-USB-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                    return new byte[0];
+                }
                 finally
                 {
                     semaphore.Release();
                 }
 
-                //return reader;
             }
             else
             {

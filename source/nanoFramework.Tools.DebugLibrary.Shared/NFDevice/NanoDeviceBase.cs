@@ -531,12 +531,20 @@ namespace nanoFramework.Tools.Debugger
                         // check if cancellation was requested 
                         if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
 
-                        await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                        try
+                        {
+                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
-                        // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                            // check if cancellation was requested 
+                            if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
 
-                        await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                        }
+                        catch
+                        {
+                            // catch all, doesn't matter the return
+                            return false;
+                        }
 
                         // check if cancellation was requested 
                         if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();

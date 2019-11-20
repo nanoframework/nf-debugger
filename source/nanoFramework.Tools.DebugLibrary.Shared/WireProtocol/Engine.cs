@@ -456,7 +456,10 @@ namespace nanoFramework.Tools.Debugger
                         _cancellationTokenSource.Cancel();
                         _cancellationTokenSource.Dispose();
                     }
-                    catch { }
+                    catch
+                    {
+                        // catch everything else, doesn't matter
+                    }
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
@@ -509,8 +512,9 @@ namespace nanoFramework.Tools.Debugger
             {
                 Task.WaitAll(request);
             }
-            catch (AggregateException)
+            catch
             {
+                // catch everything, doesn't matter
                 return null;
             }
 
