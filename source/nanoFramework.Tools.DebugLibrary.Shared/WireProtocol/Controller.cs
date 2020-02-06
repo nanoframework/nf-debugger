@@ -12,9 +12,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class Controller : IControllerLocal
     {
-        private int lastOutboundMessage;
-        private Semaphore _sendSemaphore = new Semaphore(1, 1);
-        private int nextEndpointId;
+        private ushort lastOutboundMessage;
+        private readonly Semaphore _sendSemaphore = new Semaphore(1, 1);
+        private readonly int nextEndpointId;
+        private readonly object incrementLock = new object();
 
         public IControllerHostLocal App { get; internal set; }
 
@@ -26,7 +27,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             Random random = new Random();
 
-            lastOutboundMessage = random.Next(65536);
+            lastOutboundMessage = ushort.MaxValue;
             nextEndpointId = random.Next(int.MaxValue);
 
             //default capabilities
@@ -119,7 +120,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public ushort GetNextSequenceId()
         {
-            return (ushort)Interlocked.Increment(ref lastOutboundMessage);
+            lock (incrementLock)
+            {
+                lastOutboundMessage += 1;
+            }
+            return lastOutboundMessage;
         }
 
         public void StopProcessing()

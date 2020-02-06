@@ -248,11 +248,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             uint crc = _messageBase.Header.CrcHeader;
             bool fRes;
 
-            _messageBase.Header.CrcHeader = 0;
 
             // verify CRC32 only if connected device has reported that it implements it
             if (_parent.App.IsCRC32EnabledForWireProtocol)
             {
+                // compute CRC32 with header CRC32 zeroed
+                _messageBase.Header.CrcHeader = 0;
+
                 fRes = CRC.ComputeCRC(_parent.CreateConverter().Serialize(_messageBase.Header), 0) == crc;
 
                 _messageBase.Header.CrcHeader = crc;
