@@ -13,7 +13,16 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             lock (_requestsLock)
             {
-                _requests.Add(new Tuple<uint, ushort>(request.OutgoingMessage.Header.Cmd, request.OutgoingMessage.Header.Seq), request);
+                // it's wise to check if this key is already on the dictionary
+                // can't use TryAdd because that's only available on the UWP API
+                var newKey = new Tuple<uint, ushort>(request.OutgoingMessage.Header.Cmd, request.OutgoingMessage.Header.Seq);
+                if (_requests.ContainsKey(newKey))
+                {
+                    // remove the last one, before adding this
+                    _requests.Remove(newKey);
+                }
+
+                _requests.Add(newKey, request);
             }
         }
 

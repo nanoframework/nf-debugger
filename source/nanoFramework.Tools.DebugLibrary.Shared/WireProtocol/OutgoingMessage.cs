@@ -8,7 +8,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class OutgoingMessage
     {
-        ushort _sequenceId;
+        readonly ushort _sequenceId;
 
         public MessageRaw Raw { get; private set; }
         public MessageBase Base { get; private set; }
@@ -26,8 +26,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             UpdateCRC(converter);
         }
 
-        internal OutgoingMessage(IncomingMessage request, Converter converter, uint flags, object payload)
+        internal OutgoingMessage(ushort sequenceId, IncomingMessage request, Converter converter, uint flags, object payload)
         {
+            _sequenceId = sequenceId;
+
             InitializeForSend(converter, request.Header.Cmd, flags, payload);
 
             Base.Header.SeqReply = request.Header.Seq;

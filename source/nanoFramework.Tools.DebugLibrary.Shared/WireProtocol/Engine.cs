@@ -618,7 +618,7 @@ namespace nanoFramework.Tools.Debugger
                             cmdReply.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
                             cmdReply.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
 
-                            PerformRequestAsync(new OutgoingMessage(message, _controlller.CreateConverter(), Flags.c_NonCritical, cmdReply), _backgroundProcessorCancellation.Token).ConfigureAwait(false);
+                            PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, _controlller.CreateConverter(), Flags.c_NonCritical, cmdReply), _backgroundProcessorCancellation.Token).ConfigureAwait(false);
 
                             return true;
                         }
@@ -911,7 +911,7 @@ namespace nanoFramework.Tools.Debugger
             reply.m_found = (eep != null) ? 1u : 0u;
             reply.m_addr = addr;
 
-            await PerformRequestAsync(new OutgoingMessage(message, CreateConverter(), Flags.c_NonCritical, reply), _cancellationTokenSource.Token);
+            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, reply), _cancellationTokenSource.Token);
         }
 
         internal bool RpcCheck(Commands.Debugging_Messaging_Address addr)
@@ -1018,7 +1018,7 @@ namespace nanoFramework.Tools.Debugger
             res.m_found = (eep != null) ? 1u : 0u;
             res.m_addr = addr;
 
-            await PerformRequestAsync(new OutgoingMessage(msg, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
+            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), msg, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
 
             if (eep != null)
             {
@@ -1074,7 +1074,7 @@ namespace nanoFramework.Tools.Debugger
             res.m_found = (eep != null) ? 1u : 0u;
             res.m_addr = addr;
 
-            await PerformRequestAsync(new OutgoingMessage(message, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
+            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
 
             if (eep != null)
             {

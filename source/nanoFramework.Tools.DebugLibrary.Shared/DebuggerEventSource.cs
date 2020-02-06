@@ -20,7 +20,7 @@ namespace nanoFramework.Tools.Debugger
         private static readonly Lazy<DebuggerEventSource> Log_ = new Lazy<DebuggerEventSource>(() => new DebuggerEventSource());
 
         [Flags]
-        enum PacketFlags
+        private enum PacketFlags
         {
             None = 0,
             NonCritical = 0x0001, // This doesn't need an acknowledge.
@@ -124,7 +124,7 @@ namespace nanoFramework.Tools.Debugger
         {
             string retVal;
             if (!CommandNameMap.TryGetValue(cmd, out retVal))
-                retVal = $"0x{cmd:X08}";
+                retVal = $"0x{cmd.ToString("X08")}";
 
             return retVal;
         }
@@ -132,21 +132,26 @@ namespace nanoFramework.Tools.Debugger
         [Event(1, Opcode = EventOpcode.Send)]
         public void WireProtocolTxHeader(uint crcHeader, uint crcData, uint cmd, uint flags, ushort seq, ushort seqReply, uint length)
         {
-            Debug.WriteLine("TX: {0} flags=[{1}] hCRC: 0x{2:X08} pCRC: 0x{3:X08} seq: 0x{4:X04} replySeq: 0x{5:X04} len={6}"
-                                      , GetCommandName(cmd)
-                                      , (PacketFlags)flags
-                                      , crcHeader
-                                      , crcData
-                                      , seq
-                                      , seqReply
-                                      , length
-                                      );
+            Debug.WriteLine($"TX: " +
+                $"{GetCommandName(cmd)} " +
+                $"flags=[{(PacketFlags)flags}] " +
+                $"hCRC: 0x{crcHeader.ToString("X08")} " +
+                $"pCRC: 0x{crcData.ToString("X08")} " +
+                $"seq: 0x{seq.ToString("X04")} " +
+                $"replySeq: 0x{seqReply.ToString("X04")} " +
+                $"len={length}");
         }
 
         [Event(2, Opcode = EventOpcode.Receive)]
         public void WireProtocolRxHeader(uint crcHeader, uint crcData, uint cmd, uint flags, ushort seq, ushort seqReply, uint length)
         {
-            Debug.WriteLine($"RX: {GetCommandName(cmd)} flags=[{crcHeader}] hCRC: 0x{crcHeader.ToString("X08")} pCRC: 0x{crcData.ToString("X08")} seq: 0x{seq.ToString("X04")} replySeq: 0x{seqReply.ToString("X04")} len={length.ToString()}");
+            Debug.WriteLine($"RX: {GetCommandName(cmd)} " +
+                $"flags=[{(PacketFlags)flags}] " +
+                $"hCRC: 0x{crcHeader.ToString("X08")} " +
+                $"pCRC: 0x{crcData.ToString("X08")} " +
+                $"seq: 0x{seq.ToString("X04")} " +
+                $"replySeq: 0x{seqReply.ToString("X04")} " +
+                $"len={length.ToString()}");
         }
 
         [Event(3)]
