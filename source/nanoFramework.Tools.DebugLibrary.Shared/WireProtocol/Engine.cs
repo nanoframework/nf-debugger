@@ -3169,9 +3169,13 @@ namespace nanoFramework.Tools.Debugger
         /// <returns>A list of the native assemblies available in the target device</returns>
         private List<CLRCapabilities.NativeAssemblyProperties> DiscoveryInteropNativeAssemblies()
         {
-            IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityInteropNativeAssemblies);
-
             Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies nativeInteropAssemblies = new Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies();
+            List<CLRCapabilities.NativeAssemblyProperties> nativeAssemblies = new List<CLRCapabilities.NativeAssemblyProperties>();
+
+            // dev notes: we have this extra processing to keep this implementation backwards compatible with older targets
+
+            // request assembly count
+            IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityInteropNativeAssembliesCount);
 
             if (reply != null)
             {
@@ -3179,13 +3183,107 @@ namespace nanoFramework.Tools.Debugger
                 {
                     Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
 
+                    int assemblyCount = 0;
+                    
                     if (cmdReply != null && cmdReply.m_data != null)
                     {
-                        new Converter().Deserialize(nativeInteropAssemblies, cmdReply.m_data);
+                        // check length 2 = sizeof ushort type
+                        if (cmdReply.m_data.Length == 2)
+                        {
+                            // reassemble the ushort value from the data buffer
+                            assemblyCount = cmdReply.m_data[1];
+                            assemblyCount = (assemblyCount << 8);
+                            assemblyCount += cmdReply.m_data[0];
+
+                            // compute the assembly batch size that fits on target WP packet size
+                            var batchSize = WireProtocolPacketSize / Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblyDetails.Size;
+                            uint index = 0;
+
+                            while (assemblyCount > 0)
+                            {
+                                // get next batch
+
+                                // encode batch request
+                                uint encodedRequest = batchSize << 24;
+                                encodedRequest += index << 16;
+
+                                // request assembly details
+                                reply = DiscoverCLRCapability(
+                                    Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityInteropNativeAssemblies +
+                                    encodedRequest);
+
+                                if (reply != null)
+                                {
+                                    if (reply.IsPositiveAcknowledge())
+                                    {
+                                        cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
+
+                                        if (cmdReply != null && cmdReply.m_data != null)
+                                        {
+                                            nativeInteropAssemblies = new Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies();
+
+                                            new Converter().Deserialize(nativeInteropAssemblies, cmdReply.m_data);
+
+                                            nativeAssemblies.AddRange(
+                                                   nativeInteropAssemblies.NativeInteropAssemblies.Select(
+                                                       a => new CLRCapabilities.NativeAssemblyProperties(
+                                                           a.Name, 
+                                                           a.CheckSum, 
+                                                           a.AssemblyVersion.Version)
+                                                       )
+                                                   );
+
+                                            index += batchSize;
+                                            assemblyCount -= (ushort)batchSize;
+                                        }
+                                        else
+                                        {
+                                            return null;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return null;
+                                    }
+                                }
+                                else
+                                {
+                                    return null;
+                                }
+                            }
+
+                            return nativeAssemblies;
+                        }
 
                         return nativeInteropAssemblies.NativeInteropAssemblies.Select(a => new CLRCapabilities.NativeAssemblyProperties(a.Name, a.CheckSum, a.AssemblyVersion.Version)).ToList();
                     }
                 }
+                else
+                {
+                    // request failed, assuming that's because the target doesn't have support for this command, so going with the old style and get all assemblies at once
+
+                    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    // it should be OK to remove this after a while as all targets should be brought up to date to support c_CapabilityInteropNativeAssembliesCount //
+                    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                    reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityInteropNativeAssemblies);
+
+                    if (reply != null)
+                    {
+                        if (reply.IsPositiveAcknowledge())
+                        {
+                            Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
+
+                            if (cmdReply != null && cmdReply.m_data != null)
+                            {
+                                new Converter().Deserialize(nativeInteropAssemblies, cmdReply.m_data);
+
+                                return nativeInteropAssemblies.NativeInteropAssemblies.Select(a => new CLRCapabilities.NativeAssemblyProperties(a.Name, a.CheckSum, a.AssemblyVersion.Version)).ToList();
+                            }
+                        }
+                    }
+                }
+
             }
 
             // device can't NEVER EVER report that no native assemblies are deployed
