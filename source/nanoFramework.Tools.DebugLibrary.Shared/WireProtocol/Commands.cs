@@ -821,6 +821,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
+
+        //////////////////////////////////////////////////////////////////////////////////////
+        // Keep in sync with Debugging_Execution_QueryCLRCapabilities struct in native code //
+        //////////////////////////////////////////////////////////////////////////////////////
+
         public class Debugging_Execution_QueryCLRCapabilities
         {
             public const uint c_CapabilityFlags = 1;
@@ -830,6 +835,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint c_CapabilityClrInfo = 6;
             public const uint c_CapabilitySolutionReleaseInfo = 7;
             public const uint c_CapabilityInteropNativeAssemblies = 8;
+
+            ///////////////////////////////////////////////////////////
+            // because the number of deployed assemblies can make the size of the Wire Protocol package grow beyond the 
+            // target max packet size, need to be able to query the assemblies in batches
+            // at the same time need to keep backwards compatibility with the existing targets.
+            public const uint c_CapabilityInteropNativeAssembliesCount = 9;
 
             public const uint c_CapabilityFlags_FloatingPort = 0x00000001;
             public const uint c_CapabilityFlags_SourceLevelDebugging = 0x00000002;
@@ -913,6 +924,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             public class NativeAssemblyDetails
             {
+                /// <summary>
+                /// size of NativeAssemblyDetails struct (4 + 4 * 2 + 128 * 1)
+                /// </summary>
+                public const int Size = (4 + 4 * 2 + 128 * 1);
+
                 // the fields bellow have to follow the exact type and order so that the reply of the device can be properly parsed
 
                 /////////////////////////////////////////////////////////////////////////////////////////
@@ -941,8 +957,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
                 {
                     // find out how many items are in the reply array 
-                    // size of the reply buffer divided by the size of NativeAssemblyDetails struct (4 + 4 * 2 + 128 * 1)
-                    int numOfAssemblies = size / (4 + 4 * 2 + 128 * 1);
+                    // size of the reply buffer divided by the size of NativeAssemblyDetails struct
+                    int numOfAssemblies = size / NativeAssemblyDetails.Size;
 
                     NativeInteropAssemblies = Enumerable.Range(0, numOfAssemblies).Select(x => new NativeAssemblyDetails()).ToList();
                 }
