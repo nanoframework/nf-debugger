@@ -228,7 +228,7 @@ namespace nanoFramework.Tools.Debugger
                     output.AppendLine($"Target: {TargetName?.ToString()}");
                     output.AppendLine($"Platform: {Platform?.ToString()}");
                     output.AppendLine();
-                    output.AppendLine($"Image build @ { ImageBuildDate } { ImageCompilerInfo } v{ ImageCompilerVersion.ToString() }");
+                    output.AppendLine($"Image build @ { ImageBuildDate ?? "unknown" } { ImageCompilerInfo ?? "unknown" } v{ ImageCompilerVersion?.ToString() }");
                     output.AppendLine();
                     output.AppendLine($"OEM Product codes (vendor, model, SKU): {OEM.ToString()}, {Model.ToString()}, {SKU.ToString()}");
                     output.AppendLine();
