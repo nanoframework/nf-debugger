@@ -9,7 +9,7 @@ namespace nanoFramework.Tools.Debugger
 {
     public abstract partial class PortBase : PortMessageBase
     {
-        public static PortBase CreateInstanceForSerial(string displayName, object callerApp = null, bool startDeviceWatchers = true, int bootTime = 1500)
+        public static PortBase CreateInstanceForSerial(string displayName, object callerApp = null, bool startDeviceWatchers = true, int bootTime = 1000)
         {
             return new SerialPortManager(callerApp, startDeviceWatchers, bootTime);
         }

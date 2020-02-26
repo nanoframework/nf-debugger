@@ -52,7 +52,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Creates an Serial debug client
         /// </summary>
-        public SerialPortManager(object callerApp, bool startDeviceWatchers = true, int bootTime = 1500)
+        public SerialPortManager(object callerApp, bool startDeviceWatchers = true, int bootTime = 1000)
         {
             _mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, string>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
@@ -356,7 +356,26 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         }
                         else
                         {
-                            OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
+                            await Task.Yield();
+
+                            // failing to connect to debugger engine on first attempt occurs frequently on dual USB devices like ESP32 WROVER KIT
+                            // seems to be something related with both devices using the same USB endpoint
+                            // the best workaround for this so far is to wait a while and retry
+                            await Task.Delay(BootTime);
+
+                            if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
+                            {
+                                //add device to the collection
+                                NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+
+                                _serialDevices.Add(serialDevice);
+
+                                OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}"));
+                            }
+                            else
+                            {
+                                OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
+                            }
                         }
                     }
                     else
