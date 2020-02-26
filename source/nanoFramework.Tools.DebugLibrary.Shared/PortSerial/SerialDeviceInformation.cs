@@ -10,8 +10,8 @@ namespace nanoFramework.Tools.Debugger.Serial
 {
     public class SerialDeviceInformation
     {
-        private DeviceInformation device;
-        private string deviceSelector;
+        private readonly DeviceInformation device;
+        private readonly string deviceSelector;
 
         public string InstanceId
         {

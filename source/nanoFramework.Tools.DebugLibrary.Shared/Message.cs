@@ -5,7 +5,6 @@
 //
 
 using nanoFramework.Tools.Debugger.WireProtocol;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
 {

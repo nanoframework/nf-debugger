@@ -4,9 +4,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools;
 using System;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -400,7 +398,7 @@ namespace nanoFramework.Tools.Debugger
             }
             else if (IsPrimitive)
             {
-                if (val == null || val.IsPrimitive == false)
+                if (val == null || !val.IsPrimitive)
                 {
                     throw new InvalidCastException("The two runtime values are incompatible");
                 }
@@ -411,7 +409,7 @@ namespace nanoFramework.Tools.Debugger
             }
             else
             {
-                if (val != null && val.IsPrimitive == true)
+                if (val != null && val.IsPrimitive)
                 {
                     throw new InvalidCastException("The two runtime values are incompatible");
                 }

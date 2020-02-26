@@ -5,16 +5,10 @@
 //
 
 using System;
-using System.Collections;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Reflection;
-using System.Threading;
-using System.Runtime.Serialization;
 using Windows.Storage;
 using System.Threading.Tasks;
-using Windows.Storage.Streams;
 using System.Collections.Generic;
 
 namespace nanoFramework.Tools.Debugger
@@ -35,7 +29,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (!file.IsAvailable)
             {
-                throw new System.IO.FileNotFoundException(String.Format("Cannot find {0}", file));
+                throw new FileNotFoundException(String.Format("Cannot find {0}", file));
             }
 
             var textLines = await FileIO.ReadLinesAsync(file);
@@ -56,7 +50,7 @@ namespace nanoFramework.Tools.Debugger
                     (lineBytes[1] != '0' && lineBytes[1] != '3' && lineBytes[1] != '7')
                     )
                 {
-                    throw new System.ArgumentException(String.Format("Unknown format at line {0} of {1}:\n {2}", lineNum, file, line));
+                    throw new ArgumentException(String.Format("Unknown format at line {0} of {1}:\n {2}", lineNum, file, line));
                 }
 
                 // we discard S0 records
@@ -68,7 +62,7 @@ namespace nanoFramework.Tools.Debugger
                 int num = Byte.Parse(new string(lineBytes, 2, 2), System.Globalization.NumberStyles.HexNumber);
                 if (num != ((len / 2) - 2))
                 {
-                    throw new System.ArgumentException(String.Format("Incorrect length at line {0} of {1}: {2}", lineNum, file, num));
+                    throw new ArgumentException(String.Format("Incorrect length at line {0} of {1}: {2}", lineNum, file, num));
                 }
 
                 byte crc = (byte)num;
@@ -82,7 +76,7 @@ namespace nanoFramework.Tools.Debugger
 
                 if ((checksum ^ crc) != 0xFF)
                 {
-                    throw new System.ArgumentException(String.Format("Incorrect crc at line {0} of {1}: got {2:X2}, expected {3:X2}", lineNum, file, crc, checksum));
+                    throw new ArgumentException(String.Format("Incorrect crc at line {0} of {1}: got {2:X2}, expected {3:X2}", lineNum, file, crc, checksum));
                 }
 
                 num -= 5;
@@ -94,7 +88,7 @@ namespace nanoFramework.Tools.Debugger
                     entrypoint = address;
                     for (i = 0; i < blocks.Count; i++)
                     {
-                        Block bl = (Block)blocks[i];
+                        Block bl = blocks[i];
                         if (bl.address == entrypoint)
                         {
                             bl.executable = true;
@@ -104,11 +98,12 @@ namespace nanoFramework.Tools.Debugger
                 }
                 else
                 {
-                    Block bl = new Block();
-
-                    bl.address = address;
-                    bl.data = new MemoryStream();
-                    bl.executable = false;
+                    Block bl = new Block
+                    {
+                        address = address,
+                        data = new MemoryStream(),
+                        executable = false
+                    };
 
                     for (i = 0; i < num; i++)
                     {
@@ -117,7 +112,7 @@ namespace nanoFramework.Tools.Debugger
 
                     for (i = 0; i < blocks.Count; i++)
                     {
-                        Block bl2 = (Block)blocks[i];
+                        Block bl2 = blocks[i];
                         int num2 = (int)bl2.data.Length;
 
                         if (bl2.address + num2 == bl.address)

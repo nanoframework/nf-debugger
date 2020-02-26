@@ -17,8 +17,8 @@ namespace nanoFramework.Tools.Debugger.Usb
     /// </summary>
     public class UsbDeviceInformation
     {
-        private DeviceInformation device;
-        private string deviceSelector;
+        private readonly DeviceInformation device;
+        private readonly string deviceSelector;
 
         public string InstanceId
         {
@@ -49,7 +49,7 @@ namespace nanoFramework.Tools.Debugger.Usb
         /// </summary>
         /// <param name="deviceInformation"></param>
         /// <param name="deviceSelector">The AQS used to find this device</param>
-        public UsbDeviceInformation(Windows.Devices.Enumeration.DeviceInformation deviceInformation, String deviceSelector)
+        public UsbDeviceInformation(DeviceInformation deviceInformation, String deviceSelector)
         {
             device = deviceInformation;
             this.deviceSelector = deviceSelector;

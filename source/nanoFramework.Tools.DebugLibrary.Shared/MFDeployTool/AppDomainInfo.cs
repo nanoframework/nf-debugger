@@ -10,8 +10,8 @@ namespace nanoFramework.Tools.Debugger
 {
     class AppDomainInfo : IAppDomainInfo
     {
-        private uint m_id;
-        Commands.Debugging_Resolve_AppDomain.Reply m_reply;
+        private readonly uint m_id;
+        readonly Commands.Debugging_Resolve_AppDomain.Reply m_reply;
 
         public AppDomainInfo(uint id, Commands.Debugging_Resolve_AppDomain.Reply reply)
         {

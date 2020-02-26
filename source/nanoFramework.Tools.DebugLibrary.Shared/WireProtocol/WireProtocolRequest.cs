@@ -13,7 +13,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class WireProtocolRequest
     {
-        private CommandEventHandler _callback;
+        private readonly CommandEventHandler _callback;
 
         public CancellationToken CancellationToken { get; }
         public TaskCompletionSource<IncomingMessage> TaskCompletionSource { get; }

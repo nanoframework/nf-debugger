@@ -6,15 +6,8 @@
 
 using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
-using System.Collections.Generic;
 using System.Reflection;
-//using System.Runtime.Remoting;
-//using System.Runtime.Remoting.Messaging;
-//using System.Runtime.Remoting.Proxies;
-//using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -27,8 +20,8 @@ namespace nanoFramework.Tools.Debugger
 
         internal int _sequence;
 
-        private object _server;
-        private Type _serverClassToRemote;
+        private readonly object _server;
+        private readonly Type _serverClassToRemote;
 
         internal EndPoint(Type type, uint id, Engine engine)
         {
@@ -67,30 +60,32 @@ namespace nanoFramework.Tools.Debugger
 
         private Commands.Debugging_Messaging_Address InitializeAddressForTransmission(EndPoint epTo)
         {
-            Commands.Debugging_Messaging_Address addr = new Commands.Debugging_Messaging_Address();
+            Commands.Debugging_Messaging_Address addr = new Commands.Debugging_Messaging_Address
+            {
+                m_seq = (uint)Interlocked.Increment(ref _sequence),
 
-            addr.m_seq = (uint)Interlocked.Increment(ref _sequence);
+                m_from_Type = _type,
+                m_from_Id = _id,
 
-            addr.m_from_Type = _type;
-            addr.m_from_Id = _id;
-
-            addr.m_to_Type = epTo._type;
-            addr.m_to_Id = epTo._id;
+                m_to_Type = epTo._type,
+                m_to_Id = epTo._id
+            };
 
             return addr;
         }
 
         internal Commands.Debugging_Messaging_Address InitializeAddressForReception()
         {
-            Commands.Debugging_Messaging_Address addr = new Commands.Debugging_Messaging_Address();
+            Commands.Debugging_Messaging_Address addr = new Commands.Debugging_Messaging_Address
+            {
+                m_seq = 0,
 
-            addr.m_seq = 0;
+                m_from_Type = 0,
+                m_from_Id = 0,
 
-            addr.m_from_Type = 0;
-            addr.m_from_Id = 0;
-
-            addr.m_to_Type = _type;
-            addr.m_to_Id = _id;
+                m_to_Type = _type,
+                m_to_Id = _id
+            };
 
             return addr;
         }

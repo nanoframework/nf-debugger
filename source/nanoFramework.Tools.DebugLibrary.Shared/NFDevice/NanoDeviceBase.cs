@@ -71,13 +71,13 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public INanoFrameworkDeviceInfo DeviceInfo { get; internal set; }
 
-        private object m_serverCert = null;
-        private Dictionary<uint, string> m_execSrecHash = new Dictionary<uint, string>();
-        private Dictionary<uint, int> m_srecHash = new Dictionary<uint, int>();
+        private readonly object m_serverCert = null;
+        private readonly Dictionary<uint, string> m_execSrecHash = new Dictionary<uint, string>();
+        private readonly Dictionary<uint, int> m_srecHash = new Dictionary<uint, int>();
 
-        private AutoResetEvent m_evtMicroBooter = new AutoResetEvent(false);
-        private AutoResetEvent m_evtMicroBooterError = new AutoResetEvent(false);
-        private ManualResetEvent m_evtMicroBooterStart = new ManualResetEvent(false);
+        private readonly AutoResetEvent m_evtMicroBooter = new AutoResetEvent(false);
+        private readonly AutoResetEvent m_evtMicroBooterError = new AutoResetEvent(false);
+        private readonly ManualResetEvent m_evtMicroBooterStart = new ManualResetEvent(false);
 
         public NanoDeviceBase()
         {
@@ -120,7 +120,7 @@ namespace nanoFramework.Tools.Debugger
             if (!DeviceInfo.Valid || force)
             {
                 // seems to be invalid so get it from device
-                var mfDeviceInfo = new NanoFrameworkDeviceInfo(this);
+                NanoFrameworkDeviceInfo mfDeviceInfo = new NanoFrameworkDeviceInfo(this);
                 mfDeviceInfo.GetDeviceInfo();
 
                 DeviceInfo = mfDeviceInfo;
@@ -140,7 +140,7 @@ namespace nanoFramework.Tools.Debugger
                 throw new DeviceNotConnectedException();
             }
 
-            var reply = DebugEngine.GetConnectionSource();
+            Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
 
             if (reply != null)
             {
@@ -244,7 +244,7 @@ namespace nanoFramework.Tools.Debugger
             if (DebugEngine == null) throw new NanoFrameworkDeviceNoResponseException();
 
             // check if the device is responsive
-            var isPresent = Ping();
+            PingConnectionType isPresent = Ping();
             if (Ping() == PingConnectionType.NoConnection)
             {
                 // it's not, try reconnect
@@ -264,7 +264,7 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            var reply = DebugEngine.GetFlashSectorMap();
+            List<Commands.Monitor_FlashSectorMap.FlashSectorData> reply = DebugEngine.GetFlashSectorMap();
 
             if (reply == null) throw new NanoFrameworkDeviceNoResponseException();
 
@@ -354,7 +354,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 progress?.Report(new ProgressReport(value, total, $"Erasing sector 0x{flashSectorData.m_StartAddress.ToString("X8")}."));
 
-                var (ErrorCode, Success) = DebugEngine.EraseMemory(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
+                (uint ErrorCode, bool Success) = DebugEngine.EraseMemory(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
 
                 if(!Success)
                 {
@@ -379,7 +379,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 progress?.Report(new ProgressReport(0, 0, "Rebooting..."));
 
-                var rebootOptions = RebootOptions.ClrOnly;
+                RebootOptions rebootOptions = RebootOptions.ClrOnly;
 
                 DebugEngine.RebootDevice(rebootOptions);
             }
@@ -417,7 +417,7 @@ namespace nanoFramework.Tools.Debugger
             // make sure we know who we are talking to
             if (await CheckForMicroBooterAsync(cancellationToken))
             {
-                var reply = await DeploySRECAsync(srecFile, cancellationToken);
+                Tuple<uint, bool> reply = await DeploySRECAsync(srecFile, cancellationToken);
 
                 // check if request was successful
                 if (reply.Item2)
@@ -434,7 +434,7 @@ namespace nanoFramework.Tools.Debugger
 
             await DebugEngine.ConnectAsync(1000, false, ConnectionSource.Unknown);
 
-            var parseResult = await SRecordFile.ParseAsync(srecFile);
+            Tuple<uint, List<SRecordFile.Block>> parseResult = await SRecordFile.ParseAsync(srecFile);
             entryPoint = parseResult.Item1;
             blocks = parseResult.Item2;
 
@@ -465,9 +465,9 @@ namespace nanoFramework.Tools.Debugger
                     progress?.Report(new ProgressReport(0, total, string.Format("Erasing sector 0x{0:x08}", block.address)));
 
                     // the clr requires erase before writing
-                    var eraseResult = DebugEngine.EraseMemory(block.address, (uint)len);
+                    (uint ErrorCode, bool Success) = DebugEngine.EraseMemory(block.address, (uint)len);
 
-                    if (!eraseResult.Success)
+                    if (!Success)
                     {
                         return new Tuple<uint, bool>(0, false);
                     }
@@ -485,14 +485,14 @@ namespace nanoFramework.Tools.Debugger
                             return new Tuple<uint, bool>(0, false);
                         }
 
-                        var writeResult = DebugEngine.WriteMemory(addr, data);
-                        if (writeResult.Success == false)
+                        (uint ErrorCode, bool Success) writeResult = DebugEngine.WriteMemory(addr, data);
+                        if (!writeResult.Success)
                         {
                             return new Tuple<uint, bool>(0, false);
                         }
 
                         value += buflen;
-                        addr += (uint)buflen;
+                        addr += buflen;
                         len -= buflen;
 
                         progress?.Report(new ProgressReport(value, total, string.Format("Deploying {0}...", srecFile.Name)));
@@ -523,7 +523,7 @@ namespace nanoFramework.Tools.Debugger
 
                 if (m_execSrecHash.ContainsKey(entryPoint))
                 {
-                    string execRec = (string)m_execSrecHash[entryPoint];
+                    string execRec = m_execSrecHash[entryPoint];
                     bool fRet = false;
 
                     for (int retry = 0; retry < 10; retry++)
@@ -533,12 +533,12 @@ namespace nanoFramework.Tools.Debugger
 
                         try
                         {
-                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
                             // check if cancellation was requested 
                             if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
 
-                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
                         }
                         catch
                         {
@@ -593,7 +593,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     if (cancellationToken.IsCancellationRequested) return false;
 
-                    await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("xx\n"), TimeSpan.FromMilliseconds(5000), cancellationToken);
+                    await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("xx\n"), TimeSpan.FromMilliseconds(5000), cancellationToken);
 
                     if (m_evtMicroBooterError.WaitOne(100))
                     {
@@ -619,10 +619,10 @@ namespace nanoFramework.Tools.Debugger
                     int handle = -1;
                     int idx = 0;
 
-                    var fileInfo = await zipFile.GetBasicPropertiesAsync();
+                    Windows.Storage.FileProperties.BasicProperties fileInfo = await zipFile.GetBasicPropertiesAsync();
                     uint numPkts = (uint)(fileInfo.Size + DebugEngine.WireProtocolPacketSize - 1) / DebugEngine.WireProtocolPacketSize;
 
-                    byte[] hashData = UTF8Encoding.UTF8.GetBytes(zipFile.Name + fileInfo.DateModified.ToString());
+                    byte[] hashData = Encoding.UTF8.GetBytes(zipFile.Name + fileInfo.DateModified.ToString());
 
                     uint updateId = CRC.ComputeCRC(hashData, 0, hashData.Length, 0);
                     uint imageCRC = 0;
@@ -631,14 +631,14 @@ namespace nanoFramework.Tools.Debugger
 
                     //Debug.WriteLine(updateId);
 
-                    handle = DebugEngine.StartUpdate("NetMF", 4, 4, updateId, 0, 0, (uint)fileInfo.Size, (uint)DebugEngine.WireProtocolPacketSize, 0);
+                    handle = DebugEngine.StartUpdate("NetMF", 4, 4, updateId, 0, 0, (uint)fileInfo.Size, DebugEngine.WireProtocolPacketSize, 0);
                     if (handle > -1)
                     {
                         uint authType;
                         IAsyncResult iar = null;
 
                         // perform request
-                        var resp = DebugEngine.UpdateAuthCommand(handle, 1, null);
+                        (byte[] Response, bool Success) resp = DebugEngine.UpdateAuthCommand(handle, 1, null);
 
                         // check result
                         if (!resp.Success || resp.Response.Length < 4) return false;
@@ -776,7 +776,7 @@ namespace nanoFramework.Tools.Debugger
             m_execSrecHash.Clear();
 
             // create .EXT file for SREC file
-            var folder = await srecFile.GetParentAsync();
+            StorageFolder folder = await srecFile.GetParentAsync();
 
             int m_totalSrecs = 0;
             uint m_minSrecAddr = uint.MaxValue;
@@ -785,7 +785,7 @@ namespace nanoFramework.Tools.Debugger
             if (srecFile.IsAvailable)
             {
                 // check is EXT file exists, if yes delete it
-                var srecExtFile = await folder.TryGetItemAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext") as StorageFile;
+                StorageFile srecExtFile = await folder.TryGetItemAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext") as StorageFile;
                 if (srecExtFile != null)
                 {
                     await srecExtFile.DeleteAsync();
@@ -799,7 +799,7 @@ namespace nanoFramework.Tools.Debugger
                 // check if cancellation was requested 
                 if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
 
-                var parsedFile = await ParseSrecFileAsync(srecExtFile);
+                SrecParseResult parsedFile = await ParseSrecFileAsync(srecExtFile);
 
                 try
                 {
@@ -826,7 +826,7 @@ namespace nanoFramework.Tools.Debugger
 
                         parsedFile.Records.Keys.CopyTo(keys, 0);
 
-                        Array.Sort<uint>(keys);
+                        Array.Sort(keys);
 
                         if (keys[0] < imageAddr) imageAddr = keys[0];
 
@@ -843,11 +843,11 @@ namespace nanoFramework.Tools.Debugger
                                 continue;
                             }
 
-                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
-                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes(parsedFile.Records[key]), TimeSpan.FromMilliseconds(20000), cancellationToken);
+                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes(parsedFile.Records[key]), TimeSpan.FromMilliseconds(20000), cancellationToken);
 
-                            await DebugEngine.SendBufferAsync(UTF8Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
                             if (pipe-- <= 0)
                             {
@@ -892,9 +892,9 @@ namespace nanoFramework.Tools.Debugger
                             symdefFilePath = Path.GetDirectoryName(srecFile.Path) + "\\" + basefile + ".symdefs";
                         }
 
-                        var binFile = await folder.TryGetItemAsync(binFilePath) as StorageFile;
+                        StorageFile binFile = await folder.TryGetItemAsync(binFilePath) as StorageFile;
 
-                        var symdefFile = await folder.TryGetItemAsync(symdefFilePath) as StorageFile;
+                        StorageFile symdefFile = await folder.TryGetItemAsync(symdefFilePath) as StorageFile;
 
                         // check if cancellation was requested 
                         if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
@@ -902,12 +902,12 @@ namespace nanoFramework.Tools.Debugger
                         // send image crc
                         if (binFile != null && symdefFile != null)
                         {
-                            var fileInfo = await binFile.GetBasicPropertiesAsync();
+                            Windows.Storage.FileProperties.BasicProperties fileInfo = await binFile.GetBasicPropertiesAsync();
 
                             UInt32 imageCRC = 0;
 
                             // read lines from SREC file
-                            var textLines = await FileIO.ReadLinesAsync(symdefFile);
+                            IList<string> textLines = await FileIO.ReadLinesAsync(symdefFile);
 
                             foreach (string line in textLines)
                             {
@@ -946,7 +946,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 int total = 0;
 
-                var textLines = await FileIO.ReadLinesAsync(srecFile);
+                IList<string> textLines = await FileIO.ReadLinesAsync(srecFile);
 
                 foreach (string line in textLines)
                 {
@@ -979,12 +979,12 @@ namespace nanoFramework.Tools.Debugger
             if (!srecFile.IsAvailable) return false;
 
             // create .EXT file for SREC file
-            var folder = await srecFile.GetParentAsync();
+            StorageFolder folder = await srecFile.GetParentAsync();
 
             try
             {
                 // read lines from SREC file
-                var textLines = await FileIO.ReadLinesAsync(srecFile);
+                IList<string> textLines = await FileIO.ReadLinesAsync(srecFile);
 
                 StorageFile srecExtFile = await folder.CreateFileAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext", CreationCollisionOption.ReplaceExisting);
 
@@ -1073,7 +1073,7 @@ namespace nanoFramework.Tools.Debugger
             }
             catch
             {
-                var thisFile = await folder.TryGetItemAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext") as StorageFile;
+                StorageFile thisFile = await folder.TryGetItemAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext") as StorageFile;
 
                 if (thisFile != null)
                 {
@@ -1105,7 +1105,7 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            var flasSectorsMap = DebugEngine.GetFlashSectorMap();
+            List<Commands.Monitor_FlashSectorMap.FlashSectorData> flasSectorsMap = DebugEngine.GetFlashSectorMap();
 
             if (flasSectorsMap == null || flasSectorsMap.Count == 0) throw new NanoFrameworkDeviceNoResponseException();
 

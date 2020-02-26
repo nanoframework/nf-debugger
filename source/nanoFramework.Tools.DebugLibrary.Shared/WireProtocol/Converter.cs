@@ -13,6 +13,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
+using TypeExtensions = nanoFramework.Tools.Debugger.Extensions.TypeExtensions;
 
 namespace nanoFramework.Tools.Debugger.WireProtocol
 {
@@ -100,27 +101,27 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             Type t = o.GetType();
 
-            switch (Extensions.TypeExtensions.GetTypeCode(t))
+            switch (TypeExtensions.GetTypeCode(t))
             {
-                case Extensions.TypeExtensions.TypeCode.Boolean: writer.Write((bool)o); break;
-                case Extensions.TypeExtensions.TypeCode.Char: writer.Write((char)o); break;
-                case Extensions.TypeExtensions.TypeCode.SByte: writer.Write((sbyte)o); break;
-                case Extensions.TypeExtensions.TypeCode.Byte: writer.Write((byte)o); break;
-                case Extensions.TypeExtensions.TypeCode.Int16: writer.Write((short)o); break;
-                case Extensions.TypeExtensions.TypeCode.UInt16: writer.Write((ushort)o); break;
-                case Extensions.TypeExtensions.TypeCode.Int32: writer.Write((int)o); break;
-                case Extensions.TypeExtensions.TypeCode.UInt32: writer.Write((uint)o); break;
-                case Extensions.TypeExtensions.TypeCode.Int64: writer.Write((long)o); break;
-                case Extensions.TypeExtensions.TypeCode.UInt64: writer.Write((ulong)o); break;
-                case Extensions.TypeExtensions.TypeCode.Single:
+                case TypeExtensions.TypeCode.Boolean: writer.Write((bool)o); break;
+                case TypeExtensions.TypeCode.Char: writer.Write((char)o); break;
+                case TypeExtensions.TypeCode.SByte: writer.Write((sbyte)o); break;
+                case TypeExtensions.TypeCode.Byte: writer.Write((byte)o); break;
+                case TypeExtensions.TypeCode.Int16: writer.Write((short)o); break;
+                case TypeExtensions.TypeCode.UInt16: writer.Write((ushort)o); break;
+                case TypeExtensions.TypeCode.Int32: writer.Write((int)o); break;
+                case TypeExtensions.TypeCode.UInt32: writer.Write((uint)o); break;
+                case TypeExtensions.TypeCode.Int64: writer.Write((long)o); break;
+                case TypeExtensions.TypeCode.UInt64: writer.Write((ulong)o); break;
+                case TypeExtensions.TypeCode.Single:
                     if (Capabilities.FloatingPoint) writer.Write((float)o);
                     else writer.Write((int)((float)o * 1024));
                     break;
-                case Extensions.TypeExtensions.TypeCode.Double:
+                case TypeExtensions.TypeCode.Double:
                     if (Capabilities.FloatingPoint) writer.Write((double)o);
                     else writer.Write((long)((double)o * 65536));
                     break;
-                case Extensions.TypeExtensions.TypeCode.String:
+                case TypeExtensions.TypeCode.String:
                     byte[] buf = Encoding.UTF8.GetBytes((string)o);
 
                     writer.Write(buf.Length);
@@ -222,28 +223,28 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 //Debug.WriteLine("Deserializing instance " + t.Name);
             }
 
-            switch (Extensions.TypeExtensions.GetTypeCode(t))
+            switch (TypeExtensions.GetTypeCode(t))
             {
-                case Extensions.TypeExtensions.TypeCode.Boolean: ret = reader.ReadBoolean(); break;
-                case Extensions.TypeExtensions.TypeCode.Char: ret = reader.ReadChar(); break;
+                case TypeExtensions.TypeCode.Boolean: ret = reader.ReadBoolean(); break;
+                case TypeExtensions.TypeCode.Char: ret = reader.ReadChar(); break;
 
-                case Extensions.TypeExtensions.TypeCode.SByte: ret = reader.ReadSByte(); break;
-                case Extensions.TypeExtensions.TypeCode.Byte: ret = reader.ReadByte(); break;
-                case Extensions.TypeExtensions.TypeCode.Int16: ret = reader.ReadInt16(); break;
-                case Extensions.TypeExtensions.TypeCode.UInt16: ret = reader.ReadUInt16(); break;
-                case Extensions.TypeExtensions.TypeCode.Int32: ret = reader.ReadInt32(); break;
-                case Extensions.TypeExtensions.TypeCode.UInt32: ret = reader.ReadUInt32(); break;
-                case Extensions.TypeExtensions.TypeCode.Int64: ret = reader.ReadInt64(); break;
-                case Extensions.TypeExtensions.TypeCode.UInt64: ret = reader.ReadUInt64(); break;
-                case Extensions.TypeExtensions.TypeCode.Single:
+                case TypeExtensions.TypeCode.SByte: ret = reader.ReadSByte(); break;
+                case TypeExtensions.TypeCode.Byte: ret = reader.ReadByte(); break;
+                case TypeExtensions.TypeCode.Int16: ret = reader.ReadInt16(); break;
+                case TypeExtensions.TypeCode.UInt16: ret = reader.ReadUInt16(); break;
+                case TypeExtensions.TypeCode.Int32: ret = reader.ReadInt32(); break;
+                case TypeExtensions.TypeCode.UInt32: ret = reader.ReadUInt32(); break;
+                case TypeExtensions.TypeCode.Int64: ret = reader.ReadInt64(); break;
+                case TypeExtensions.TypeCode.UInt64: ret = reader.ReadUInt64(); break;
+                case TypeExtensions.TypeCode.Single:
                     if (Capabilities.FloatingPoint) ret = reader.ReadSingle();
                     else ret = (float)reader.ReadInt32() / 1024;
                     break;
-                case Extensions.TypeExtensions.TypeCode.Double:
+                case TypeExtensions.TypeCode.Double:
                     if (Capabilities.FloatingPoint) ret = reader.ReadDouble();
                     else ret = (double)reader.ReadInt64() / 65536;
                     break;
-                case Extensions.TypeExtensions.TypeCode.String:
+                case TypeExtensions.TypeCode.String:
                     int num = reader.ReadInt32();
                     byte[] buf = reader.ReadBytes(num);
 
@@ -291,7 +292,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     {
                         if (o != null)
                         {
-                            if (o.GetType() != t) throw new System.Runtime.Serialization.SerializationException();
+                            if (o.GetType() != t) throw new SerializationException();
                         }
                         else
                         {
@@ -304,7 +305,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     }
                     else
                     {
-                        throw new System.Runtime.Serialization.SerializationException();
+                        throw new SerializationException();
                     }
 
                     break;

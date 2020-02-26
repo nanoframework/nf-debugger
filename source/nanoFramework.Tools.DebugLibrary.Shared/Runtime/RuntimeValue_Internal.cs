@@ -4,8 +4,6 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools;
-
 namespace nanoFramework.Tools.Debugger
 {
     public class RuntimeValue_Internal : RuntimeValue

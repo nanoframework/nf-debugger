@@ -5,7 +5,6 @@
 
 using nanoFramework.Tools.Debugger.WireProtocol;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using static nanoFramework.Tools.Debugger.WireProtocol.Commands.Monitor_FlashSectorMap;
 
 namespace nanoFramework.Tools.Debugger.Extensions

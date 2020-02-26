@@ -15,7 +15,7 @@ using System.Text;
 namespace nanoFramework.Tools.Debugger
 {
     [Flags()]
-    public enum SerializationFlags
+    public enum SerializationOptions
     {
         //
         // Keep in sync with Microsoft.SPOT.SerializationHints!!!!
@@ -37,7 +37,7 @@ namespace nanoFramework.Tools.Debugger
         // Keep in sync with Microsoft.SPOT.SerializationHintsAttribute!!!!
         //
 
-        public SerializationFlags Flags;
+        public SerializationOptions Flags;
         public int ArraySize; // -1 == extend to the end of the stream.
         public int BitPacked;     // In bits.
         public long RangeBias;
@@ -147,8 +147,8 @@ namespace nanoFramework.Tools.Debugger
                 //
                 // Not supported for now.
                 //
-                if (t == typeof(System.RuntimeFieldHandle)) goto Failure;
-                if (t == typeof(System.RuntimeMethodHandle)) goto Failure;
+                if (t == typeof(RuntimeFieldHandle)) goto Failure;
+                if (t == typeof(RuntimeMethodHandle)) goto Failure;
 
                 if (t == typeof(System.Boolean)) m_et = ElementType.PELEMENT_TYPE_BOOLEAN;
                 else if (t == typeof(System.Char)) m_et = ElementType.PELEMENT_TYPE_CHAR;
@@ -181,7 +181,7 @@ namespace nanoFramework.Tools.Debugger
                         m_flags |= c_Array;
                     }
 
-                    if (t == typeof(System.Collections.ArrayList))
+                    if (t == typeof(ArrayList))
                     {
                         m_flags |= c_ArrayList;
                     }
@@ -201,7 +201,7 @@ namespace nanoFramework.Tools.Debugger
             internal void SetType(ElementType et)
             {
                 m_et = et;
-                m_flags = TypeDescriptorBasic.c_Primitive;
+                m_flags = c_Primitive;
 
                 switch (m_et)
                 {
@@ -266,22 +266,22 @@ namespace nanoFramework.Tools.Debugger
 
             internal Type Type { get { return m_referenceType; } }
 
-            internal bool IsPrimitive { get { return (m_flags & TypeDescriptorBasic.c_Primitive) != 0; } }
-            internal bool IsInterface { get { return (m_flags & TypeDescriptorBasic.c_Interface) != 0; } }
-            internal bool IsClass { get { return (m_flags & TypeDescriptorBasic.c_Class) != 0; } }
-            internal bool IsValueType { get { return (m_flags & TypeDescriptorBasic.c_ValueType) != 0; } }
-            internal bool IsEnum { get { return (m_flags & TypeDescriptorBasic.c_Enum) != 0; } }
+            internal bool IsPrimitive { get { return (m_flags & c_Primitive) != 0; } }
+            internal bool IsInterface { get { return (m_flags & c_Interface) != 0; } }
+            internal bool IsClass { get { return (m_flags & c_Class) != 0; } }
+            internal bool IsValueType { get { return (m_flags & c_ValueType) != 0; } }
+            internal bool IsEnum { get { return (m_flags & c_Enum) != 0; } }
 
             internal bool NeedsSignature
             {
                 get
                 {
-                    return IsPrimitive == false && IsEnum == false && IsValueType == false;
+                    return !IsPrimitive && !IsEnum && !IsValueType;
                 }
             }
 
-            internal bool IsArray { get { return (m_flags & TypeDescriptorBasic.c_Array) != 0; } }
-            internal bool IsArrayList { get { return (m_flags & TypeDescriptorBasic.c_ArrayList) != 0; } }
+            internal bool IsArray { get { return (m_flags & c_Array) != 0; } }
+            internal bool IsArrayList { get { return (m_flags & c_ArrayList) != 0; } }
 
             internal bool IsSealed { get { return m_referenceType != null && m_referenceType.IsSealed; } }
 
@@ -323,7 +323,6 @@ namespace nanoFramework.Tools.Debugger
                     }
 
                     m_arrayElement.SetType(sub);
-                    return;
                 }
             }
 
@@ -406,7 +405,7 @@ namespace nanoFramework.Tools.Debugger
             internal const int c_Action_ObjectFields = 2;
             internal const int c_Action_ObjectElements = 3;
 
-            BinaryFormatter m_bf;
+            readonly BinaryFormatter m_bf;
 
             internal object m_value;
             internal TypeDescriptor m_type;
@@ -445,7 +444,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 int res = c_Signature_Header | c_Signature_Type | c_Signature_Length;
 
-                if (this.Hints_ArraySize != 0)
+                if (Hints_ArraySize != 0)
                 {
                     res &= ~c_Signature_Length;
                 }
@@ -454,13 +453,13 @@ namespace nanoFramework.Tools.Debugger
 
                 if (m_typeExpected != null)
                 {
-                    if (m_typeExpected.m_base.NeedsSignature == false)
+                    if (!m_typeExpected.m_base.NeedsSignature)
                     {
                         res = 0;
                     }
                     else
                     {
-                        if (this.Hints_FixedType)
+                        if (Hints_FixedType)
                         {
                             res &= ~c_Signature_Type;
                         }
@@ -489,7 +488,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     m_typeForced = m_typeExpected.Type;
 
-                    if (this.Hints_PointerNeverNull)
+                    if (Hints_PointerNeverNull)
                     {
                         res &= ~c_Signature_Header;
                     }
@@ -498,14 +497,9 @@ namespace nanoFramework.Tools.Debugger
                 return res;
             }
 
-            internal bool Hints_Encrypted { get { return (m_hints != null && (m_hints.Flags & SerializationFlags.Encrypted) != 0); } }
-            internal bool Hints_Compressed { get { return (m_hints != null && (m_hints.Flags & SerializationFlags.Compressed) != 0); } }
-            internal bool Hints_Optional { get { return (m_hints != null && (m_hints.Flags & SerializationFlags.Optional) != 0); } }
+            internal bool Hints_PointerNeverNull { get { return (m_hints != null && (m_hints.Flags & SerializationOptions.PointerNeverNull) != 0); } }
 
-            internal bool Hints_PointerNeverNull { get { return (m_hints != null && (m_hints.Flags & SerializationFlags.PointerNeverNull) != 0); } }
-            internal bool Hints_ElementsNeverNull { get { return (m_hints != null && (m_hints.Flags & SerializationFlags.ElementsNeverNull) != 0); } }
-
-            internal bool Hints_FixedType { get { return (m_hints != null && (m_hints.Flags & SerializationFlags.FixedType) != 0); } }
+            internal bool Hints_FixedType { get { return (m_hints != null && (m_hints.Flags & SerializationOptions.FixedType) != 0); } }
 
             internal int Hints_ArraySize { get { return m_hints == null ? 0 : m_hints.ArraySize; } }
 
@@ -540,7 +534,7 @@ namespace nanoFramework.Tools.Debugger
                         //
                         if (m_typeExpected != null && m_typeExpected.m_base.m_et == ElementType.PELEMENT_TYPE_STRING)
                         {
-                            BinaryFormatter.WriteLine("NULL STRING");
+                            WriteLine("NULL STRING");
 
                             m_bf.WriteCompressedUnsigned(0xFFFFFFFF);
                             return c_Action_None;
@@ -549,12 +543,12 @@ namespace nanoFramework.Tools.Debugger
                         throw TypeDescriptorBasic.Error("NoSignature violation");
                     }
 
-                    if (this.Hints_PointerNeverNull)
+                    if (Hints_PointerNeverNull)
                     {
                         throw TypeDescriptorBasic.Error("PointerNeverNull violation");
                     }
 
-                    BinaryFormatter.WriteLine("NULL Pointer");
+                    WriteLine("NULL Pointer");
 
                     m_bf.WriteBits(TE_L1_Null, TE_L1);
                     return c_Action_None;
@@ -571,7 +565,7 @@ namespace nanoFramework.Tools.Debugger
                         throw TypeDescriptorBasic.Error("No duplicates for FixedType+PointerNeverNull!");
                     }
 
-                    BinaryFormatter.WriteLine("Duplicate: {0}", idx);
+                    WriteLine("Duplicate: {0}", idx);
 
                     m_bf.WriteBits(TE_L1_Duplicate, TE_L1);
                     m_bf.WriteCompressedUnsigned((uint)idx);
@@ -591,7 +585,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     Type t = (Type)v;
 
-                    BinaryFormatter.WriteLine("Reference: {0} {1}", mask, t.FullName);
+                    WriteLine("Reference: {0} {1}", mask, t.FullName);
 
                     if ((mask & c_Signature_Header) != 0)
                     {
@@ -602,7 +596,7 @@ namespace nanoFramework.Tools.Debugger
                 }
                 else if (td.IsPrimitive)
                 {
-                    BinaryFormatter.WriteLine("Primitive: {0} {1}", mask, td.m_et);
+                    WriteLine("Primitive: {0} {1}", mask, td.m_et);
 
                     if ((mask & c_Signature_Header) != 0)
                     {
@@ -619,7 +613,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     Array arr = (Array)v;
 
-                    BinaryFormatter.WriteLine("Array: Depth {0} {1}", mask, tdBase.m_arrayDepth);
+                    WriteLine("Array: Depth {0} {1}", mask, tdBase.m_arrayDepth);
 
                     if ((mask & c_Signature_Header) != 0)
                     {
@@ -634,7 +628,7 @@ namespace nanoFramework.Tools.Debugger
                         EmitSignature_Inner(c_Signature_Header | c_Signature_Type, tdBase.m_arrayElement, null, null);
                     }
 
-                    BinaryFormatter.WriteLine("Array: Size {0}", arr.Length);
+                    WriteLine("Array: Size {0}", arr.Length);
 
                     sizeReal = arr.Length;
                 }
@@ -642,7 +636,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     ArrayList lst = (ArrayList)v;
 
-                    BinaryFormatter.WriteLine("ArrayList: Size {0}", lst.Count);
+                    WriteLine("ArrayList: Size {0}", lst.Count);
 
                     if ((mask & c_Signature_Header) != 0)
                     {
@@ -659,7 +653,7 @@ namespace nanoFramework.Tools.Debugger
                     if (v != null) t = v.GetType();
                     else t = td.Type;
 
-                    BinaryFormatter.WriteLine("Reference: {0} {1}", mask, t.FullName);
+                    WriteLine("Reference: {0} {1}", mask, t.FullName);
 
                     if ((mask & c_Signature_Header) != 0)
                     {
@@ -676,7 +670,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     if ((mask & c_Signature_Length) != 0)
                     {
-                        int bitsMax = this.Hints_BitPacked;
+                        int bitsMax = Hints_BitPacked;
 
                         if (bitsMax != 0)
                         {
@@ -694,7 +688,7 @@ namespace nanoFramework.Tools.Debugger
                     }
                     else
                     {
-                        int sizeExpected = this.Hints_ArraySize;
+                        int sizeExpected = Hints_ArraySize;
 
                         if (sizeExpected > 0 && sizeExpected != sizeReal)
                         {
@@ -721,12 +715,12 @@ namespace nanoFramework.Tools.Debugger
                     levelOne = m_bf.ReadBits(TE_L1);
                     if (levelOne == TE_L1_Null)
                     {
-                        if (this.Hints_PointerNeverNull)
+                        if (Hints_PointerNeverNull)
                         {
                             throw TypeDescriptorBasic.Error("PointerNeverNull violation");
                         }
 
-                        BinaryFormatter.WriteLine("NULL Pointer");
+                        WriteLine("NULL Pointer");
 
                         return c_Action_None;
                     }
@@ -737,7 +731,7 @@ namespace nanoFramework.Tools.Debugger
                         m_value = m_bf.GetDuplicate(idx);
                         m_type = new TypeDescriptor(m_value.GetType());
 
-                        BinaryFormatter.WriteLine("Duplicate: {0}", idx);
+                        WriteLine("Duplicate: {0}", idx);
 
                         return c_Action_None;
                     }
@@ -748,7 +742,7 @@ namespace nanoFramework.Tools.Debugger
                             m_type = new TypeDescriptor(m_bf.ReadType());
                         }
 
-                        BinaryFormatter.WriteLine("Reference: {0}", m_type.Type.FullName);
+                        WriteLine("Reference: {0}", m_type.Type.FullName);
                     }
                     else
                     {
@@ -760,7 +754,7 @@ namespace nanoFramework.Tools.Debugger
                                 m_type = new TypeDescriptor((ElementType)m_bf.ReadBits(TE_ElementType));
                             }
 
-                            BinaryFormatter.WriteLine("Primitive: {0}", m_type.m_base.m_et);
+                            WriteLine("Primitive: {0}", m_type.m_base.m_et);
                         }
                         else if (levelTwo == TE_L2_Array)
                         {
@@ -768,7 +762,7 @@ namespace nanoFramework.Tools.Debugger
                             {
                                 m_type = new TypeDescriptor(ElementType.PELEMENT_TYPE_CLASS, (int)m_bf.ReadBits(TE_ArrayDepth));
 
-                                BinaryFormatter.WriteLine("Array: Depth {0}", m_type.m_arrayDepth);
+                                WriteLine("Array: Depth {0}", m_type.m_arrayDepth);
 
                                 levelOne = m_bf.ReadBits(TE_L1);
                                 if (levelOne == TE_L1_Reference)
@@ -822,7 +816,7 @@ namespace nanoFramework.Tools.Debugger
 
                     if ((mask & c_Signature_Length) != 0)
                     {
-                        int bitsMax = this.Hints_BitPacked;
+                        int bitsMax = Hints_BitPacked;
 
                         if (bitsMax != 0)
                         {
@@ -835,7 +829,7 @@ namespace nanoFramework.Tools.Debugger
                     }
                     else
                     {
-                        len = this.Hints_ArraySize;
+                        len = Hints_ArraySize;
 
                         if (len == -1)
                         {
@@ -858,7 +852,7 @@ namespace nanoFramework.Tools.Debugger
                     {
                         m_value = Array.CreateInstance(m_type.Type.GetElementType(), len);
 
-                        BinaryFormatter.WriteLine("Array: Size {0}", ((Array)m_value).Length);
+                        WriteLine("Array: Size {0}", ((Array)m_value).Length);
                     }
                 }
                 else
@@ -920,15 +914,15 @@ namespace nanoFramework.Tools.Debugger
                     switch (m_type.m_base.m_et)
                     {
                         case ElementType.PELEMENT_TYPE_BOOLEAN: val = (bool)m_value ? 1UL : 0UL; break;
-                        case ElementType.PELEMENT_TYPE_CHAR: val = (ulong)(char)m_value; break;
+                        case ElementType.PELEMENT_TYPE_CHAR: val = (char)m_value; break;
                         case ElementType.PELEMENT_TYPE_I1: val = (ulong)(sbyte)m_value; break;
-                        case ElementType.PELEMENT_TYPE_U1: val = (ulong)(byte)m_value; break;
+                        case ElementType.PELEMENT_TYPE_U1: val = (byte)m_value; break;
                         case ElementType.PELEMENT_TYPE_I2: val = (ulong)(short)m_value; break;
-                        case ElementType.PELEMENT_TYPE_U2: val = (ulong)(ushort)m_value; break;
+                        case ElementType.PELEMENT_TYPE_U2: val = (ushort)m_value; break;
                         case ElementType.PELEMENT_TYPE_I4: val = (ulong)(int)m_value; break;
-                        case ElementType.PELEMENT_TYPE_U4: val = (ulong)(uint)m_value; break;
+                        case ElementType.PELEMENT_TYPE_U4: val = (uint)m_value; break;
                         case ElementType.PELEMENT_TYPE_I8: val = (ulong)(long)m_value; break;
-                        case ElementType.PELEMENT_TYPE_U8: val = (ulong)(ulong)m_value; break;
+                        case ElementType.PELEMENT_TYPE_U8: val = (ulong)m_value; break;
                         case ElementType.PELEMENT_TYPE_R4: val = BytesFromFloat((float)m_value); break;
                         case ElementType.PELEMENT_TYPE_R8: val = BytesFromDouble((double)m_value); break;
 
@@ -939,7 +933,7 @@ namespace nanoFramework.Tools.Debugger
                                 m_bf.WriteCompressedUnsigned((uint)buf.Length);
                                 m_bf.WriteArray(buf, 0, buf.Length);
 
-                                BinaryFormatter.WriteLine("Value: STRING {0}", m_value);
+                                WriteLine("Value: STRING {0}", m_value);
 
                                 return c_Action_None;
                             }
@@ -968,19 +962,19 @@ namespace nanoFramework.Tools.Debugger
                     return TrackObject();
                 }
 
-                BinaryFormatter.WriteLine("Value: NUM {0}", val);
+                WriteLine("Value: NUM {0}", val);
 
-                if (this.Hints_BitPacked != 0) bits = this.Hints_BitPacked;
+                if (Hints_BitPacked != 0) bits = Hints_BitPacked;
 
                 bool fValid = true;
 
-                val -= (ulong)this.Hints_RangeBias;
+                val -= (ulong)Hints_RangeBias;
 
                 if (fSigned)
                 {
                     long valS = (long)val;
 
-                    if (this.Hints_Scale != 0) valS /= (long)this.Hints_Scale;
+                    if (Hints_Scale != 0) valS /= (long)Hints_Scale;
 
                     if (bits != 64)
                     {
@@ -993,9 +987,9 @@ namespace nanoFramework.Tools.Debugger
                 }
                 else
                 {
-                    ulong valU = (ulong)val;
+                    ulong valU = val;
 
-                    if (this.Hints_Scale != 0) valU /= (ulong)this.Hints_Scale;
+                    if (Hints_Scale != 0) valU /= Hints_Scale;
 
                     if (bits != 64)
                     {
@@ -1004,12 +998,12 @@ namespace nanoFramework.Tools.Debugger
                         fValid = (valU <= maxVal);
                     }
 
-                    val = (ulong)valU;
+                    val = valU;
                 }
 
                 if (!fValid)
                 {
-                    throw TypeDescriptorBasic.Error(String.Format("Value outside range: Bits={0} Bias={1} Scale={2}", bits, this.Hints_RangeBias, this.Hints_Scale));
+                    throw TypeDescriptorBasic.Error(String.Format("Value outside range: Bits={0} Bias={1} Scale={2}", bits, Hints_RangeBias, Hints_Scale));
                 }
 
                 m_bf.WriteBitsLong(val, bits);
@@ -1042,7 +1036,7 @@ namespace nanoFramework.Tools.Debugger
                             m_value = Encoding.UTF8.GetString(buf);
                         }
 
-                        BinaryFormatter.WriteLine("Value: STRING {0}", m_value);
+                        WriteLine("Value: STRING {0}", m_value);
 
                         return c_Action_None;
                     }
@@ -1070,7 +1064,7 @@ namespace nanoFramework.Tools.Debugger
                     return TrackObject();
                 }
 
-                if (this.Hints_BitPacked != 0) bits = this.Hints_BitPacked;
+                if (Hints_BitPacked != 0) bits = Hints_BitPacked;
                 val = m_bf.ReadBitsLong(bits);
 
                 if (fSigned)
@@ -1085,7 +1079,7 @@ namespace nanoFramework.Tools.Debugger
 
                     valS = (long)val;
 
-                    if (this.Hints_Scale != 0) valS *= (long)this.Hints_Scale;
+                    if (Hints_Scale != 0) valS *= (long)Hints_Scale;
 
                     val = (ulong)valS;
                 }
@@ -1095,20 +1089,20 @@ namespace nanoFramework.Tools.Debugger
 
                     if (bits != 64)
                     {
-                        valU = (ulong)(val << (64 - bits));
-                        val = (ulong)(valU >> (64 - bits));
+                        valU = val << (64 - bits);
+                        val = valU >> (64 - bits);
                     }
 
-                    valU = (ulong)val;
+                    valU = val;
 
-                    if (this.Hints_Scale != 0) valU *= (ulong)this.Hints_Scale;
+                    if (Hints_Scale != 0) valU *= Hints_Scale;
 
-                    val = (ulong)valU;
+                    val = valU;
                 }
 
-                val += (ulong)this.Hints_RangeBias;
+                val += (ulong)Hints_RangeBias;
 
-                BinaryFormatter.WriteLine("Value: NUM {0}", val);
+                WriteLine("Value: NUM {0}", val);
 
                 if (m_type.Type == typeof(DateTime))
                 {
@@ -1131,7 +1125,7 @@ namespace nanoFramework.Tools.Debugger
                         case ElementType.PELEMENT_TYPE_I4: m_value = (int)val; break;
                         case ElementType.PELEMENT_TYPE_U4: m_value = (uint)val; break;
                         case ElementType.PELEMENT_TYPE_I8: m_value = (long)val; break;
-                        case ElementType.PELEMENT_TYPE_U8: m_value = (ulong)val; break;
+                        case ElementType.PELEMENT_TYPE_U8: m_value = val; break;
                         case ElementType.PELEMENT_TYPE_R4: m_value = FloatFromBytes(val); break;
                         case ElementType.PELEMENT_TYPE_R8: m_value = DoubleFromBytes(val); break;
                     }
@@ -1186,11 +1180,11 @@ namespace nanoFramework.Tools.Debugger
                 {
                     float* ptr = &val;
 
-                    ret = (ulong)*(uint*)ptr;
+                    ret = *(uint*)ptr;
                 }
                 else
                 {
-                    ret = (ulong)(long)((float)val * 1024);
+                    ret = (ulong)(long)(val * 1024);
                 }
 
                 return ret;
@@ -1208,7 +1202,7 @@ namespace nanoFramework.Tools.Debugger
                 }
                 else
                 {
-                    ret = (ulong)(long)((double)val * 65536);
+                    ret = (ulong)(long)(val * 65536);
                 }
 
                 return ret;
@@ -1217,12 +1211,12 @@ namespace nanoFramework.Tools.Debugger
 
         class State
         {
-            BinaryFormatter m_parent;
+            readonly BinaryFormatter m_parent;
             State m_next = null;
             State m_prev = null;
 
             bool m_value_NeedProcessing = true;
-            TypeHandler m_value;
+            readonly TypeHandler m_value;
 
             bool m_fields_NeedProcessing = false;
             Type m_fields_CurrentClass = null;
@@ -1236,7 +1230,7 @@ namespace nanoFramework.Tools.Debugger
 
             internal State(BinaryFormatter parent, SerializationHintsAttribute hints, Type t)
             {
-                BinaryFormatter.WriteLine("New State: {0}", t != null ? t.FullName : "<null>");
+                WriteLine("New State: {0}", t != null ? t.FullName : "<null>");
 
                 TypeDescriptor td = (t != null) ? new TypeDescriptor(t) : null;
 
@@ -1287,7 +1281,7 @@ namespace nanoFramework.Tools.Debugger
                     }
                 }
 
-                BinaryFormatter.WriteLine("New Object: {0}", o != null ? o.GetType().FullName : "<null>");
+                WriteLine("New Object: {0}", o != null ? o.GetType().FullName : "<null>");
 
                 m_value.SetValue(o);
             }
@@ -1453,7 +1447,7 @@ namespace nanoFramework.Tools.Debugger
                                 hints = GetHints(f);
                             }
 
-                            BinaryFormatter.WriteLine("Field: {0} {1}", f.Name, f.FieldType);
+                            WriteLine("Field: {0} {1}", f.Name, f.FieldType);
 
                             return CreateInstance(hints, f.FieldType);
                         }
@@ -1474,12 +1468,13 @@ namespace nanoFramework.Tools.Debugger
                 {
                     SerializationHintsAttribute hints;
 
-                    if (m_value.m_hints != null && (m_value.m_hints.Flags & (SerializationFlags.FixedType | SerializationFlags.PointerNeverNull)) != 0)
+                    if (m_value.m_hints != null && (m_value.m_hints.Flags & (SerializationOptions.FixedType | SerializationOptions.PointerNeverNull)) != 0)
                     {
-                        hints = new SerializationHintsAttribute();
-
-                        hints.BitPacked = 0;
-                        hints.Flags = m_value.m_hints.Flags & (SerializationFlags.FixedType | SerializationFlags.PointerNeverNull);
+                        hints = new SerializationHintsAttribute
+                        {
+                            BitPacked = 0,
+                            Flags = m_value.m_hints.Flags & (SerializationOptions.FixedType | SerializationOptions.PointerNeverNull)
+                        };
                     }
                     else
                     {
@@ -1504,8 +1499,8 @@ namespace nanoFramework.Tools.Debugger
         bool m_fDeserialize;
         readonly CLRCapabilities m_capabilities;
 
-        Hashtable m_htDuplicates = new Hashtable();
-        ArrayList m_lstObjects = new ArrayList();
+        readonly Hashtable m_htDuplicates = new Hashtable();
+        readonly ArrayList m_lstObjects = new ArrayList();
 
         public BinaryFormatter(CLRCapabilities capabilities)
         {
@@ -1544,9 +1539,10 @@ namespace nanoFramework.Tools.Debugger
         {
             if (t == null) return null;
 
-            SerializationHintsAttribute hints = new SerializationHintsAttribute();
-
-            hints.Flags = SerializationFlags.FixedType | SerializationFlags.PointerNeverNull;
+            SerializationHintsAttribute hints = new SerializationHintsAttribute
+            {
+                Flags = SerializationOptions.FixedType | SerializationOptions.PointerNeverNull
+            };
 
             return hints;
         }
@@ -1561,7 +1557,7 @@ namespace nanoFramework.Tools.Debugger
             Initialize(false);
         }
 
-        [MethodImplAttribute(MethodImplOptions.Synchronized)]
+        [MethodImpl(MethodImplOptions.Synchronized)]
         static public void Initialize(bool fOnlySerializableObjects)
         {
             s_fOnlySerializableObjects = fOnlySerializableObjects;
@@ -1571,7 +1567,7 @@ namespace nanoFramework.Tools.Debugger
             LoadTypesFromAppDomain();
         }
 
-        [MethodImplAttribute(MethodImplOptions.Synchronized)]
+        [MethodImpl(MethodImplOptions.Synchronized)]
         static public void Reset()
         {
             s_htLookupType = new Hashtable();
@@ -1583,7 +1579,7 @@ namespace nanoFramework.Tools.Debugger
 
         static public bool MonitorAssemblies
         {
-            [MethodImplAttribute(MethodImplOptions.Synchronized)]
+            [MethodImpl(MethodImplOptions.Synchronized)]
             set
             {
                 AssemblyLoadEventHandler handler = new AssemblyLoadEventHandler(LoadTypesFromAssembly);
@@ -1618,16 +1614,16 @@ namespace nanoFramework.Tools.Debugger
         }
 
 
-        [MethodImplAttribute(MethodImplOptions.Synchronized)]
+        [MethodImpl(MethodImplOptions.Synchronized)]
         static public void LoadTypeFromAssembly(Assembly assm)
         {
-            if (s_lstProcessedAssemblies.Contains(assm) == false)
+            if (!s_lstProcessedAssemblies.Contains(assm))
             {
                 s_lstProcessedAssemblies.Add(assm);
 
                 foreach (Type t in assm.GetTypes())
                 {
-                    if (s_fOnlySerializableObjects && t.IsSerializable == false) continue;
+                    if (s_fOnlySerializableObjects && !t.IsSerializable) continue;
 
                     AddType(t);
                 }
@@ -1659,7 +1655,7 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.Synchronized)]
+        [MethodImpl(MethodImplOptions.Synchronized)]
         static internal void PopulateFromTypeForce(Type t)
         {
             LookupHash(t);
@@ -1678,7 +1674,7 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.Synchronized)]
+        [MethodImpl(MethodImplOptions.Synchronized)]
         static public Hashtable GetAllTypeHashes()
         {
             return (Hashtable)s_htLookupHash.Clone();
@@ -1694,7 +1690,7 @@ namespace nanoFramework.Tools.Debugger
 
                 FieldInfo fieldDst = dst.GetType().GetField(fieldSrc.Name, bindingFlags);
 
-                if (fieldSrc.FieldType == typeof(System.Type))
+                if (fieldSrc.FieldType == typeof(Type))
                 {
                     continue;
                 }
@@ -1817,7 +1813,7 @@ namespace nanoFramework.Tools.Debugger
         {
             if (o is Type) return -1;
 
-            if (m_htDuplicates.Contains(o) == false) return -1;
+            if (!m_htDuplicates.Contains(o)) return -1;
 
             return (int)m_htDuplicates[o];
         }
@@ -1827,7 +1823,7 @@ namespace nanoFramework.Tools.Debugger
             return m_lstObjects[idx];
         }
 
-        [MethodImplAttribute(MethodImplOptions.Synchronized)]
+        [MethodImpl(MethodImplOptions.Synchronized)]
         static internal void AddType(Type t)
         {
             if (t == null) return;
@@ -1855,7 +1851,7 @@ namespace nanoFramework.Tools.Debugger
                 AddType(f.FieldType);
             }
         }
-        [MethodImplAttribute(MethodImplOptions.Synchronized)]
+        [MethodImpl(MethodImplOptions.Synchronized)]
         static private void AddTypeCore(Type t)
         {
             try
@@ -1878,24 +1874,24 @@ namespace nanoFramework.Tools.Debugger
                 if (tExists != null)
                 {
                     string error = string.Format("Hash conflict: 0x{0:x8} {1}", hash, t.AssemblyQualifiedName, tExists.AssemblyQualifiedName);
-                    BinaryFormatter.WriteLine(error);
+                    WriteLine(error);
 
                     throw new ApplicationException(error);
                 }
 
-                BinaryFormatter.WriteLine("Hash: 0x{0:x8} {1}", hash, t.FullName);
+                WriteLine("Hash: 0x{0:x8} {1}", hash, t.FullName);
 
                 s_htLookupType[hash] = t;
                 s_htLookupHash[t] = hash;
             }
             catch
             {
-                BinaryFormatter.WriteLine("AddType failed: {0}", t.FullName);
+                WriteLine("AddType failed: {0}", t.FullName);
                 s_htLookupHash[t] = INVALID_HASH_ENTRY;
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.Synchronized)]
+        [MethodImpl(MethodImplOptions.Synchronized)]
         static public Type LookupType(uint hash)
         {
             Type t = s_htLookupType[hash] as Type;
@@ -1903,7 +1899,7 @@ namespace nanoFramework.Tools.Debugger
             return t;
         }
 
-        [MethodImplAttribute(MethodImplOptions.Synchronized)]
+        [MethodImpl(MethodImplOptions.Synchronized)]
         static public uint LookupHash(Type t)
         {
             object o = s_htLookupHash[t];
@@ -1971,12 +1967,12 @@ namespace nanoFramework.Tools.Debugger
             //
             // Special case for core types that have different representation on client and server.
             //
-            if (f.DeclaringType == typeof(System.Reflection.MemberInfo))
+            if (f.DeclaringType == typeof(MemberInfo))
             {
                 if (name == "m_cachedData") return hash;
             }
 
-            if (f.DeclaringType == typeof(System.DateTime))
+            if (f.DeclaringType == typeof(DateTime))
             {
                 if (name == "ticks") name = "m_ticks";
 
@@ -1987,7 +1983,7 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            if (f.DeclaringType == typeof(System.TimeSpan))
+            if (f.DeclaringType == typeof(TimeSpan))
             {
                 if (name == "_ticks") name = "m_ticks";
             }
@@ -2095,7 +2091,7 @@ namespace nanoFramework.Tools.Debugger
                 val = 0;
             }
 
-            val |= (ulong)m_stream.ReadBits(bits);
+            val |= m_stream.ReadBits(bits);
 
             return val;
         }

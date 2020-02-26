@@ -4,14 +4,13 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools;
 using System;
 
 namespace nanoFramework.Tools.Debugger
 {
     public class RuntimeValue_Reflection : RuntimeValue
     {
-        private ReflectionDefinition m_rd;
+        private readonly ReflectionDefinition m_rd;
 
         protected internal RuntimeValue_Reflection(Engine eng, WireProtocol.Commands.Debugging_Value handle) : base(eng, handle)
         {

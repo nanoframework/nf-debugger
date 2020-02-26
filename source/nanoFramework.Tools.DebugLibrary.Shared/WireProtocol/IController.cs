@@ -4,8 +4,6 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 

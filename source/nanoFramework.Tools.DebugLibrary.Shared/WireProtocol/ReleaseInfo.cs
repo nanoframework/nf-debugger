@@ -17,7 +17,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         private const int c_sizeOfTargetName = 32;
         private const int c_sizeOfPlatformName = 32;
 
-        private VersionStruct _version;
+        private readonly VersionStruct _version;
         private byte[] _rawInfo;
 
         public ReleaseInfo()

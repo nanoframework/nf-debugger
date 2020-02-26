@@ -12,7 +12,7 @@ namespace nanoFramework.ANT.Services.NanoFrameworkService
 
         public NFSerialDebugClientService(PortBase client)
         {
-            this.SerialDebugClient = client;
+            SerialDebugClient = client;
         }
 
     }

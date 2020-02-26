@@ -2,20 +2,19 @@
 // Copyright (c) 2017 The nanoFramework project contributors
 // See LICENSE file in the project root for full license information.
 //
+
 using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.Serial;
 using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
 using Windows.Foundation;
-using Windows.Storage.Streams;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
@@ -39,7 +38,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Internal list with the actual nF Serial devices
         /// </summary>
-        private static List<SerialDeviceInformation> _serialDevices;
+        private readonly List<SerialDeviceInformation> _serialDevices;
 
         // A pointer back to the calling app.  This is needed to reach methods and events there 
 #if WINDOWS_UWP
@@ -412,7 +411,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         /// <param name="deviceId">Id of the device that is being searched for</param>
         /// <returns>DeviceListEntry that has the provided Id; else a nullptr</returns>
-        internal static SerialDeviceInformation FindDevice(String deviceId)
+        internal SerialDeviceInformation FindDevice(String deviceId)
         {
             if (deviceId != null)
             {
@@ -433,7 +432,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             if (deviceId != null)
             {
                 // SerialMatch.Device.DeviceInformation
-                return NanoFrameworkDevices.FirstOrDefault(d => ((d as NanoDevice<NanoSerialDevice>).Device.DeviceInformation as SerialDeviceInformation).DeviceInformation.Id == deviceId);
+                return NanoFrameworkDevices.FirstOrDefault(d => ((d as NanoDevice<NanoSerialDevice>).Device.DeviceInformation ).DeviceInformation.Id == deviceId);
             }
 
             return null;

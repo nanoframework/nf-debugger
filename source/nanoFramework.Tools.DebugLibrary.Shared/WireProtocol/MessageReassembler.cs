@@ -25,10 +25,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             CompletePayload = 6,
         }
 
-        private byte[] _markerDebugger = Encoding.UTF8.GetBytes(Packet.MARKER_DEBUGGER_V1);
-        private byte[] _markerPacket = Encoding.UTF8.GetBytes(Packet.MARKER_PACKET_V1);
+        private readonly byte[] _markerDebugger = Encoding.UTF8.GetBytes(Packet.MARKER_DEBUGGER_V1);
+        private readonly byte[] _markerPacket = Encoding.UTF8.GetBytes(Packet.MARKER_PACKET_V1);
 
-        private Controller _parent;
+        private readonly Controller _parent;
         private ReceiveState _state;
 
         private MessageRaw _messageRaw;
@@ -141,10 +141,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             {
                                 _parent.CreateConverter().Deserialize(_messageBase.Header, _messageRaw.Header);
 
-                                if (VerifyHeader() == true)
+                                if (VerifyHeader())
                                 {
-                                    bool fReply = (_messageBase.Header.Flags & Flags.c_Reply) != 0;
-
                                     DebuggerEventSource.Log.WireProtocolRxHeader(_messageBase.Header.CrcHeader, _messageBase.Header.CrcData, _messageBase.Header.Cmd, _messageBase.Header.Flags, _messageBase.Header.Seq, _messageBase.Header.SeqReply, _messageBase.Header.Size);
 
                                     if (_messageBase.Header.Size != 0)
@@ -187,7 +185,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             break;
 
                         case ReceiveState.CompletePayload:
-                            if (VerifyPayload() == true)
+                            if (VerifyPayload())
                             {
                                 try
                                 {
@@ -229,9 +227,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         private int ValidMarker(byte[] marker)
         {
-            System.Diagnostics.Debug.Assert(marker != null && marker.Length == Packet.SIZE_OF_MARKER);
+            Debug.Assert(marker != null && marker.Length == Packet.SIZE_OF_MARKER);
             int markerSize = Packet.SIZE_OF_MARKER;
-            int iMax = System.Math.Min(_rawPos, markerSize);
+            int iMax = Math.Min(_rawPos, markerSize);
 
             for (int i = 0; i < iMax; i++)
             {

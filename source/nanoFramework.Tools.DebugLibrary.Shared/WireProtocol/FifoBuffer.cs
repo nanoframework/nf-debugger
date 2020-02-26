@@ -6,7 +6,6 @@
 
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger.WireProtocol
 {
@@ -15,11 +14,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         byte[] m_buffer;
         int m_offset;
         int m_count;
-        ManualResetEvent m_ready;
+        readonly ManualResetEvent m_ready;
 
         // use a timer to trigger the event m_ready only after a specified value is elapsed
         // this prevents showing partial messages which would happen if the event handler was called on every spurious char received
-        Timer timerToTriggerEvent;
+        readonly Timer timerToTriggerEvent;
 
         // time (in ms) to wait before actually setting the ready event
         const int triggerDelay = 500;

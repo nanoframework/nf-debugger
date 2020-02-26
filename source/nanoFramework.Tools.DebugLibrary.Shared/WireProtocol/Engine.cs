@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,9 +48,9 @@ namespace nanoFramework.Tools.Debugger
         //ArrayList m_notifyQueue;
         FifoBuffer m_notifyNoise;
 
-        CancellationTokenSource _noiseHandlingCancellation = new CancellationTokenSource();
+        readonly CancellationTokenSource _noiseHandlingCancellation = new CancellationTokenSource();
 
-        CancellationTokenSource _backgroundProcessorCancellation = new CancellationTokenSource();
+        readonly CancellationTokenSource _backgroundProcessorCancellation = new CancellationTokenSource();
 
         AutoResetEvent _rpcEvent;
         //ArrayList m_rpcQueue;
@@ -68,7 +67,7 @@ namespace nanoFramework.Tools.Debugger
         protected readonly Timer _pendingRequestsTimer;
 
 
-        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
         public CancellationToken CancellationToken => _cancellationTokenSource.Token;
 
         internal INanoDevice Device;
@@ -146,7 +145,7 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<bool> ConnectAsync(int timeout, bool force = false, ConnectionSource connectionSource = ConnectionSource.Unknown)
         {
-            if (force || IsConnected == false)
+            if (force || !IsConnected)
             {
                 // connect to device 
                 if (await Device.ConnectAsync())
@@ -170,10 +169,11 @@ namespace nanoFramework.Tools.Debugger
                         }
                     }
 
-                    Commands.Monitor_Ping cmd = new Commands.Monitor_Ping();
-
-                    cmd.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
-                    cmd.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
+                    Commands.Monitor_Ping cmd = new Commands.Monitor_Ping
+                    {
+                        m_source = Commands.Monitor_Ping.c_Ping_Source_Host,
+                        m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
+                    };
 
                     IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
 
@@ -186,16 +186,15 @@ namespace nanoFramework.Tools.Debugger
                         return false;
                     }
 
-                    Commands.Monitor_Ping.Reply reply = msg.Payload as Commands.Monitor_Ping.Reply;
 
-                    if (reply != null)
+                    if (msg.Payload is Commands.Monitor_Ping.Reply reply)
                     {
                         IsTargetBigEndian = (reply.m_dbg_flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
 
                         IsCRC32EnabledForWireProtocol = (reply.m_dbg_flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
 
                         // get Wire Protocol packet size
-                        switch(reply.m_dbg_flags & Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_Position)
+                        switch (reply.m_dbg_flags & Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_Position)
                         {
                             case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0128:
                                 WireProtocolPacketSize = 128;
@@ -278,10 +277,11 @@ namespace nanoFramework.Tools.Debugger
         {
             if (IsConnected)
             {
-                Commands.Monitor_Ping cmd = new Commands.Monitor_Ping();
-
-                cmd.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
-                cmd.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
+                Commands.Monitor_Ping cmd = new Commands.Monitor_Ping
+                {
+                    m_source = Commands.Monitor_Ping.c_Ping_Source_Host,
+                    m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
+                };
 
                 IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd);
 
@@ -300,7 +300,7 @@ namespace nanoFramework.Tools.Debugger
                 }
 
                 // resume execution for older clients, since server tools no longer do this.
-                if (!StopDebuggerOnConnect && (msg != null && msg.Payload == null))
+                if (!StopDebuggerOnConnect && msg?.Payload == null)
                 {
                     ResumeExecution();
                 }
@@ -494,7 +494,14 @@ namespace nanoFramework.Tools.Debugger
 
             try
             {
-                Task.WaitAll(request);
+                if (request != null)
+                {
+                    Task.WaitAll(request);
+                }
+                else
+                {
+                    return null;
+                }
             }
             catch(AggregateException)
             {
@@ -510,7 +517,14 @@ namespace nanoFramework.Tools.Debugger
 
             try
             {
-                Task.WaitAll(request);
+                if (request != null)
+                {
+                    Task.WaitAll(request);
+                }
+                else
+                {
+                    return null;
+                }
             }
             catch
             {
@@ -541,7 +555,7 @@ namespace nanoFramework.Tools.Debugger
 
                 request.TaskCompletionSource.SetException(ex);
 
-                return null;
+                return Task.FromResult<IncomingMessage>(null);
             }
 
             return request.TaskCompletionSource.Task;
@@ -550,7 +564,6 @@ namespace nanoFramework.Tools.Debugger
         private List<IncomingMessage> PerformRequestBatch(List<OutgoingMessage> messages, int timeout = 1000)
         {
             List<IncomingMessage> replies = new List<IncomingMessage>();
-            List<WireProtocolRequest> requests = new List<WireProtocolRequest>();
 
             foreach (OutgoingMessage message in messages)
             {
@@ -564,12 +577,7 @@ namespace nanoFramework.Tools.Debugger
         {
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Ping, 0, null);
 
-            if (reply != null)
-            {
-                return reply.Payload as Commands.Monitor_Ping.Reply;
-            }
-
-            return null;
+            return reply != null ? reply.Payload as Commands.Monitor_Ping.Reply : null;
         }
 
         internal Converter CreateConverter()
@@ -577,9 +585,9 @@ namespace nanoFramework.Tools.Debugger
             return new Converter(Capabilities);
         }
 
-        public async Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        public async Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
-            return await _portDefinition.SendBufferAsync(buffer, waiTimeout, cancellationToken);
+            return await _portDefinition.SendBufferAsync(buffer, waitTimeout, cancellationToken);
         }
 
         public bool ProcessMessage(IncomingMessage message, bool isReply)
@@ -587,7 +595,7 @@ namespace nanoFramework.Tools.Debugger
             message.Payload = Commands.ResolveCommandToPayload(message.Header.Cmd, isReply, _controlller.Capabilities);
 
 
-            if (isReply == true)
+            if (isReply)
             {
                 // we are processing a message flagged as a reply
                 // OR we this is a reply to an explicit request
@@ -613,10 +621,11 @@ namespace nanoFramework.Tools.Debugger
                 {
                     case Commands.c_Monitor_Ping:
                         {
-                            Commands.Monitor_Ping.Reply cmdReply = new Commands.Monitor_Ping.Reply();
-
-                            cmdReply.m_source = Commands.Monitor_Ping.c_Ping_Source_Host;
-                            cmdReply.m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0);
+                            Commands.Monitor_Ping.Reply cmdReply = new Commands.Monitor_Ping.Reply
+                            {
+                                m_source = Commands.Monitor_Ping.c_Ping_Source_Host,
+                                m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
+                            };
 
                             PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, _controlller.CreateConverter(), Flags.c_NonCritical, cmdReply), _backgroundProcessorCancellation.Token).ConfigureAwait(false);
 
@@ -675,7 +684,7 @@ namespace nanoFramework.Tools.Debugger
         {
             Stop();
 
-            _eventProcessExit?.Invoke(this, null);
+            _eventProcessExit?.Invoke(this, EventArgs.Empty);
         }
 
         public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
@@ -823,9 +832,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (eep == null)
             {
-                IControllerRemote remote = _controlller as IControllerRemote;
 
-                if (remote != null)
+                if (_controlller is IControllerRemote remote)
                 {
                     fSuccess = remote.RegisterEndpoint(ep._type, ep._id);
                 }
@@ -868,8 +876,7 @@ namespace nanoFramework.Tools.Debugger
 
                 eep.Destroy();
 
-                IControllerRemote remote = _controlller as IControllerRemote;
-                if (remote != null)
+                if (_controlller is IControllerRemote remote)
                 {
                     remote.DeregisterEndpoint(ep._type, ep._id);
                 }
@@ -889,12 +896,12 @@ namespace nanoFramework.Tools.Debugger
                 {
                     EndPoint ep = eep.m_ep;
 
-                    if (ep._type == type && ep._id == id)
+                    if (ep._type == type && 
+                        ep._id == id &&
+                        (!fOnlyServer || 
+                        ep.IsRpcServer))
                     {
-                        if (!fOnlyServer || ep.IsRpcServer)
-                        {
-                            return eep;
-                        }
+                        return eep;
                     }
                 }
             }
@@ -906,26 +913,27 @@ namespace nanoFramework.Tools.Debugger
             Commands.Debugging_Messaging_Address addr = query.m_addr;
             EndPointRegistration eep = RpcFind(addr.m_to_Type, addr.m_to_Id, true);
 
-            Commands.Debugging_Messaging_Query.Reply reply = new Commands.Debugging_Messaging_Query.Reply();
-
-            reply.m_found = (eep != null) ? 1u : 0u;
-            reply.m_addr = addr;
+            Commands.Debugging_Messaging_Query.Reply reply = new Commands.Debugging_Messaging_Query.Reply
+            {
+                m_found = (eep != null) ? 1u : 0u,
+                m_addr = addr
+            };
 
             await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, reply), _cancellationTokenSource.Token);
         }
 
         internal bool RpcCheck(Commands.Debugging_Messaging_Address addr)
         {
-            Commands.Debugging_Messaging_Query cmd = new Commands.Debugging_Messaging_Query();
-
-            cmd.m_addr = addr;
+            Commands.Debugging_Messaging_Query cmd = new Commands.Debugging_Messaging_Query
+            {
+                m_addr = addr
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Messaging_Query, 0, cmd);
             if (reply != null)
             {
-                Commands.Debugging_Messaging_Query.Reply res = reply.Payload as Commands.Debugging_Messaging_Query.Reply;
 
-                if (res != null && res.m_found != 0)
+                if (reply.Payload is Commands.Debugging_Messaging_Query.Reply res && res.m_found != 0)
                 {
                     return true;
                 }
@@ -973,17 +981,17 @@ namespace nanoFramework.Tools.Debugger
 
                 eep.m_req_Outbound.Add(or);
 
-                Commands.Debugging_Messaging_Send cmd = new Commands.Debugging_Messaging_Send();
-
-                cmd.m_addr = addr;
-                cmd.m_data = data;
+                Commands.Debugging_Messaging_Send cmd = new Commands.Debugging_Messaging_Send
+                {
+                    m_addr = addr,
+                    m_data = data
+                };
 
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Messaging_Send, 0, cmd);
                 if (reply != null)
                 {
-                    Commands.Debugging_Messaging_Send.Reply res = reply.Payload as Commands.Debugging_Messaging_Send.Reply;
 
-                    if (res != null && res.m_found != 0)
+                    if (reply.Payload is Commands.Debugging_Messaging_Send.Reply res && res.m_found != 0)
                     {
                         fSuccess = true;
                     }
@@ -1013,10 +1021,11 @@ namespace nanoFramework.Tools.Debugger
 
             eep = RpcFind(addr.m_to_Type, addr.m_to_Id, true);
 
-            Commands.Debugging_Messaging_Send.Reply res = new Commands.Debugging_Messaging_Send.Reply();
-
-            res.m_found = (eep != null) ? 1u : 0u;
-            res.m_addr = addr;
+            Commands.Debugging_Messaging_Send.Reply res = new Commands.Debugging_Messaging_Send.Reply
+            {
+                m_found = (eep != null) ? 1u : 0u,
+                m_addr = addr
+            };
 
             await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), msg, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
 
@@ -1043,17 +1052,18 @@ namespace nanoFramework.Tools.Debugger
 
         internal bool RpcReply(Commands.Debugging_Messaging_Address addr, byte[] data)
         {
-            Commands.Debugging_Messaging_Reply cmd = new Commands.Debugging_Messaging_Reply();
-
-            cmd.m_addr = addr;
-            cmd.m_data = data;
+            Commands.Debugging_Messaging_Reply cmd = new Commands.Debugging_Messaging_Reply
+            {
+                m_addr = addr,
+                m_data = data
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Messaging_Reply, 0, cmd);
             if (reply != null)
             {
                 Commands.Debugging_Messaging_Reply.Reply res = new Commands.Debugging_Messaging_Reply.Reply();
 
-                if (res != null && res.m_found != 0)
+                if (res?.m_found != 0)
                 {
                     return true;
                 }
@@ -1069,10 +1079,11 @@ namespace nanoFramework.Tools.Debugger
 
             eep = RpcFind(addr.m_from_Type, addr.m_from_Id, false);
 
-            Commands.Debugging_Messaging_Reply.Reply res = new Commands.Debugging_Messaging_Reply.Reply();
-
-            res.m_found = (eep != null) ? 1u : 0u;
-            res.m_addr = addr;
+            Commands.Debugging_Messaging_Reply.Reply res = new Commands.Debugging_Messaging_Reply.Reply
+            {
+                m_found = (eep != null) ? 1u : 0u,
+                m_addr = addr
+            };
 
             await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
 
@@ -1170,14 +1181,9 @@ namespace nanoFramework.Tools.Debugger
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_MemoryMap, 0, cmd);
 
-            if (reply != null)
+            if (reply?.Payload is Commands.Monitor_MemoryMap.Reply cmdReply)
             {
-                Commands.Monitor_MemoryMap.Reply cmdReply = reply.Payload as Commands.Monitor_MemoryMap.Reply;
-
-                if (cmdReply != null)
-                {
-                    return cmdReply.m_map;
-                }
+                return cmdReply.m_map;
             }
 
             return null;
@@ -1194,9 +1200,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Monitor_DeploymentMap.Reply cmdReply = reply.Payload as Commands.Monitor_DeploymentMap.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.Monitor_DeploymentMap.Reply cmdReply)
                 {
                     return cmdReply.m_map;
                 }
@@ -1211,12 +1216,7 @@ namespace nanoFramework.Tools.Debugger
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_OemInfo, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.Payload as Commands.Monitor_OemInfo.Reply;
-            }
-
-            return null;
+            return reply != null ? reply.Payload as Commands.Monitor_OemInfo.Reply : null;
         }
 
         public List<Commands.Monitor_FlashSectorMap.FlashSectorData> GetFlashSectorMap()
@@ -1228,9 +1228,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                var cmdReply = reply.Payload as Commands.Monitor_FlashSectorMap.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.Monitor_FlashSectorMap.Reply cmdReply)
                 {
                     // update property
                     FlashSectorMap = cmdReply.m_map;
@@ -1249,10 +1248,11 @@ namespace nanoFramework.Tools.Debugger
 
             while (length > 0)
             {
-                Commands.Monitor_ReadMemory cmd = new Commands.Monitor_ReadMemory();
-
-                cmd.m_address = address;
-                cmd.m_length = length;
+                Commands.Monitor_ReadMemory cmd = new Commands.Monitor_ReadMemory
+                {
+                    m_address = address,
+                    m_length = length
+                };
 
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_ReadMemory, 0, cmd);
 
@@ -1400,18 +1400,14 @@ namespace nanoFramework.Tools.Debugger
 
         public bool ExecuteMemory(uint address)
         {
-            Commands.Monitor_Execute cmd = new Commands.Monitor_Execute();
-
-            cmd.m_address = address;
+            Commands.Monitor_Execute cmd = new Commands.Monitor_Execute
+            {
+                m_address = address
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Execute, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         public void RebootDevice(RebootOptions options = RebootOptions.NormalReboot)
@@ -1471,9 +1467,8 @@ namespace nanoFramework.Tools.Debugger
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_BasePtr, 0, null);
             if (reply != null)
             {
-                Commands.Debugging_Execution_BasePtr.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_BasePtr.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.Debugging_Execution_BasePtr.Reply cmdReply)
                 {
                     return cmdReply.m_EE;
                 }
@@ -1484,20 +1479,21 @@ namespace nanoFramework.Tools.Debugger
 
         public Commands.DebuggingExecutionChangeConditions.State GetExecutionMode()
         {
-            Commands.DebuggingExecutionChangeConditions cmd = new Commands.DebuggingExecutionChangeConditions();
+            Commands.DebuggingExecutionChangeConditions cmd = new Commands.DebuggingExecutionChangeConditions
+            {
 
-            // setting these to 0 won't change anything in the target when the command is executed
-            // BUT, because the current state is returned we can parse the return result to get the state
-            cmd.FlagsToSet = 0;
-            cmd.FlagsToReset = 0;
+                // setting these to 0 won't change anything in the target when the command is executed
+                // BUT, because the current state is returned we can parse the return result to get the state
+                FlagsToSet = 0,
+                FlagsToReset = 0
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
             if (reply != null)
             {
                 // need this to get DebuggingExecutionChangeConditions.State enum from raw value
-                Commands.DebuggingExecutionChangeConditions.Reply cmdReply = reply.Payload as Commands.DebuggingExecutionChangeConditions.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.DebuggingExecutionChangeConditions.Reply cmdReply)
                 {
                     return (Commands.DebuggingExecutionChangeConditions.State)cmdReply.CurrentState;
                 }
@@ -1509,17 +1505,17 @@ namespace nanoFramework.Tools.Debugger
 
         public bool SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State flagsToSet, Commands.DebuggingExecutionChangeConditions.State flagsToReset)
         {
-            Commands.DebuggingExecutionChangeConditions cmd = new Commands.DebuggingExecutionChangeConditions();
-
-            cmd.FlagsToSet = (uint)flagsToSet;
-            cmd.FlagsToReset = (uint)flagsToReset;
+            Commands.DebuggingExecutionChangeConditions cmd = new Commands.DebuggingExecutionChangeConditions
+            {
+                FlagsToSet = (uint)flagsToSet,
+                FlagsToReset = (uint)flagsToReset
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
             if (reply != null)
             {
-                Commands.DebuggingExecutionChangeConditions.Reply cmdReply = reply.Payload as Commands.DebuggingExecutionChangeConditions.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.DebuggingExecutionChangeConditions.Reply cmdReply)
                 {
                     if (cmdReply.CurrentState != (uint)Commands.DebuggingExecutionChangeConditions.State.Unknown)
                         return true;
@@ -1542,34 +1538,26 @@ namespace nanoFramework.Tools.Debugger
 
         public bool SetCurrentAppDomain(uint id)
         {
-            Commands.Debugging_Execution_SetCurrentAppDomain cmd = new Commands.Debugging_Execution_SetCurrentAppDomain();
-
-            cmd.m_id = id;
+            Commands.Debugging_Execution_SetCurrentAppDomain cmd = new Commands.Debugging_Execution_SetCurrentAppDomain
+            {
+                m_id = id
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_SetCurrentAppDomain, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         public bool SetBreakpoints(Commands.Debugging_Execution_BreakpointDef[] breakpoints)
         {
-            Commands.Debugging_Execution_Breakpoints cmd = new Commands.Debugging_Execution_Breakpoints();
-
-            cmd.m_data = breakpoints;
+            Commands.Debugging_Execution_Breakpoints cmd = new Commands.Debugging_Execution_Breakpoints
+            {
+                m_data = breakpoints
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_Breakpoints, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         public Commands.Debugging_Execution_BreakpointDef GetBreakpointStatus()
@@ -1580,9 +1568,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Debugging_Execution_BreakpointStatus.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_BreakpointStatus.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.Debugging_Execution_BreakpointStatus.Reply cmdReply)
                     return cmdReply.m_lastHit;
             }
 
@@ -1591,9 +1578,10 @@ namespace nanoFramework.Tools.Debugger
 
         public bool SetSecurityKey(byte[] key)
         {
-            Commands.Debugging_Execution_SecurityKey cmd = new Commands.Debugging_Execution_SecurityKey();
-
-            cmd.m_key = key;
+            Commands.Debugging_Execution_SecurityKey cmd = new Commands.Debugging_Execution_SecurityKey
+            {
+                m_key = key
+            };
 
             return PerformSyncRequest(Commands.c_Debugging_Execution_SecurityKey, 0, cmd) != null;
         }
@@ -1607,26 +1595,21 @@ namespace nanoFramework.Tools.Debugger
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_Unlock, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         public (uint Address, bool Success) AllocateMemory(uint size)
         {
-            Commands.Debugging_Execution_Allocate cmd = new Commands.Debugging_Execution_Allocate();
-
-            cmd.m_size = size;
+            Commands.Debugging_Execution_Allocate cmd = new Commands.Debugging_Execution_Allocate
+            {
+                m_size = size
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_Allocate, 0, cmd);
             if (reply != null)
             {
-                Commands.Debugging_Execution_Allocate.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_Allocate.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.Debugging_Execution_Allocate.Reply cmdReply)
                 {
                     return (cmdReply.m_address, true);
                 }
@@ -1684,17 +1667,17 @@ namespace nanoFramework.Tools.Debugger
             // TODO replace with token argument
             CancellationTokenSource cancelTSource = new CancellationTokenSource();
 
-            Commands.Debugging_UpgradeToSsl cmd = new Commands.Debugging_UpgradeToSsl();
-
-            cmd.m_flags = 0;
+            Commands.Debugging_UpgradeToSsl cmd = new Commands.Debugging_UpgradeToSsl
+            {
+                m_flags = 0
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_UpgradeToSsl, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
-                Commands.Debugging_UpgradeToSsl.Reply cmdReply = reply.Payload as Commands.Debugging_UpgradeToSsl.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.Debugging_UpgradeToSsl.Reply cmdReply)
                 {
                     return cmdReply.m_success != 0;
                 }
@@ -1704,7 +1687,7 @@ namespace nanoFramework.Tools.Debugger
 
         }
 
-        Dictionary<int, uint[]> m_updateMissingPktTbl = new Dictionary<int, uint[]>();
+        readonly Dictionary<int, uint[]> m_updateMissingPktTbl = new Dictionary<int, uint[]>();
 
 
         /// <summary>
@@ -1733,7 +1716,7 @@ namespace nanoFramework.Tools.Debugger
         {
             Commands.Debugging_MFUpdate_Start cmd = new Commands.Debugging_MFUpdate_Start();
 
-            byte[] name = UTF8Encoding.UTF8.GetBytes(provider);
+            byte[] name = Encoding.UTF8.GetBytes(provider);
 
             Array.Copy(name, cmd.m_updateProvider, Math.Min(name.Length, cmd.m_updateProvider.Length));
             cmd.m_updateId = updateId;
@@ -1751,9 +1734,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Debugging_MFUpdate_Start.Reply cmdReply = reply.Payload as Commands.Debugging_MFUpdate_Start.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.Debugging_MFUpdate_Start.Reply cmdReply)
                 {
                     return cmdReply.m_updateHandle;
                 }
@@ -1780,9 +1762,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Debugging_MFUpdate_AuthCommand.Reply cmdReply = reply.Payload as Commands.Debugging_MFUpdate_AuthCommand.Reply;
 
-                if (cmdReply != null && cmdReply.m_success != 0)
+                if (reply.Payload is Commands.Debugging_MFUpdate_AuthCommand.Reply cmdReply && cmdReply.m_success != 0)
                 {
                     if (cmdReply.m_responseSize > 0)
                     {
@@ -1799,18 +1780,18 @@ namespace nanoFramework.Tools.Debugger
 
         public bool UpdateAuthenticate(int updateHandle, byte[] authenticationData)
         {
-            Commands.Debugging_MFUpdate_Authenticate cmd = new Commands.Debugging_MFUpdate_Authenticate();
-
-            cmd.m_updateHandle = updateHandle;
+            Commands.Debugging_MFUpdate_Authenticate cmd = new Commands.Debugging_MFUpdate_Authenticate
+            {
+                m_updateHandle = updateHandle
+            };
             cmd.PrepareForSend(authenticationData);
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_MFUpdate_Authenticate, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
-                Commands.Debugging_MFUpdate_Authenticate.Reply cmdReply = reply.Payload as Commands.Debugging_MFUpdate_Authenticate.Reply;
 
-                if (cmdReply != null && cmdReply.m_success != 0)
+                if (reply.Payload is Commands.Debugging_MFUpdate_Authenticate.Reply cmdReply && cmdReply.m_success != 0)
                 {
                     return true;
                 }
@@ -1821,17 +1802,17 @@ namespace nanoFramework.Tools.Debugger
 
         private bool UpdateGetMissingPackets(int updateHandle)
         {
-            Commands.Debugging_MFUpdate_GetMissingPkts cmd = new Commands.Debugging_MFUpdate_GetMissingPkts();
-
-            cmd.m_updateHandle = updateHandle;
+            Commands.Debugging_MFUpdate_GetMissingPkts cmd = new Commands.Debugging_MFUpdate_GetMissingPkts
+            {
+                m_updateHandle = updateHandle
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_MFUpdate_GetMissingPkts, Flags.c_NoCaching, cmd);
 
             if (reply != null)
             {
-                Commands.Debugging_MFUpdate_GetMissingPkts.Reply cmdReply = reply.Payload as Commands.Debugging_MFUpdate_GetMissingPkts.Reply;
 
-                if (cmdReply != null && cmdReply.m_success != 0)
+                if (reply.Payload is Commands.Debugging_MFUpdate_GetMissingPkts.Reply cmdReply && cmdReply.m_success != 0)
                 {
                     if (cmdReply.m_missingPktCount > 0)
                     {
@@ -1869,19 +1850,19 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            Commands.Debugging_MFUpdate_AddPacket cmd = new Commands.Debugging_MFUpdate_AddPacket();
-
-            cmd.m_updateHandle = updateHandle;
-            cmd.m_packetIndex = packetIndex;
-            cmd.m_packetValidation = packetValidation;
+            Commands.Debugging_MFUpdate_AddPacket cmd = new Commands.Debugging_MFUpdate_AddPacket
+            {
+                m_updateHandle = updateHandle,
+                m_packetIndex = packetIndex,
+                m_packetValidation = packetValidation
+            };
             cmd.PrepareForSend(packetData);
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_MFUpdate_AddPacket, Flags.c_NoCaching, cmd);
             if (reply != null)
             {
-                Commands.Debugging_MFUpdate_AddPacket.Reply cmdReply = reply.Payload as Commands.Debugging_MFUpdate_AddPacket.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.Debugging_MFUpdate_AddPacket.Reply cmdReply)
                 {
                     return cmdReply.m_success != 0;
                 }
@@ -1897,9 +1878,10 @@ namespace nanoFramework.Tools.Debugger
                 m_updateMissingPktTbl.Remove(updateHandle);
             }
 
-            Commands.Debugging_MFUpdate_Install cmd = new Commands.Debugging_MFUpdate_Install();
-
-            cmd.m_updateHandle = updateHandle;
+            Commands.Debugging_MFUpdate_Install cmd = new Commands.Debugging_MFUpdate_Install
+            {
+                m_updateHandle = updateHandle
+            };
 
             cmd.PrepareForSend(validationData);
 
@@ -1907,9 +1889,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Debugging_MFUpdate_Install.Reply cmdReply = reply.Payload as Commands.Debugging_MFUpdate_Install.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.Debugging_MFUpdate_Install.Reply cmdReply)
                 {
                     return cmdReply.m_success != 0;
                 }
@@ -1927,11 +1908,12 @@ namespace nanoFramework.Tools.Debugger
         {
             if (Capabilities.ThreadCreateEx)
             {
-                Commands.Debugging_Thread_CreateEx cmd = new Commands.Debugging_Thread_CreateEx();
-
-                cmd.m_md = methodIndex;
-                cmd.m_scratchPad = scratchPadLocation;
-                cmd.m_pid = pid;
+                Commands.Debugging_Thread_CreateEx cmd = new Commands.Debugging_Thread_CreateEx
+                {
+                    m_md = methodIndex,
+                    m_scratchPad = scratchPadLocation,
+                    m_pid = pid
+                };
 
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_CreateEx, 0, cmd);
 
@@ -1952,9 +1934,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Debugging_Thread_List.Reply cmdReply = reply.Payload as Commands.Debugging_Thread_List.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.Debugging_Thread_List.Reply cmdReply)
                 {
                     return cmdReply.m_pids;
                 }
@@ -1972,19 +1953,15 @@ namespace nanoFramework.Tools.Debugger
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_Stack, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.Payload as Commands.Debugging_Thread_Stack.Reply;
-            }
-
-            return null;
+            return reply != null ? reply.Payload as Commands.Debugging_Thread_Stack.Reply : null;
         }
 
         public bool KillThread(uint pid)
         {
-            Commands.Debugging_Thread_Kill cmd = new Commands.Debugging_Thread_Kill();
-
-            cmd.m_pid = pid;
+            Commands.Debugging_Thread_Kill cmd = new Commands.Debugging_Thread_Kill
+            {
+                m_pid = pid
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_Kill, 0, cmd);
 
@@ -2000,106 +1977,88 @@ namespace nanoFramework.Tools.Debugger
 
         public bool SuspendThread(uint pid)
         {
-            Commands.Debugging_Thread_Suspend cmd = new Commands.Debugging_Thread_Suspend();
-
-            cmd.m_pid = pid;
+            Commands.Debugging_Thread_Suspend cmd = new Commands.Debugging_Thread_Suspend
+            {
+                m_pid = pid
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_Suspend, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         public bool ResumeThread(uint pid)
         {
-            Commands.Debugging_Thread_Resume cmd = new Commands.Debugging_Thread_Resume();
-
-            cmd.m_pid = pid;
+            Commands.Debugging_Thread_Resume cmd = new Commands.Debugging_Thread_Resume
+            {
+                m_pid = pid
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_Resume, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         public RuntimeValue GetThreadException(uint pid)
         {
-            Commands.Debugging_Thread_GetException cmd = new Commands.Debugging_Thread_GetException();
-
-            cmd.m_pid = pid;
+            Commands.Debugging_Thread_GetException cmd = new Commands.Debugging_Thread_GetException
+            {
+                m_pid = pid
+            };
 
             return GetRuntimeValue(Commands.c_Debugging_Thread_GetException, cmd);
         }
 
         public RuntimeValue GetThread(uint pid)
         {
-            Commands.Debugging_Thread_Get cmd = new Commands.Debugging_Thread_Get();
-
-            cmd.m_pid = pid;
+            Commands.Debugging_Thread_Get cmd = new Commands.Debugging_Thread_Get
+            {
+                m_pid = pid
+            };
 
             return GetRuntimeValue(Commands.c_Debugging_Thread_Get, cmd);
         }
 
         public bool UnwindThread(uint pid, uint depth)
         {
-            Commands.Debugging_Thread_Unwind cmd = new Commands.Debugging_Thread_Unwind();
-
-            cmd.m_pid = pid;
-            cmd.m_depth = depth;
+            Commands.Debugging_Thread_Unwind cmd = new Commands.Debugging_Thread_Unwind
+            {
+                m_pid = pid,
+                m_depth = depth
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Thread_Unwind, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         public bool SetIPOfStackFrame(uint pid, uint depth, uint IP, uint depthOfEvalStack)
         {
-            Commands.Debugging_Stack_SetIP cmd = new Commands.Debugging_Stack_SetIP();
+            Commands.Debugging_Stack_SetIP cmd = new Commands.Debugging_Stack_SetIP
+            {
+                m_pid = pid,
+                m_depth = depth,
 
-            cmd.m_pid = pid;
-            cmd.m_depth = depth;
-
-            cmd.m_IP = IP;
-            cmd.m_depthOfEvalStack = depthOfEvalStack;
+                m_IP = IP,
+                m_depthOfEvalStack = depthOfEvalStack
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Stack_SetIP, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         public Commands.Debugging_Stack_Info.Reply GetStackInfo(uint pid, uint depth)
         {
-            Commands.Debugging_Stack_Info cmd = new Commands.Debugging_Stack_Info();
-
-            cmd.m_pid = pid;
-            cmd.m_depth = depth;
+            Commands.Debugging_Stack_Info cmd = new Commands.Debugging_Stack_Info
+            {
+                m_pid = pid,
+                m_depth = depth
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Stack_Info, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.Payload as Commands.Debugging_Stack_Info.Reply;
-            }
-
-            return null;
+            return reply != null ? reply.Payload as Commands.Debugging_Stack_Info.Reply : null;
         }
 
         //--//
@@ -2113,12 +2072,7 @@ namespace nanoFramework.Tools.Debugger
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_TypeSys_AppDomains, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.Payload as Commands.Debugging_TypeSys_AppDomains.Reply;
-            }
-
-            return null;
+            return reply != null ? reply.Payload as Commands.Debugging_TypeSys_AppDomains.Reply : null;
         }
 
         public Commands.Debugging_TypeSys_Assemblies.Reply GetAssemblies()
@@ -2127,12 +2081,7 @@ namespace nanoFramework.Tools.Debugger
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_TypeSys_Assemblies, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.Payload as Commands.Debugging_TypeSys_Assemblies.Reply;
-            }
-
-            return null;
+            return reply != null ? reply.Payload as Commands.Debugging_TypeSys_Assemblies.Reply : null;
         }
 
         public List<Commands.DebuggingResolveAssembly> ResolveAllAssemblies()
@@ -2196,18 +2145,14 @@ namespace nanoFramework.Tools.Debugger
 
         public Commands.DebuggingResolveAssembly.Reply ResolveAssembly(uint idx)
         {
-            Commands.DebuggingResolveAssembly cmd = new Commands.DebuggingResolveAssembly();
-
-            cmd.Idx = idx;
+            Commands.DebuggingResolveAssembly cmd = new Commands.DebuggingResolveAssembly
+            {
+                Idx = idx
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_Assembly, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.Payload as Commands.DebuggingResolveAssembly.Reply;
-            }
-
-            return null;
+            return reply != null ? reply.Payload as Commands.DebuggingResolveAssembly.Reply : null;
         }
 
         public enum StackValueKind
@@ -2227,12 +2172,7 @@ namespace nanoFramework.Tools.Debugger
         {
             Commands.Debugging_Stack_Info.Reply reply = GetStackInfo(pid, depth);
 
-            if (reply == null)
-            {
-                return (0, 0, 0, false);
-            }
-
-            return (reply.m_numOfArguments, reply.m_numOfLocals, reply.m_depthOfEvalStack, true);
+            return reply == null ? ((uint NumOfArguments, uint NnumOfLocals, uint DepthOfEvalStack, bool Success))(0, 0, 0, false) : (reply.m_numOfArguments, reply.m_numOfLocals, reply.m_depthOfEvalStack, true);
         }
 
         private RuntimeValue GetRuntimeValue(uint msg, object cmd)
@@ -2251,11 +2191,12 @@ namespace nanoFramework.Tools.Debugger
 
         internal RuntimeValue GetFieldValue(RuntimeValue val, uint offset, uint fd)
         {
-            Commands.Debugging_Value_GetField cmd = new Commands.Debugging_Value_GetField();
-
-            cmd.m_heapblock = (val == null ? 0 : val.m_handle.m_referenceID);
-            cmd.m_offset = offset;
-            cmd.m_fd = fd;
+            Commands.Debugging_Value_GetField cmd = new Commands.Debugging_Value_GetField
+            {
+                m_heapblock = (val == null ? 0 : val.m_handle.m_referenceID),
+                m_offset = offset,
+                m_fd = fd
+            };
 
             return GetRuntimeValue(Commands.c_Debugging_Value_GetField, cmd);
         }
@@ -2267,59 +2208,53 @@ namespace nanoFramework.Tools.Debugger
 
         internal RuntimeValue AssignRuntimeValue(uint heapblockSrc, uint heapblockDst)
         {
-            Commands.Debugging_Value_Assign cmd = new Commands.Debugging_Value_Assign();
-
-            cmd.m_heapblockSrc = heapblockSrc;
-            cmd.m_heapblockDst = heapblockDst;
+            Commands.Debugging_Value_Assign cmd = new Commands.Debugging_Value_Assign
+            {
+                m_heapblockSrc = heapblockSrc,
+                m_heapblockDst = heapblockDst
+            };
 
             return GetRuntimeValue(Commands.c_Debugging_Value_Assign, cmd);
         }
 
         internal bool SetBlock(uint heapblock, uint dt, byte[] data)
         {
-            Commands.Debugging_Value_SetBlock setBlock = new Commands.Debugging_Value_SetBlock();
-
-            setBlock.m_heapblock = heapblock;
-            setBlock.m_dt = dt;
+            Commands.Debugging_Value_SetBlock setBlock = new Commands.Debugging_Value_SetBlock
+            {
+                m_heapblock = heapblock,
+                m_dt = dt
+            };
 
             data.CopyTo(setBlock.m_value, 0);
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Value_SetBlock, 0, setBlock);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         private OutgoingMessage CreateMessage_GetValue_Stack(uint pid, uint depth, StackValueKind kind, uint index)
         {
-            Commands.Debugging_Value_GetStack cmd = new Commands.Debugging_Value_GetStack();
-
-            cmd.m_pid = pid;
-            cmd.m_depth = depth;
-            cmd.m_kind = (uint)kind;
-            cmd.m_index = index;
+            Commands.Debugging_Value_GetStack cmd = new Commands.Debugging_Value_GetStack
+            {
+                m_pid = pid,
+                m_depth = depth,
+                m_kind = (uint)kind,
+                m_index = index
+            };
 
             return CreateMessage(Commands.c_Debugging_Value_GetStack, 0, cmd);
         }
 
         public bool ResizeScratchPad(int size)
         {
-            Commands.Debugging_Value_ResizeScratchPad cmd = new Commands.Debugging_Value_ResizeScratchPad();
-
-            cmd.m_size = size;
+            Commands.Debugging_Value_ResizeScratchPad cmd = new Commands.Debugging_Value_ResizeScratchPad
+            {
+                m_size = size
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Value_ResizeScratchPad, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         public RuntimeValue GetStackFrameValue(uint pid, uint depth, StackValueKind kind, uint index)
@@ -2354,8 +2289,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 foreach (IncomingMessage message in replies)
                 {
-                    Commands.Debugging_Value_Reply reply = message.Payload as Commands.Debugging_Value_Reply;
-                    if (reply != null)
+                    if (message.Payload is Commands.Debugging_Value_Reply reply)
                     {
                         vals.Add(RuntimeValue.Convert(this, reply.m_values));
                     }
@@ -2367,10 +2301,11 @@ namespace nanoFramework.Tools.Debugger
 
         public RuntimeValue GetArrayElement(uint arrayReferenceId, uint index)
         {
-            Commands.Debugging_Value_GetArray cmd = new Commands.Debugging_Value_GetArray();
-
-            cmd.m_heapblock = arrayReferenceId;
-            cmd.m_index = index;
+            Commands.Debugging_Value_GetArray cmd = new Commands.Debugging_Value_GetArray
+            {
+                m_heapblock = arrayReferenceId,
+                m_index = index
+            };
 
             RuntimeValue rtv = GetRuntimeValue(Commands.c_Debugging_Value_GetArray, cmd);
 
@@ -2385,48 +2320,47 @@ namespace nanoFramework.Tools.Debugger
 
         internal bool SetArrayElement(uint heapblock, uint index, byte[] data)
         {
-            Commands.Debugging_Value_SetArray cmd = new Commands.Debugging_Value_SetArray();
-
-            cmd.m_heapblock = heapblock;
-            cmd.m_index = index;
+            Commands.Debugging_Value_SetArray cmd = new Commands.Debugging_Value_SetArray
+            {
+                m_heapblock = heapblock,
+                m_index = index
+            };
 
             data.CopyTo(cmd.m_value, 0);
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Value_SetArray, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         public RuntimeValue GetScratchPadValue(int index)
         {
-            Commands.Debugging_Value_GetScratchPad cmd = new Commands.Debugging_Value_GetScratchPad();
-
-            cmd.m_index = index;
+            Commands.Debugging_Value_GetScratchPad cmd = new Commands.Debugging_Value_GetScratchPad
+            {
+                m_index = index
+            };
 
             return GetRuntimeValue(Commands.c_Debugging_Value_GetScratchPad, cmd);
         }
 
         public RuntimeValue AllocateObject(int scratchPadLocation, uint td)
         {
-            Commands.Debugging_Value_AllocateObject cmd = new Commands.Debugging_Value_AllocateObject();
-
-            cmd.m_index = scratchPadLocation;
-            cmd.m_td = td;
+            Commands.Debugging_Value_AllocateObject cmd = new Commands.Debugging_Value_AllocateObject
+            {
+                m_index = scratchPadLocation,
+                m_td = td
+            };
 
             return GetRuntimeValue(Commands.c_Debugging_Value_AllocateObject, cmd);
         }
 
         public RuntimeValue AllocateString(int scratchPadLocation, string val)
         {
-            Commands.Debugging_Value_AllocateString cmd = new Commands.Debugging_Value_AllocateString();
-
-            cmd.m_index = scratchPadLocation;
-            cmd.m_size = (uint)Encoding.UTF8.GetByteCount(val);
+            Commands.Debugging_Value_AllocateString cmd = new Commands.Debugging_Value_AllocateString
+            {
+                m_index = scratchPadLocation,
+                m_size = (uint)Encoding.UTF8.GetByteCount(val)
+            };
 
             RuntimeValue rtv = GetRuntimeValue(Commands.c_Debugging_Value_AllocateString, cmd);
 
@@ -2440,12 +2374,13 @@ namespace nanoFramework.Tools.Debugger
 
         public RuntimeValue AllocateArray(int scratchPadLocation, uint td, int depth, int numOfElements)
         {
-            Commands.Debugging_Value_AllocateArray cmd = new Commands.Debugging_Value_AllocateArray();
-
-            cmd.m_index = scratchPadLocation;
-            cmd.m_td = td;
-            cmd.m_depth = (uint)depth;
-            cmd.m_numOfElements = (uint)numOfElements;
+            Commands.Debugging_Value_AllocateArray cmd = new Commands.Debugging_Value_AllocateArray
+            {
+                m_index = scratchPadLocation,
+                m_td = td,
+                m_depth = (uint)depth,
+                m_numOfElements = (uint)numOfElements
+            };
 
             return GetRuntimeValue(Commands.c_Debugging_Value_AllocateArray, cmd);
         }
@@ -2456,21 +2391,22 @@ namespace nanoFramework.Tools.Debugger
 
             if (result == null)
             {
-                Commands.Debugging_Resolve_Type cmd = new Commands.Debugging_Resolve_Type();
-
-                cmd.m_td = td;
+                Commands.Debugging_Resolve_Type cmd = new Commands.Debugging_Resolve_Type
+                {
+                    m_td = td
+                };
 
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_Type, 0, cmd);
 
                 if (reply != null)
                 {
-                    Commands.Debugging_Resolve_Type.Reply cmdReply = reply.Payload as Commands.Debugging_Resolve_Type.Reply;
 
-                    if (cmdReply != null)
+                    if (reply.Payload is Commands.Debugging_Resolve_Type.Reply cmdReply)
                     {
-                        result = new Commands.Debugging_Resolve_Type.Result();
-
-                        result.m_name = Commands.GetZeroTerminatedString(cmdReply.m_type, false);
+                        result = new Commands.Debugging_Resolve_Type.Result
+                        {
+                            m_name = Commands.GetZeroTerminatedString(cmdReply.m_type, false)
+                        };
 
                         m_typeSysLookup.Add(TypeSysLookup.Type.Type, td, result);
                     }
@@ -2486,22 +2422,23 @@ namespace nanoFramework.Tools.Debugger
 
             if (result == null)
             {
-                Commands.Debugging_Resolve_Method cmd = new Commands.Debugging_Resolve_Method();
-
-                cmd.m_md = md;
+                Commands.Debugging_Resolve_Method cmd = new Commands.Debugging_Resolve_Method
+                {
+                    m_md = md
+                };
 
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_Method, 0, cmd);
 
                 if (reply != null)
                 {
-                    Commands.Debugging_Resolve_Method.Reply cmdReply = reply.Payload as Commands.Debugging_Resolve_Method.Reply;
 
-                    if (cmdReply != null)
+                    if (reply.Payload is Commands.Debugging_Resolve_Method.Reply cmdReply)
                     {
-                        result = new Commands.Debugging_Resolve_Method.Result();
-
-                        result.m_name = Commands.GetZeroTerminatedString(cmdReply.m_method, false);
-                        result.m_td = cmdReply.m_td;
+                        result = new Commands.Debugging_Resolve_Method.Result
+                        {
+                            m_name = Commands.GetZeroTerminatedString(cmdReply.m_method, false),
+                            m_td = cmdReply.m_td
+                        };
 
                         m_typeSysLookup.Add(TypeSysLookup.Type.Method, md, result);
                     }
@@ -2517,22 +2454,23 @@ namespace nanoFramework.Tools.Debugger
 
             if (result == null)
             {
-                Commands.Debugging_Resolve_Field cmd = new Commands.Debugging_Resolve_Field();
-
-                cmd.m_fd = fd;
+                Commands.Debugging_Resolve_Field cmd = new Commands.Debugging_Resolve_Field
+                {
+                    m_fd = fd
+                };
 
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_Field, 0, cmd);
                 if (reply != null)
                 {
-                    Commands.Debugging_Resolve_Field.Reply cmdReply = reply.Payload as Commands.Debugging_Resolve_Field.Reply;
 
-                    if (cmdReply != null)
+                    if (reply.Payload is Commands.Debugging_Resolve_Field.Reply cmdReply)
                     {
-                        result = new Commands.Debugging_Resolve_Field.Result();
-
-                        result.m_name = Commands.GetZeroTerminatedString(cmdReply.m_name, false);
-                        result.m_offset = cmdReply.m_offset;
-                        result.m_td = cmdReply.m_td;
+                        result = new Commands.Debugging_Resolve_Field.Result
+                        {
+                            m_name = Commands.GetZeroTerminatedString(cmdReply.m_name, false),
+                            m_offset = cmdReply.m_offset,
+                            m_td = cmdReply.m_td
+                        };
 
                         m_typeSysLookup.Add(TypeSysLookup.Type.Field, fd, result);
                     }
@@ -2547,25 +2485,21 @@ namespace nanoFramework.Tools.Debugger
             if (!Capabilities.AppDomains)
                 return null;
 
-            Commands.Debugging_Resolve_AppDomain cmd = new Commands.Debugging_Resolve_AppDomain();
-
-            cmd.m_id = appDomainID;
+            Commands.Debugging_Resolve_AppDomain cmd = new Commands.Debugging_Resolve_AppDomain
+            {
+                m_id = appDomainID
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_AppDomain, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.Payload as Commands.Debugging_Resolve_AppDomain.Reply;
-            }
-
-            return null;
+            return reply != null ? reply.Payload as Commands.Debugging_Resolve_AppDomain.Reply : null;
         }
 
         public string GetTypeName(uint td)
         {
             Commands.Debugging_Resolve_Type.Result resolvedType = ResolveType(td);
 
-            return (resolvedType != null) ? resolvedType.m_name : null;
+            return resolvedType?.m_name;
         }
 
         public string GetMethodName(uint md, bool fIncludeType)
@@ -2597,28 +2531,23 @@ namespace nanoFramework.Tools.Debugger
         {
             Commands.Debugging_Resolve_Field.Result resolvedField = ResolveField(fd);
 
-            if (resolvedField != null)
-            {
-                return (resolvedField.m_name, resolvedField.m_td, resolvedField.m_offset);
-            }
-
-            return (null, 0, 0);
+            return resolvedField != null ? (resolvedField.m_name, resolvedField.m_td, resolvedField.m_offset) : ((string Td, uint Offset, uint Success))(null, 0, 0);
         }
 
         public uint GetVirtualMethod(uint md, RuntimeValue obj)
         {
-            Commands.Debugging_Resolve_VirtualMethod cmd = new Commands.Debugging_Resolve_VirtualMethod();
-
-            cmd.m_md = md;
-            cmd.m_obj = obj.ReferenceId;
+            Commands.Debugging_Resolve_VirtualMethod cmd = new Commands.Debugging_Resolve_VirtualMethod
+            {
+                m_md = md,
+                m_obj = obj.ReferenceId
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Resolve_VirtualMethod, 0, cmd);
 
             if (reply != null)
             {
-                Commands.Debugging_Resolve_VirtualMethod.Reply cmdReply = reply.Payload as Commands.Debugging_Resolve_VirtualMethod.Reply;
 
-                if (cmdReply != null)
+                if (reply.Payload is Commands.Debugging_Resolve_VirtualMethod.Reply cmdReply)
                 {
                     return cmdReply.m_md;
                 }
@@ -2629,10 +2558,11 @@ namespace nanoFramework.Tools.Debugger
 
         public void InjectButtons(uint pressed, uint released)
         {
-            Commands.Debugging_Button_Inject cmd = new Commands.Debugging_Button_Inject();
-
-            cmd.m_pressed = pressed;
-            cmd.m_released = released;
+            Commands.Debugging_Button_Inject cmd = new Commands.Debugging_Button_Inject
+            {
+                m_pressed = pressed,
+                m_released = released
+            };
 
             PerformSyncRequest(Commands.c_Debugging_Button_Inject, 0, cmd);
         }
@@ -2651,12 +2581,13 @@ namespace nanoFramework.Tools.Debugger
                     if (reply != null)
                     {
                         int depth = reply.m_data.Length;
-                        ThreadStatus ts = new ThreadStatus();
-
-                        ts.m_pid = pids[i];
-                        ts.m_status = reply.m_status;
-                        ts.m_flags = reply.m_flags;
-                        ts.m_calls = new string[depth];
+                        ThreadStatus ts = new ThreadStatus
+                        {
+                            m_pid = pids[i],
+                            m_status = reply.m_status,
+                            m_flags = reply.m_flags,
+                            m_calls = new string[depth]
+                        };
 
                         for (int j = 0; j < depth; j++)
                         {
@@ -2684,14 +2615,7 @@ namespace nanoFramework.Tools.Debugger
         {
             Commands.DebuggingDeploymentStatus.Reply status = DeploymentGetStatus();
 
-            if (status != null)
-            {
-                return (status.EntryPoint, status.StorageStart, status.StorageLength, true);
-            }
-            else
-            {
-                return (0, 0, 0, false);
-            }
+            return status != null ? (status.EntryPoint, status.StorageStart, status.StorageLength, true) : ((uint Entrypoint, uint StorageStart, uint StorageLength, bool Success))(0, 0, 0, false);
         }
 
         public Commands.DebuggingDeploymentStatus.Reply DeploymentGetStatus()
@@ -2714,20 +2638,16 @@ namespace nanoFramework.Tools.Debugger
 
         public bool Info_SetJMC(bool fJMC, ReflectionDefinition.Kind kind, uint index)
         {
-            Commands.Debugging_Info_SetJMC cmd = new Commands.Debugging_Info_SetJMC();
-
-            cmd.m_fIsJMC = (uint)(fJMC ? 1 : 0);
-            cmd.m_kind = (uint)kind;
-            cmd.m_raw = index;
+            Commands.Debugging_Info_SetJMC cmd = new Commands.Debugging_Info_SetJMC
+            {
+                m_fIsJMC = (uint)(fJMC ? 1 : 0),
+                m_kind = (uint)kind,
+                m_raw = index
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Info_SetJMC, 0, cmd);
 
-            if (reply != null)
-            {
-                return reply.IsPositiveAcknowledge();
-            }
-
-            return false;
+            return reply != null && reply.IsPositiveAcknowledge();
         }
 
         private bool DeploymentExecuteIncremental(List<byte[]> assemblies, IProgress<string> progress)
@@ -2865,18 +2785,18 @@ namespace nanoFramework.Tools.Debugger
             byte[] closeHeader = new byte[8];
 
             // perform request
-            var reply = DeploymentGetStatusWithResult();
+            var (Entrypoint, StorageStart, StorageLength, Success) = DeploymentGetStatusWithResult();
 
             // check if request was successfully executed
-            if (!reply.Success)
+            if (!Success)
             {
                 return false;
             }
 
             // fill in the local properties with the result
-            storageStart = reply.StorageStart;
+            storageStart = StorageStart;
 
-            if (reply.StorageLength == 0)
+            if (StorageLength == 0)
             {
                 return false;
             }
@@ -2890,7 +2810,7 @@ namespace nanoFramework.Tools.Debugger
 
             progress?.Report(string.Format("Deploying assemblies for a total size of {0} bytes", deployLength));
 
-            if (deployLength > reply.StorageLength)
+            if (deployLength > StorageLength)
             {
                 return false;
             }
@@ -2923,12 +2843,7 @@ namespace nanoFramework.Tools.Debugger
             }
 
             var writeResult2 = WriteMemory(storageStart, closeHeader);
-            if (!writeResult2.Success)
-            {
-                return false;
-            }
-
-            return true;
+            return !!writeResult2.Success;
         }
 
         //public bool Deployment_Execute(ArrayList assemblies)
@@ -2981,24 +2896,18 @@ namespace nanoFramework.Tools.Debugger
 
         public (uint Current, bool Success) SetProfilingMode(uint iSet, uint iReset)
         {
-            Commands.Profiling_Command cmd = new Commands.Profiling_Command();
-            cmd.m_command = Commands.Profiling_Command.c_Command_ChangeConditions;
-            cmd.m_parm1 = iSet;
-            cmd.m_parm2 = iReset;
+            Commands.Profiling_Command cmd = new Commands.Profiling_Command
+            {
+                m_command = Commands.Profiling_Command.c_Command_ChangeConditions,
+                m_parm1 = iSet,
+                m_parm2 = iReset
+            };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Profiling_Command, 0, cmd);
             if (reply != null)
             {
-                Commands.Profiling_Command.Reply cmdReply = reply.Payload as Commands.Profiling_Command.Reply;
 
-                if (cmdReply != null)
-                {
-                    return (cmdReply.m_raw, true);
-                }
-                else
-                {
-                    return (0, true);
-                }
+                return reply.Payload is Commands.Profiling_Command.Reply cmdReply ? (cmdReply.m_raw, true) : ((uint Current, bool Success))(0, true);
             }
 
             return (0, false);
@@ -3006,17 +2915,20 @@ namespace nanoFramework.Tools.Debugger
 
         public bool FlushProfilingStream()
         {
-            Commands.Profiling_Command cmd = new Commands.Profiling_Command();
-            cmd.m_command = Commands.Profiling_Command.c_Command_FlushStream;
+            Commands.Profiling_Command cmd = new Commands.Profiling_Command
+            {
+                m_command = Commands.Profiling_Command.c_Command_FlushStream
+            };
             PerformSyncRequest(Commands.c_Profiling_Command, 0, cmd);
             return true;
         }
 
         private IncomingMessage DiscoverCLRCapability(uint capabilities)
         {
-            Commands.Debugging_Execution_QueryCLRCapabilities cmd = new Commands.Debugging_Execution_QueryCLRCapabilities();
-
-            cmd.m_caps = capabilities;
+            Commands.Debugging_Execution_QueryCLRCapabilities cmd = new Commands.Debugging_Execution_QueryCLRCapabilities
+            {
+                m_caps = capabilities
+            };
 
             return PerformSyncRequest(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd);
         }
@@ -3029,9 +2941,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
 
-                if (cmdReply != null && cmdReply.m_data != null && cmdReply.m_data.Length == 4)
+                if (reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply && cmdReply.m_data != null && cmdReply.m_data.Length == 4)
                 {
                     // can't use Converter because the deserialization of UInt32 is not supported
                     // replaced with a simple binary reader
@@ -3065,9 +2976,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
 
-                if (cmdReply != null && cmdReply.m_data != null)
+                if (reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply && cmdReply.m_data != null)
                 {
                     new Converter().Deserialize(ver, cmdReply.m_data);
 
@@ -3090,9 +3000,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
 
-                if (cmdReply != null && cmdReply.m_data != null)
+                if (reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply && cmdReply.m_data != null)
                 {
                     new Converter().Deserialize(halSystemInfo, cmdReply.m_data);
 
@@ -3119,9 +3028,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
 
-                if (cmdReply != null && cmdReply.m_data != null)
+                if (reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply && cmdReply.m_data != null)
                 {
                     new Converter().Deserialize(clrInfo, cmdReply.m_data);
 
@@ -3145,16 +3053,15 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
 
-                if (cmdReply != null && cmdReply.m_data != null)
+                if (reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply && cmdReply.m_data != null)
                 {
                     new Converter().Deserialize(targetInfo, cmdReply.m_data);
 
                     targetInfoProps = new CLRCapabilities.TargetInfoProperties(
                                                                         targetInfo.Version,
                                                                         targetInfo.Info,
-                                                                        targetInfo.TargetName, 
+                                                                        targetInfo.TargetName,
                                                                         targetInfo.PlatformName
                                                                         );
                 }
@@ -3181,11 +3088,10 @@ namespace nanoFramework.Tools.Debugger
             {
                 if (reply.IsPositiveAcknowledge())
                 {
-                    Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
 
                     int assemblyCount = 0;
-                    
-                    if (cmdReply != null && cmdReply.m_data != null)
+
+                    if (reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply && cmdReply.m_data != null)
                     {
                         // check length 2 = sizeof ushort type
                         if (cmdReply.m_data.Length == 2)
@@ -3227,8 +3133,8 @@ namespace nanoFramework.Tools.Debugger
                                             nativeAssemblies.AddRange(
                                                    nativeInteropAssemblies.NativeInteropAssemblies.Select(
                                                        a => new CLRCapabilities.NativeAssemblyProperties(
-                                                           a.Name, 
-                                                           a.CheckSum, 
+                                                           a.Name,
+                                                           a.CheckSum,
                                                            a.AssemblyVersion.Version)
                                                        )
                                                    );
@@ -3272,9 +3178,8 @@ namespace nanoFramework.Tools.Debugger
                     {
                         if (reply.IsPositiveAcknowledge())
                         {
-                            Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply = reply.Payload as Commands.Debugging_Execution_QueryCLRCapabilities.Reply;
 
-                            if (cmdReply != null && cmdReply.m_data != null)
+                            if (reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply && cmdReply.m_data != null)
                             {
                                 new Converter().Deserialize(nativeInteropAssemblies, cmdReply.m_data);
 
@@ -3630,8 +3535,8 @@ namespace nanoFramework.Tools.Debugger
                     if (readConfigSector.Success)
                     {
                         // start erasing the sector that holds the configuration block
-                        var eraseResult = EraseMemory(configSector.m_StartAddress, 1);
-                        if (eraseResult.Success)
+                        var (ErrorCode, Success) = EraseMemory(configSector.m_StartAddress, 1);
+                        if (Success)
                         {
                             okToUploadConfig = true;
                         }
@@ -3867,7 +3772,7 @@ namespace nanoFramework.Tools.Debugger
             else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
             {
                 var configBase = configuration as DeviceConfiguration.X509CaRootBundleProperties;
-                return CreateConverter().Serialize((X509CaRootBundlePropertiesBase)configBase);
+                return CreateConverter().Serialize(configBase);
             }
             else
             {
