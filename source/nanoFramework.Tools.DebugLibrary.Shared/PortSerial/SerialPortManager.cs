@@ -47,10 +47,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         public static System.Windows.Application CallerApp { get; set; }
 #endif
 
+        public int BootTime { get; set; }
+
         /// <summary>
         /// Creates an Serial debug client
         /// </summary>
-        public SerialPortManager(object callerApp, bool startDeviceWatchers = true)
+        public SerialPortManager(object callerApp, bool startDeviceWatchers = true, int bootTime = 1500)
         {
             _mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, string>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
@@ -66,6 +68,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 CallerApp = callerApp as System.Windows.Application;
 #endif
             };
+
+            BootTime = bootTime;
 
             Task.Factory.StartNew(() => {
 
@@ -334,10 +338,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                     if (await newNanoFrameworkDevice.ConnectionPort.ConnectDeviceAsync())
                     {
+                        await Task.Yield();
+
                         // devices powered by the USB cable and that feature a serial converter (like an FTDI chip) 
                         // are still booting when the USB enumeration event raises
                         // so need to give them enough time for the boot sequence to complete before trying to communicate with them
-                        await Task.Delay(1000);
+                        await Task.Delay(BootTime);
 
                         if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
                         {
