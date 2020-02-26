@@ -4,8 +4,6 @@
 //
 
 using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
 using Windows.UI.Xaml;
@@ -291,8 +289,8 @@ namespace nanoFramework.Tools.Debugger.Usb
         /// </summary>
         private void RegisterForAppEvents()
         {
-            appSuspendEventHandler = new SuspendingEventHandler(EventHandlerForUsbDevice.Current.OnAppSuspension);
-            appResumeEventHandler = new EventHandler<object>(EventHandlerForUsbDevice.Current.OnAppResume);
+            appSuspendEventHandler = new SuspendingEventHandler(Current.OnAppSuspension);
+            appResumeEventHandler = new EventHandler<object>(Current.OnAppResume);
 
             // This event is raised when the app is exited and when the app is suspended
             CallerApp.Suspending += appSuspendEventHandler;

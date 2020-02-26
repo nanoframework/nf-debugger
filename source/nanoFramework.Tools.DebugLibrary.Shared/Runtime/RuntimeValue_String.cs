@@ -4,10 +4,8 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools;
 using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -67,8 +65,8 @@ namespace nanoFramework.Tools.Debugger
                 throw new ArgumentException("String must have same length");
             }
 
-            var writeResult = m_eng.WriteMemory(m_handle.m_charsInString, buf);
-            if (writeResult.Success == false)
+            var (ErrorCode, Success) = m_eng.WriteMemory(m_handle.m_charsInString, buf);
+            if (!Success)
             {
                 throw new ArgumentException("Cannot write string");
             }

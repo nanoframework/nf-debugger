@@ -4,9 +4,6 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools;
-using System.Threading.Tasks;
-
 namespace nanoFramework.Tools.Debugger
 {
     public class RuntimeValue_Array : RuntimeValue

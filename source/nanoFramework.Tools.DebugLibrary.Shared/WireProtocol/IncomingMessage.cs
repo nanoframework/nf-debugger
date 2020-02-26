@@ -4,17 +4,14 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class IncomingMessage
     {
-        IController _parent;
+        readonly IController _parent;
 
-        MessageRaw _raw;
-        MessageBase _base;
+        readonly MessageRaw _raw;
+        readonly MessageBase _base;
 
         public IncomingMessage(IController parent, MessageRaw raw, MessageBase messageBase)
         {
@@ -56,16 +53,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                 _base.Payload = payload;
             }
-        }
-
-        public async Task<bool> ReplyAsync(Converter converter, uint flags, object payload, CancellationToken cancellationToken)
-        {
-            // FIXME
-
-            //OutgoingMessage msgReply = new OutgoingMessage(this, converter, flags, payload);
-
-            //return await msgReply.SendAsync(cancellationToken);
-            return false;
         }
     }
 }

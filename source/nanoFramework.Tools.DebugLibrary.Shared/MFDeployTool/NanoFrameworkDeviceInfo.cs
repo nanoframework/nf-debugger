@@ -13,9 +13,9 @@ namespace nanoFramework.Tools.Debugger
 {
     class NanoFrameworkDeviceInfo : INanoFrameworkDeviceInfo
     {
-        private NanoDeviceBase m_self;
+        private readonly NanoDeviceBase m_self;
 
-        private List<IAppDomainInfo> m_Domains = new List<IAppDomainInfo>();
+        private readonly List<IAppDomainInfo> m_Domains = new List<IAppDomainInfo>();
         private List<IAssemblyInfo> m_AssemblyInfos = new List<IAssemblyInfo>();
 
         public NanoFrameworkDeviceInfo(NanoDeviceBase device)
@@ -94,7 +94,7 @@ namespace nanoFramework.Tools.Debugger
 
                 foreach (IAppDomainInfo adi in m_Domains)
                 {
-                    if (Array.IndexOf<uint>(adi.AssemblyIndices, ai.Index) != -1)
+                    if (Array.IndexOf(adi.AssemblyIndices, ai.Index) != -1)
                     {
                         ai.AddDomain(adi);
                     }
@@ -118,7 +118,7 @@ namespace nanoFramework.Tools.Debugger
 
         public bool Valid { get; internal set; }
 
-        public System.Version HalBuildVersion
+        public Version HalBuildVersion
         {
             get { return Dbg.Capabilities.HalSystemInfo.halVersion; }
         }
@@ -153,7 +153,7 @@ namespace nanoFramework.Tools.Debugger
             get { return Dbg.Capabilities.HalSystemInfo.systemSerialNumber; }
         }
 
-        public System.Version ClrBuildVersion
+        public Version ClrBuildVersion
         {
             get { return Dbg.Capabilities.ClrInfo.clrVersion; }
         }
@@ -163,12 +163,12 @@ namespace nanoFramework.Tools.Debugger
             get { return Dbg.Capabilities.ClrInfo.clrVendorInfo; }
         }
 
-        public System.Version TargetFrameworkVersion
+        public Version TargetFrameworkVersion
         {
             get { return Dbg.Capabilities.ClrInfo.targetFrameworkVersion; }
         }
 
-        public System.Version SolutionBuildVersion
+        public Version SolutionBuildVersion
         {
             get { return Dbg.Capabilities.SolutionReleaseInfo.Version; }
         }

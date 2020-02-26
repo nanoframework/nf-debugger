@@ -5,9 +5,7 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 
 namespace nanoFramework.Tools.Debugger
@@ -53,10 +51,10 @@ namespace nanoFramework.Tools.Debugger
         int m_pos;
         int m_avail;
 
-        bool m_blockingRead;
+        readonly bool m_blockingRead;
         bool m_streamEnded;
 
-        private object m_lock;
+        private readonly object m_lock;
 
         public BitStream()
         {
@@ -224,7 +222,7 @@ namespace nanoFramework.Tools.Debugger
                         }
                     }
 
-                    int insert = System.Math.Min(bits, m_avail);
+                    int insert = Math.Min(bits, m_avail);
                     uint mask = ((1U << insert) - 1U);
 
                     pos -= insert; m_current.m_data[m_pos] |= (byte)(((val >> pos) & mask) << (m_avail - insert));
@@ -287,7 +285,7 @@ namespace nanoFramework.Tools.Debugger
                         }
                     }
 
-                    int insert = System.Math.Min(bits, m_avail);
+                    int insert = Math.Min(bits, m_avail);
                     uint mask = ((1U << insert) - 1U);
                     int shift = m_avail - insert;
 
@@ -313,7 +311,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 while (len-- > 0)
                 {
-                    WriteBits((uint)data[pos++], 8);
+                    WriteBits(data[pos++], 8);
                 }
             }
         }

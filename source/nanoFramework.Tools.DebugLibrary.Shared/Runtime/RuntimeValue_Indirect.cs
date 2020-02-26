@@ -4,9 +4,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools;
 using System;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -86,12 +84,12 @@ namespace nanoFramework.Tools.Debugger
 
         public override RuntimeValue GetField(uint offset, uint fd)
         {
-            return (m_value == null) ? null : m_value.GetField(offset, fd);
+            return m_value?.GetField(offset, fd);
         }
 
         public override RuntimeValue GetElement(uint index)
         {
-            return (m_value == null) ? null : m_value.GetElement(index);
+            return m_value?.GetElement(index);
         }
     }
 }

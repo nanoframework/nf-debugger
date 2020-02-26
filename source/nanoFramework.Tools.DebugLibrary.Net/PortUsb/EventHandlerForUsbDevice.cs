@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
-using Windows.UI.Xaml;
 
 namespace nanoFramework.Tools.Debugger.Usb
 {

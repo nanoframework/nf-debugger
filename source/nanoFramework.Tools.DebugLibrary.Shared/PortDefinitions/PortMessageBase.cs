@@ -7,17 +7,16 @@ using System;
 
 namespace nanoFramework.Tools.Debugger
 {
-    public abstract partial class PortMessageBase
+    public abstract class PortMessageBase
     {
         /// <summary>
         /// Event that is raised when a log message is available.
         /// </summary>
         public event EventHandler<StringEventArgs> LogMessageAvailable;
 
-        public void OnLogMessageAvailable(string message)
+        protected virtual void OnLogMessageAvailable(string message)
         {
             LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
         }
-
     }
 }

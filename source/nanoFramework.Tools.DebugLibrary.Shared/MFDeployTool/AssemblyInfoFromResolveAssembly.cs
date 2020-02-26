@@ -11,8 +11,8 @@ namespace nanoFramework.Tools.Debugger
 {
     class AssemblyInfoFromResolveAssembly : IAssemblyInfo
     {
-        private Commands.DebuggingResolveAssembly _dra;
-        private List<IAppDomainInfo> _appDomains = new List<IAppDomainInfo>();
+        private readonly Commands.DebuggingResolveAssembly _dra;
+        private readonly List<IAppDomainInfo> _appDomains = new List<IAppDomainInfo>();
 
         public AssemblyInfoFromResolveAssembly(Commands.DebuggingResolveAssembly dra)
         {

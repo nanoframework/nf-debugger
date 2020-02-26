@@ -23,7 +23,7 @@ namespace nanoFramework.Tools.Debugger.Usb
     public class UsbPort : PortBase, IPort
     {
         // dictionary with mapping between USB device watcher and the device ID
-        private Dictionary<DeviceWatcher, string> mapDeviceWatchersToDeviceSelector;
+        private readonly Dictionary<DeviceWatcher, string> mapDeviceWatchersToDeviceSelector;
 
         // USB device watchers suspended flag
         private bool watchersSuspended = false;
@@ -34,13 +34,13 @@ namespace nanoFramework.Tools.Debugger.Usb
         // counter of device watchers completed
         private int deviceWatchersCompletedCount = 0;
 
-        private object cancelIoLock = new object();
+        private readonly object cancelIoLock = new object();
         private static SemaphoreSlim semaphore;
 
         /// <summary>
         /// Internal list with the actual nF USB devices
         /// </summary>
-        List<UsbDeviceInformation> UsbDevices;
+        readonly List<UsbDeviceInformation> UsbDevices;
 
         /// <summary>
         /// Creates an USB debug client
@@ -79,7 +79,7 @@ namespace nanoFramework.Tools.Debugger.Usb
         private void InitializeStDiscovery4DeviceWatcher()
         {
             // better use  most specific type of DeviceSelector: VID, PID and class GUID
-            var stDiscovery4Selector = Windows.Devices.Usb.UsbDevice.GetDeviceSelector(STM_Discovery4.DeviceVid, STM_Discovery4.DevicePid, STM_Discovery4.DeviceInterfaceClass);
+            var stDiscovery4Selector = UsbDevice.GetDeviceSelector(STM_Discovery4.DeviceVid, STM_Discovery4.DevicePid, STM_Discovery4.DeviceInterfaceClass);
 
             // Create a device watcher to look for instances of this device
             var stDiscovery4Watcher = DeviceInformation.CreateWatcher(stDiscovery4Selector);
@@ -275,7 +275,6 @@ namespace nanoFramework.Tools.Debugger.Usb
             var device = FindNanoFrameworkDevice(deviceId);
             // yes, remove it from collection
             NanoFrameworkDevices.Remove(device);
-            device = null;
         }
 
         private void ClearDeviceEntries()
@@ -311,7 +310,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             {
 
                 // usbMatch.Device.DeviceInformation
-                return NanoFrameworkDevices.FirstOrDefault(d => ((d as NanoDevice<NanoUsbDevice>).Device.DeviceInformation as UsbDeviceInformation).DeviceInformation.Id == deviceId);
+                return NanoFrameworkDevices.FirstOrDefault(d => ((d as NanoDevice<NanoUsbDevice>).Device.DeviceInformation).DeviceInformation.Id == deviceId);
             }
 
             return null;
@@ -398,9 +397,10 @@ namespace nanoFramework.Tools.Debugger.Usb
                 reader.ByteOrder = ByteOrder.LittleEndian;
 
                 // set encoding to UTF16 & Little Endian
-                reader.UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding.Utf16LE;
+                reader.UnicodeEncoding = UnicodeEncoding.Utf16LE;
 
                 // read 1st byte (descriptor length)
+                // not use, but still need to read it to consume the buffer
                 int descriptorLenght = reader.ReadByte();
                 // read 2nd byte (descriptor type)
                 int descryptorType = reader.ReadByte();
@@ -460,7 +460,7 @@ namespace nanoFramework.Tools.Debugger.Usb
 
         public void DisconnectDevice(NanoDeviceBase device)
         {
-            if (FindDevice(((device as NanoDevice<NanoUsbDevice>).Device.DeviceInformation as UsbDeviceInformation).DeviceInformation.Id) != null)
+            if (FindDevice(((device as NanoDevice<NanoUsbDevice>).Device.DeviceInformation).DeviceInformation.Id) != null)
             {
                 EventHandlerForUsbDevice.Current.CloseDevice();
             }
@@ -490,7 +490,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                 }
 
                 // gets the 1st OUT stream for the device
-                var stream = EventHandlerForUsbDevice.Current.Device.DefaultInterface.BulkOutPipes[(int)0].OutputStream;
+                var stream = EventHandlerForUsbDevice.Current.Device.DefaultInterface.BulkOutPipes[0].OutputStream;
 
                 // create a data writer to access the device OUT stream
                 var writer = new DataWriter(stream);

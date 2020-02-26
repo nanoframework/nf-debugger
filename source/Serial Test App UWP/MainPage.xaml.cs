@@ -24,7 +24,7 @@ namespace Test_App_UWP
     {
         public MainPage()
         {
-            this.InitializeComponent();
+            InitializeComponent();
         }
 
         private async void connectButton_Click(object sender, RoutedEventArgs e)
@@ -50,9 +50,9 @@ namespace Test_App_UWP
 
         private async void button1_Click(object sender, RoutedEventArgs e)
         {
-            var s = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.SendBufferAsync(new byte[] { (byte)'x', (byte)'x' }, TimeSpan.FromMilliseconds(1000), new System.Threading.CancellationToken());
+            var s = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.SendBufferAsync(new byte[] { (byte)'x', (byte)'x' }, TimeSpan.FromMilliseconds(1000), new CancellationToken());
 
-            var r = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.ReadBufferAsync(10, TimeSpan.FromMilliseconds(1000), new System.Threading.CancellationToken());
+            var r = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DebugEngine.ReadBufferAsync(10, TimeSpan.FromMilliseconds(1000), new CancellationToken());
         }
 
         private void pingButton_Click(object sender, RoutedEventArgs e)
@@ -200,7 +200,7 @@ namespace Test_App_UWP
                 Debug.WriteLine("");
 
             }
-            catch (Exception ex)
+            catch
             {
 
             }

@@ -185,14 +185,14 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        private Capability m_capabilities;
+        private readonly Capability m_capabilities;
         private SoftwareVersionProperties m_swVersion;
         private HalSystemInfoProperties m_halSystemInfo;
         private ClrInfoProperties m_clrInfo;
         private TargetInfoProperties m_targetReleaseInfo;
-        private List<NativeAssemblyProperties> m_nativeAssembliesInfo;
+        private readonly List<NativeAssemblyProperties> m_nativeAssembliesInfo;
 
-        private bool m_fUnknown;
+        private readonly bool m_fUnknown;
 
         public CLRCapabilities()
             : this(Capability.None, new SoftwareVersionProperties(),

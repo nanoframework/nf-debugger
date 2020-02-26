@@ -4,7 +4,6 @@
 //
 
 using PropertyChanged;
-using System;
 using System.Net;
 
 namespace nanoFramework.Tools.Debugger
@@ -24,9 +23,9 @@ namespace nanoFramework.Tools.Debugger
         public IPAddress IPv6NetMask { get; set; }
         public byte[] MacAddress { get; set; }
         public NetworkInterfaceType InterfaceType { get; set; }
-        public Nullable<uint> SpecificConfigId;
-        public bool AutomaticDNS;
         public AddressMode StartupAddressMode { get; set; }
+        public uint? SpecificConfigId { get; set; }
+        public bool AutomaticDNS { get; set; }
 
         public NetworkConfigurationPropertiesBase()
         {

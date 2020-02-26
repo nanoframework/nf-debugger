@@ -20,8 +20,8 @@ namespace Serial_Test_App_WPF
 
         public App()
         {
-            this.Activated += App_Activated;
-            this.Deactivated += App_Deactivated;
+            Activated += App_Activated;
+            Deactivated += App_Deactivated;
 
             vml = new ViewModelLocator();
 

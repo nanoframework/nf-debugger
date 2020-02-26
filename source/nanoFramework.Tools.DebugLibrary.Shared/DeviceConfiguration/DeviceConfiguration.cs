@@ -6,7 +6,6 @@
 using PropertyChanged;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -166,7 +165,7 @@ namespace nanoFramework.Tools.Debugger
 
                 InterfaceType = (NetworkInterfaceType)value.InterfaceType;
                 StartupAddressMode = (AddressMode)value.StartupAddressMode;
-                AutomaticDNS = value.AutomaticDNS == 0 ? false : true;
+                AutomaticDNS = value.AutomaticDNS != 0;
 
                 if (value.SpecificConfigId == EmptySpecificConfigValue)
                 {

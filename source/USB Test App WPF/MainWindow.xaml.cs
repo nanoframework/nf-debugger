@@ -11,9 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.IO;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -163,11 +161,6 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             (sender as Button).IsEnabled = true;
         }
 
-        private object await(MainViewModel mainViewModel)
-        {
-            throw new NotImplementedException();
-        }
-
         private  void DisconnectDeviceButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
@@ -263,7 +256,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
                      Debug.WriteLine("Assembly list:");
                      
-                     foreach (nanoFramework.Tools.Debugger.WireProtocol.Commands.DebuggingResolveAssembly assembly in result)
+                     foreach (Commands.DebuggingResolveAssembly assembly in result)
                      {
                          Debug.WriteLine($" {assembly.Idx} :: {assembly.Result.Name} [{assembly.Result.Path}]");
                      }
@@ -563,7 +556,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(nanoFramework.Tools.Debugger.RebootOptions.ClrOnly);
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -594,7 +587,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(nanoFramework.Tools.Debugger.RebootOptions.NormalReboot);
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.NormalReboot);
 
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Stop();
                     (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Dispose();
@@ -844,7 +837,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                      DeviceConfiguration.NetworkConfigurationProperties newDeviceNetworkConfiguration = new DeviceConfiguration.NetworkConfigurationProperties
                      {
                          MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 },
-                         InterfaceType = nanoFramework.Tools.Debugger.NetworkInterfaceType.Ethernet,
+                         InterfaceType = NetworkInterfaceType.Ethernet,
                          StartupAddressMode = AddressMode.DHCP,
 
                          IPv4DNSAddress1 = IPAddress.Parse("192.168.1.254"),

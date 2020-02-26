@@ -940,7 +940,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 /// </summary>
                 public uint CheckSum;
                 public VersionStruct AssemblyVersion;
-                private byte[] _name = new byte[128];
+                private readonly byte[] _name = new byte[128];
 
                 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1461,7 +1461,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 {
                     if (_name == null)
                     {
-                        string name = Commands.GetZeroTerminatedString(NameBuffer, false);
+                        string name = GetZeroTerminatedString(NameBuffer, false);
                         string path = null;
 
                         int iComma = name.IndexOf(',');
@@ -1541,7 +1541,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 {
                     get
                     {
-                        return Commands.GetZeroTerminatedString(m_szName, false);
+                        return GetZeroTerminatedString(m_szName, false);
                     }
                 }
             }

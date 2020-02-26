@@ -4,11 +4,9 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Storage.Streams;
 
 namespace nanoFramework.Tools.Debugger.WireProtocol
 {
@@ -16,9 +14,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     {
         bool ProcessMessage(IncomingMessage msg, bool fReply);
 
-        Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken);
+        Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken);
 
-        Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken);
+        Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken);
     }
 }
 

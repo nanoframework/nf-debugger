@@ -32,7 +32,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         private ulong KeyFromTypeToken(Type type, uint token)
         {
-            return ((ulong)type) << 32 | (ulong)token;
+            return ((ulong)type) << 32 | token;
         }
 
         public object Lookup(Type type, uint token)
