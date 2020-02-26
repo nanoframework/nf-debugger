@@ -2,6 +2,7 @@
 // Copyright (c) 2017 The nanoFramework project contributors
 // See LICENSE file in the project root for full license information.
 //
+
 using nanoFramework.Tools.Debugger.Extensions;
 using System;
 using System.Collections.Generic;
@@ -195,9 +196,16 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // this is required to be able to actually close devices that get stuck with pending tasks on the in/output streams
                 var closeTask = Task.Factory.StartNew(() =>
                 {
-                    // This closes the handle to the device
-                    Device?.Dispose();
-                    Device = null;
+                    try
+                    {
+                        // This closes the handle to the device
+                        Device?.Dispose();
+                        Device = null;
+                    }
+                    catch
+                    {
+                        // catch all required to deal with possible InteropServices.SEHException
+                    }
                 });
 
                 //need to wrap this in try-catch to catch possible AggregateExceptions
@@ -275,7 +283,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
             catch
             {
-
+                // catch all required to deal with possible Exceptions when disconnecting the device
             }
         }
 
@@ -373,11 +381,15 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     }
                     catch (TaskCanceledException)
                     {
-                        // this is expected to happen, don't do anything with this
+                        // this is expected to happen when the timeout occurs, no need to do anything with it
                     }
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+
+                        // something very wrong happened, disconnect immediately
+                        DisconnectDevice();
+
                         return 0;
                     }
                     finally
@@ -430,15 +442,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     }
                     catch (TaskCanceledException)
                     {
-                        // this is expected to happen, don't do anything with it
+                        // this is expected to happen when the timeout occurs, no need to do anything with it
                     }
                     catch (NullReferenceException)
                     {
-                        // this is expected to happen when there is anything to read, don't do anything with it
+                        // this is expected to happen when there isn't anything to read, don't bother with it
                     }
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"ReadBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+
+                        // something very wrong happened, disconnect immediately
+                        DisconnectDevice();
+
                         return new byte[0];
                     }
                     finally

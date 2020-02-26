@@ -334,6 +334,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                     if (await newNanoFrameworkDevice.ConnectionPort.ConnectDeviceAsync())
                     {
+                        // devices powered by the USB cable and that feature a serial converter (like an FTDI chip) 
+                        // are still booting when the USB enumeration event raises
+                        // so need to give them enough time for the boot sequence to complete before trying to communicate with them
+                        await Task.Delay(1000);
+
                         if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
                         {
                             //add device to the collection
@@ -345,23 +350,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         }
                         else
                         {
-                            // failing to connect to debugger engine on first attempt occurs frequently on dual USB devices like ESP32 WROVER KIT
-                            // the best workaround for this is to wait a while and retry
-                            await Task.Delay(1000);
-
-                            if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
-                            {
-                                //add device to the collection
-                                NanoFrameworkDevices.Add(newNanoFrameworkDevice);
-
-                                _serialDevices.Add(serialDevice);
-
-                                OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}"));
-                            }
-                            else
-                            {
-                                OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
-                            }
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
                         }
                     }
                     else
@@ -535,10 +524,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         }
                     }
                 }
-                else
-                {
-                    OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {device.Device.DeviceInformation.DeviceInformation.Id} with invalid DeviceBase"));
-                }
 
                 if (validDevice)
                 {
@@ -549,7 +534,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                     // set valid baud rate from device detection
                     ((SerialPort)device.ConnectionPort).BaudRate = serialDevice.BaudRate;
-
                 }
 
                 Task.Factory.StartNew(() =>
