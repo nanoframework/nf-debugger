@@ -147,6 +147,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                                     if (_messageBase.Header.Size != 0)
                                     {
+                                        // sanity check for wrong size (can happen with CRC32 turned off)
+                                        if(_messageBase.Header.Size > 2048)
+                                        {
+                                            Debug.WriteLine("Invalid payload requested. Initializing.");
+
+                                            _state = ReceiveState.Initialize;
+                                        }
                                         _messageRaw.Payload = new byte[_messageBase.Header.Size];
                                         //reuse m_rawPos for position in header to read.
                                         _rawPos = 0;

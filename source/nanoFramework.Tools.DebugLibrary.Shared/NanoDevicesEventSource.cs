@@ -12,6 +12,9 @@ namespace nanoFramework.Tools.Debugger
     [EventSource(Name = "nanoFramework-NanoDevices")]
     internal class NanoDevicesEventSource : EventSource
     {
+        private const string GUID_DEVINTERFACE_COMPORT = "{86e0d1e0-8089-11d0-9ce4-08003e301f73}";
+        private const string DEVICE_INSTANCE = "#0000#";
+
         public static NanoDevicesEventSource Log { get { return Log_.Value; } }
         private static readonly Lazy<NanoDevicesEventSource> Log_ = new Lazy<NanoDevicesEventSource>(() => new NanoDevicesEventSource());
 
@@ -28,7 +31,7 @@ namespace nanoFramework.Tools.Debugger
         [Event(2, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string DeviceArrival(string deviceId)
         {
-            string logMessage = $"NanoDevices: new device arrival {deviceId} ";
+            string logMessage = $"NanoDevices: new device arrival {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")} ";
 
             WriteEvent(2, logMessage);
 
@@ -38,7 +41,7 @@ namespace nanoFramework.Tools.Debugger
         [Event(3, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string CandidateDevice(string deviceId)
         {
-            string logMessage = $"NanoDevices: candidate nano device {deviceId}";
+            string logMessage = $"NanoDevices: candidate nano device {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")}";
 
             WriteEvent(3, logMessage);
 
@@ -48,7 +51,7 @@ namespace nanoFramework.Tools.Debugger
         [Event(4, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string ValidDevice(string deviceId)
         {
-            string logMessage = $"NanoDevices: valid device {deviceId}";
+            string logMessage = $"NanoDevices: valid device {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")}";
 
             WriteEvent(4, logMessage);
 
@@ -68,7 +71,7 @@ namespace nanoFramework.Tools.Debugger
         [Event(6, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string CheckingValidDevice(string deviceId)
         {
-            string logMessage = $"NanoDevices: checking device {deviceId}";
+            string logMessage = $"NanoDevices: checking device {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")}";
 
             WriteEvent(6, logMessage);
 
@@ -88,7 +91,7 @@ namespace nanoFramework.Tools.Debugger
         [Event(8, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string QuitDevice(string deviceId)
         {
-            string logMessage = $"NanoDevices: quitting device {deviceId}";
+            string logMessage = $"NanoDevices: quitting device {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")}";
 
             WriteEvent(8, logMessage);
 
@@ -98,7 +101,7 @@ namespace nanoFramework.Tools.Debugger
         [Event(8, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string OpenDevice(string deviceId)
         {
-            string logMessage = $"NanoDevices: open device {deviceId}";
+            string logMessage = $"NanoDevices: open device {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")}";
 
             WriteEvent(8, logMessage);
 
@@ -108,7 +111,7 @@ namespace nanoFramework.Tools.Debugger
         [Event(9, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string CloseDevice(string deviceId)
         {
-            string logMessage = $"NanoDevices: close device {deviceId}";
+            string logMessage = $"NanoDevices: close device {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")}";
 
             WriteEvent(9, logMessage);
 
@@ -128,7 +131,7 @@ namespace nanoFramework.Tools.Debugger
         [Event(11, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string DeviceDeparture(string deviceId)
         {
-            string logMessage = $"NanoDevices: device departure {deviceId} ";
+            string logMessage = $"NanoDevices: device departure {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")} ";
 
             WriteEvent(11, logMessage);
 
