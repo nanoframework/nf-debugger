@@ -35,6 +35,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         // counter of device watchers completed
         private int _newDevicesCount = 0;
 
+        private readonly Random _delay = new Random(DateTime.Now.Millisecond);
+
         /// <summary>
         /// Internal list with the actual nF Serial devices
         /// </summary>
@@ -345,6 +347,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         // so need to give them enough time for the boot sequence to complete before trying to communicate with them
                         await Task.Delay(BootTime);
 
+                        await Task.Yield();
+
+                        // failing to connect to debugger engine on first attempt occurs frequently on dual USB devices like ESP32 WROVER KIT
+                        // seems to be something related with both devices using the same USB endpoint
+                        // a nice workaround for this seems to be adding an extra random wait so the comms are not simultaneous
+
+                        int delay;
+                        lock (_delay)
+                        {
+                            delay = _delay.Next(200, 600);
+                        }
+                        await Task.Delay(1000 + delay);
+
                         if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
                         {
                             //add device to the collection
@@ -355,27 +370,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}"));
                         }
                         else
-                        {
-                            await Task.Yield();
-
-                            // failing to connect to debugger engine on first attempt occurs frequently on dual USB devices like ESP32 WROVER KIT
-                            // seems to be something related with both devices using the same USB endpoint
-                            // the best workaround for this so far is to wait a while and retry
-                            await Task.Delay(BootTime);
-
-                            if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
-                            {
-                                //add device to the collection
-                                NanoFrameworkDevices.Add(newNanoFrameworkDevice);
-
-                                _serialDevices.Add(serialDevice);
-
-                                OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}"));
-                            }
-                            else
-                            {
-                                OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
-                            }
+                        { 
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
                         }
                     }
                     else
