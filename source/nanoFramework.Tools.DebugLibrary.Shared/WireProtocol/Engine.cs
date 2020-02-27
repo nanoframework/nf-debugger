@@ -3088,24 +3088,26 @@ namespace nanoFramework.Tools.Debugger
             {
                 if (reply.IsPositiveAcknowledge())
                 {
-
-                    int assemblyCount = 0;
+                    uint assemblyCount = 0;
 
                     if (reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply && cmdReply.m_data != null)
                     {
-                        // check length 2 = sizeof ushort type
-                        if (cmdReply.m_data.Length == 2)
+                        // check length 4 = size of int32_t type
+                        if (cmdReply.m_data.Length == 4)
                         {
-                            // reassemble the ushort value from the data buffer
-                            assemblyCount = cmdReply.m_data[1];
-                            assemblyCount = (assemblyCount << 8);
-                            assemblyCount += cmdReply.m_data[0];
+                            // can't use Converter because the deserialization of UInt32 is not supported
+                            // replaced with a simple binary reader
+
+                            MemoryStream stream = new MemoryStream(cmdReply.m_data);
+                            BinaryReader reader = new BinaryReader(stream, Encoding.Unicode);
+
+                            assemblyCount = reader.ReadUInt32();
 
                             // compute the assembly batch size that fits on target WP packet size
                             var batchSize = WireProtocolPacketSize / Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblyDetails.Size;
                             uint index = 0;
 
-                            while (assemblyCount > 0)
+                            while (index < assemblyCount)
                             {
                                 // get next batch
 
@@ -3140,7 +3142,6 @@ namespace nanoFramework.Tools.Debugger
                                                    );
 
                                             index += batchSize;
-                                            assemblyCount -= (ushort)batchSize;
                                         }
                                         else
                                         {
