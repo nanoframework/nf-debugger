@@ -332,6 +332,14 @@ steps:
   continueOnError: true
   displayName: Push NuGet packages to NuGet
 
+# update dependencies
+- task: PowerShell@2
+  inputs:
+    targetType: filePath
+    filePath: source/azure-pipelines/update-dependencies.ps1
+  condition: or( and( succeeded(), contains(variables['Build.SourceVersionMessage'], '***UPDATE_DEPENDENTS***') ), eq(variables['UPDATE_DEPENDENTS'], 'true') )
+  displayName: Update dependent tools
+
 # create or update GitHub release
 - task: GitHubReleasePublish@1
   inputs:
