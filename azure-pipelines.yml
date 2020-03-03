@@ -140,6 +140,14 @@ steps:
   condition: ne( variables['StartReleaseCandidate'], true )
   displayName: 'Install specific version of NuGet'
 
+- task: Cache@2
+  inputs:
+    key: 'nuget | packages.lock.json'
+    restoreKeys: |
+      nuget
+    path:  $(Pipeline.Workspace)/.nuget/packages
+  displayName: Cache NuGet packages
+
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
@@ -184,14 +192,14 @@ steps:
   inputs:
     command: 'custom' 
     arguments: 'pack source\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj -OutputDirectory source\nanoFramework.Tools.DebugLibrary.Net -Version $(MY_NUGET_VERSION) -properties Configuration=Release;PublicRelease=true;commit="$(Build.SourceVersion)"'
-  condition: ne( variables['StartReleaseCandidate'], true )
+  condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ) )
   displayName: Pack .NET NuGet package
 
 - task: NuGetCommand@2
   inputs:
     command: 'custom' 
     arguments: 'pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj -OutputDirectory source\nanoFramework.Tools.DebugLibrary.UWP -Version $(MY_NUGET_VERSION) -properties Configuration=Release;PublicRelease=true;commit="$(Build.SourceVersion)"'
-  condition: ne( variables['StartReleaseCandidate'], true )
+  condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ) )
   displayName: Pack UWP NuGet package
 
 # we don't have tests (yet)
