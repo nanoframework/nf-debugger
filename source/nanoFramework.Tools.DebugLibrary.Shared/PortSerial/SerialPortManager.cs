@@ -286,37 +286,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <param name="deviceSelector">The AQS used to find this device</param>
         private async Task AddDeviceToListAsync(DeviceInformation deviceInformation, String deviceSelector)
         {
-            // device black listed
-            // discard known system and unusable devices
-            // 
-            if (
-               deviceInformation.Id.StartsWith(@"\\?\ACPI") ||
-
-               // reported in https://github.com/nanoframework/Home/issues/332
-               // COM ports from Broadcom 20702 Bluetooth adapter
-               deviceInformation.Id.Contains(@"VID_0A5C+PID_21E1") || 
-
-               // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
-               // COM ports from Broadcom 20702 Bluetooth adapter
-               deviceInformation.Id.Contains(@"VID&00010057_PID&0023") || 
-
-               // reported in Discord channel
-               deviceInformation.Id.Contains(@"VID&0001009e_PID&400a") ||
-
-               // this seems to cover virtual COM ports from Bluetooth devices
-               deviceInformation.Id.Contains("BTHENUM")
-               )
-            {
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(deviceInformation.Id));
-
-                _newDevicesCount--;
-
-                // don't even bother with these
-                return;
-            }
-
-            OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(deviceInformation.Id));
-
             // search the device list for a device with a matching interface ID
             var serialMatch = FindDevice(deviceInformation.Id);
 
@@ -342,24 +311,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     {
                         await Task.Yield();
 
-                        // devices powered by the USB cable and that feature a serial converter (like an FTDI chip) 
-                        // are still booting when the USB enumeration event raises
-                        // so need to give them enough time for the boot sequence to complete before trying to communicate with them
-                        await Task.Delay(BootTime);
-
-                        await Task.Yield();
-
-                        // failing to connect to debugger engine on first attempt occurs frequently on dual USB devices like ESP32 WROVER KIT
-                        // seems to be something related with both devices using the same USB endpoint
-                        // a nice workaround for this seems to be adding an extra random wait so the comms are not simultaneous
-
-                        int delay;
-                        lock (_delay)
-                        {
-                            delay = _delay.Next(200, 600);
-                        }
-                        await Task.Delay(1000 + delay);
-
                         if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
                         {
                             //add device to the collection
@@ -370,8 +321,45 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}"));
                         }
                         else
-                        { 
-                            OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
+                        {
+                            // devices powered by the USB cable and that feature a serial converter (like an FTDI chip) 
+                            // are still booting when the USB enumeration event raises
+                            // so need to give them enough time for the boot sequence to complete before trying to communicate with them
+
+                            // failing to connect to debugger engine on first attempt occurs frequently on dual USB devices like ESP32 WROVER KIT
+                            // seems to be something related with both devices using the same USB endpoint
+                            // a nice workaround for this seems to be adding an extra random wait so the comms are not simultaneous
+
+                            int delay;
+                            lock (_delay)
+                            {
+                                delay = _delay.Next(200, 600);
+                            }
+                            await Task.Delay(BootTime + delay);
+
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id} *** 2nd attempt ***"));
+
+                            if (await newNanoFrameworkDevice.ConnectionPort.ConnectDeviceAsync())
+                            {
+                                await Task.Yield();
+                                if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
+                                {
+                                    //add device to the collection
+                                    NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+
+                                    _serialDevices.Add(serialDevice);
+
+                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}"));
+                                }
+                                else
+                                {
+                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
+                                }
+                            }
+                            else
+                            {
+                                OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
+                            }
                         }
                     }
                     else
@@ -465,6 +453,35 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <param name="deviceInformation"></param>
         private void OnDeviceAdded(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
+            // device black listed
+            // discard known system and unusable devices
+            // 
+            if (
+               deviceInformation.Id.StartsWith(@"\\?\ACPI") ||
+
+               // reported in https://github.com/nanoframework/Home/issues/332
+               // COM ports from Broadcom 20702 Bluetooth adapter
+               deviceInformation.Id.Contains(@"VID_0A5C+PID_21E1") ||
+
+               // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
+               // COM ports from Broadcom 20702 Bluetooth adapter
+               deviceInformation.Id.Contains(@"VID&00010057_PID&0023") ||
+
+               // reported in Discord channel
+               deviceInformation.Id.Contains(@"VID&0001009e_PID&400a") ||
+
+               // this seems to cover virtual COM ports from Bluetooth devices
+               deviceInformation.Id.Contains("BTHENUM")
+               )
+            {
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(deviceInformation.Id));
+
+                // don't even bother with this one
+                return;
+            }
+
+            OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(deviceInformation.Id));
+
             _newDevicesCount++;
 
             Task.Run(async delegate
@@ -520,7 +537,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                         OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {device.Device.DeviceInformation.DeviceInformation.Id} @ { baudRate }"));
 
-                        if (await device.DebugEngine.ConnectAsync(1000, true))
+                        if (await device.DebugEngine.ConnectAsync(
+                            1000,
+                            true,
+                            ConnectionSource.Unknown,
+                            false))
                         {
                             if (device.DebugEngine.ConnectionSource == ConnectionSource.nanoBooter)
                             {
@@ -536,11 +557,23 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             }
                             else
                             {
-                                device.TargetName = device.DeviceInfo.TargetName;
-                                device.Platform = device.DeviceInfo.Platform;
+                                var deviceInfo = device.DebugEngine.GetTargetInfo();
 
-                                validDevice = true;
-                                break;
+                                if (!string.IsNullOrEmpty(deviceInfo.TargetName))
+                                {
+                                    device.TargetName = deviceInfo.TargetName;
+                                    device.Platform = deviceInfo.Platform;
+
+                                    validDevice = true;
+                                    break;
+                                }
+                                else
+                                {
+                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"ERROR: {device.Device.DeviceInformation.DeviceInformation.Id} failed to get target information"));
+
+                                    validDevice = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -550,7 +583,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 {
                     device.SerialNumber = GetSerialNumber(device.Device.DeviceInformation.DeviceInformation.Id);
 
-                    // should be a valid nanoFramework device
+                    // there should be a valid nanoFramework device at the other end
                     device.Description = device.TargetName + " @ " + ((SerialPort)device.ConnectionPort).Device.PortName;
 
                     // set valid baud rate from device detection
