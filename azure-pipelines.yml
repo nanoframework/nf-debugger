@@ -127,7 +127,7 @@ steps:
 
 - task: SonarCloudPrepare@1
   inputs:
-    SonarCloud: 'sonarcloud'
+    SonarCloud: 'sonarcloud-debugger'
     organization: 'nanoframework'
     scannerMode: 'MSBuild'
     projectKey: 'nanoframework_nf-debugger'
@@ -320,7 +320,7 @@ steps:
     command: push
     nuGetFeedType: external
     packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
-    publishFeedCredentials: 'AzureArtifacts'
+    publishFeedCredentials: 'AzureArtifacts-debugger'
   condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ) )
   continueOnError: true
   displayName: Push NuGet packages to Azure Artifacts
@@ -332,7 +332,7 @@ steps:
     nuGetFeedType: external
     allowPackageConflicts: true
     packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
-    publishFeedCredentials: 'NuGet'
+    publishFeedCredentials: 'NuGet-debugger'
   condition: and( succeeded(), or( eq ( variables['SetReleaseDraftVar.RELEASE_VERSION'], 'True' ), startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), ne( variables['StartReleaseCandidate'], true ) )
   continueOnError: true
   displayName: Push NuGet packages to NuGet
