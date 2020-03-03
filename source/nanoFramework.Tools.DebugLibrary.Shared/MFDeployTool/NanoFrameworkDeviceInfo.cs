@@ -216,6 +216,8 @@ namespace nanoFramework.Tools.Debugger
 
         public Version ImageCompilerVersion => Dbg.Capabilities.SoftwareVersion.CompilerVersion;
 
+        public string VendorInfo => Dbg.Capabilities.SolutionReleaseInfo.VendorInfo;
+
         public override string ToString()
         {
             if (Valid)
@@ -224,11 +226,15 @@ namespace nanoFramework.Tools.Debugger
                 {
                     StringBuilder output = new StringBuilder();
 
-                    output.AppendLine($"HAL build info: {HalBuildVersion?.ToString()}, {HalBuildInfo}");
-                    output.AppendLine($"Target: {TargetName?.ToString()}");
-                    output.AppendLine($"Platform: {Platform?.ToString()}");
+                    output.AppendLine($"HAL build info: {HalBuildInfo}");
+                    output.AppendLine($"  Target:   {TargetName?.ToString()}");
+                    output.AppendLine($"  Platform: {Platform?.ToString()}");
                     output.AppendLine();
-                    output.AppendLine($"Image build @ { ImageBuildDate ?? "unknown" } { ImageCompilerInfo ?? "unknown" } v{ ImageCompilerVersion?.ToString() }");
+                    output.AppendLine($"Firmware build Info:");
+                    output.AppendLine($"  Date:     {ImageBuildDate ?? "unknown"}");
+                    output.AppendLine($"  Type:     {VendorInfo ?? "unknown"}");
+                    output.AppendLine($"  Version:  {SolutionBuildVersion}");
+                    output.AppendLine($"  Compiler: {ImageCompilerInfo ?? "unknown"} v{ImageCompilerVersion?.ToString()}");
                     output.AppendLine();
                     output.AppendLine($"OEM Product codes (vendor, model, SKU): {OEM.ToString()}, {Model.ToString()}, {SKU.ToString()}");
                     output.AppendLine();
@@ -236,7 +242,6 @@ namespace nanoFramework.Tools.Debugger
                     output.AppendLine("  " + ModuleSerialNumber);
                     output.AppendLine("  " + SystemSerialNumber);
                     output.AppendLine();
-                    output.AppendLine($"Solution Build Info: {SolutionBuildVersion?.ToString()}, {SolutionBuildInfo}");
 
                     output.AppendLine();
                     output.AppendLine("AppDomains:");

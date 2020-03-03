@@ -105,5 +105,27 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 }
             }
         }
+
+        public override string ToString()
+        {
+            try
+            {
+                StringBuilder output = new StringBuilder();
+
+                output.AppendLine($"HAL build info: {Info?.ToString()}");
+                output.AppendLine($"  Target:   {TargetName?.ToString()}");
+                output.AppendLine($"  Platform: {PlatformName?.ToString()}");
+                output.AppendLine($"  Type:     {PlatformInfo}");
+                output.AppendLine();
+
+                return output.ToString();
+            }
+            catch
+            {
+                // OK to fail. Most likely because of a formatting issue.
+            }
+
+            return "ReleaseInfo is not valid!";
+        }
     }
 }
