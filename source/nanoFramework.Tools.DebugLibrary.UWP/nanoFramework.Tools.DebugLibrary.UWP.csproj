@@ -160,9 +160,6 @@ For .NET look for the respective Nuget package.</PackageReleaseNotes>
   <ItemGroup>
     <None Include="key.snk" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="FodyWeavers.xml" />
-  </ItemGroup>
   <Import Project="..\nanoFramework.Tools.DebugLibrary.Shared\nanoFramework.Tools.DebugLibrary.Net.projitems" Label="Shared" />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>

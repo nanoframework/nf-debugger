@@ -77,9 +77,6 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
     <None Include="key.snk" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="FodyWeavers.xml" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Fody">
       <Version>4.2.1</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

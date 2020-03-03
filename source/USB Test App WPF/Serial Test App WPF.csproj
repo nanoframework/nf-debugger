@@ -106,9 +106,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="FodyWeavers.xml" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj">
       <Project>{101d57ad-d22f-4905-a992-de15e723f164}</Project>
       <Name>nanoFramework.Tools.DebugLibrary.Net</Name>
