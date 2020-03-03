@@ -142,7 +142,7 @@ steps:
 
 - task: Cache@2
   inputs:
-    key: 'nuget | packages.lock.json'
+    key: 'nuget'
     restoreKeys: |
       nuget
     path:  $(Pipeline.Workspace)/.nuget/packages
