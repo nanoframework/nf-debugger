@@ -143,7 +143,11 @@ namespace nanoFramework.Tools.Debugger
 
         public bool StopDebuggerOnConnect { get; set; }
 
-        public async Task<bool> ConnectAsync(int timeout, bool force = false, ConnectionSource connectionSource = ConnectionSource.Unknown)
+        public async Task<bool> ConnectAsync(
+            int timeout, 
+            bool force = false, 
+            ConnectionSource connectionSource = ConnectionSource.Unknown, 
+            bool requestCapabilities = true)
         {
             if (force || !IsConnected)
             {
@@ -234,7 +238,9 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            if ((force || Capabilities.IsUnknown) && ConnectionSource == ConnectionSource.nanoCLR)
+            if (ConnectionSource == ConnectionSource.nanoCLR &&
+                requestCapabilities &&
+                (force || Capabilities.IsUnknown) )
             {
                 CancellationTokenSource cancellationTSource = new CancellationTokenSource();
 
