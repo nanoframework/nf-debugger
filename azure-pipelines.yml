@@ -136,7 +136,7 @@ steps:
 
 - task: NuGetToolInstaller@0
   inputs:
-    versionSpec: '4.9.3'
+    versionSpec: '5.4.0'
   condition: ne( variables['StartReleaseCandidate'], true )
   displayName: 'Install specific version of NuGet'
 
@@ -154,19 +154,17 @@ steps:
     configuration: '$(buildConfiguration)'
   condition: ne( variables['StartReleaseCandidate'], true )
 
-- task: MSBuild@1
+- task: NuGetCommand@2
   inputs:
-    solution: '**\nanoFramework.Tools.DebugLibrary.Net.csproj'
-    configuration: '$(buildConfiguration)'
-    msbuildArguments: '/t:pack /p:PublicRelease=true'
+    command: 'custom' 
+    arguments: 'pack source\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj -properties Configuration=Release;PublicRelease=true;commit="$(Build.SourceVersion)"'
   condition: ne( variables['StartReleaseCandidate'], true )
   displayName: Pack .NET NuGet package
 
-- task: MSBuild@1
+- task: NuGetCommand@2
   inputs:
-    solution: '**\nanoFramework.Tools.DebugLibrary.UWP.csproj'
-    configuration: '$(buildConfiguration)'
-    msbuildArguments: '/t:pack /p:PublicRelease=true'
+    command: 'custom' 
+    arguments: 'pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj -properties Configuration=Release;PublicRelease=true;commit="$(Build.SourceVersion)"'
   condition: ne( variables['StartReleaseCandidate'], true )
   displayName: Pack UWP NuGet package
 

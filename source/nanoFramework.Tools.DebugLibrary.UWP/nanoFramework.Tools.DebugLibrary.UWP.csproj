@@ -146,9 +146,6 @@ For .NET look for the respective Nuget package.</PackageReleaseNotes>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="NuGet.Build.Packaging">
-      <Version>0.2.2</Version>
-    </PackageReference>
     <PackageReference Include="PropertyChanged.Fody">
       <Version>2.6.1</Version>
     </PackageReference>
