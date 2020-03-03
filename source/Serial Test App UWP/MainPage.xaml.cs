@@ -143,7 +143,10 @@ namespace Test_App_UWP
 
             Debug.WriteLine("");
             Debug.WriteLine("");
-            Debug.WriteLine($"OEM info: {oemInfo.m_releaseInfo.Info}");
+            Debug.WriteLine($"OEM info: {oemInfo.Info}");
+            Debug.WriteLine($"Platform: {oemInfo.PlatformName}");
+            Debug.WriteLine($"Target: {oemInfo.TargetName}");
+            Debug.WriteLine($"Platform Info: {oemInfo.PlatformInfo}");
             Debug.WriteLine("");
             Debug.WriteLine("");
 
