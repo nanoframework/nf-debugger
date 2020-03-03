@@ -548,8 +548,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 var deviceInfo = device.DebugEngine.GetMonitorOemInfo();
                                 if (deviceInfo != null)
                                 {
-                                    device.TargetName = deviceInfo.m_releaseInfo.TargetName;
-                                    device.Platform = deviceInfo.m_releaseInfo.PlatformName;
+                                    device.TargetName = deviceInfo.TargetName;
+                                    device.Platform = deviceInfo.PlatformName;
 
                                     validDevice = true;
                                     break;

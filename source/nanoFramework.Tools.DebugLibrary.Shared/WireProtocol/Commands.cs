@@ -155,7 +155,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
                 {
-                    m_releaseInfo = new ReleaseInfo();
+                    m_releaseInfo = new ReleaseInfo(data.Length);
                 }
             }
         }

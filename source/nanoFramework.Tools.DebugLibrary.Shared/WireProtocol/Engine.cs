@@ -1216,13 +1216,13 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public Commands.Monitor_OemInfo.Reply GetMonitorOemInfo()
+        public ReleaseInfo GetMonitorOemInfo()
         {
             Commands.Monitor_OemInfo cmd = new Commands.Monitor_OemInfo();
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_OemInfo, 0, cmd);
 
-            return reply != null ? reply.Payload as Commands.Monitor_OemInfo.Reply : null;
+            return reply != null ? (reply.Payload as Commands.Monitor_OemInfo.Reply).m_releaseInfo : null;
         }
 
         public List<Commands.Monitor_FlashSectorMap.FlashSectorData> GetFlashSectorMap()
@@ -3059,9 +3059,9 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-
                 if (reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply && cmdReply.m_data != null)
                 {
+
                     new Converter().Deserialize(targetInfo, cmdReply.m_data);
 
                     targetInfoProps = new CLRCapabilities.TargetInfoProperties(

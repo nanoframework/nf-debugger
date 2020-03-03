@@ -1009,11 +1009,10 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                 {
                     Debug.WriteLine("");
                     Debug.WriteLine("");
-                    Debug.WriteLine($"OEM info: {oemInfo.m_releaseInfo.Info}");
-                    Debug.WriteLine("");
-                    Debug.WriteLine($"Platform: {oemInfo.m_releaseInfo.PlatformName}");
-                    Debug.WriteLine("");
-                    Debug.WriteLine($"Target: {oemInfo.m_releaseInfo.TargetName}");
+                    Debug.WriteLine($"OEM info: {oemInfo.Info}");
+                    Debug.WriteLine($"Platform: {oemInfo.PlatformName}");
+                    Debug.WriteLine($"Target: {oemInfo.TargetName}");
+                    Debug.WriteLine($"Platform Info: {oemInfo.PlatformInfo}");
                     Debug.WriteLine("");
                     Debug.WriteLine("");
                 }
