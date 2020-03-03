@@ -3262,6 +3262,11 @@ namespace nanoFramework.Tools.Debugger
             return new CLRCapabilities(clrFlags, softwareVersion, halSysInfo, clrInfo, solutionInfo, nativeAssembliesInfo);
         }
 
+        public CLRCapabilities.TargetInfoProperties GetTargetInfo()
+        {
+            return DiscoverTargetInfoProperties();
+        }
+
         #endregion
 
 
