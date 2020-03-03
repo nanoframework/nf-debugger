@@ -142,10 +142,10 @@ steps:
 
 - task: Cache@2
   inputs:
-    key: 'nuget'
+    key: 'nugetV1'
     restoreKeys: |
       nuget
-    path:  $(Pipeline.Workspace)/.nuget/packages
+    path:  source/packages
   displayName: Cache NuGet packages
 
 - task: NuGetCommand@2
