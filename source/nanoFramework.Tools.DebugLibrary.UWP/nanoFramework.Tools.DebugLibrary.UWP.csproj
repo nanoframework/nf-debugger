@@ -29,6 +29,7 @@
     <PackageProjectUrl>https://github.com/nanoframework/nf-debugger</PackageProjectUrl>
     <PackageReleaseNotes>This package provides the UWP version of the debug library. 
 For .NET look for the respective Nuget package.</PackageReleaseNotes>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>

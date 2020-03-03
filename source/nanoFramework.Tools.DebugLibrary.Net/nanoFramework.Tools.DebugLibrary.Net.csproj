@@ -28,6 +28,7 @@
     <PackageReleaseNotes>This package provides the .NET version of the debug library. 
 For UWP look for the respective Nuget package.</PackageReleaseNotes>
     <TargetFrameworkProfile />
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

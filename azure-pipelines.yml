@@ -142,9 +142,8 @@ steps:
 
 - task: Cache@2
   inputs:
-    key: 'nugetV1'
+    key: 'nuget | packages.lock.json'
     restoreKeys: |
-      nugetV1
       nuget
     path:  source/packages
   displayName: Cache NuGet packages
