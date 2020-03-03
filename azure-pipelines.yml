@@ -234,13 +234,13 @@ steps:
   displayName: Set release draft var
 
 - task: SonarCloudAnalyze@1
-  condition: ne( variables['StartReleaseCandidate'], true )
+  condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ) )
   displayName: 'Run Code Analysis'
 
 - task: SonarCloudPublish@1
   inputs:
     pollingTimeoutSec: '300'
-  condition: ne( variables['StartReleaseCandidate'], true )
+  condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ) )
 
 - task: UseRubyVersion@0
   inputs:
