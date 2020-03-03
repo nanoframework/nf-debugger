@@ -140,6 +140,14 @@ steps:
   condition: ne( variables['StartReleaseCandidate'], true )
   displayName: 'Install specific version of NuGet'
 
+- task: Cache@2
+  inputs:
+    key: 'nuget | packages.lock.json'
+    restoreKeys: |
+      nuget
+    path:  $(Pipeline.Workspace)/.nuget/packages
+  displayName: Cache NuGet packages
+
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
