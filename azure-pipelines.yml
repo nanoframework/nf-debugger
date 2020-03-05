@@ -334,6 +334,8 @@ steps:
   inputs:
     targetType: filePath
     filePath: azure-pipelines/update-dependencies.ps1
+  env:
+    MY_GITHUB_TOKEN: $(GitHubToken)
   condition: or( and( succeeded(), contains(variables['Build.SourceVersionMessage'], '***UPDATE_DEPENDENTS***') ), eq(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Update dependent tools
 

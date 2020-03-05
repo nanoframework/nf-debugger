@@ -2,7 +2,7 @@
 
 # compute authorization header in format "AUTHORIZATION: basic 'encoded token'"
 # 'encoded token' is the Base64 of the string "nfbot:personal-token"
-$auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$(GitHubToken)"))))"
+$auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$env:MY_GITHUB_TOKEN"))))"
 
 # because it can take sometime for the package to become available on the NuGet providers
 # need to hang here for 2 minutes (2 * 60)
