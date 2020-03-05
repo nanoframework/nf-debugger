@@ -333,7 +333,7 @@ steps:
 - task: PowerShell@2
   inputs:
     targetType: filePath
-    filePath: source/azure-pipelines/update-dependencies.ps1
+    filePath: azure-pipelines/update-dependencies.ps1
   condition: or( and( succeeded(), contains(variables['Build.SourceVersionMessage'], '***UPDATE_DEPENDENTS***') ), eq(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Update dependent tools
 
