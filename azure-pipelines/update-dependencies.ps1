@@ -38,22 +38,22 @@ Set-Location source | Out-Null
 ####################
 # VS 2017
 
+Write-Host "Updating package in VS2017 solution..."
+
 # restore NuGet packages, need to do this before anything else
-nuget restore nanoFramework.Tools.VisualStudio.sln -Source https://pkgs.dev.azure.com/nanoframework/feed/_packaging/sandbox/nuget/v3/index.json -Source https://api.nuget.org/v3/index.json
+nuget restore nanoFramework.Tools.VisualStudio.sln -Source https://pkgs.dev.azure.com/nanoframework/feed/_packaging/sandbox/nuget/v3/index.json
 
-Write-Debug "Updating package in VS2017 solution"
-
-nuget update -Id nanoFramework.Tools.Debugger.Net VisualStudio.Extension\VisualStudio.Extension.csproj -ConfigFile NuGet.Config
+nuget update -Id nanoFramework.Tools.Debugger.Net VisualStudio.Extension\VisualStudio.Extension.csproj -ConfigFile NuGet.Config -PreRelease
 
 ####################
 # VS 2019
 
+Write-Debug "Updating package in VS2019 solution..."
+
 # restore NuGet packages, need to do this before anything else
-nuget restore nanoFramework.Tools.VisualStudio-2019.sln -Source https://pkgs.dev.azure.com/nanoframework/feed/_packaging/sandbox/nuget/v3/index.json -Source https://api.nuget.org/v3/index.json
+nuget restore nanoFramework.Tools.VisualStudio-2019.sln -Source https://pkgs.dev.azure.com/nanoframework/feed/_packaging/sandbox/nuget/v3/index.json
 
-Write-Debug "Updating package in VS2019 solution"
-
-nuget update -Id nanoFramework.Tools.Debugger.Net VisualStudio.Extension-2019\VisualStudio.Extension.csproj -ConfigFile NuGet.Config
+nuget update -Id nanoFramework.Tools.Debugger.Net VisualStudio.Extension-2019\VisualStudio.Extension.csproj -ConfigFile NuGet.Config -PreRelease
 
 #####################
 
