@@ -1315,7 +1315,8 @@ namespace nanoFramework.Tools.Debugger
                 {
                     Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
 
-                    if (!reply.IsPositiveAcknowledge() || cmdReply.ErrorCode != 0)
+                    if (!reply.IsPositiveAcknowledge() || 
+                        (AccessMemoryErrorCodes)cmdReply.ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
                         return (cmdReply.ErrorCode, false);
                     }
