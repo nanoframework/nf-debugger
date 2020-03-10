@@ -5,14 +5,14 @@
 $auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$env:MY_GITHUB_TOKEN"))))"
 
 # because it can take sometime for the package to become available on the NuGet providers
-# need to hang here for 2 minutes (2 * 60)
-"Waiting 2 minutes to let package process flow in Azure Artifacts feed..." | Write-Host
-Start-Sleep -Seconds 120 
+# need to hang here for 1 minutes (1 * 60)
+"Waiting 1 minute to let package process flow in Azure Artifacts feed..." | Write-Host
+Start-Sleep -Seconds 60 
 
 # init/reset these
 $commitMessage = ""
 $prTitle = ""
-$newBranchName = "develop-nfbot/update-nf-debugger"
+$newBranchName = "develop-nfbot/update-dependencies/" + [guid]::NewGuid().ToString()
 $packageTargetVersion = $env:NBGV_NuGetPackageVersion
 
 # working directory is agent temp directory
@@ -62,9 +62,6 @@ nuget update -Id nanoFramework.Tools.Debugger.Net VisualStudio.Extension-2019\Vi
 #####################
 
 "Bumping nanoFramework.Tools.Debugger to $packageTargetVersion." | Write-Host -ForegroundColor Cyan                
-
-#  update branch name
-$newBranchName += "/$packageTargetVersion"
 
 # build commit message
 $commitMessage += "Bumps nanoFramework.Tools.Debugger to $packageTargetVersion.`n"
