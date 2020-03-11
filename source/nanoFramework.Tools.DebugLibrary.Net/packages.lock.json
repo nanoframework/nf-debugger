@@ -20,9 +20,9 @@
       },
       "Nerdbank.GitVersioning": {
         "type": "Direct",
-        "requested": "[3.0.50, )",
-        "resolved": "3.0.50",
-        "contentHash": "jDbjKVHHhLBRjvRw+nDs8d/g8hRt7YUb1LHKEt3cR52SpnZfxf5Q7NGNxmnmeYxoT8ecAW44P4wciXz3yPlubA=="
+        "requested": "[3.1.68, )",
+        "resolved": "3.1.68",
+        "contentHash": "34pkY22UQQ/69bBFSl+PoQPuY2+ILbIFOWsqTdIU/AuvSH19aCvdHsT6WX0hcRZL2VNZeCiHkuhcY8bSjn4ifQ=="
       },
       "PropertyChanged.Fody": {
         "type": "Direct",
@@ -35,9 +35,9 @@
       },
       "System.Threading.Tasks.Extensions": {
         "type": "Direct",
-        "requested": "[4.5.2, )",
-        "resolved": "4.5.2",
-        "contentHash": "BG/TNxDFv0svAzx8OiMXDlsHfGw623BZ8tCXw4YLhDFDvDhNUEV58jKYMGRnkbJNm7c3JNNJDiN7JBMzxRBR2w==",
+        "requested": "[4.5.3, )",
+        "resolved": "4.5.3",
+        "contentHash": "+MvhNtcvIbqmhANyKu91jQnvIRVSTiaOiFNfKWwXGHG48YAb4I/TyH8spsySiPYla7gKal5ZnF3teJqZAximyQ==",
         "dependencies": {
           "System.Runtime.CompilerServices.Unsafe": "4.5.2"
         }

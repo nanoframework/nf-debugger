@@ -383,7 +383,7 @@ namespace nanoFramework.Tools.Debugger
             set { }
         }
 
-        public bool ThrowOnCommunicationFailure { get; set; }
+        public bool ThrowOnCommunicationFailure { get; set; } = false;
 
         #region Events 
 
@@ -1122,16 +1122,17 @@ namespace nanoFramework.Tools.Debugger
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
             {
+                WireProtocolRequest request = new WireProtocolRequest(message, cts.Token);
+
                 //Checking whether IsRunning and adding the request to m_requests
                 //needs to be atomic to avoid adding a request after the Engine
                 //has been stopped.
 
                 if (!IsRunning)
                 {
-                    throw new ApplicationException("Engine is not running or process has exited.");
+                    return request;
                 }
 
-                WireProtocolRequest request = new WireProtocolRequest(message, cts.Token);
                 _requestsStore.Add(request);
 
                 try
