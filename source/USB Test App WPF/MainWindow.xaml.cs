@@ -194,42 +194,28 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
             await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
             {
-
                  try
                  {
-                     var deviceState = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetExecutionMode();
-
-                     if (deviceState == Commands.DebuggingExecutionChangeConditions.State.Unknown)
-                     {
-                         Debug.WriteLine($">>> Couldn't determine device state <<<<");
-                     }
-                     else if (deviceState == Commands.DebuggingExecutionChangeConditions.State.Initialize)
-                     {
-                         Debug.WriteLine($">>> Device is in initialized state <<<<");
-                     }
-                     else if ((deviceState & Commands.DebuggingExecutionChangeConditions.State.ProgramRunning) == Commands.DebuggingExecutionChangeConditions.State.ProgramRunning)
-                     {
-                         if ((deviceState & Commands.DebuggingExecutionChangeConditions.State.Stopped) == Commands.DebuggingExecutionChangeConditions.State.Stopped)
-                         {
-                             Debug.WriteLine($">>> Device is running a program **BUT** execution is stopped <<<<");
-                         }
-                         else
-                         {
-                             Debug.WriteLine($">>> Device is running a program <<<<");
-                         }
-                     }
-                     else if ((deviceState & Commands.DebuggingExecutionChangeConditions.State.ProgramExited) == Commands.DebuggingExecutionChangeConditions.State.ProgramExited)
-                     {
-                         if ((deviceState & Commands.DebuggingExecutionChangeConditions.State.ResolutionFailed) == Commands.DebuggingExecutionChangeConditions.State.ResolutionFailed)
-                         {
-                             Debug.WriteLine($">>> Device can't start execution because type resolution has failed <<<<");
-                         }
-                         else
-                         {
-                             Debug.WriteLine($">>> Device it's idle after exiting from a program execution <<<<");
-                         }
-                     }
-
+                    if ((DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.IsDeviceInInitializeState())
+                    {
+                        Debug.WriteLine($">>> Device is in initialized state <<<<");
+                    }
+                    else if ((DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.IsDeviceInProgramRunningState())
+                    {
+                        Debug.WriteLine($">>> Device is running a program <<<<");
+                    }
+                    else if ((DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.IsDeviceInExitedState())
+                    {
+                        Debug.WriteLine($">>> Device it's idle after exiting from a program execution <<<<");
+                    }
+                    else if ((DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.IsDeviceStoppedOnTypeResolutionFailed())
+                    {
+                        Debug.WriteLine($">>> Device can't start execution because type resolution has failed <<<<");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($">>> Couldn't determine device state <<<<");
+                    }
                  }
                  catch
                  {

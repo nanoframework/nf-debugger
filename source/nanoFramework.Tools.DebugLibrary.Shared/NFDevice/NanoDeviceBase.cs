@@ -137,7 +137,7 @@ namespace nanoFramework.Tools.Debugger
         {
             if(DebugEngine == null)
             {
-                throw new DeviceNotConnectedException();
+                return PingConnectionType.NoConnection;
             }
 
             Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
@@ -241,7 +241,10 @@ namespace nanoFramework.Tools.Debugger
         {
             bool fReset = false;
 
-            if (DebugEngine == null) throw new NanoFrameworkDeviceNoResponseException();
+            if (DebugEngine == null)
+            {
+                return false;
+            }
 
             // check if the device is responsive
             PingConnectionType isPresent = Ping();
@@ -250,7 +253,7 @@ namespace nanoFramework.Tools.Debugger
                 // it's not, try reconnect
                 if (!await DebugEngine.ConnectAsync(5000, true))
                 {
-                    throw new NanoFrameworkDeviceNoResponseException();
+                    return false;
                 }
             }
 
@@ -260,13 +263,16 @@ namespace nanoFramework.Tools.Debugger
 
                 if (!await ConnectToNanoBooterAsync(cancellationToken))
                 {
-                    throw new NanoBooterConnectionFailureException();
+                    return false;
                 }
             }
 
             List<Commands.Monitor_FlashSectorMap.FlashSectorData> reply = DebugEngine.GetFlashSectorMap();
 
-            if (reply == null) throw new NanoFrameworkDeviceNoResponseException();
+            if (reply == null)
+            {
+                return false;
+            }
 
             Commands.Monitor_Ping.Reply ping = DebugEngine.GetConnectionSource();
 
@@ -285,7 +291,10 @@ namespace nanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in reply)
             {
-                if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return false;
+                }
 
                 switch (flashSectorData.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK)
                 {
@@ -410,9 +419,15 @@ namespace nanoFramework.Tools.Debugger
             uint entryPoint = 0;
             List<SRecordFile.Block> blocks = new List<SRecordFile.Block>();
 
-            if (!srecFile.IsAvailable) throw new FileNotFoundException(srecFile.Path);
+            if (!srecFile.IsAvailable)
+            {
+                return new Tuple<uint, bool>(0, false);
+            }
 
-            if (DebugEngine == null) throw new NanoFrameworkDeviceNoResponseException();
+            if (DebugEngine == null)
+            {
+                return new Tuple<uint, bool>(0, false);
+            }
 
             // make sure we know who we are talking to
             if (await CheckForMicroBooterAsync(cancellationToken))
@@ -458,7 +473,10 @@ namespace nanoFramework.Tools.Debugger
                     uint addr = block.address;
 
                     // check if cancellation was requested 
-                    if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return new Tuple<uint, bool>(0, false);
+                    }
 
                     block.data.Seek(0, SeekOrigin.Begin);
 
@@ -475,7 +493,10 @@ namespace nanoFramework.Tools.Debugger
                     while (len > 0)
                     {
                         // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            return new Tuple<uint, bool>(0, false);
+                        }
 
                         uint buflen = len > DebugEngine.WireProtocolPacketSize ? DebugEngine.WireProtocolPacketSize : (uint)len;
                         byte[] data = new byte[buflen];
@@ -514,12 +535,18 @@ namespace nanoFramework.Tools.Debugger
         /// </returns>
         public async Task<bool> ExecuteAync(uint entryPoint, CancellationToken cancellationToken)
         {
-            if (DebugEngine == null) throw new NanoFrameworkDeviceNoResponseException();
+            if (DebugEngine == null)
+            {
+                return false;
+            }
 
             if (await CheckForMicroBooterAsync(cancellationToken))
             {
                 // check if cancellation was requested 
-                if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return false;
+                }
 
                 if (m_execSrecHash.ContainsKey(entryPoint))
                 {
@@ -529,14 +556,20 @@ namespace nanoFramework.Tools.Debugger
                     for (int retry = 0; retry < 10; retry++)
                     {
                         // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            return false;
+                        }
 
                         try
                         {
                             await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
                             // check if cancellation was requested 
-                            if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                return false;
+                            }
 
                             await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
                         }
@@ -547,7 +580,10 @@ namespace nanoFramework.Tools.Debugger
                         }
 
                         // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            return false;
+                        }
 
                         if (m_evtMicroBooter.WaitOne(1000))
                         {
@@ -564,7 +600,10 @@ namespace nanoFramework.Tools.Debugger
 
             Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
 
-            if (reply == null) throw new NanoFrameworkDeviceNoResponseException();
+            if (reply == null)
+            {
+                return false;
+            }
 
             // only execute if we are talking to the nanoBooter, otherwise reboot
             if (reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter)
@@ -797,7 +836,10 @@ namespace nanoFramework.Tools.Debugger
                 }
 
                 // check if cancellation was requested 
-                if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    new Tuple<uint, bool>(0, false);
+                }
 
                 SrecParseResult parsedFile = await ParseSrecFileAsync(srecExtFile);
 
@@ -815,7 +857,10 @@ namespace nanoFramework.Tools.Debugger
                     while (parsedFile.Records.Count > 0)
                     {
                         // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            new Tuple<uint, bool>(0, false);
+                        }
 
                         List<uint> remove = new List<uint>();
 
@@ -833,7 +878,10 @@ namespace nanoFramework.Tools.Debugger
                         foreach (uint key in keys)
                         {
                             // check if cancellation was requested 
-                            if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                new Tuple<uint, bool>(0, false);
+                            }
 
                             if (key < m_minSrecAddr) m_minSrecAddr = key;
                             if (key > m_maxSrecAddr) m_maxSrecAddr = key;
@@ -897,7 +945,10 @@ namespace nanoFramework.Tools.Debugger
                         StorageFile symdefFile = await folder.TryGetItemAsync(symdefFilePath) as StorageFile;
 
                         // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            new Tuple<uint, bool>(0, false);
+                        }
 
                         // send image crc
                         if (binFile != null && symdefFile != null)
@@ -912,7 +963,10 @@ namespace nanoFramework.Tools.Debugger
                             foreach (string line in textLines)
                             {
                                 // check if cancellation was requested 
-                                if (cancellationToken.IsCancellationRequested) throw new NanoUserExitException();
+                                if (cancellationToken.IsCancellationRequested)
+                                {
+                                    new Tuple<uint, bool>(0, false);
+                                }
 
                                 if (line.Contains("LOAD_IMAGE_CRC"))
                                 {
@@ -1086,7 +1140,7 @@ namespace nanoFramework.Tools.Debugger
             return true;
         }
 
-        private async Task PrepareForDeployAsync(List<SRecordFile.Block> blocks, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
+        private async Task<bool> PrepareForDeployAsync(List<SRecordFile.Block> blocks, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
         {
             const uint c_DeploySector = Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
             const uint c_SectorUsageMask = Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK;
@@ -1101,13 +1155,16 @@ namespace nanoFramework.Tools.Debugger
                 // only check for signature file if we are uploading firmware
                 if (!await ConnectToNanoBooterAsync(cancellationToken))
                 {
-                    throw new NanoFrameworkDeviceNoResponseException();
+                    return false;
                 }
             }
 
             List<Commands.Monitor_FlashSectorMap.FlashSectorData> flasSectorsMap = DebugEngine.GetFlashSectorMap();
 
-            if (flasSectorsMap == null || flasSectorsMap.Count == 0) throw new NanoFrameworkDeviceNoResponseException();
+            if (flasSectorsMap == null || flasSectorsMap.Count == 0)
+            {
+                return false;
+            }
 
             foreach (SRecordFile.Block bl in blocks)
             {
@@ -1129,7 +1186,7 @@ namespace nanoFramework.Tools.Debugger
                                 // only check for signature file if we are uploading firmware
                                 if (!await ConnectToNanoBooterAsync(cancellationToken))
                                 {
-                                    throw new NanoFrameworkDeviceNoResponseException();
+                                    return false;
                                 }
                             }
                         }
@@ -1137,6 +1194,7 @@ namespace nanoFramework.Tools.Debugger
                     }
                 }
             }
+
             if (fEraseDeployment)
             {
                 await EraseAsync(EraseOptions.Deployment, cancellationToken, progress);
@@ -1146,10 +1204,13 @@ namespace nanoFramework.Tools.Debugger
                 //if we are not writing to the deployment sector then assure that we are talking with nanoBooter
                 await ConnectToNanoBooterAsync(cancellationToken);
             }
+
             if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
             {
                 DebugEngine.PauseExecution();
             }
+
+            return true;
         }
     }
 }

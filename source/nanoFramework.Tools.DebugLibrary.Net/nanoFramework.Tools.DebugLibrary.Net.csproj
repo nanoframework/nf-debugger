@@ -75,6 +75,7 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="key.snk" />
+    <None Include="packages.lock.json" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fody">
@@ -86,7 +87,7 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
       <Version>10.0.18362.2005</Version>
     </PackageReference>
     <PackageReference Include="Nerdbank.GitVersioning">
-      <Version>3.0.50</Version>
+      <Version>3.1.68</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -94,7 +95,7 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
       <Version>2.6.1</Version>
     </PackageReference>
     <PackageReference Include="System.Threading.Tasks.Extensions">
-      <Version>4.5.2</Version>
+      <Version>4.5.3</Version>
     </PackageReference>
     <PackageReference Include="System.ValueTuple">
       <Version>4.5.0</Version>
