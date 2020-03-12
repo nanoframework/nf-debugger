@@ -3589,6 +3589,19 @@ namespace nanoFramework.Tools.Debugger
                     // get packet length, either the maximum allowed size or whatever is still available to TX
                     int packetLength = Math.Min((int)WireProtocolPacketSize, count);
 
+                    // check if this is the last chunk
+                    if(count <= packetLength &&
+                       packetLength <= WireProtocolPacketSize)
+                    {
+                        // yes, signal that by setting the Done field
+                        cmd.Done = 1;
+                    }
+                    else
+                    {
+                        // no, more data is coming after this one
+                        cmd.Done = 0;
+                    }
+
                     cmd.PrepareForSend(configurationSerialized, packetLength, position);
 
                     IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_UpdateConfiguration, 0, cmd);

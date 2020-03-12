@@ -390,9 +390,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             public uint Configuration;
             public uint BlockIndex;
-            public uint Length = 0;
-            public uint Offset = 0;
-            public byte[] Data = null;
+            public uint Length;
+            public uint Offset;
+            public uint Done;
+            public byte[] Data;
 
             public class Reply
             {
