@@ -180,7 +180,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        public class Monitor_WriteMemory
+        public class Monitor_WriteMemory : OverheadBase
         {
             public uint m_address = 0;
             public uint m_length = 0;
@@ -194,10 +194,18 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public void PrepareForSend(uint address, byte[] data, int offset, int length)
             {
                 m_address = address;
+
+                PrepareForSend(data, offset, length);
+            }
+
+            public override bool PrepareForSend(byte[] data, int offset, int length)
+            {
                 m_length = (uint)length;
                 m_data = new byte[length];
 
                 Array.Copy(data, offset, m_data, 0, length);
+
+                return true;
             }
         }
 
@@ -253,21 +261,23 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        public class Monitor_Signature
+        public class Monitor_Signature : OverheadBase
         {
             public uint m_keyIndex;
             public uint m_length = 0;
             public byte[] m_signature = null;
 
-            public void PrepareForSend(byte[] signature, uint keyIndex)
+            public override bool PrepareForSend(byte[] signature, int keyIndex, int offset = 0)
             {
                 int length = signature.Length;
 
-                m_keyIndex = keyIndex;
+                m_keyIndex = (uint)keyIndex;
                 m_length = (uint)length;
                 m_signature = new byte[length];
 
                 Array.Copy(signature, 0, m_signature, 0, length);
+
+                return true;
             }
         }
 
@@ -386,7 +396,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        public class Monitor_UpdateConfiguration
+        public class Monitor_UpdateConfiguration : OverheadBase
         {
             public uint Configuration;
             public uint BlockIndex;
@@ -400,7 +410,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 public uint ErrorCode;
             };
 
-            public void PrepareForSend(byte[] data, int length, int offset = 0)
+            public override bool PrepareForSend(byte[] data, int length, int offset = 0)
             {
                 Length = (uint)length;
                 Data = new byte[length];
@@ -408,6 +418,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 Offset = (uint)offset;
 
                 Array.Copy(data, offset, Data, 0, length);
+
+                return true;
             }
         }
 
@@ -630,14 +642,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         };
 
 
-        public class Debugging_MFUpdate_AuthCommand
+        public class Debugging_MFUpdate_AuthCommand : OverheadBase
         {
             public int m_updateHandle;
             public uint m_authCommand;
             public uint m_authArgsSize;
             public byte[] m_authArgs;
 
-            public bool PrepareForSend(byte[] authArgs)
+            public override bool PrepareForSend(byte[] authArgs, int length = 0, int offset = 0)
             {
                 m_authArgsSize = (uint)authArgs.Length;
                 m_authArgs = new byte[m_authArgsSize];
@@ -660,13 +672,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             };
         };
 
-        public class Debugging_MFUpdate_Authenticate
+        public class Debugging_MFUpdate_Authenticate : OverheadBase
         {
             public int m_updateHandle;
             public uint m_authenticationSize;
             public byte[] m_authenticationData;
 
-            public bool PrepareForSend(byte[] authenticationData)
+            public override bool PrepareForSend(byte[] authenticationData, int length = 0, int offset = 0)
             {
                 m_authenticationSize = authenticationData == null ? 0 : (uint)authenticationData.Length;
                 m_authenticationData = new byte[m_authenticationSize];
@@ -702,7 +714,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             };
         };
 
-        public class Debugging_MFUpdate_AddPacket
+        public class Debugging_MFUpdate_AddPacket : OverheadBase
         {
             public int m_updateHandle;
             public uint m_packetIndex;
@@ -710,12 +722,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public uint m_packetLength = 0;
             public byte[] m_packetData;
 
-            public void PrepareForSend(byte[] packetData)
+            public override bool PrepareForSend(byte[] packetData, int length = 0, int offset = 0)
             {
                 m_packetLength = (uint)packetData.Length;
                 m_packetData = new byte[m_packetLength];
 
                 Array.Copy(packetData, 0, m_packetData, 0, (int)m_packetLength);
+
+                return true;
             }
 
             public class Reply
@@ -724,18 +738,20 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             };
         };
 
-        public class Debugging_MFUpdate_Install
+        public class Debugging_MFUpdate_Install : OverheadBase
         {
             public int m_updateHandle;
             public uint m_updateValidationSize;
             public byte[] m_updateValidation;
 
-            public void PrepareForSend(byte[] packetValidation)
+            public override bool PrepareForSend(byte[] packetValidation, int length = 0, int offset = 0)
             {
                 m_updateValidationSize = (uint)packetValidation.Length;
                 m_updateValidation = new byte[m_updateValidationSize];
 
                 Array.Copy(packetValidation, 0, m_updateValidation, 0, (int)m_updateValidationSize);
+
+                return true;
             }
 
             public class Reply
@@ -1867,6 +1883,27 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
 
             return null;
+        }
+
+        public abstract class OverheadBase
+        {
+            [IgnoreDataMember]
+            public int Overhead { get; private set; }
+
+            protected OverheadBase()
+            {
+                Overhead = GetOverhead();
+            }
+
+            public abstract bool PrepareForSend(byte[] data, int length, int offset = 0);
+
+            private int GetOverhead()
+            {
+                Converter c = new Converter();
+                PrepareForSend(new byte[0], 0);
+
+                return c.Serialize(this).Length;
+            }
         }
     }
 }

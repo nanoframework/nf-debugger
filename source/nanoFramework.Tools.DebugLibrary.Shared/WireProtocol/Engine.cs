@@ -1304,7 +1304,7 @@ namespace nanoFramework.Tools.Debugger
                 Commands.Monitor_WriteMemory cmd = new Commands.Monitor_WriteMemory();
 
                 // get packet length, either the maximum allowed size or whatever is still available to TX
-                int packetLength = Math.Min((int)WireProtocolPacketSize, count);
+                int packetLength = Math.Min(GetPacketMaxLength(cmd), count);
 
                 cmd.PrepareForSend(address, buf, position, packetLength);
 
@@ -3587,11 +3587,11 @@ namespace nanoFramework.Tools.Debugger
                     };
 
                     // get packet length, either the maximum allowed size or whatever is still available to TX
-                    int packetLength = Math.Min((int)WireProtocolPacketSize, count);
+                    int packetLength = Math.Min(GetPacketMaxLength(cmd), count);
 
                     // check if this is the last chunk
                     if(count <= packetLength &&
-                       packetLength <= WireProtocolPacketSize)
+                       packetLength <= GetPacketMaxLength(cmd))
                     {
                         // yes, signal that by setting the Done field
                         cmd.Done = 1;
@@ -3646,6 +3646,11 @@ namespace nanoFramework.Tools.Debugger
 
             // default to false
             return false;
+        }
+
+        public int GetPacketMaxLength(Commands.OverheadBase cmd)
+        {
+            return (int)WireProtocolPacketSize - cmd.Overhead;
         }
 
         /// <summary>
@@ -3744,7 +3749,7 @@ namespace nanoFramework.Tools.Debugger
                     };
 
                     // get packet length, either the maximum allowed size or whatever is still available to TX
-                    int packetLength = Math.Min((int)WireProtocolPacketSize, count);
+                    int packetLength = Math.Min(GetPacketMaxLength(cmd), count);
 
                     cmd.PrepareForSend(configurationSerialized, packetLength, position);
 
