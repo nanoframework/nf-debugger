@@ -498,7 +498,9 @@ namespace nanoFramework.Tools.Debugger
                             return new Tuple<uint, bool>(0, false);
                         }
 
-                        uint buflen = len > DebugEngine.WireProtocolPacketSize ? DebugEngine.WireProtocolPacketSize : (uint)len;
+                        // get packet length, either the maximum allowed size or whatever is still available to TX
+                        uint buflen = Math.Min((uint)DebugEngine.GetPacketMaxLength(new Commands.Monitor_WriteMemory()), (uint)len);
+
                         byte[] data = new byte[buflen];
 
                         if (block.data.Read(data, 0, (int)buflen) <= 0)
