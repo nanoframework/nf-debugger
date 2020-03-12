@@ -3611,6 +3611,11 @@ namespace nanoFramework.Tools.Debugger
                             updateFailed = false;
                         }
                     }
+                    else
+                    {
+                        // failure, bail out
+                        break;
+                    }
                 }
 
                 if(updateFailed)
