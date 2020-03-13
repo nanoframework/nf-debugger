@@ -3575,11 +3575,13 @@ namespace nanoFramework.Tools.Debugger
                 // counters to manage the chunked update process
                 int count = configurationSerialized.Length;
                 int position = 0;
+                int attemptCount = 1;
 
                 // flag to signal the update operation success/failure
                 bool updateFailed = true;
 
-                while (count > 0)
+                while (count > 0 &&
+                        attemptCount >= 0)
                 {
                     Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration
                     {
@@ -3623,11 +3625,12 @@ namespace nanoFramework.Tools.Debugger
                             // update was OK, switch flag
                             updateFailed = false;
                         }
+
+                        attemptCount = 1;
                     }
                     else
                     {
-                        // failure, bail out
-                        break;
+                        attemptCount--;
                     }
                 }
 
@@ -3737,11 +3740,13 @@ namespace nanoFramework.Tools.Debugger
                 // counters to manage the chunked update process
                 int count = configurationSerialized.Length;
                 int position = 0;
+                int attemptCount = 1;
 
                 // flag to signal the update operation success/failure
                 bool updateFailed = true;
 
-                while (count > 0)
+                while ( count > 0 &&
+                        attemptCount >= 0)
                 {
                     Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration
                     {
@@ -3750,6 +3755,19 @@ namespace nanoFramework.Tools.Debugger
 
                     // get packet length, either the maximum allowed size or whatever is still available to TX
                     int packetLength = Math.Min(GetPacketMaxLength(cmd), count);
+
+                    // check if this is the last chunk
+                    if (count <= packetLength &&
+                        packetLength <= GetPacketMaxLength(cmd))
+                    {
+                        // yes, signal that by setting the Done field
+                        cmd.Done = 1;
+                    }
+                    else
+                    {
+                        // no, more data is coming after this one
+                        cmd.Done = 0;
+                    }
 
                     cmd.PrepareForSend(configurationSerialized, packetLength, position);
 
@@ -3772,6 +3790,12 @@ namespace nanoFramework.Tools.Debugger
                             // update was OK, switch flag
                             updateFailed = false;
                         }
+
+                        attemptCount = 1;
+                    }
+                    else
+                    {
+                        attemptCount--;
                     }
                 }
 
