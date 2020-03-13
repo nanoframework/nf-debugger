@@ -182,15 +182,15 @@ steps:
 
 - task: NuGetCommand@2
   inputs:
-    command: 'custom' 
-    arguments: 'pack source\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.csproj -OutputDirectory source\nanoFramework.Tools.DebugLibrary.Net -Version $(MY_NUGET_VERSION) -properties Configuration=Release;PublicRelease=true;commit="$(Build.SourceVersion)"'
+    command: 'custom'
+    arguments: 'pack source\nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.nuspec -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
   condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ) )
   displayName: Pack .NET NuGet package
 
 - task: NuGetCommand@2
   inputs:
     command: 'custom' 
-    arguments: 'pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.csproj -OutputDirectory source\nanoFramework.Tools.DebugLibrary.UWP -Version $(MY_NUGET_VERSION) -properties Configuration=Release;PublicRelease=true;commit="$(Build.SourceVersion)"'
+    arguments: 'pack source\nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.nuspec -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
   condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ) )
   displayName: Pack UWP NuGet package
 

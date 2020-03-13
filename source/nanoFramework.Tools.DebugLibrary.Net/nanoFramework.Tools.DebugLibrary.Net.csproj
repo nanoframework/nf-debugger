@@ -14,20 +14,6 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
-    <PackageId>nanoFramework.Tools.Debugger.Net</PackageId>
-    <PackageVersion>$(NuGetPackageVersion)</PackageVersion>
-    <Description>This .NET library provides a debug client for nanoFramework devices using USB or Serial connection to a board.</Description>
-    <Authors>nanoFramework project contributors</Authors>
-    <Title>nanoFramework debug library for .NET</Title>
-    <Summary>This .NET library provides a debug client for nanoFramework devices.</Summary>
-    <Owners>nanoFramework project contributors</Owners>
-    <Copyright>Copyright %28c%29 2017 The nanoFramework project contributors</Copyright>
-    <PackageProjectUrl>https://github.com/nanoframework/nf-debugger</PackageProjectUrl>
-    <PackageIconUrl>https://secure.gravatar.com/avatar/97d0e092247f0716db6d4b47b7d1d1ad</PackageIconUrl>
-    <PackageIcon>nf-logo.png</PackageIcon>
-    <PackageLicenseUrl>http://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
-    <PackageReleaseNotes>This package provides the .NET version of the debug library. 
-For UWP look for the respective Nuget package.</PackageReleaseNotes>
     <TargetFrameworkProfile />
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
@@ -77,9 +63,6 @@ For UWP look for the respective Nuget package.</PackageReleaseNotes>
     <None Include="app.config" />
     <None Include="key.snk" />
     <None Include="packages.lock.json" />
-  </ItemGroup>
-  <ItemGroup>
-      <None Include="..\nf-logo.png" Pack="true" PackagePath="\"/>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fody">
