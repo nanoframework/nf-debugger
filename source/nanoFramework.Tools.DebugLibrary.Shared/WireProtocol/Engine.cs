@@ -57,7 +57,7 @@ namespace nanoFramework.Tools.Debugger
         ArrayList _rpcEndPoints;
 
         ManualResetEvent m_evtShutdown;
-        ManualResetEvent m_evtPing;
+        ManualResetEvent _pingEvent;
         TypeSysLookup m_typeSysLookup;
         EngineState _state;
 
@@ -87,7 +87,7 @@ namespace nanoFramework.Tools.Debugger
             m_notifyEvent = new AutoResetEvent(false);
             _rpcEvent = new AutoResetEvent(false);
             m_evtShutdown = new ManualResetEvent(false);
-            m_evtPing = new ManualResetEvent(false);
+            _pingEvent = new ManualResetEvent(false);
 
             //m_rpcQueue = ArrayList.Synchronized(new ArrayList());
             //m_rpcEndPoints = ArrayList.Synchronized(new ArrayList());
@@ -634,6 +634,9 @@ namespace nanoFramework.Tools.Debugger
                             };
 
                             PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, _controlller.CreateConverter(), Flags.c_NonCritical, cmdReply), _backgroundProcessorCancellation.Token).ConfigureAwait(false);
+
+                            // signal that a monitor ping was received
+                            _pingEvent.Set();
 
                             return true;
                         }
@@ -1449,7 +1452,7 @@ namespace nanoFramework.Tools.Debugger
 
             try
             {
-                m_evtPing.Reset();
+                _pingEvent.Reset();
 
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
 
@@ -1459,6 +1462,9 @@ namespace nanoFramework.Tools.Debugger
                 {
                     IsConnected = false;
                 }
+
+                // wait for ping after reboot
+                _pingEvent.WaitOne(10000);
             }
             finally
             {
