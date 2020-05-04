@@ -1223,7 +1223,17 @@ namespace nanoFramework.Tools.Debugger
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_OemInfo, 0, cmd);
 
-            return reply != null ? (reply.Payload as Commands.Monitor_OemInfo.Reply).m_releaseInfo : null;
+            if (reply != null)
+            {
+                if (reply.Payload is Commands.Monitor_OemInfo.Reply)
+                {
+                    Commands.Monitor_OemInfo.Reply cmdReply = reply.Payload as Commands.Monitor_OemInfo.Reply;
+
+                    return cmdReply.m_releaseInfo;
+                }
+            }
+
+            return null;
         }
 
         public List<Commands.Monitor_FlashSectorMap.FlashSectorData> GetFlashSectorMap()
