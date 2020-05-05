@@ -1454,17 +1454,20 @@ namespace nanoFramework.Tools.Debugger
             {
                 _pingEvent.Reset();
 
-                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
+                // don't keep hopes too high on a reply from reboot request, so make it with a very short timeout
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 500);
 
-                // if reboot options end on a hard reboot, force connection state to disconnected
+                // if reboot options ends on a hard reboot, force connection state to disconnected
                 if (((RebootOptions)cmd.flags == RebootOptions.EnterBootloader) ||
                     ((RebootOptions)cmd.flags == RebootOptions.NormalReboot))
                 {
                     IsConnected = false;
                 }
-
-                // wait for ping after reboot
-                _pingEvent.WaitOne(10000);
+                else
+                {
+                    // wait for ping after reboot
+                    var eventOcurred = _pingEvent.WaitOne(10000);
+                }
             }
             finally
             {
