@@ -20,6 +20,7 @@
     <tags>nanoFramework C# csharp netmf netnf</tags>
   </metadata>
   <files>
+      <file src="bin\Release\nanoFramework.Tools.Debugger.UWP.dll" target="lib/net472" />
       <file src="..\nf-logo.png" target="images\" />
   </files>
 </package>
