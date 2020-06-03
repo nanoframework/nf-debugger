@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -36,11 +37,13 @@ namespace nanoFramework.Tools.Debugger
         /// Will automatically start the Soft AP when CLR starts.
         /// This option forces enabling the Wireless Soft AP.
         /// </summary>
+        [Display(Description = "Auto start")]
         AutoStart = 0x04 | Enable,
 
         /// <summary>
         /// The SSID for the Soft AP will be hidden.
         /// </summary>
+        [Display(Description = "SSID hidden")]
         HiddenSSID = 0x08,
     };
 }
