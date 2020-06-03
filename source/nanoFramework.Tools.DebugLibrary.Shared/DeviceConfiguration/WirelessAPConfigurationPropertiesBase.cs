@@ -9,7 +9,7 @@ using System.ComponentModel.DataAnnotations;
 namespace nanoFramework.Tools.Debugger
 {
     [AddINotifyPropertyChangedInterface]
-    public class Wireless80211ConfigurationPropertiesBase
+    public class WirelessAPConfigurationPropertiesBase
     {
         public uint Id { get; set; }
         public AuthenticationType Authentication { get; set; }
@@ -19,6 +19,8 @@ namespace nanoFramework.Tools.Debugger
         public string Ssid { get; set; }
         [MaxLength(64, ErrorMessage = "Maximum allowed length for network password is 64.")]
         public string Password { get; set; }
-        public Wireless80211_ConfigurationOptions Options { get; set; }
+        public WirelessAP_ConfigurationOptions Options { get; set; }
+        public byte Channel { get; set; }
+        public byte MaxConnections { get; set; }
     }
 }

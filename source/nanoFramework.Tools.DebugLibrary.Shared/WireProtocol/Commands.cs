@@ -363,6 +363,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     Radio = 0;
                     Ssid = new byte[32];
                     Password = new byte[64];
+                    Options = 0;
                 }
 
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
@@ -374,6 +375,38 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     Radio = 0;
                     Ssid = new byte[32];
                     Password = new byte[64];
+                    Options = 0;
+                }
+            }
+
+            public class NetworkWirelessAPConfiguration : WirelessAPConfigurationBase, IConverter
+            {
+                public NetworkWirelessAPConfiguration()
+                {
+                    Marker = new byte[4];
+                    Id = 0xFFFFFF;
+                    Authentication = 0;
+                    Encryption = 0;
+                    Radio = 0;
+                    Ssid = new byte[32];
+                    Password = new byte[64];
+                    Options = 0;
+                    Channel = 0;
+                    MaxConnections = 0;
+                }
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    Marker = new byte[4];
+                    Id = 0xFFFFFF;
+                    Authentication = 0;
+                    Encryption = 0;
+                    Radio = 0;
+                    Ssid = new byte[32];
+                    Password = new byte[64];
+                    Options = 0;
+                    Channel = 0;
+                    MaxConnections = 0;
                 }
             }
 

@@ -3321,6 +3321,16 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
+            // get all wireless network AP configuration blocks
+            var networkWirelessAPConfigs = GetAllWirelessAPConfigurations();
+            // check for cancellation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancellation requested");
+                return null;
+            }
+
             // get all wireless network configuration blocks
             var x509Certificates = GetAllX509Certificates();
             // check for cancellation request
@@ -3331,7 +3341,11 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            return new DeviceConfiguration(networkConfigs, networkWirelessConfigs, x509Certificates);
+            return new DeviceConfiguration(
+                networkConfigs, 
+                networkWirelessConfigs, 
+                networkWirelessAPConfigs,
+                x509Certificates);
         }
 
         public List<DeviceConfiguration.NetworkConfigurationProperties> GetAllNetworkConfigurations()
@@ -3396,6 +3410,38 @@ namespace nanoFramework.Tools.Debugger
             while (!wirelessConfigProperties.IsUnknown);
 
             return wireless80211Configurations;
+        }
+
+        public List<DeviceConfiguration.WirelessAPConfigurationProperties> GetAllWirelessAPConfigurations()
+        {
+            List<DeviceConfiguration.WirelessAPConfigurationProperties> wirelessAPConfigurations = new List<DeviceConfiguration.WirelessAPConfigurationProperties>();
+
+            DeviceConfiguration.WirelessAPConfigurationProperties wirelessAPConfigProperties = null;
+            uint index = 0;
+
+            do
+            {
+                // get next network configuration block, if available
+                wirelessAPConfigProperties = GetWirelessAPConfiguratonProperties(index++);
+
+                // was there an answer?
+                if (wirelessAPConfigProperties != null)
+                {
+                    // add to list, if valid
+                    if (!wirelessAPConfigProperties.IsUnknown)
+                    {
+                        wirelessAPConfigurations.Add(wirelessAPConfigProperties);
+                    }
+                }
+                else
+                {
+                    // no reply from device or no more config blocks available
+                    break;
+                }
+            }
+            while (!wirelessAPConfigProperties.IsUnknown);
+
+            return wirelessAPConfigurations;
         }
 
         public List<DeviceConfiguration.X509CaRootBundleProperties> GetAllX509Certificates()
@@ -3487,6 +3533,32 @@ namespace nanoFramework.Tools.Debugger
             }
 
             return wirelessConfigProperties;
+        }
+
+        public DeviceConfiguration.WirelessAPConfigurationProperties GetWirelessAPConfiguratonProperties(uint configurationBlockIndex)
+        {
+            Debug.WriteLine("NetworkWirelessAPConfiguratonProperties");
+
+            IncomingMessage reply = GetDeviceConfiguration((uint)DeviceConfiguration.DeviceConfigurationOption.WirelessNetworkAP, configurationBlockIndex);
+
+            Commands.Monitor_QueryConfiguration.NetworkWirelessAPConfiguration wirelessAPConfiguration = new Commands.Monitor_QueryConfiguration.NetworkWirelessAPConfiguration();
+
+            DeviceConfiguration.WirelessAPConfigurationProperties wirelessAPConfigProperties = null;
+
+            if (reply != null)
+            {
+                if (reply.IsPositiveAcknowledge())
+                {
+                    if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
+                    {
+                        new Converter().Deserialize(wirelessAPConfiguration, cmdReply.Data);
+
+                        wirelessAPConfigProperties = new DeviceConfiguration.WirelessAPConfigurationProperties(wirelessAPConfiguration);
+                    }
+                }
+            }
+
+            return wirelessAPConfigProperties;
         }
 
         public DeviceConfiguration.X509CaRootBundleProperties GetX509CertificatesProperties(uint configurationBlockIndex)
@@ -3725,6 +3797,18 @@ namespace nanoFramework.Tools.Debugger
                             currentConfiguration.Wireless80211Configurations[(int)blockIndex] = configuration as DeviceConfiguration.Wireless80211ConfigurationProperties;
                         }
                     }
+                    else if (configuration.GetType().Equals(typeof(DeviceConfiguration.WirelessAPConfigurationProperties)))
+                    {
+                        // if list is empty and request index is 0
+                        if (currentConfiguration.WirelessAPConfigurations.Count == 0 && blockIndex == 0)
+                        {
+                            currentConfiguration.WirelessAPConfigurations.Add(configuration as DeviceConfiguration.WirelessAPConfigurationProperties);
+                        }
+                        else
+                        {
+                            currentConfiguration.WirelessAPConfigurations[(int)blockIndex] = configuration as DeviceConfiguration.WirelessAPConfigurationProperties;
+                        }
+                    }
                     else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
                     {
                         // if list is empty and request index is 0
@@ -3849,6 +3933,11 @@ namespace nanoFramework.Tools.Debugger
                 var configBase = configuration as DeviceConfiguration.Wireless80211ConfigurationProperties;
                 return CreateConverter().Serialize((Wireless80211ConfigurationBase)configBase);
             }
+            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.WirelessAPConfigurationProperties)))
+            {
+                var configBase = configuration as DeviceConfiguration.WirelessAPConfigurationProperties;
+                return CreateConverter().Serialize((WirelessAPConfigurationBase)configBase);
+            }
             else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
             {
                 var configBase = configuration as DeviceConfiguration.X509CaRootBundleProperties;
@@ -3869,6 +3958,10 @@ namespace nanoFramework.Tools.Debugger
             else if (configuration.GetType().Equals(typeof(DeviceConfiguration.Wireless80211ConfigurationProperties)))
             {
                 return DeviceConfiguration.DeviceConfigurationOption.Wireless80211Network;
+            }
+            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.WirelessAPConfigurationProperties)))
+            {
+                return DeviceConfiguration.DeviceConfigurationOption.WirelessNetworkAP;
             }
             else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
             {
