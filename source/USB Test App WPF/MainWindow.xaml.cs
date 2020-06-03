@@ -771,14 +771,26 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                      // get device info
                      var deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
 
+                     if (deviceConfig.NetworkConfigurations.Count > 0)
+                     {
+                         Debug.WriteLine(deviceConfig.NetworkConfigurations[0].ToStringForOutput());
+                     }
 
-                    Debug.WriteLine(deviceConfig.NetworkConfigurations[0].ToStringForOutput());
+                     if (deviceConfig.Wireless80211Configurations.Count > 0)
+                     {
+                         Debug.WriteLine(deviceConfig.Wireless80211Configurations[0].ToStringForOutput());
+                     }
 
-                    //Debug.WriteLine(string.Empty);
-                    //Debug.WriteLine(string.Empty);
-                    //Debug.WriteLine("--------------------------------");
-                    //Debug.WriteLine("::        Memory Map          ::");
-                    //Debug.WriteLine("--------------------------------");
+                     if (deviceConfig.WirelessAPConfigurations.Count > 0)
+                     {
+                         Debug.WriteLine(deviceConfig.WirelessAPConfigurations[0].ToStringForOutput());
+                     }
+
+                     //Debug.WriteLine(string.Empty);
+                     //Debug.WriteLine(string.Empty);
+                     //Debug.WriteLine("--------------------------------");
+                     //Debug.WriteLine("::        Memory Map          ::");
+                     //Debug.WriteLine("--------------------------------");
 
 
                  }

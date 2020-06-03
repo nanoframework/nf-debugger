@@ -5,11 +5,11 @@
 
 namespace nanoFramework.Tools.Debugger
 {
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // !!! KEEP IN SYNC WITH System.Net.NetworkInformation.Wireless80211Configuration (in nanoFramework.System.Net) !!! //
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // !!! KEEP IN SYNC WITH System.Net.NetworkInformation.WirelessAPConfiguration (in nanoFramework.System.Net) !!! //
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public class Wireless80211ConfigurationBase
+    public class WirelessAPConfigurationBase
     {
         /// <summary>
         /// This is the marker placeholder for this configuration block
@@ -55,7 +55,19 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public byte Options;
 
-        public Wireless80211ConfigurationBase()
+        /// <summary>
+        /// Channel
+        /// 1 byte length.
+        /// </summary>
+        public byte Channel;
+
+        /// <summary>
+        /// Max connections
+        /// 1 byte length.
+        /// </summary>
+        public byte MaxConnections;
+
+        public WirelessAPConfigurationBase()
         {
             // need to init these here to match the expected size on the struct to be sent to the device
             Marker = new byte[4];

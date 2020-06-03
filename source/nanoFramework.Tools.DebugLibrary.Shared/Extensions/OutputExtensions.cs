@@ -224,6 +224,56 @@ namespace nanoFramework.Tools.Debugger.Extensions
             }
         }
 
+        public static string ToStringForOutput(this DeviceConfiguration.Wireless80211ConfigurationProperties wireless80211Configuration)
+        {
+            StringBuilder output = new StringBuilder();
+
+            if(wireless80211Configuration.IsUnknown)
+            {
+                return "Wireless configuration is invalid";
+            }
+            else
+            { 
+                output.AppendLine("802.11 configuration");
+                output.AppendLine("++++++++++++++++++++++++++++++++++++");
+                output.AppendLine($"authentication: {wireless80211Configuration.Authentication.ToString()}");
+                output.AppendLine($"encryption: {wireless80211Configuration.Encryption.ToString()}");
+                output.AppendLine($"radio: {wireless80211Configuration.Radio.ToString()}");
+                output.AppendLine($"ssid: {wireless80211Configuration.Ssid}");
+                output.AppendLine($"pwd: {wireless80211Configuration.Password}");
+                output.AppendLine($"options: 0x{wireless80211Configuration.Options}");
+                output.AppendLine("");
+
+                return output.ToString();
+            }
+        }
+
+        public static string ToStringForOutput(this DeviceConfiguration.WirelessAPConfigurationProperties wirelesAPConfiguration)
+        {
+            StringBuilder output = new StringBuilder();
+
+            if (wirelesAPConfiguration.IsUnknown)
+            {
+                return "Wireless AP configuration is invalid";
+            }
+            else
+            {
+                output.AppendLine("Wireless AP configuration");
+                output.AppendLine("++++++++++++++++++++++++++++++++++++");
+                output.AppendLine($"authentication: {wirelesAPConfiguration.Authentication.ToString()}");
+                output.AppendLine($"encryption: {wirelesAPConfiguration.Encryption.ToString()}");
+                output.AppendLine($"radio: {wirelesAPConfiguration.Radio.ToString()}");
+                output.AppendLine($"ssid: {wirelesAPConfiguration.Ssid}");
+                output.AppendLine($"pwd: {wirelesAPConfiguration.Password}");
+                output.AppendLine($"options: 0x{wirelesAPConfiguration.Options}");
+                output.AppendLine($"channel: {wirelesAPConfiguration.Channel.ToString()}");
+                output.AppendLine($"max connections: {wirelesAPConfiguration.MaxConnections.ToString()}");
+                output.AppendLine("");
+
+                return output.ToString();
+            }
+        }
+
         private static string ToMemorySizeFormart(this long value)
         {
             // divide by 1kB size (binary)

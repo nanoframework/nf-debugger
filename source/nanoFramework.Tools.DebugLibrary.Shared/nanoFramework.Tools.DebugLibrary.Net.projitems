@@ -20,6 +20,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationOption.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessAPBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessAPConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\Wireless80211ConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509CaRootBundleBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509CaRootBundlePropertiesBase.cs" />
@@ -55,6 +57,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)NetworkInformation\AuthenticationType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NetworkInformation\EncryptionType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NetworkInformation\NetworkInterfaceType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NetworkInformation\WirelessAP_ConfigurationOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NetworkInformation\Wireless80211_ConfigurationOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NetworkInformation\RadioType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\NanoDeviceBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\INanoDevice.cs" />

@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using nanoFramework.Tools.Debugger.WireProtocol;
 using PropertyChanged;
 using System;
 using System.Collections.Generic;
@@ -52,13 +53,19 @@ namespace nanoFramework.Tools.Debugger
         public List<Wireless80211ConfigurationProperties> Wireless80211Configurations { get; set; }
 
         /// <summary>
-        /// Collection of <see cref="Wireless80211ConfigurationProperties"/> blocks in a target device.
+        /// Collection of <see cref="WirelessAPConfigurationProperties"/> blocks in a target device.
+        /// </summary>
+        public List<WirelessAPConfigurationProperties> WirelessAPConfigurations { get; set; }
+
+        /// <summary>
+        /// Collection of <see cref="X509CaRootBundleProperties"/> blocks in a target device.
         /// </summary>
         public List<X509CaRootBundleProperties> X509Certificates { get; set; }
 
         public DeviceConfiguration()
             : this(new List<NetworkConfigurationProperties>(),
                    new List<Wireless80211ConfigurationProperties>(),
+                   new List<WirelessAPConfigurationProperties>(),
                    new List<X509CaRootBundleProperties>())
         {
         }
@@ -66,11 +73,13 @@ namespace nanoFramework.Tools.Debugger
         public DeviceConfiguration(
             List<NetworkConfigurationProperties> networkConfiguratons,
             List<Wireless80211ConfigurationProperties> networkWirelessConfiguratons,
+            List<WirelessAPConfigurationProperties> networkWirelessAPConfiguratons,
             List<X509CaRootBundleProperties> x509Certificates
             )
         {
             NetworkConfigurations = networkConfiguratons;
             Wireless80211Configurations = networkWirelessConfiguratons;
+            WirelessAPConfigurations = networkWirelessAPConfiguratons;
             X509Certificates = x509Certificates;
         }
 
@@ -81,6 +90,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 NetworkConfigurations = value.NetworkConfigurations.Select(i => (NetworkConfigurationBase)i).ToArray(),
                 Wireless80211Configurations = value.Wireless80211Configurations.Select(i => (Wireless80211ConfigurationBase)i).ToArray(),
+                WirelessAPConfigurations = value.WirelessAPConfigurations.Select(i => (WirelessAPConfigurationBase)i).ToArray(),
                 X509CaRootBundle = value.X509Certificates.Select(i => (X509CaRootBundleBase)i).ToArray()
             };
         }
@@ -230,12 +240,13 @@ namespace nanoFramework.Tools.Debugger
                 Radio = (RadioType)config.Radio;
                 Ssid = Encoding.UTF8.GetString(config.Ssid).Trim('\0');
                 Password = Encoding.UTF8.GetString(config.Password).Trim('\0');
+                Options = (Wireless80211_ConfigurationOptions)config.Options;
 
                 // reset unknown flag
                 IsUnknown = false;
             }
 
-            // operator to allow cast_ing a NetworkWirelessConfigurationProperties object to NetworkConfigurationBase
+            // operator to allow cast_ing a Wireless80211ConfigurationProperties object to Wireless80211ConfigurationBase
             public static explicit operator Wireless80211ConfigurationBase(Wireless80211ConfigurationProperties value)
             {
                 var networkWirelessConfig = new Wireless80211ConfigurationBase()
@@ -246,6 +257,7 @@ namespace nanoFramework.Tools.Debugger
                     Authentication = (byte)value.Authentication,
                     Encryption = (byte)value.Encryption,
                     Radio = (byte)value.Radio,
+                    Options = (byte)value.Options
                 };
 
                 // the following ones are strings so they need to be copied over to the array 
@@ -258,6 +270,55 @@ namespace nanoFramework.Tools.Debugger
 
         }
 
+        [AddINotifyPropertyChangedInterface]
+        public class WirelessAPConfigurationProperties : WirelessAPConfigurationPropertiesBase
+        {
+            public bool IsUnknown { get; set; } = true;
+
+            public WirelessAPConfigurationProperties()
+            {
+
+            }
+
+            public WirelessAPConfigurationProperties(WirelessAPConfigurationBase config)
+            {
+                Id = config.Id;
+                Authentication = (AuthenticationType)config.Authentication;
+                Encryption = (EncryptionType)config.Encryption;
+                Radio = (RadioType)config.Radio;
+                Ssid = Encoding.UTF8.GetString(config.Ssid).Trim('\0');
+                Password = Encoding.UTF8.GetString(config.Password).Trim('\0');
+                Options = (WirelessAP_ConfigurationOptions)config.Options;
+
+                // reset unknown flag
+                IsUnknown = false;
+            }
+
+            // operator to allow cast_ing a WirelessAPConfigurationProperties object to WirelessAPConfigurationBase
+            public static explicit operator WirelessAPConfigurationBase(WirelessAPConfigurationProperties value)
+            {
+                var networkWirelessConfig = new WirelessAPConfigurationBase()
+                {
+                    Marker = Encoding.UTF8.GetBytes(MarkerConfigurationWireless80211AP_v1),
+
+                    Id = value.Id,
+                    Authentication = (byte)value.Authentication,
+                    Encryption = (byte)value.Encryption,
+                    Radio = (byte)value.Radio,
+                    Options = (byte)value.Options,
+                    Channel = value.Channel,
+                    MaxConnections = value.MaxConnections
+                };
+
+                // the following ones are strings so they need to be copied over to the array 
+                // this is required to when serializing the class the struct size matches the one in the native end
+                Array.Copy(Encoding.UTF8.GetBytes(value.Ssid), 0, networkWirelessConfig.Ssid, 0, value.Ssid.Length);
+                Array.Copy(Encoding.UTF8.GetBytes(value.Password), 0, networkWirelessConfig.Password, 0, value.Password.Length);
+
+                return networkWirelessConfig;
+            }
+
+        }
 
         [AddINotifyPropertyChangedInterface]
         public class X509CaRootBundleProperties : X509CaRootBundlePropertiesBase
