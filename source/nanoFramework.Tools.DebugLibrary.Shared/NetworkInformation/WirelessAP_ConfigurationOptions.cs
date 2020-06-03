@@ -17,24 +17,30 @@ namespace nanoFramework.Tools.Debugger
     public enum WirelessAP_ConfigurationOptions : byte
     {
         /// <summary>
-        /// No flags set.
+        /// No option set.
         /// </summary>
         None = 0,
 
         /// <summary>
+        /// Disables the Wireless Soft AP.
+        /// </summary>
+        Disable = 0x01,
+
+        /// <summary>
         /// Enables the Wireless Soft AP.
-        /// If not set the wireless Soft AP is disabled.
+        /// If not set the Wireless Soft AP is disabled.
         /// </summary>
-        Enable = 0x01,
+        Enable = 0x02,
 
         /// <summary>
-        /// Will automatically start AP when CLR starts.
+        /// Will automatically start the Soft AP when CLR starts.
+        /// This option forces enabling the Wireless Soft AP.
         /// </summary>
-        AutoStart = 0x02,
+        AutoStart = 0x04 | Enable,
 
         /// <summary>
-        /// The SSID for the Soft AP will be hidden 
+        /// The SSID for the Soft AP will be hidden.
         /// </summary>
-        HiddenSSID = 0x04,
+        HiddenSSID = 0x08,
     };
 }

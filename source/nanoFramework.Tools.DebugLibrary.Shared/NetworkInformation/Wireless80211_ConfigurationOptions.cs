@@ -17,24 +17,31 @@ namespace nanoFramework.Tools.Debugger
     public enum Wireless80211_ConfigurationOptions : byte
     {
         /// <summary>
-        /// No flags set.
+        /// No option set.
         /// </summary>
         None = 0,
+
+        /// <summary>
+        /// Disables the Wireless station.
+        /// </summary>
+        Disable = 0x01,
 
         /// <summary>
         /// Enables the Wireless station.
         /// If not set the wireless station is disabled.
         /// </summary>
-        Enable = 0x01,
+        Enable = 0x02,
 
         /// <summary>
         /// Will auto connect when AP is available or after being disconnected.
+        /// This option forces enabling the Wireless station.
         /// </summary>
-        AutoConnect = 0x02,
+        AutoConnect = 0x04 | Enable,
 
         /// <summary>
-        /// Enables SmartConfig (if available) for this Wireless station
+        /// Enables SmartConfig (if available) for this Wireless station.
+        /// This option forces enabling the Wireless station.
         /// </summary>
-        SmartConfig = 0x04,
+        SmartConfig = 0x08 | Enable,
     };
 }
