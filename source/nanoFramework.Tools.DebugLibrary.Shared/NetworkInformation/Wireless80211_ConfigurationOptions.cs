@@ -4,6 +4,7 @@
 //
 
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -36,6 +37,7 @@ namespace nanoFramework.Tools.Debugger
         /// Will auto connect when AP is available or after being disconnected.
         /// This option forces enabling the Wireless station.
         /// </summary>
+        [Display(Description = "Auto connect")]
         AutoConnect = 0x04 | Enable,
 
         /// <summary>
