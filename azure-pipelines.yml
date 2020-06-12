@@ -52,7 +52,7 @@ steps:
 # get commit message
 - powershell: |
 
-    if($env:Build_SourceBranch -like "refs/pull*")
+    if($env:Build_Reason -eq 'PullRequest')
     {
       # PR build, get PR message
 
