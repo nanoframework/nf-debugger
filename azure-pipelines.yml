@@ -200,31 +200,6 @@ steps:
 #     platform: '$(buildPlatform)'
 #     configuration: '$(buildConfiguration)'
 
-- powershell: |
-    # get subject and commit message for commit
-    $commitMessage = git log --format='%B' -1
-
-    # need to flatten message by removing new lines
-    $commitMessage = $commitMessage -replace "`r`n", " "
-
-    if($commitMessage -like "*PUBLISH_RELEASE*")
-    {
-      # set variable
-      Write-Host "$("##vso[task.setvariable variable=RELEASE_DRAFT;isOutput=true]")False"
-      Write-Host "$("##vso[task.setvariable variable=RELEASE_VERSION;isOutput=true]")True"
-      Write-Host "Release draft: FALSE"
-    }
-    else
-    {
-      # set variable
-      Write-Host "$("##vso[task.setvariable variable=RELEASE_DRAFT;isOutput=true]")True"
-      Write-Host "$("##vso[task.setvariable variable=RELEASE_VERSION;isOutput=true]")False"
-      Write-Host "Release draft: TRUE"
-    }
-  name: SetReleaseDraftVar
-  condition: ne( variables['StartReleaseCandidate'], true )
-  displayName: Set release draft var
-
 - task: SonarCloudAnalyze@1
   condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ) )
   displayName: 'Run Code Analysis'
@@ -317,7 +292,7 @@ steps:
   continueOnError: true
   displayName: Push NuGet packages to Azure Artifacts
 
-# push NuGet class lib package to NuGet (happens on tag builds for any branch)
+# push NuGet class lib package to NuGet (always happens except on PR builds)
 - task: NuGetCommand@2
   inputs:
     command: push
@@ -325,7 +300,7 @@ steps:
     allowPackageConflicts: true
     packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
     publishFeedCredentials: 'NuGet-debugger'
-  condition: and( succeeded(), or( eq ( variables['SetReleaseDraftVar.RELEASE_VERSION'], 'True' ), startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), ne( variables['StartReleaseCandidate'], true ) )
+  condition: and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne( variables['StartReleaseCandidate'], true ) )
   continueOnError: true
   displayName: Push NuGet packages to NuGet
 
