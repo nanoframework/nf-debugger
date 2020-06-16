@@ -1,28 +1,12 @@
 trigger:
   branches:
-    include:
-    - master
-    - develop
-    - release/*
-    - refs/tags/*
+    include: [master, develop, "release-*" ]
   paths:
-    exclude:
-    - CHANGELOG.md
-    - /*.md
-    - .gitignore
-    - appveyor.yml
-  # waiting for feature to become available
-  # tags:
-  #   include:
-  #   - v/*
+    exclude: ["*.md", .gitignore]
+  tags:
+    include: ["v*"]
 
-pr:
-  branches:
-    include:
-    - master
-    - develop
-    - release/*
-  autoCancel: true
+# PR always trigger build
 
 # add nf-tools repo to resources (for Azure Pipelines templates)
 resources:
@@ -36,6 +20,7 @@ pool:
   vmImage: 'VS2017-Win2016'
 
 variables:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   solution: '**/source/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
@@ -117,7 +102,7 @@ steps:
     $commitMessage = git log -1 --pretty=%B
 
     # amend commit message to skip build
-    git commit --amend -m "$commitMessage" -m "***NO_CI***" > $null
+    git commit --amend -m "$commitMessage" > $null
 
     # push all changes to github
     git -c http.extraheader="AUTHORIZATION: $auth" push --all origin
@@ -165,6 +150,10 @@ steps:
         {
           $MyNuGetVersion = $MyNuGetVersion -replace "preview", "alpha"
         }
+        if ($env:System_PullRequest_SourceBranch -like 'release*')
+        {
+          $MyNuGetVersion = $MyNuGetVersion + "-rc." + $env:NBGV_VersionHeight
+        }
 
         Write-Host "NuGet build number is $MyNuGetVersion"
 
@@ -176,7 +165,9 @@ steps:
 - task: PowerShell@2
   inputs:
       targetType: 'inline'
-      script: Write-Host "$("##vso[build.updatebuildnumber]")$env:MY_NUGET_VERSION"
+      script: |
+        Write-Host "NuGet version is $("##vso[build.updatebuildnumber]")$env:MY_NUGET_VERSION"
+        Write-Host "Build version is $env:NBGV_AssemblyVersion"  
   condition: and( succeeded(), ne(variables['system.pullrequest.isfork'], true), ne( variables['StartReleaseCandidate'], true ) )
   displayName: Update cloud build number
 
@@ -288,8 +279,8 @@ steps:
     nuGetFeedType: external
     packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
     publishFeedCredentials: 'AzureArtifacts-debugger'
+    allowPackageConflicts: true
   condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ) )
-  continueOnError: true
   displayName: Push NuGet packages to Azure Artifacts
 
 # push NuGet class lib package to NuGet (always happens except on PR builds)
@@ -311,7 +302,7 @@ steps:
     filePath: azure-pipelines/update-dependencies.ps1
   env:
     MY_GITHUB_TOKEN: $(GitHubToken)
-  condition: and( succeeded(), ne(variables['system.pullrequest.isfork'], true), or( contains(variables['Build.SourceVersionMessage'], '***UPDATE_DEPENDENTS***'), eq(variables['UPDATE_DEPENDENTS'], 'true') ) )
+  condition: and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), or( contains(variables['Build.SourceVersionMessage'], '***UPDATE_DEPENDENTS***'), eq(variables['UPDATE_DEPENDENTS'], 'true') ) )
   displayName: Update dependent tools
 
 # create or update GitHub release ON tags from release or master branches
