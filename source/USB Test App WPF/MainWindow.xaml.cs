@@ -26,6 +26,11 @@ namespace Serial_Test_App_WPF
     /// </summary>
     public partial class MainWindow : Window
     {
+        // number of retries when performing a deploy operation
+        private const int _numberOfRetries = 5;
+        // timeout when performing a deploy operation
+        private const int _timeoutMiliseconds = 1000;
+
         // Baltimore CyberTrust Root
         // from https://cacert.omniroot.com/bc2025.crt
 
@@ -345,6 +350,8 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             // disable button
             (sender as Button).IsEnabled = false;
 
+            int retryCount = 0;
+
             List<byte[]> assemblies = new List<byte[]>(4);
             // test data (equivalent to deploying the Blinky test app)
             // mscorlib v1.0.0.0 (38448 bytes)
@@ -388,28 +395,112 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                 //    assemblies.Add(buffer);
                 //}
 
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
                 {
-                    var debugEngine = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine;
+                    var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
+                    var debugEngine = device.DebugEngine;
 
-                    var largePackets = totalSize / (debugEngine.WireProtocolPacketSize - 8);
+                    ///////////////////////////////////////////////////////////////
+                    // process replicated from VS deploy provider
 
-                    var packetSize = debugEngine.WireProtocolPacketSize == 1024 ? "1k" : $"({ debugEngine.WireProtocolPacketSize / 1024}bytes";
+                    // device needs to be in 'initialized state' for a successful and correct deployment 
+                    // meaning that is not running nor stopped
+                    bool deviceIsInInitializeState = false;
 
-                    Debug.WriteLine($">>> Sending : {totalSize} bytes.<<<<");
-                    Debug.WriteLine($">>> This is {packetSize} packets plus something bytes.<<<<");
 
-                    var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.DeploymentExecute(assemblies, true);
-
-                    Debug.WriteLine($">>> Deployment result: {result} <<<<");
-
-                    if (result)
+                    // erase the target deployment area to ensure a clean deployment and execution start
+                    if (await device.EraseAsync(EraseOptions.Deployment, CancellationToken.None))
                     {
-                        //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
+                        //MessageCentre.InternalErrorMessage("Erase deployment area successful.");
 
-                        //Task.Delay(1000).Wait();
+                        // initial check 
+                        if (device.DebugEngine.IsDeviceInInitializeState())
+                        {
+                            //MessageCentre.InternalErrorMessage("Device status verified as being in initialized state. Requesting to resume execution.");
 
-                        (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo(true);
+                            // set flag
+                            deviceIsInInitializeState = true;
+
+                            // device is still in initialization state, try resume execution
+                            device.DebugEngine.ResumeExecution();
+                        }
+
+                        // handle the workflow required to try resuming the execution on the device
+                        // only required if device is not already there
+                        // retry 5 times with a 500ms interval between retries
+                        while (retryCount++ < _numberOfRetries && deviceIsInInitializeState)
+                        {
+                            if (!device.DebugEngine.IsDeviceInInitializeState())
+                            {
+                                //MessageCentre.InternalErrorMessage("Device has completed initialization.");
+
+                                // done here
+                                deviceIsInInitializeState = false;
+                                break;
+                            }
+
+                            //MessageCentre.InternalErrorMessage($"Waiting for device to report initialization completed ({retryCount}/{_numberOfRetries}).");
+
+                            // provide feedback to user on the 1st pass
+                            if (retryCount == 0)
+                            {
+                                //await outputPaneWriter.WriteLineAsync(ResourceStrings.WaitingDeviceInitialization);
+                            }
+
+                            if (device.DebugEngine.ConnectionSource == ConnectionSource.nanoBooter)
+                            {
+                                //MessageCentre.InternalErrorMessage("Device reported running nanoBooter. Requesting to load nanoCLR.");
+
+                                // request nanoBooter to load CLR
+                                device.DebugEngine.ExecuteMemory(0);
+                            }
+                            else if (device.DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
+                            {
+                                //MessageCentre.InternalErrorMessage("Device reported running nanoCLR. Requesting to reboot nanoCLR.");
+
+                                await Task.Run(delegate
+                                {
+                                    // already running nanoCLR try rebooting the CLR
+                                    device.DebugEngine.RebootDevice(RebootOptions.ClrOnly);
+                                });
+                            }
+
+                            // wait before next pass
+                            // use a back-off strategy of increasing the wait time to accommodate slower or less responsive targets (such as networked ones)
+                            await Task.Delay(TimeSpan.FromMilliseconds(_timeoutMiliseconds * (retryCount + 1)));
+
+                            await Task.Yield();
+                        }
+                    }
+
+                    // check if device is still in initialized state
+                    if (!deviceIsInInitializeState)
+                    {
+                        ///////////////////////////////////////////////////////////////
+
+                        var largePackets = totalSize / (debugEngine.WireProtocolPacketSize - 8);
+
+                        var packetSize = debugEngine.WireProtocolPacketSize == 1024 ? "1k" : $"({ debugEngine.WireProtocolPacketSize / 1024}bytes";
+
+                        Debug.WriteLine($">>> Sending : {totalSize} bytes.<<<<");
+                        Debug.WriteLine($">>> This is {packetSize} packets plus something bytes.<<<<");
+
+                        var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.DeploymentExecute(assemblies, true);
+
+                        Debug.WriteLine($">>> Deployment result: {result} <<<<");
+
+                        if (result)
+                        {
+                            //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
+
+                            //Task.Delay(1000).Wait();
+
+                            (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo(true);
+                        }
+                    }
+                    else
+                    {
+                        Debug.WriteLine($">>> Failed to initialize device.  <<<<");
                     }
 
                 }));

@@ -51,10 +51,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public int BootTime { get; set; }
 
+        public List<string> COMPortBlackList => _comPortBlackList;
+
+        private readonly List<string> _comPortBlackList = new List<string>();
+
         /// <summary>
         /// Creates an Serial debug client
         /// </summary>
-        public SerialPortManager(object callerApp, bool startDeviceWatchers = true, int bootTime = 1000)
+        public SerialPortManager(object callerApp, bool startDeviceWatchers = true, List<string> comPortBlackList = null, int bootTime = 1000)
         {
             _mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, string>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
@@ -72,6 +76,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             };
 
             BootTime = bootTime;
+
+            if(comPortBlackList != null)
+            {
+                _comPortBlackList = comPortBlackList;
+            }
 
             Task.Factory.StartNew(() => {
 
@@ -530,49 +539,57 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // sanity check for invalid or null device base
                 if (serialDevice != null)
                 {
-                    // need to go through all the valid baud rates: 921600, 460800 and 115200.
-                    foreach (uint baudRate in SerialPort.ValidBaudRates)
+                    // check against black list
+                    if (_comPortBlackList.Contains(serialDevice.PortName))
                     {
-                        serialDevice.BaudRate = baudRate;
-
-                        OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {device.Device.DeviceInformation.DeviceInformation.Id} @ { baudRate }"));
-
-                        if (await device.DebugEngine.ConnectAsync(
-                            1000,
-                            true,
-                            ConnectionSource.Unknown,
-                            false))
+                        OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(device.Device.DeviceInformation.DeviceInformation.Id));
+                    }
+                    else
+                    {
+                        // need to go through all the valid baud rates: 921600, 460800 and 115200.
+                        foreach (uint baudRate in SerialPort.ValidBaudRates)
                         {
-                            if (device.DebugEngine.ConnectionSource == ConnectionSource.nanoBooter)
+                            serialDevice.BaudRate = baudRate;
+
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {device.Device.DeviceInformation.DeviceInformation.Id} @ { baudRate }"));
+
+                            if (await device.DebugEngine.ConnectAsync(
+                                1000,
+                                true,
+                                ConnectionSource.Unknown,
+                                false))
                             {
-                                var deviceInfo = device.DebugEngine.GetMonitorOemInfo();
-                                if (deviceInfo != null)
+                                if (device.DebugEngine.ConnectionSource == ConnectionSource.nanoBooter)
                                 {
-                                    device.TargetName = deviceInfo.TargetName;
-                                    device.Platform = deviceInfo.PlatformName;
+                                    var deviceInfo = device.DebugEngine.GetMonitorOemInfo();
+                                    if (deviceInfo != null)
+                                    {
+                                        device.TargetName = deviceInfo.TargetName;
+                                        device.Platform = deviceInfo.PlatformName;
 
-                                    validDevice = true;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                var deviceInfo = device.DebugEngine.GetTargetInfo();
-
-                                if (!string.IsNullOrEmpty(deviceInfo.TargetName))
-                                {
-                                    device.TargetName = deviceInfo.TargetName;
-                                    device.Platform = deviceInfo.Platform;
-
-                                    validDevice = true;
-                                    break;
+                                        validDevice = true;
+                                        break;
+                                    }
                                 }
                                 else
                                 {
-                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"ERROR: {device.Device.DeviceInformation.DeviceInformation.Id} failed to get target information"));
+                                    var deviceInfo = device.DebugEngine.GetTargetInfo();
 
-                                    validDevice = true;
-                                    break;
+                                    if (!string.IsNullOrEmpty(deviceInfo.TargetName))
+                                    {
+                                        device.TargetName = deviceInfo.TargetName;
+                                        device.Platform = deviceInfo.Platform;
+
+                                        validDevice = true;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"ERROR: {device.Device.DeviceInformation.DeviceInformation.Id} failed to get target information"));
+
+                                        validDevice = true;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -589,7 +606,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // set valid baud rate from device detection
                     ((SerialPort)device.ConnectionPort).BaudRate = serialDevice.BaudRate;
                 }
-
+ 
                 Task.Factory.StartNew(() =>
                 {
                     // perform the Dispose() call on a Task
