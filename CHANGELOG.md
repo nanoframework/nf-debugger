@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.17.0-preview.4...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.17.0-preview.12...HEAD)
+
+**Implemented enhancements:**
+
+- Rework COM port black list [\#247](https://github.com/nanoframework/nf-debugger/pull/247)
+
+## [v1.17.0-preview.12](https://github.com/nanoframework/nf-debugger/tree/v1.17.0-preview.12) (2020-07-24)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.17.0-preview.4...v1.17.0-preview.12)
 
 **Implemented enhancements:**
 
@@ -73,25 +81,21 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.4...v1.16.0-preview.8)
 
-**Implemented enhancements:**
-
-- Improve update device config [\#236](https://github.com/nanoframework/nf-debugger/pull/236)
-
 ## [v1.16.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.4) (2020-03-12)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.2...v1.16.0-preview.4)
 
 **Fixed bugs:**
 
-- Improve commands that use full WP buffer capacity [\#235](https://github.com/nanoframework/nf-debugger/pull/235)
-
-**Documentation and other chores:**
-
-- Improve UpdateConfiguration command [\#234](https://github.com/nanoframework/nf-debugger/pull/234)
+- Fix error checking on WriteMemory operation [\#231](https://github.com/nanoframework/nf-debugger/pull/231)
 
 ## [v1.16.0-preview.2](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.2) (2020-03-12)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.1...v1.16.0-preview.2)
+
+**Implemented enhancements:**
+
+- Improve update device config [\#236](https://github.com/nanoframework/nf-debugger/pull/236)
 
 **Fixed bugs:**
 
@@ -103,15 +107,16 @@
 
 **Documentation and other chores:**
 
+- Improve UpdateConfiguration command [\#234](https://github.com/nanoframework/nf-debugger/pull/234)
 - Replace several throws with return value [\#232](https://github.com/nanoframework/nf-debugger/pull/232)
 
 ## [v1.15.0-preview.8](https://github.com/nanoframework/nf-debugger/tree/v1.15.0-preview.8) (2020-03-05)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.15.0-preview.7...v1.15.0-preview.8)
 
-**Fixed bugs:**
+**Implemented enhancements:**
 
-- Fix error checking on WriteMemory operation [\#231](https://github.com/nanoframework/nf-debugger/pull/231)
+- Improve device detection [\#227](https://github.com/nanoframework/nf-debugger/pull/227)
 
 ## [v1.15.0-preview.7](https://github.com/nanoframework/nf-debugger/tree/v1.15.0-preview.7) (2020-03-05)
 
@@ -141,9 +146,9 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.12.0-preview.1...v1.14.0-preview.1)
 
-**Implemented enhancements:**
+**Fixed bugs:**
 
-- Improve device detection [\#227](https://github.com/nanoframework/nf-debugger/pull/227)
+- Improve commands that use full WP buffer capacity [\#235](https://github.com/nanoframework/nf-debugger/pull/235)
 
 ## [v1.12.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.12.0-preview.1) (2020-03-03)
 
@@ -387,7 +392,6 @@
 **Fixed bugs:**
 
 - Fix progress output on DeploymentExecuteIncremental [\#192](https://github.com/nanoframework/nf-debugger/pull/192)
-- Fix getting configuration blocks [\#187](https://github.com/nanoframework/nf-debugger/pull/187)
 
 ## [v1.0.1-preview-064](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-064) (2019-03-14)
 
@@ -414,6 +418,7 @@
 
 **Fixed bugs:**
 
+- Fix getting configuration blocks [\#187](https://github.com/nanoframework/nf-debugger/pull/187)
 - Fix update network config [\#185](https://github.com/nanoframework/nf-debugger/pull/185)
 
 ## [v1.0.1-preview-043](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-043) (2019-01-30)
