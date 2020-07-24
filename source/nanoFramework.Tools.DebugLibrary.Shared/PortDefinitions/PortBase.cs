@@ -4,12 +4,15 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace nanoFramework.Tools.Debugger
 {
     public abstract partial class PortBase
     {
+        public List<string> PortBlackList { get; set; } = new List<string>();
+
         public override bool Equals(object obj)
         {
             PortBase pd = obj as PortBase; if (pd == null) return false;

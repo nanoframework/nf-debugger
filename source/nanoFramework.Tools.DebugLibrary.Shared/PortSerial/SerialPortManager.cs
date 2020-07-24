@@ -51,14 +51,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public int BootTime { get; set; }
 
-        public List<string> COMPortBlackList => _comPortBlackList;
-
-        private readonly List<string> _comPortBlackList = new List<string>();
-
         /// <summary>
         /// Creates an Serial debug client
         /// </summary>
-        public SerialPortManager(object callerApp, bool startDeviceWatchers = true, List<string> comPortBlackList = null, int bootTime = 1000)
+        public SerialPortManager(object callerApp, bool startDeviceWatchers = true, List<string> portBlackList = null, int bootTime = 1000)
         {
             _mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, string>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
@@ -77,9 +73,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             BootTime = bootTime;
 
-            if(comPortBlackList != null)
+            if(portBlackList != null)
             {
-                _comPortBlackList = comPortBlackList;
+                PortBlackList = portBlackList;
             }
 
             Task.Factory.StartNew(() => {
@@ -540,7 +536,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 if (serialDevice != null)
                 {
                     // check against black list
-                    if (_comPortBlackList.Contains(serialDevice.PortName))
+                    if (PortBlackList.Contains(serialDevice.PortName))
                     {
                         OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(device.Device.DeviceInformation.DeviceInformation.Id));
                     }
