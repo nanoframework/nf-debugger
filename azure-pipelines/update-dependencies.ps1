@@ -32,9 +32,6 @@ git config --global core.autocrlf true
 Write-Host "Checkout develop branch..."
 git checkout --quiet develop | Out-Null
 
-# move to source directory
-Set-Location source | Out-Null
-
 ####################
 # VS 2017
 
