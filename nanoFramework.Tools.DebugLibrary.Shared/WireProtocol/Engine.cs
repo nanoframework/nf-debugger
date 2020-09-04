@@ -2677,7 +2677,9 @@ namespace nanoFramework.Tools.Debugger
             return reply != null && reply.IsPositiveAcknowledge();
         }
 
-        private bool DeploymentExecuteIncremental(List<byte[]> assemblies, IProgress<string> progress)
+        private bool DeploymentExecuteIncremental(
+            List<byte[]> assemblies, 
+            IProgress<string> progress)
         {
             // get flash sector map from device
             var flashSectorMap = GetFlashSectorMap();
@@ -2690,7 +2692,9 @@ namespace nanoFramework.Tools.Debugger
 
                 // build the deployment blob from the flash sector map
                 // apply a filter so that we take only the blocks flag for deployment 
-                var deploymentBlob = flashSectorMap.Where(s => ((s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)).Select(s => s.ToDeploymentSector()).ToList();
+                var deploymentBlob = flashSectorMap.Where(s => (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
+                    .Select(s => s.ToDeploymentSector())
+                    .ToList();
 
                 // rough check if there is enough room to deploy
                 if(deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size) < deployLength)
@@ -2733,7 +2737,6 @@ namespace nanoFramework.Tools.Debugger
                         }
                         else
                         {
-                            int positionInSector = sector.Size - sector.AvailableSpace;
                             int bytesToCopy = Math.Min(sector.AvailableSpace, remainingBytes);
 
                             byte[] tempBuffer = new byte[bytesToCopy];
@@ -2768,20 +2771,36 @@ namespace nanoFramework.Tools.Debugger
 
                 foreach (DeploymentBlock block in blocksToDeploy)
                 {
+                    // erase memory sector
                     (uint ErrorCode, bool Success) memoryOperationResult;
 
                     memoryOperationResult = EraseMemory((uint)block.StartAddress, (uint)block.Size);
                     if (!memoryOperationResult.Success)
                     {
-                        progress?.Report(($"Error erasing device memory @ 0x{block.StartAddress.ToString("X8")}. Error code: {memoryOperationResult.ErrorCode}."));
+                        progress?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}.");
+
+                        return false;
+                    }
+                    // check the error code returned
+                    if((AccessMemoryErrorCodes)memoryOperationResult.ErrorCode != AccessMemoryErrorCodes.NoError)
+                    {
+                        progress?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}. Error code: {memoryOperationResult.ErrorCode}.");
 
                         return false;
                     }
 
+                    // block erased, write buffer
                     memoryOperationResult = WriteMemory((uint)block.StartAddress, block.DeploymentData);
                     if (!memoryOperationResult.Success)
                     {
-                        progress?.Report(($"Error writing to device memory @ 0x{block.StartAddress.ToString("X8")} ({block.DeploymentData.Length} bytes). Error code: {memoryOperationResult.ErrorCode}."));
+                        progress?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes).");
+
+                        return false;
+                    }
+                    // check the error code returned
+                    if ((AccessMemoryErrorCodes)memoryOperationResult.ErrorCode != AccessMemoryErrorCodes.NoError)
+                    {
+                        progress?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes). Error code: {memoryOperationResult.ErrorCode}.");
 
                         return false;
                     }
