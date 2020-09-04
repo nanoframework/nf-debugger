@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.17.0-preview.12...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.18.0-preview.1...HEAD)
+
+**Fixed bugs:**
+
+- Fixes in deploy method [\#248](https://github.com/nanoframework/nf-debugger/pull/248)
+
+## [v1.18.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.18.0-preview.1) (2020-07-24)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.17.0-preview.12...v1.18.0-preview.1)
 
 **Implemented enhancements:**
 
@@ -81,21 +89,25 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.4...v1.16.0-preview.8)
 
+**Implemented enhancements:**
+
+- Improve update device config [\#236](https://github.com/nanoframework/nf-debugger/pull/236)
+
 ## [v1.16.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.4) (2020-03-12)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.2...v1.16.0-preview.4)
 
 **Fixed bugs:**
 
-- Fix error checking on WriteMemory operation [\#231](https://github.com/nanoframework/nf-debugger/pull/231)
+- Improve commands that use full WP buffer capacity [\#235](https://github.com/nanoframework/nf-debugger/pull/235)
+
+**Documentation and other chores:**
+
+- Improve UpdateConfiguration command [\#234](https://github.com/nanoframework/nf-debugger/pull/234)
 
 ## [v1.16.0-preview.2](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.2) (2020-03-12)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.1...v1.16.0-preview.2)
-
-**Implemented enhancements:**
-
-- Improve update device config [\#236](https://github.com/nanoframework/nf-debugger/pull/236)
 
 **Fixed bugs:**
 
@@ -107,16 +119,15 @@
 
 **Documentation and other chores:**
 
-- Improve UpdateConfiguration command [\#234](https://github.com/nanoframework/nf-debugger/pull/234)
 - Replace several throws with return value [\#232](https://github.com/nanoframework/nf-debugger/pull/232)
 
 ## [v1.15.0-preview.8](https://github.com/nanoframework/nf-debugger/tree/v1.15.0-preview.8) (2020-03-05)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.15.0-preview.7...v1.15.0-preview.8)
 
-**Implemented enhancements:**
+**Fixed bugs:**
 
-- Improve device detection [\#227](https://github.com/nanoframework/nf-debugger/pull/227)
+- Fix error checking on WriteMemory operation [\#231](https://github.com/nanoframework/nf-debugger/pull/231)
 
 ## [v1.15.0-preview.7](https://github.com/nanoframework/nf-debugger/tree/v1.15.0-preview.7) (2020-03-05)
 
@@ -146,9 +157,9 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.12.0-preview.1...v1.14.0-preview.1)
 
-**Fixed bugs:**
+**Implemented enhancements:**
 
-- Improve commands that use full WP buffer capacity [\#235](https://github.com/nanoframework/nf-debugger/pull/235)
+- Improve device detection [\#227](https://github.com/nanoframework/nf-debugger/pull/227)
 
 ## [v1.12.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.12.0-preview.1) (2020-03-03)
 
@@ -320,10 +331,6 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.17...v1.2.1-preview.19)
 
-**Fixed bugs:**
-
-- Fix deployment progress message [\#203](https://github.com/nanoframework/nf-debugger/pull/203)
-
 ## [v1.2.1-preview.17](https://github.com/nanoframework/nf-debugger/tree/v1.2.1-preview.17) (2019-06-27)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.15...v1.2.1-preview.17)
@@ -338,6 +345,7 @@
 
 **Fixed bugs:**
 
+- Fix deployment progress message [\#203](https://github.com/nanoframework/nf-debugger/pull/203)
 - Fix bug with connected state upon reboot [\#201](https://github.com/nanoframework/nf-debugger/pull/201)
 
 ## [v1.2.1-preview.13](https://github.com/nanoframework/nf-debugger/tree/v1.2.1-preview.13) (2019-06-20)
@@ -365,6 +373,10 @@
 - Add support for type resolution failed flag [\#197](https://github.com/nanoframework/nf-debugger/pull/197)
 - Work on ReadMemory command [\#195](https://github.com/nanoframework/nf-debugger/pull/195)
 
+**Fixed bugs:**
+
+- Fix progress output on DeploymentExecuteIncremental [\#192](https://github.com/nanoframework/nf-debugger/pull/192)
+
 **Documentation and other chores:**
 
 - Update NuGet packages [\#196](https://github.com/nanoframework/nf-debugger/pull/196)
@@ -381,17 +393,13 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-066...v1.0.1-preview-068)
 
-**Fixed bugs:**
-
-- Improve code on EraseAsync [\#193](https://github.com/nanoframework/nf-debugger/pull/193)
-
 ## [v1.0.1-preview-066](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-066) (2019-03-15)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-064...v1.0.1-preview-066)
 
 **Fixed bugs:**
 
-- Fix progress output on DeploymentExecuteIncremental [\#192](https://github.com/nanoframework/nf-debugger/pull/192)
+- Improve code on EraseAsync [\#193](https://github.com/nanoframework/nf-debugger/pull/193)
 
 ## [v1.0.1-preview-064](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-064) (2019-03-14)
 
@@ -401,6 +409,7 @@
 
 - Add new method UpdateDebugFlags [\#191](https://github.com/nanoframework/nf-debugger/pull/191)
 - Add output of error codes on WriteMemory [\#190](https://github.com/nanoframework/nf-debugger/pull/190)
+- Work on DeploymentExecuteIncremental [\#189](https://github.com/nanoframework/nf-debugger/pull/189)
 
 ## [v1.0.1-preview-061](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-061) (2019-03-12)
 
@@ -408,7 +417,6 @@
 
 **Implemented enhancements:**
 
-- Work on DeploymentExecuteIncremental [\#189](https://github.com/nanoframework/nf-debugger/pull/189)
 - Add output to help debug device state [\#188](https://github.com/nanoframework/nf-debugger/pull/188)
 - Improve disconnection of SerialDevice [\#186](https://github.com/nanoframework/nf-debugger/pull/186)
 - Tidy output of device capabilites listings [\#184](https://github.com/nanoframework/nf-debugger/pull/184)
