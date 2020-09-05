@@ -361,14 +361,22 @@ namespace nanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in eraseSectors)
             {
-                progress?.Report(new ProgressReport(value, total, $"Erasing sector 0x{flashSectorData.m_StartAddress.ToString("X8")}."));
+                progress?.Report(new ProgressReport(value, total, $"Erasing sector 0x{flashSectorData.m_StartAddress:X8}."));
 
-                (uint ErrorCode, bool Success) = DebugEngine.EraseMemory(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
+                (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
 
-                if(!Success)
+                if (!Success)
+                {
+                    progress?.Report(new ProgressReport(value, total, $"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}."));
+
+                    return false;
+                }
+
+                // check the error code returned
+                if (ErrorCode != AccessMemoryErrorCodes.NoError)
                 {
                     // operation failed
-                    progress?.Report(new ProgressReport(value, total, $"Error erasing sector @ 0x{flashSectorData.m_StartAddress.ToString("X8")}. Error code: {ErrorCode}."));
+                    progress?.Report(new ProgressReport(value, total, $"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}. Error code: {ErrorCode}."));
                     
                     // don't bother continuing
                     return false;
@@ -483,7 +491,7 @@ namespace nanoFramework.Tools.Debugger
                     progress?.Report(new ProgressReport(0, total, string.Format("Erasing sector 0x{0:x08}", block.address)));
 
                     // the clr requires erase before writing
-                    (uint ErrorCode, bool Success) = DebugEngine.EraseMemory(block.address, (uint)len);
+                    (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(block.address, (uint)len);
 
                     if (!Success)
                     {
@@ -508,7 +516,7 @@ namespace nanoFramework.Tools.Debugger
                             return new Tuple<uint, bool>(0, false);
                         }
 
-                        (uint ErrorCode, bool Success) writeResult = DebugEngine.WriteMemory(addr, data);
+                        (AccessMemoryErrorCodes ErrorCode, bool Success) writeResult = DebugEngine.WriteMemory(addr, data);
                         if (!writeResult.Success)
                         {
                             return new Tuple<uint, bool>(0, false);

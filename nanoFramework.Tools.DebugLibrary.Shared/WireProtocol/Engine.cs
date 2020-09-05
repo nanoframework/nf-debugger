@@ -1307,7 +1307,7 @@ namespace nanoFramework.Tools.Debugger
             return ReadMemory(address, length, 0);
         }
 
-        public (uint ErrorCode, bool Success) WriteMemory(uint address, byte[] buf, int offset, int length)
+        public (AccessMemoryErrorCodes ErrorCode, bool Success) WriteMemory(uint address, byte[] buf, int offset, int length)
         {
             int count = length;
             int position = offset;
@@ -1332,7 +1332,7 @@ namespace nanoFramework.Tools.Debugger
                     if (!reply.IsPositiveAcknowledge() || 
                         (AccessMemoryErrorCodes)cmdReply.ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
-                        return (cmdReply.ErrorCode, false);
+                        return ((AccessMemoryErrorCodes)cmdReply.ErrorCode, false);
                     }
 
                     address += (uint)packetLength;
@@ -1341,19 +1341,19 @@ namespace nanoFramework.Tools.Debugger
                 }
                 else
                 {
-                    return (0, false);
+                    return (AccessMemoryErrorCodes.Unknown, false);
                 }
             }
 
-            return (0, true);
+            return (AccessMemoryErrorCodes.NoError, true);
         }
 
-        public (uint ErrorCode, bool Success) WriteMemory(uint address, byte[] buf)
+        public (AccessMemoryErrorCodes ErrorCode, bool Success) WriteMemory(uint address, byte[] buf)
         {
             return WriteMemory(address, buf, 0, buf.Length);
         }
 
-        public (uint ErrorCode, bool Success) EraseMemory(uint address, uint length)
+        public (AccessMemoryErrorCodes ErrorCode, bool Success) EraseMemory(uint address, uint length)
         {
             DebuggerEventSource.Log.EngineEraseMemory(address, length);
 
@@ -1413,10 +1413,10 @@ namespace nanoFramework.Tools.Debugger
             {
                 Commands.Monitor_EraseMemory.Reply cmdReply = reply.Payload as Commands.Monitor_EraseMemory.Reply;
 
-                return (cmdReply?.ErrorCode ?? 0, reply.IsPositiveAcknowledge());
+                return ((AccessMemoryErrorCodes)cmdReply.ErrorCode, reply.IsPositiveAcknowledge());
             }
 
-            return (0, false);
+            return (AccessMemoryErrorCodes.Unknown, false);
         }
 
         public bool ExecuteMemory(uint address)
@@ -2772,9 +2772,7 @@ namespace nanoFramework.Tools.Debugger
                 foreach (DeploymentBlock block in blocksToDeploy)
                 {
                     // erase memory sector
-                    (uint ErrorCode, bool Success) memoryOperationResult;
-
-                    memoryOperationResult = EraseMemory((uint)block.StartAddress, (uint)block.Size);
+                    (AccessMemoryErrorCodes ErrorCode, bool Success) memoryOperationResult = EraseMemory((uint)block.StartAddress, (uint)block.Size);
                     if (!memoryOperationResult.Success)
                     {
                         progress?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}.");
@@ -2782,7 +2780,7 @@ namespace nanoFramework.Tools.Debugger
                         return false;
                     }
                     // check the error code returned
-                    if((AccessMemoryErrorCodes)memoryOperationResult.ErrorCode != AccessMemoryErrorCodes.NoError)
+                    if(memoryOperationResult.ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
                         progress?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}. Error code: {memoryOperationResult.ErrorCode}.");
 
@@ -2798,7 +2796,7 @@ namespace nanoFramework.Tools.Debugger
                         return false;
                     }
                     // check the error code returned
-                    if ((AccessMemoryErrorCodes)memoryOperationResult.ErrorCode != AccessMemoryErrorCodes.NoError)
+                    if (memoryOperationResult.ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
                         progress?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes). Error code: {memoryOperationResult.ErrorCode}.");
 
