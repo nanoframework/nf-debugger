@@ -1,4 +1,4 @@
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_nf-debugger&metric=alert_status)](https://sonarcloud.io/dashboard?id=nanoframework_nf-debugger) [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_nf-debugger&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=nanoframework_nf-debugger) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/nanoframework/Home/blob/master/LICENSE) [![#yourfirstpr](https://img.shields.io/badge/first--timers--only-friendly-blue.svg)](https://github.com/nanoframework/Home/blob/master/CONTRIBUTING.md) [![Discord](https://img.shields.io/discord/478725473862549535.svg)](https://discord.gg/gCyBu8T)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_nf-debugger&metric=alert_status)](https://sonarcloud.io/dashboard?id=nanoframework_nf-debugger) [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_nf-debugger&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=nanoframework_nf-debugger) [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/nanoframework/Home/blob/master/LICENSE) [![#yourfirstpr](https://img.shields.io/badge/first--timers--only-friendly-blue.svg)](https://github.com/nanoframework/Home/blob/master/CONTRIBUTING.md) [![Discord](https://img.shields.io/discord/478725473862549535.svg)](https://discord.gg/gCyBu8T)
 
 
 ![nanoFramework logo](https://github.com/nanoframework/Home/blob/master/resources/logo/nanoFramework-repo-logo.png)
@@ -37,7 +37,7 @@ The list of contributors to this project can be found at [CONTRIBUTORS](https://
 
 ## License
 
-The nanoFramework debugger library is licensed under the [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0).
+The nanoFramework debugger library is licensed under the [MIT license](LICENSE.md).
 
 
 ## Code of Conduct
