@@ -22,24 +22,25 @@ This repo contains:
 | Debugger Library | [![Build Status](https://dev.azure.com/nanoframework/debugger/_apis/build/status/nanoframework.nf-debugger?branchName=develop)](https://dev.azure.com/nanoframework/debugger/_build/latest?definitionId=33?branchName=master) | [![NuGet](https://img.shields.io/nuget/vpre/nanoFramework.Tools.Debugger.Net.svg)](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/) | [![NuGet](https://img.shields.io/nuget/vpre/nanoFramework.Tools.Debugger.UWP.svg)](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.UWP/)
 | Debugger Library (preview) |[![Build Status](https://dev.azure.com/nanoframework/debugger/_apis/build/status/nanoframework.nf-debugger?branchName=develop)](https://dev.azure.com/nanoframework/debugger/_build/latest?definitionId=33?branchName=develop) | [![](https://badgen.net/badge/NuGet/preview/D7B023?icon=https://simpleicons.now.sh/azuredevops/fff)](https://dev.azure.com/nanoframework/feed/_packaging?_a=package&feed=sandbox&package=nanoFramework.Tools.Debugger.Net&protocolType=NuGet&view=overview) | [![](https://badgen.net/badge/NuGet/preview/D7B023?icon=https://simpleicons.now.sh/azuredevops/fff)](https://dev.azure.com/nanoframework/feed/_packaging?_a=package&feed=sandbox&package=nanoFramework.Tools.Debugger.UWP&protocolType=NuGet&view=overview)
 
-
 ## Feedback and documentation
 
 For documentation, providing feedback, issues and finding out how to contribute please refer to the [Home repo](https://github.com/nanoframework/Home).
 
 Join our Discord community [here](https://discord.gg/gCyBu8T).
 
-
 ## Credits
 
 The list of contributors to this project can be found at [CONTRIBUTORS](https://github.com/nanoframework/Home/blob/master/CONTRIBUTORS.md).
-
 
 ## License
 
 The nanoFramework debugger library is licensed under the [MIT license](LICENSE.md).
 
-
 ## Code of Conduct
-This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/)
-to clarify expected behavior in our community.
+
+This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behavior in our community.
+For more information see the [.NET Foundation Code of Conduct](https://dotnetfoundation.org/code-of-conduct).
+
+### .NET Foundation
+
+This project is supported by the [.NET Foundation](https://dotnetfoundation.org).
