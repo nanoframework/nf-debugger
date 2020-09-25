@@ -12,7 +12,7 @@
     <iconUrl>https://secure.gravatar.com/avatar/97d0e092247f0716db6d4b47b7d1d1ad</iconUrl>
     <icon>images\nf-logo.png</icon>
     <repository type="git" url="https://github.com/nanoframework/nf-debugger" commit="$commit$" />
-    <copyright>Copyright (c) 2017 The nanoFramework project contributors</copyright>
+    <copyright>Copyright (c) .NET Foundation and Contributors</copyright>
     <description>This UWP library provides a debug client for nanoFramework devices using USB or Serial connection to a board.</description>
     <releaseNotes>This package provides the UWP version of the debug library.&#10;For .NET look for the respective Nuget package.
     </releaseNotes>

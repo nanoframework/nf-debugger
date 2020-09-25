@@ -23,7 +23,7 @@
     <Title>nanoFramework debug library</Title>
     <Summary>This library provides a debug client for nanoFramework devices.</Summary>
     <Owners>nanoFramework project contributors</Owners>
-    <Copyright>Copyright %28c%29 2017 The nanoFramework project contributors</Copyright>
+    <Copyright>Copyright (c) .NET Foundation and Contributors</Copyright>
     <PackageIconUrl>https://secure.gravatar.com/avatar/97d0e092247f0716db6d4b47b7d1d1ad</PackageIconUrl>
     <PackageLicenseUrl>http://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/nanoframework/nf-ANT</PackageProjectUrl>
