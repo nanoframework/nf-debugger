@@ -11,11 +11,11 @@ namespace nanoFramework.Tools.Debugger
 
     public partial class Stm32
     {
-        public enum TargetCapabilities : byte
+        public enum TargetCapabilities : ulong
         {
-            JtagUpdate  = 0,
+            JtagUpdate  = CLRCapabilities.Capability.TargetCapability_0,
 
-            DfuUpdate   = 1,
+            DfuUpdate   = CLRCapabilities.Capability.TargetCapability_1,
         }
     }
 }

@@ -25,41 +25,59 @@ namespace nanoFramework.Tools.Debugger
         [Flags]
         public enum Capability : ulong
         {
-            None = 0x00000000,
-            FloatingPoint = 0x00000001,
-            SourceLevelDebugging = 0x00000002,
-            AppDomains = 0x00000004,
-            ExceptionFilters = 0x00000008,
-            IncrementalDeployment = 0x00000010,
-            SoftReboot = 0x00000020,
-            Profiling = 0x00000040,
-            Profiling_Allocations = 0x00000080,
-            Profiling_Calls = 0x00000100,
-            ThreadCreateEx = 0x00000400,
+            None =                      0x00000000,
+            FloatingPoint =             0x00000001,
+            SourceLevelDebugging =      0x00000002,
+            AppDomains =                0x00000004,
+            ExceptionFilters =          0x00000008,
+            IncrementalDeployment =     0x00000010,
+            SoftReboot =                0x00000020,
+            Profiling =                 0x00000040,
+            Profiling_Allocations =     0x00000080,
+            Profiling_Calls =           0x00000100,
+            ThreadCreateEx =            0x00000400,
 
             /// <summary>
             /// This flag indicates that the device requires em erase command before updating the configuration block.
             /// </summary>
-            ConfigBlockRequiresErase = 0x00000800,
+            ConfigBlockRequiresErase =  0x00000800,
 
             /// <summary>
             /// This flag indicates that the device has nanoBooter.
             /// </summary>
-            HasNanoBooter = 0x00001000,
+            HasNanoBooter =             0x00001000,
+
+            /// <summary>
+            /// This flag indicates that the device has a proprietary bootloader.
+            /// </summary>
+            HasProprietaryBooter =      0x00002000,
+
+            /// <summary>
+            /// This flag indicates that the target device is IFU capable.
+            /// </summary>
+            IFUCapable =                0x00004000,
 
             /// <summary>
             /// These bits are generic and are meant to be used to store platform specific capabilities.
             /// They should be parsed at the above layer to extract the real meaning out of them.
             /// </summary>
-            PlatformCapabiliy_0 = 0x00010000,
-            PlatformCapabiliy_1 = 0x00020000,
+            PlatformCapability_0 =      0x01000000,
+            PlatformCapability_1 =      0x02000000,
+            PlatformCapability_2 =      0x04000000,
+            PlatformCapability_3 =      0x08000000,
+
+            PlatformCapability_Mask = PlatformCapability_0 | PlatformCapability_1 | PlatformCapability_2 | PlatformCapability_3,
 
             /// <summary>
             /// These bits are generic and are meant to be used to store target specific capabilities.
             /// They should be parsed at the above layer to extract the real meaning out of them.
             /// </summary>
-            TargetCapabiliy_0 = 0x00040000,
-            TargetCapabiliy_1 = 0x00080000,
+            TargetCapability_0 =        0x10000000,
+            TargetCapability_1 =        0x20000000,
+            TargetCapability_2 =        0x40000000,
+            TargetCapability_3 =        0x80000000,
+
+            TargetCapability_Mask = TargetCapability_0 | TargetCapability_1 | TargetCapability_2 | TargetCapability_3,
         }
 
         public struct SoftwareVersionProperties
@@ -376,19 +394,18 @@ namespace nanoFramework.Tools.Debugger
             get
             {
                 Debug.Assert(!m_fUnknown);
-                var platformCapabilites = (ulong)(m_capabilities & (Capability.PlatformCapabiliy_0 | Capability.PlatformCapabiliy_1));
+                var platformCapabilites = (ulong)(m_capabilities & Capability.PlatformCapability_Mask);
                 var value = platformCapabilites >> s_platformCapabilitiesPosition;
                 return (byte)value;
             }
         }
-
 
         public byte TargetCapabilities
         {
             get
             {
                 Debug.Assert(!m_fUnknown);
-                var targetCapabilites = (ulong)(m_capabilities & (Capability.TargetCapabiliy_0 | Capability.TargetCapabiliy_1));
+                var targetCapabilites = (ulong)(m_capabilities & Capability.TargetCapability_Mask);
                 var value = targetCapabilites >> s_targetCapabilitiesPosition;
                 return (byte)value;
             }
