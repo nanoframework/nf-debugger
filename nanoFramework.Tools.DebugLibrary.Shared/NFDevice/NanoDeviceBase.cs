@@ -174,7 +174,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 if (DebugEngine.ConnectionSource == ConnectionSource.nanoBooter) return true;
 
-                DebugEngine.RebootDevice(RebootOptions.EnterBootloader);
+                DebugEngine.RebootDevice(RebootOptions.EnterNanoBooter);
 
                 /////////////////////////////////////////
                 // FIXME
