@@ -46,6 +46,7 @@ namespace nanoFramework.Tools.Debugger
             /// ** USE Monitor_Ping_c_ConfigBlockRequiresErase INSTEAD             **
             /// *********************************************************************
             /// </remarks>
+            [Obsolete("This flag is deprecated and it will be removed in a future version. Use Monitor_Ping_c_ConfigBlockRequiresErase instead.")]
             ConfigBlockRequiresErase =  0x00000800,
 
             /// <summary>
