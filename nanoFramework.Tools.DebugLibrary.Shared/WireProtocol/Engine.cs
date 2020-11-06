@@ -175,8 +175,8 @@ namespace nanoFramework.Tools.Debugger
 
                     Commands.Monitor_Ping cmd = new Commands.Monitor_Ping
                     {
-                        m_source = Commands.Monitor_Ping.c_Ping_Source_Host,
-                        m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
+                        Source = Commands.Monitor_Ping.c_Ping_Source_Host,
+                        Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
                     };
 
                     IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
@@ -193,12 +193,12 @@ namespace nanoFramework.Tools.Debugger
 
                     if (msg.Payload is Commands.Monitor_Ping.Reply reply)
                     {
-                        IsTargetBigEndian = (reply.m_dbg_flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
+                        IsTargetBigEndian = (reply.Flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
 
-                        IsCRC32EnabledForWireProtocol = (reply.m_dbg_flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
+                        IsCRC32EnabledForWireProtocol = (reply.Flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
 
                         // get Wire Protocol packet size
-                        switch (reply.m_dbg_flags & Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_Position)
+                        switch (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_Position)
                         {
                             case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0128:
                                 WireProtocolPacketSize = 128;
@@ -222,7 +222,7 @@ namespace nanoFramework.Tools.Debugger
                         // update flag
                         IsConnected = true;
 
-                        ConnectionSource = (reply == null || reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR) ? ConnectionSource.nanoCLR : ConnectionSource.nanoBooter;
+                        ConnectionSource = (reply == null || reply.Source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR) ? ConnectionSource.nanoCLR : ConnectionSource.nanoBooter;
 
                         if (m_silent)
                         {
@@ -285,8 +285,8 @@ namespace nanoFramework.Tools.Debugger
             {
                 Commands.Monitor_Ping cmd = new Commands.Monitor_Ping
                 {
-                    m_source = Commands.Monitor_Ping.c_Ping_Source_Host,
-                    m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
+                    Source = Commands.Monitor_Ping.c_Ping_Source_Host,
+                    Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
                 };
 
                 IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd);
@@ -629,8 +629,8 @@ namespace nanoFramework.Tools.Debugger
                         {
                             Commands.Monitor_Ping.Reply cmdReply = new Commands.Monitor_Ping.Reply
                             {
-                                m_source = Commands.Monitor_Ping.c_Ping_Source_Host,
-                                m_dbg_flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
+                                Source = Commands.Monitor_Ping.c_Ping_Source_Host,
+                                Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
                             };
 
                             PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, _controlller.CreateConverter(), Flags.c_NonCritical, cmdReply), _backgroundProcessorCancellation.Token).ConfigureAwait(false);
