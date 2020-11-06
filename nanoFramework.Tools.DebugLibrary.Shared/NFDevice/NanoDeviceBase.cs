@@ -147,7 +147,7 @@ namespace nanoFramework.Tools.Debugger
                 // there is a reply, so the device _has_ to be connected
                 DebugEngine.IsConnected = true;
 
-                switch (reply.m_source)
+                switch (reply.Source)
                 {
                     case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
                         return PingConnectionType.nanoCLR;
@@ -214,7 +214,7 @@ namespace nanoFramework.Tools.Debugger
                     {
                         Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
 
-                        ret = (reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter);
+                        ret = (reply.Source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter);
 
                         break;
                     }
@@ -279,7 +279,7 @@ namespace nanoFramework.Tools.Debugger
             long total = 0;
             long value = 0;
 
-            bool isConnectedToCLR = ((ping != null) && (ping.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR));
+            bool isConnectedToCLR = ((ping != null) && (ping.Source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR));
 
 
             if (isConnectedToCLR)
@@ -616,7 +616,7 @@ namespace nanoFramework.Tools.Debugger
             }
 
             // only execute if we are talking to the nanoBooter, otherwise reboot
-            if (reply.m_source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter)
+            if (reply.Source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter)
             {
                 return DebugEngine.ExecuteMemory(entryPoint);
             }

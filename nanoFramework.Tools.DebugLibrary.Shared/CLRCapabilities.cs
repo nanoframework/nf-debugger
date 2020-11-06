@@ -40,22 +40,18 @@ namespace nanoFramework.Tools.Debugger
             /// <summary>
             /// This flag indicates that the device requires em erase command before updating the configuration block.
             /// </summary>
+            /// <remarks>
+            /// *********************************************************************
+            /// ** THIS FLAG IS DEPRECATED AND WILL BE REMOVED IN A FUTURE VERSION **
+            /// ** USE Monitor_Ping_c_ConfigBlockRequiresErase INSTEAD             **
+            /// *********************************************************************
+            /// </remarks>
             ConfigBlockRequiresErase =  0x00000800,
 
             /// <summary>
             /// This flag indicates that the device has nanoBooter.
             /// </summary>
             HasNanoBooter =             0x00001000,
-
-            /// <summary>
-            /// This flag indicates that the device has a proprietary bootloader.
-            /// </summary>
-            HasProprietaryBooter =      0x00002000,
-
-            /// <summary>
-            /// This flag indicates that the target device is IFU capable.
-            /// </summary>
-            IFUCapable =                0x00004000,
 
             /// <summary>
             /// These bits are generic and are meant to be used to store platform specific capabilities.

@@ -116,33 +116,56 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public class Monitor_Ping
         {
-            public const uint c_Ping_Source_NanoCLR =       0x00010000;
-            public const uint c_Ping_Source_NanoBooter =    0x00010001;
-            public const uint c_Ping_Source_Host =          0x00010002;
+            ///////////////////////////////////////////////////////////////////////
+            
+            public const uint c_Ping_Source_NanoCLR =                   0x00010000;
+            public const uint c_Ping_Source_NanoBooter =                0x00010001;
+            public const uint c_Ping_Source_Host =                      0x00010002;
 
-            public const uint c_Ping_DbgFlag_Stop = 0x00000001;
-            public const uint c_Ping_DbgFlag_BigEndian = 0x02000002;
-            public const uint c_Ping_DbgFlag_AppExit = 0x00000004;
+            public const uint c_Ping_DbgFlag_Stop =                     0x00000001;
+            public const uint c_Ping_DbgFlag_BigEndian =                0x02000002;
+            public const uint c_Ping_DbgFlag_AppExit =                  0x00000004;
 
+            ///////////////////////////////////////////////////////////////////////
             // flags specific to Wire Protocol capabilities
-            public const uint c_Ping_WPFlag_SupportsCRC32 = 0x00000010;
+            public const uint c_Ping_WPFlag_SupportsCRC32 =             0x00000010;
 
             // Wire Protocol packet size (3rd position)
-            public const uint Monitor_Ping_c_PacketSize_Position = 0x00000F00;
+            public const uint Monitor_Ping_c_PacketSize_Position =      0x00000F00;
             // default packet size is 1024
-            public const uint Monitor_Ping_c_PacketSize_1024 = 0x00000100;
-            public const uint Monitor_Ping_c_PacketSize_0512 = 0x00000200;
-            public const uint Monitor_Ping_c_PacketSize_0256 = 0x00000300;
-            public const uint Monitor_Ping_c_PacketSize_0128 = 0x00000400;
+            public const uint Monitor_Ping_c_PacketSize_1024 =          0x00000100;
+            public const uint Monitor_Ping_c_PacketSize_0512 =          0x00000200;
+            public const uint Monitor_Ping_c_PacketSize_0256 =          0x00000300;
+            public const uint Monitor_Ping_c_PacketSize_0128 =          0x00000400;
 
-            public uint m_source;
-            public uint m_dbg_flags;
+            //////////////////////////////////////////////////////////////////////
+            // flags related with device capabilities
+
+            /// <summary>
+            /// This flag indicates that the device has a proprietary bootloader.
+            /// </summary>
+            public const uint Monitor_Ping_c_HasProprietaryBooter =     0x00010000;
+
+            /// <summary>
+            /// This flag indicates that the target device is IFU capable.
+            /// </summary>
+            public const uint Monitor_Ping_c_IFUCapable =               0x00020000;
+
+            /// <summary>
+            /// This flag indicates that the device requires that the configuration block to be erased before updating it.
+            /// </summary>
+            public const uint Monitor_Ping_c_ConfigBlockRequiresErase = 0x00040000;
+
+            ///////////////////////////////////////////////////////////////////////
+
+            public uint Source;
+            public uint Flags;
 
 
             public class Reply
             {
-                public uint m_source;
-                public uint m_dbg_flags;
+                public uint Source;
+                public uint Flags;
             }
         }
 
