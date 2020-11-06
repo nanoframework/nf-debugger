@@ -877,13 +877,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public class Debugging_Execution_QueryCLRCapabilities
         {
-            public const uint c_CapabilityFlags = 1;
-            public const uint c_CapabilitySoftwareVersion = 3;
-
-            public const uint c_CapabilityHalSystemInfo = 5;
-            public const uint c_CapabilityClrInfo = 6;
-            public const uint c_CapabilitySolutionReleaseInfo = 7;
-            public const uint c_CapabilityInteropNativeAssemblies = 8;
+            public const uint c_CapabilityFlags =                       1;
+            public const uint c_CapabilitySoftwareVersion =             3;
+            public const uint c_CapabilityHalSystemInfo =               5;
+            public const uint c_CapabilityClrInfo =                     6;
+            public const uint c_CapabilitySolutionReleaseInfo =         7;
+            public const uint c_CapabilityInteropNativeAssemblies =     8;
 
             ///////////////////////////////////////////////////////////
             // because the number of deployed assemblies can make the size of the Wire Protocol package grow beyond the 
@@ -891,15 +890,38 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             // at the same time need to keep backwards compatibility with the existing targets.
             public const uint c_CapabilityInteropNativeAssembliesCount = 9;
 
-            public const uint c_CapabilityFlags_FloatingPort = 0x00000001;
-            public const uint c_CapabilityFlags_SourceLevelDebugging = 0x00000002;
-            public const uint c_CapabilityFlags_AppDomains = 0x00000004;
-            public const uint c_CapabilityFlags_ExceptionFilters = 0x00000008;
-            public const uint c_CapabilityFlags_IncrementalDeployment = 0x00000010;
-            public const uint c_CapabilityFlags_SoftReboot = 0x00000020;
-            public const uint c_CapabilityFlags_Profiling = 0x00000040;
-            public const uint c_CapabilityFlags_Profiling_Allocations = 0x00000080;
-            public const uint c_CapabilityFlags_Profiling_Calls = 0x00000100;
+            //////////////////////////////////////////////////////////////////////////////////////
+            // Keep in sync with Debugging_Execution_QueryCLRCapabilities struct in native code //
+            //////////////////////////////////////////////////////////////////////////////////////
+            public const uint c_CapabilityFlags_FloatingPoint =             0x00000001;
+            public const uint c_CapabilityFlags_SourceLevelDebugging =      0x00000002;
+            public const uint c_CapabilityFlags_AppDomains =                0x00000004;
+            public const uint c_CapabilityFlags_ExceptionFilters =          0x00000008;
+            public const uint c_CapabilityFlags_IncrementalDeployment =     0x00000010;
+            public const uint c_CapabilityFlags_SoftReboot =                0x00000020;
+            public const uint c_CapabilityFlags_Profiling =                 0x00000040;
+            public const uint c_CapabilityFlags_Profiling_Allocations =     0x00000080;
+            public const uint c_CapabilityFlags_Profiling_Calls =           0x00000100;
+            public const uint c_CapabilityFlags_ThreadCreateEx =            0x00000400;
+            public const uint c_CapabilityFlags_ConfigBlockRequiresErase =  0x00000800;
+            public const uint c_CapabilityFlags_HasNanoBooter =             0x00001000;
+            public const uint c_CapabilityFlags_HasProprietaryBooter =      0x00002000;
+            public const uint c_CapabilityFlags_IFUCapable =                0x00004000;
+
+            public const uint c_CapabilityFlags_PlatformCapabiliy_0 =       0x01000000;
+            public const uint c_CapabilityFlags_PlatformCapabiliy_1 =       0x02000000;
+            public const uint c_CapabilityFlags_PlatformCapabiliy_2 =       0x04000000;
+            public const uint c_CapabilityFlags_PlatformCapabiliy_3 =       0x08000000;
+            public const uint c_CapabilityFlags_PlatformCapabiliy_Mask =    0x0F000000;
+
+            public const uint c_CapabilityFlags_TargetCapabiliy_0 =         0x10000000;
+            public const uint c_CapabilityFlags_TargetCapabiliy_1 =         0x20000000;
+            public const uint c_CapabilityFlags_TargetCapabiliy_2 =         0x40000000;
+            public const uint c_CapabilityFlags_TargetCapabiliy_3 =         0x80000000;
+            public const uint c_CapabilityFlags_TargetCapabiliy_Mask =      0xF0000000;
+
+            //////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////
 
             public uint m_caps;
 
