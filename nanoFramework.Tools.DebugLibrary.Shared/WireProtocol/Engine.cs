@@ -123,6 +123,21 @@ namespace nanoFramework.Tools.Debugger
             return new BinaryFormatter(Capabilities);
         }
 
+        /// <summary>
+        /// This indicates if the device requires that the configuration block to be erased before updating it.
+        /// </summary>
+        public bool ConfigBlockRequiresErase { get; private set; }
+
+        /// <summary>
+        /// This indicates if the device has a proprietary bootloader.
+        /// </summary>
+        public bool HasProprietaryBooter { get; private set; }
+
+        /// <summary>
+        ///  This indicates if the target device is IFU capable.
+        /// </summary>
+        public bool IsIFUCapable { get; private set; }
+
         public bool IsConnected { get; internal set; }
 
         public ConnectionSource ConnectionSource { get; internal set; }
@@ -217,6 +232,13 @@ namespace nanoFramework.Tools.Debugger
                                 // unsupported packet size
                                 throw new NotSupportedException("Wire Protocol packet size reported by target device is not supported.");
                         }
+
+                        // get other device capabilities
+                        ConfigBlockRequiresErase = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase).Equals(Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase);
+
+                        HasProprietaryBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter);
+
+                        IsIFUCapable = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable).Equals(Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable);
 
 
                         // update flag

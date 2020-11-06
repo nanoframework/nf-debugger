@@ -118,19 +118,40 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
                 bool connectResult = await device.DebugEngine.ConnectAsync(5000, true);
 
-                //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.Start();
                 if(connectResult)
                 {
                     device.DebugEngine.OnProcessExit += DebugEngine_OnProcessExit;
+
+                    var di = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo();
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine(di.ToString());
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                    Debug.WriteLine("Device capabilities:");
+
+                    Debug.Write("IFU capable: ");
+                    if (device.DebugEngine.IsIFUCapable)
+                    {
+                        Debug.WriteLine("YES");
+                    }
+                    else
+                    {
+                        Debug.WriteLine("NO");
+                    }
+
+                    Debug.Write("Has proprietary bootloader: ");
+                    if (device.DebugEngine.HasProprietaryBooter)
+                    {
+                        Debug.WriteLine("YES");
+                    }
+                    else
+                    {
+                        Debug.WriteLine("NO");
+                    }
                 }
-
-                var di = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo();
-
-                Debug.WriteLine("");
-                Debug.WriteLine("");
-                Debug.WriteLine(di.ToString());
-                Debug.WriteLine("");
-                Debug.WriteLine("");
 
             }));
 
