@@ -296,7 +296,7 @@ steps:
 
 # update dependencies
 - task: PowerShell@2
-  condition: or(eq(variables['UPDATE_DEPENDENTS'], 'true'), and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), contains(variables['GetCommitMessage.COMMIT_MESSAGE'], '***UPDATE_DEPENDENTS***') ) )
+  condition: or(eq(variables['UPDATE_DEPENDENTS'], 'true'), and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), and(not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), contains(variables['GetCommitMessage.COMMIT_MESSAGE'], '***UPDATE_DEPENDENTS***') ) ) )
   displayName: Update dependent tools
   inputs:
     targetType: filePath
