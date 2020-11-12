@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.18.2-preview.1...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.19.0-preview.4...HEAD)
+
+**Implemented enhancements:**
+
+- Update boot options [\#255](https://github.com/nanoframework/nf-debugger/pull/255)
+
+## [v1.19.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.19.0-preview.4) (2020-11-06)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.18.2-preview.1...v1.19.0-preview.4)
 
 **Implemented enhancements:**
 
@@ -463,10 +471,6 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-037...v1.0.1-preview-040)
 
-**Implemented enhancements:**
-
-- Improve SerialDevice creation [\#179](https://github.com/nanoframework/nf-debugger/pull/179)
-
 **Documentation and other chores:**
 
 - Update references and dependencies [\#178](https://github.com/nanoframework/nf-debugger/pull/178)
@@ -481,6 +485,7 @@
 
 **Implemented enhancements:**
 
+- Improve SerialDevice creation [\#179](https://github.com/nanoframework/nf-debugger/pull/179)
 - Add new entries to Serial Devices black list [\#175](https://github.com/nanoframework/nf-debugger/pull/175)
 - Work on update device config [\#173](https://github.com/nanoframework/nf-debugger/pull/173)
 
@@ -586,6 +591,7 @@
 - Moved IsDevicesEnumerationComplete [\#63](https://github.com/nanoframework/nf-debugger/pull/63)
 - Exposed property to signal device enumeration completed [\#62](https://github.com/nanoframework/nf-debugger/pull/62)
 - Add ConfigAwait to async calls [\#61](https://github.com/nanoframework/nf-debugger/pull/61)
+- Rework event handlers for partial classes [\#60](https://github.com/nanoframework/nf-debugger/pull/60)
 - Rework MonitorReboot [\#59](https://github.com/nanoframework/nf-debugger/pull/59)
 - Rework device watcher [\#58](https://github.com/nanoframework/nf-debugger/pull/58)
 
@@ -621,10 +627,6 @@
 ## [0.4.0-preview026](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview026) (2017-09-28)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview025...0.4.0-preview026)
-
-**Implemented enhancements:**
-
-- Rework event handlers for partial classes [\#60](https://github.com/nanoframework/nf-debugger/pull/60)
 
 **Fixed bugs:**
 
@@ -673,6 +675,7 @@
 **Fixed bugs:**
 
 - Fix issue with Reboot command [\#42](https://github.com/nanoframework/nf-debugger/pull/42)
+- Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
 
 ## [0.4.0-preview019](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview019) (2017-07-19)
 
@@ -698,10 +701,6 @@
 **Implemented enhancements:**
 
 - Fix erase memory command [\#32](https://github.com/nanoframework/nf-debugger/pull/32)
-
-**Fixed bugs:**
-
-- Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
 
 ## [0.4.0-preview016](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview016) (2017-06-23)
 
