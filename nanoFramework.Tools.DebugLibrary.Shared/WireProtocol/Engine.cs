@@ -1480,7 +1480,7 @@ namespace nanoFramework.Tools.Debugger
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 500);
 
                 // if reboot options ends on a hard reboot, force connection state to disconnected
-                if (((RebootOptions)cmd.flags == RebootOptions.EnterBootloader) ||
+                if (((RebootOptions)cmd.flags == RebootOptions.EnterNanoBooter) ||
                     ((RebootOptions)cmd.flags == RebootOptions.NormalReboot))
                 {
                     IsConnected = false;
