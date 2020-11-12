@@ -710,7 +710,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             (sender as Button).IsEnabled = true;
         }
 
-        private async void RebootAndDebugDeviceButton_Click(object sender, RoutedEventArgs e)
+        private async void RebootToBootloaderButton_Click(object sender, RoutedEventArgs e)
         {  
             // disable button
             (sender as Button).IsEnabled = false;
@@ -722,7 +722,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly | RebootOptions.WaitForDebugger);
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.EnterProprietaryBooter);
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
@@ -1134,6 +1134,37 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
             // enable button
             (sender as Button).IsEnabled = true;
+
+        }
+
+        private async void RebootToNanoBooterButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+
+                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.EnterNanoBooter);
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"Reboot & launch nanoBooter");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+
+                }));
+            }
+            catch
+            {
+
+            }
+
+            // enable button
 
         }
     }

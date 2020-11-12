@@ -9,7 +9,6 @@ namespace nanoFramework.Tools.Debugger
     /// <summary>
     /// Reboot options for nanoFramework device.
     /// </summary>
-    [System.Flags]
     public enum RebootOptions
     {
         /// <summary>
@@ -20,7 +19,7 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Reboot and enter nanoBooter.
         /// </summary>
-        EnterBootloader = 1,
+        EnterNanoBooter = 1,
 
         /// <summary>
         /// Reboot CLR only.
@@ -30,6 +29,11 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Wait for debugger.
         /// </summary>
-        WaitForDebugger = 4
+        WaitForDebugger = 4,
+
+        /// <summary>
+        /// Reboot and enter proprietary bootloader.
+        /// </summary>
+        EnterProprietaryBooter = 5,
     };
 }
