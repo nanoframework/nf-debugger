@@ -156,6 +156,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             /// </summary>
             public const uint Monitor_Ping_c_ConfigBlockRequiresErase = 0x00040000;
 
+            /// <summary>
+            /// This flag indicates that the device has nanoBooter.
+            /// </summary>
+            public const uint Monitor_Ping_c_HasNanoBooter =            0x00080000;
+
             ///////////////////////////////////////////////////////////////////////
 
             public uint Source;

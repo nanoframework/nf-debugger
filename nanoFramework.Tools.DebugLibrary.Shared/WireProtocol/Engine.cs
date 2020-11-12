@@ -132,6 +132,11 @@ namespace nanoFramework.Tools.Debugger
         /// This indicates if the device has a proprietary bootloader.
         /// </summary>
         public bool HasProprietaryBooter { get; private set; }
+        
+        /// <summary>
+        /// This indicates if the target device has nanoBooter.
+        /// </summary>
+        public bool HasNanoBooter { get; private set; }
 
         /// <summary>
         ///  This indicates if the target device is IFU capable.
@@ -237,6 +242,8 @@ namespace nanoFramework.Tools.Debugger
                         ConfigBlockRequiresErase = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase).Equals(Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase);
 
                         HasProprietaryBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter);
+                        
+                        HasNanoBooter = (reply.Flags & Commands.Monitor_Ping.c_Ping_Source_NanoBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter);
 
                         IsIFUCapable = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable).Equals(Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable);
 
