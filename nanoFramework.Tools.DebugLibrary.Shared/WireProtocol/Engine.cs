@@ -243,7 +243,7 @@ namespace nanoFramework.Tools.Debugger
 
                         HasProprietaryBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter);
                         
-                        HasNanoBooter = (reply.Flags & Commands.Monitor_Ping.c_Ping_Source_NanoBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter);
+                        HasNanoBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter);
 
                         IsIFUCapable = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable).Equals(Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable);
 
