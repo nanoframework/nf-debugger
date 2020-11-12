@@ -2,7 +2,19 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.19.0-preview.4...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.20.0-preview.1...HEAD)
+
+**Implemented enhancements:**
+
+- Add flag to Ping to expose support for nanoBooter [\#257](https://github.com/nanoframework/nf-debugger/pull/257)
+
+**Fixed bugs:**
+
+- Fix reboot options [\#256](https://github.com/nanoframework/nf-debugger/pull/256)
+
+## [v1.20.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.20.0-preview.1) (2020-11-12)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.19.0-preview.4...v1.20.0-preview.1)
 
 **Implemented enhancements:**
 
@@ -419,6 +431,10 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-066...v1.0.1-preview-068)
 
+**Implemented enhancements:**
+
+- Improve disconnection of SerialDevice [\#186](https://github.com/nanoframework/nf-debugger/pull/186)
+
 **Fixed bugs:**
 
 - Improve code on EraseAsync [\#193](https://github.com/nanoframework/nf-debugger/pull/193)
@@ -448,7 +464,6 @@
 
 - Work on DeploymentExecuteIncremental [\#189](https://github.com/nanoframework/nf-debugger/pull/189)
 - Add output to help debug device state [\#188](https://github.com/nanoframework/nf-debugger/pull/188)
-- Improve disconnection of SerialDevice [\#186](https://github.com/nanoframework/nf-debugger/pull/186)
 - Tidy output of device capabilites listings [\#184](https://github.com/nanoframework/nf-debugger/pull/184)
 - Update CreateInstanceForSerial constructor for .NET lib [\#183](https://github.com/nanoframework/nf-debugger/pull/183)
 - Improvements device discovery and PortBase classes [\#182](https://github.com/nanoframework/nf-debugger/pull/182)
@@ -471,6 +486,10 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-037...v1.0.1-preview-040)
 
+**Implemented enhancements:**
+
+- Improve SerialDevice creation [\#179](https://github.com/nanoframework/nf-debugger/pull/179)
+
 **Documentation and other chores:**
 
 - Update references and dependencies [\#178](https://github.com/nanoframework/nf-debugger/pull/178)
@@ -485,7 +504,6 @@
 
 **Implemented enhancements:**
 
-- Improve SerialDevice creation [\#179](https://github.com/nanoframework/nf-debugger/pull/179)
 - Add new entries to Serial Devices black list [\#175](https://github.com/nanoframework/nf-debugger/pull/175)
 - Work on update device config [\#173](https://github.com/nanoframework/nf-debugger/pull/173)
 
