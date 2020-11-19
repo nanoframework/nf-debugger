@@ -243,7 +243,7 @@ namespace nanoFramework.Tools.Debugger
         /// <returns>Returns false if the erase fails, true otherwise
         /// Possible exceptions: MFUserExitException, MFDeviceNoResponseException
         /// </returns>
-        public async Task<bool> EraseAsync(EraseOptions options, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
+        public async Task<bool> EraseAsync(EraseOptions options, CancellationToken cancellationToken, IProgress<string> progress = null)
         {
             bool fReset = false;
 
@@ -367,13 +367,13 @@ namespace nanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in eraseSectors)
             {
-                progress?.Report(new ProgressReport(value, total, $"Erasing sector 0x{flashSectorData.m_StartAddress:X8}."));
+                progress?.Report($"Erasing sector 0x{flashSectorData.m_StartAddress:X8}.");
 
                 (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
 
                 if (!Success)
                 {
-                    progress?.Report(new ProgressReport(value, total, $"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}."));
+                    progress?.Report($"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}.");
 
                     return false;
                 }
@@ -382,7 +382,7 @@ namespace nanoFramework.Tools.Debugger
                 if (ErrorCode != AccessMemoryErrorCodes.NoError)
                 {
                     // operation failed
-                    progress?.Report(new ProgressReport(value, total, $"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}. Error code: {ErrorCode}."));
+                    progress?.Report($"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}. Error code: {ErrorCode}.");
                     
                     // don't bother continuing
                     return false;
@@ -400,7 +400,7 @@ namespace nanoFramework.Tools.Debugger
             // reboot if we are talking to the CLR
             if (isConnectedToCLR)
             {
-                progress?.Report(new ProgressReport(0, 0, "Rebooting..."));
+                progress?.Report("Rebooting...");
 
                 RebootOptions rebootOptions = RebootOptions.ClrOnly;
 
@@ -410,7 +410,7 @@ namespace nanoFramework.Tools.Debugger
             return true;
         }
 
-        public async Task<bool> DeployUpdateAsync(StorageFile comprFilePath, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
+        public async Task<bool> DeployUpdateAsync(StorageFile comprFilePath, CancellationToken cancellationToken, IProgress<string> progress = null)
         {
             if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
             {
@@ -431,7 +431,7 @@ namespace nanoFramework.Tools.Debugger
             string binFile,
             uint address,
             CancellationToken cancellationToken, 
-            IProgress<ProgressReport> progress = null)
+            IProgress<string> progress = null)
         {
             // validate if file exists
             if(!File.Exists(binFile))
@@ -455,10 +455,7 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            progress?.Report(new ProgressReport(
-                0,
-                data.Length,
-                $"Deploying {Path.GetFileNameWithoutExtension(binFile)}..."));
+            progress?.Report($"Deploying {Path.GetFileNameWithoutExtension(binFile)}...");
 
             return DeployFile(
                 data,
@@ -478,7 +475,7 @@ namespace nanoFramework.Tools.Debugger
         private async Task<bool> DeploySrecFileAsync(
             string srecFile,
             CancellationToken cancellationToken,
-            IProgress<ProgressReport> progress = null)
+            IProgress<string> progress = null)
         {
             // validate if file exists
             if (!File.Exists(srecFile))
@@ -508,10 +505,7 @@ namespace nanoFramework.Tools.Debugger
                     return false;
                 }
 
-                progress?.Report(new ProgressReport(
-                    value,
-                    total,
-                    $"Deploying {Path.GetFileNameWithoutExtension(srecFile)}..."));
+                progress?.Report($"Deploying {Path.GetFileNameWithoutExtension(srecFile)}...");
 
                 foreach (SRecordFile.Block block in blocks)
                 {
@@ -545,15 +539,12 @@ namespace nanoFramework.Tools.Debugger
             byte[] buffer,
             uint address,
             CancellationToken cancellationToken,
-            IProgress<ProgressReport> progress = null)
+            IProgress<string> progress = null)
         {
             (AccessMemoryErrorCodes ErrorCode, bool Success) writeResult = DebugEngine.WriteMemory(address, buffer);
             if (!writeResult.Success)
             {
-                progress?.Report(new ProgressReport(
-                    0,
-                    buffer.Length,
-                    $"Error writing to device memory @ 0x{address:X8}."));
+                progress?.Report($"Error writing to device memory @ 0x{address:X8}.");
 
                 return false;
             }
@@ -685,7 +676,7 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        private async Task<bool> DeployMFUpdateAsync(StorageFile zipFile, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
+        private async Task<bool> DeployMFUpdateAsync(StorageFile zipFile, CancellationToken cancellationToken, IProgress<string> progress = null)
         {
             if (zipFile.IsAvailable)
             {
@@ -806,7 +797,7 @@ namespace nanoFramework.Tools.Debugger
 
                             imageCRC = CRC.ComputeCRC(packet, 0, packet.Length, imageCRC);
 
-                            progress?.Report(new ProgressReport(idx, numPkts, string.Format("Deploying {0}...", idx)));
+                            progress?.Report($"Deploying {idx}...");
                         }
 
                         if (hash != null)
@@ -1181,7 +1172,7 @@ namespace nanoFramework.Tools.Debugger
             byte[] buffer,
             uint address,
             CancellationToken cancellationToken,
-            IProgress<ProgressReport> progress = null)
+            IProgress<string> progress = null)
         {
             return await PrepareForDeployAsync(
                 buffer,
@@ -1194,7 +1185,7 @@ namespace nanoFramework.Tools.Debugger
         private async Task<bool> PrepareForDeployAsync(
             List<SRecordFile.Block> blocks,
             CancellationToken cancellationToken,
-            IProgress<ProgressReport> progress = null)
+            IProgress<string> progress = null)
         {
             return await PrepareForDeployAsync(
                 null,
@@ -1210,7 +1201,7 @@ namespace nanoFramework.Tools.Debugger
             uint address,
             List<SRecordFile.Block> blocks, 
             CancellationToken cancellationToken, 
-            IProgress<ProgressReport> progress = null)
+            IProgress<string> progress = null)
         {
             // get flash sector map, only if needed
             List<Commands.Monitor_FlashSectorMap.FlashSectorData> flashSectorsMap = DebugEngine.FlashSectorMap.Count == 0 ? DebugEngine.GetFlashSectorMap() : DebugEngine.FlashSectorMap;
@@ -1287,7 +1278,7 @@ namespace nanoFramework.Tools.Debugger
                     cancellationToken,
                     progress))
                 {
-                    progress?.Report(new ProgressReport(0, totalLength, "Error erasing nanoCLR device memory."));
+                    progress?.Report("Error erasing nanoCLR device memory.");
 
                     return false;
                 }
@@ -1300,7 +1291,7 @@ namespace nanoFramework.Tools.Debugger
                     cancellationToken, 
                     progress))
                 {
-                    progress?.Report(new ProgressReport(0, totalLength, "Error erasing DEPLOYMENT device memory."));
+                    progress?.Report("Error erasing DEPLOYMENT device memory.");
 
                     return false;
                 }
