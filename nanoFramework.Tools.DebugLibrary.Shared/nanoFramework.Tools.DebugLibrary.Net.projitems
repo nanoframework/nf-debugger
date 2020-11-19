@@ -68,7 +68,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\NanoBooterConnectionFailureException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\NanoSerialDevice.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\NanoUserExitException.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)NFDevice\ProgressReport.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\SrecParseResult.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\NanoUsbDevice.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortDefinitions\IPort.cs" />
