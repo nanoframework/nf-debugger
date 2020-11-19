@@ -111,13 +111,25 @@ namespace Test_App_UWP
             // disable button
             (sender as Button).IsEnabled = false;
 
-            // for this to work first need to copy the files ER_CONFIG and ER_CONFIG.sig to Documents folder
-            StorageFolder storageFolder = await KnownFolders.GetFolderForUserAsync(null /* current user */, KnownFolderId.DocumentsLibrary);
+            //// for this to work first need to copy the files nanoCLR.bin and nanoCLR.hex to Documents folder
+            //string hexFile = Path.Combine(
+            //                            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            //                            "nanoCLR.hex");
 
-            StorageFile srecFile = await storageFolder.TryGetItemAsync("ER_CONFIG") as StorageFile;
+            //var reply = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DeploySrecFileAsync(hexFile, CancellationToken.None, null);
 
-            var reply = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DeployAsync(srecFile, CancellationToken.None, null);
 
+            // now the BIN file
+            string binFile = Path.Combine(
+                                        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                                        "nanoCLR.bin");
+
+            ////////////////////////////////////////////////////////////////////////////////
+            // MAKE sure to adjust this to the appropriate flash address of the CLR block //
+            uint flashAddress = 0x08004000;
+            ////////////////////////////////////////////////////////////////////////////////
+
+            var reply1 = await App.NanoFrameworkSerialDebugClient.NanoFrameworkDevices[0].DeployBinaryFileAsync(binFile, flashAddress, CancellationToken.None, null);
 
             // enable button
             (sender as Button).IsEnabled = true;
