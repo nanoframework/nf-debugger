@@ -10,6 +10,7 @@ using Serial_Test_App_WPF.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -1166,6 +1167,36 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
             // enable button
 
+        }
+
+        private async void DeployFileTestButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            // for this to work first need to copy the files nanoCLR.bin and nanoCLR.s19 to Documents folder
+           
+            //string hexFile = Path.Combine(
+            //                            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            //                            "nanoCLR.s19");
+
+            //var reply = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DeploySrecFileAsync(hexFile, CancellationToken.None, null);
+
+
+            // now the BIN file
+            string binFile = Path.Combine(
+                                        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                                        "nanoCLR.bin");
+
+            ////////////////////////////////////////////////////////////////////////////////
+            // MAKE sure to adjust this to the appropriate flash address of the CLR block //
+            uint flashAddress = 0x08004000;
+            ////////////////////////////////////////////////////////////////////////////////
+
+            var reply1 = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DeployBinaryFileAsync(binFile, flashAddress, CancellationToken.None, null);
+
+            // enable button
+            (sender as Button).IsEnabled = true;
         }
     }
 }

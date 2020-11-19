@@ -8,6 +8,7 @@ using nanoFramework.Tools.Debugger.WireProtocol;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -209,6 +210,11 @@ namespace nanoFramework.Tools.Debugger
                 {
                     // check if cancellation was requested 
                     if (cancellationToken.IsCancellationRequested) return false;
+
+                    if(DebugEngine == null)
+                    {
+                        CreateDebugEngine();
+                    }
 
                     if (fConnected = await DebugEngine.ConnectAsync(1000, true, ConnectionSource.Unknown))
                     {
@@ -415,51 +421,77 @@ namespace nanoFramework.Tools.Debugger
         }
 
         /// <summary>
-        /// Attempts to deploy an SREC (.hex) file to the connected nanoFramework device. 
+        /// Attempts to deploy a binary (.bin) file to the connected nanoFramework device. 
         /// </summary>
-        /// <param name="srecFile">Storage file with the SREC (.hex) file</param>
-        /// <param name="entrypoint">Out parameter that is set to the entry point address for the given SREC file</param>
-        /// <returns>Returns false if the deployment fails, true otherwise
-        /// Possible exceptions: MFFileNotFoundException, MFDeviceNoResponseException, MFUserExitException
+        /// <param name="binFile">Path to the binary file (.bin).</param>
+        /// <param name="address">Address to write to.</param>
+        /// <returns>Returns false if the deployment fails, true otherwise.
         /// </returns>
-        public async Task<Tuple<uint, bool>> DeployAsync(StorageFile srecFile, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
+        public async Task<bool> DeployBinaryFileAsync(
+            string binFile,
+            uint address,
+            CancellationToken cancellationToken, 
+            IProgress<ProgressReport> progress = null)
         {
-            uint entryPoint = 0;
-            List<SRecordFile.Block> blocks = new List<SRecordFile.Block>();
-
-            if (!srecFile.IsAvailable)
+            // validate if file exists
+            if(!File.Exists(binFile))
             {
-                return new Tuple<uint, bool>(0, false);
+                return false;
             }
 
             if (DebugEngine == null)
             {
-                return new Tuple<uint, bool>(0, false);
+                return false;
             }
+            
+            var data = File.ReadAllBytes(binFile);
 
-            // make sure we know who we are talking to
-            if (await CheckForMicroBooterAsync(cancellationToken))
+            if (!await PrepareForDeployAsync(
+                data,
+                address,
+                cancellationToken,
+                progress))
             {
-                Tuple<uint, bool> reply = await DeploySRECAsync(srecFile, cancellationToken);
-
-                // check if request was successful
-                if (reply.Item2)
-                {
-                    entryPoint = reply.Item1;
-
-                    return new Tuple<uint, bool>(entryPoint, true);
-                }
-                else
-                {
-                    return new Tuple<uint, bool>(0, false);
-                }
+                return false;
             }
 
-            await DebugEngine.ConnectAsync(1000, false, ConnectionSource.Unknown);
+            progress?.Report(new ProgressReport(
+                0,
+                data.Length,
+                $"Deploying {Path.GetFileNameWithoutExtension(binFile)}..."));
 
-            Tuple<uint, List<SRecordFile.Block>> parseResult = await SRecordFile.ParseAsync(srecFile);
-            entryPoint = parseResult.Item1;
-            blocks = parseResult.Item2;
+            return DeployFile(
+                data,
+                address,
+                cancellationToken,
+                progress);
+        }
+
+        /// <summary>
+        /// Attempts to deploy an SREC (.hex) file to the connected nanoFramework device. 
+        /// </summary>
+        /// <param name="srecFile">Path to the SREC file (.hex) file.</param>
+        /// <returns>Returns <see langword="false"/> if the deployment fails, <see langword="true"/> otherwise.
+        /// Also returns the entry point address for the given SREC file.
+        /// </returns>
+        // TODO this is not working most likely because of the format or parsing.
+        private async Task<bool> DeploySrecFileAsync(
+            string srecFile,
+            CancellationToken cancellationToken,
+            IProgress<ProgressReport> progress = null)
+        {
+            // validate if file exists
+            if (!File.Exists(srecFile))
+            {
+                return false;
+            }
+
+            if (DebugEngine == null)
+            {
+                return false;
+            }
+
+            List<SRecordFile.Block> blocks = SRecordFile.Parse(srecFile);
 
             if (blocks.Count > 0)
             {
@@ -468,70 +500,65 @@ namespace nanoFramework.Tools.Debugger
 
                 for (int i = 0; i < blocks.Count; i++)
                 {
-                    total += (blocks[i] as SRecordFile.Block).data.Length;
+                    total += blocks[i].data.Length;
                 }
 
-                await PrepareForDeployAsync(blocks, cancellationToken, progress);
+                if(!await PrepareForDeployAsync(blocks, cancellationToken, progress))
+                {
+                    return false;
+                }
 
-
+                progress?.Report(new ProgressReport(
+                    value,
+                    total,
+                    $"Deploying {Path.GetFileNameWithoutExtension(srecFile)}..."));
 
                 foreach (SRecordFile.Block block in blocks)
                 {
-                    long len = block.data.Length;
                     uint addr = block.address;
 
                     // check if cancellation was requested 
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        return new Tuple<uint, bool>(0, false);
+                        return false;
                     }
 
                     block.data.Seek(0, SeekOrigin.Begin);
 
-                    progress?.Report(new ProgressReport(0, total, string.Format("Erasing sector 0x{0:x08}", block.address)));
+                    byte[] data = new byte[block.data.Length];
 
-                    // the clr requires erase before writing
-                    (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(block.address, (uint)len);
-
-                    if (!Success)
+                    if (!DeployFile(
+                        data,
+                        addr,
+                        cancellationToken,
+                        progress))
                     {
-                        return new Tuple<uint, bool>(0, false);
-                    }
-
-                    while (len > 0)
-                    {
-                        // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            return new Tuple<uint, bool>(0, false);
-                        }
-
-                        // get packet length, either the maximum allowed size or whatever is still available to TX
-                        uint buflen = Math.Min((uint)DebugEngine.GetPacketMaxLength(new Commands.Monitor_WriteMemory()), (uint)len);
-
-                        byte[] data = new byte[buflen];
-
-                        if (block.data.Read(data, 0, (int)buflen) <= 0)
-                        {
-                            return new Tuple<uint, bool>(0, false);
-                        }
-
-                        (AccessMemoryErrorCodes ErrorCode, bool Success) writeResult = DebugEngine.WriteMemory(addr, data);
-                        if (!writeResult.Success)
-                        {
-                            return new Tuple<uint, bool>(0, false);
-                        }
-
-                        value += buflen;
-                        addr += buflen;
-                        len -= buflen;
-
-                        progress?.Report(new ProgressReport(value, total, string.Format("Deploying {0}...", srecFile.Name)));
+                        return false;
                     }
                 }
             }
 
-            return new Tuple<uint, bool>(entryPoint, true);
+            return true;
+        }
+
+        private bool DeployFile(
+            byte[] buffer,
+            uint address,
+            CancellationToken cancellationToken,
+            IProgress<ProgressReport> progress = null)
+        {
+            (AccessMemoryErrorCodes ErrorCode, bool Success) writeResult = DebugEngine.WriteMemory(address, buffer);
+            if (!writeResult.Success)
+            {
+                progress?.Report(new ProgressReport(
+                    0,
+                    buffer.Length,
+                    $"Error writing to device memory @ 0x{address:X8}."));
+
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -1150,69 +1177,133 @@ namespace nanoFramework.Tools.Debugger
             return true;
         }
 
-        private async Task<bool> PrepareForDeployAsync(List<SRecordFile.Block> blocks, CancellationToken cancellationToken, IProgress<ProgressReport> progress = null)
+        private async Task<bool> PrepareForDeployAsync(
+            byte[] buffer,
+            uint address,
+            CancellationToken cancellationToken,
+            IProgress<ProgressReport> progress = null)
         {
-            const uint c_DeploySector = Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
-            const uint c_SectorUsageMask = Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK;
+            return await PrepareForDeployAsync(
+                buffer,
+                address,
+                null,
+                cancellationToken,
+                progress);
+        }
 
-            bool fEraseDeployment = false;
+        private async Task<bool> PrepareForDeployAsync(
+            List<SRecordFile.Block> blocks,
+            CancellationToken cancellationToken,
+            IProgress<ProgressReport> progress = null)
+        {
+            return await PrepareForDeployAsync(
+                null,
+                0,
+                blocks,
+                cancellationToken,
+                progress);
+        }
 
-            // if vsdebug is not enabled then we cannot write/erase
-            if (!IsClrDebuggerEnabled)
-            {
-                progress?.Report(new ProgressReport(0, 1, "Connecting to TinyBooter..."));
 
-                // only check for signature file if we are uploading firmware
-                if (!await ConnectToNanoBooterAsync(cancellationToken))
-                {
-                    return false;
-                }
-            }
+        private async Task<bool> PrepareForDeployAsync(
+            byte[] buffer,
+            uint address,
+            List<SRecordFile.Block> blocks, 
+            CancellationToken cancellationToken, 
+            IProgress<ProgressReport> progress = null)
+        {
+            // get flash sector map, only if needed
+            List<Commands.Monitor_FlashSectorMap.FlashSectorData> flashSectorsMap = DebugEngine.FlashSectorMap.Count == 0 ? DebugEngine.GetFlashSectorMap() : DebugEngine.FlashSectorMap;
 
-            List<Commands.Monitor_FlashSectorMap.FlashSectorData> flasSectorsMap = DebugEngine.GetFlashSectorMap();
-
-            if (flasSectorsMap == null || flasSectorsMap.Count == 0)
+            // sanity check
+            if (flashSectorsMap.Count == 0)
             {
                 return false;
             }
 
-            foreach (SRecordFile.Block bl in blocks)
-            {
-                foreach (Commands.Monitor_FlashSectorMap.FlashSectorData sector in flasSectorsMap)
-                {
-                    if (sector.m_StartAddress == bl.address)
-                    {
-                        // only support writing with CLR to the deployment sector and RESERVED sector (for digi)
-                        if (c_DeploySector == (c_SectorUsageMask & sector.m_flags))
-                        {
-                            fEraseDeployment = true;
-                        }
-                        else
-                        {
-                            if (DebugEngine.ConnectionSource != ConnectionSource.nanoBooter)
-                            {
-                                progress?.Report(new ProgressReport(0, 1, "Connecting to nanoBooter..."));
+            // validate deployment
+            bool updatesDeployment = false;
+            bool updatesClr = false;
+            bool updatesBooter = false;
 
-                                // only check for signature file if we are uploading firmware
-                                if (!await ConnectToNanoBooterAsync(cancellationToken))
-                                {
-                                    return false;
-                                }
-                            }
-                        }
-                        break;
+            long totalLength;
+
+            if (blocks != null)
+            {
+                foreach (SRecordFile.Block bl in blocks)
+                {
+                    var startSector = flashSectorsMap.Find(s => s.m_StartAddress == bl.address);
+                    if (startSector.m_NumBlocks > 0)
+                    {
+                        updatesDeployment ^= (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
+                        updatesClr ^= (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
+                        updatesBooter ^= (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP;
                     }
+                }
+
+                totalLength = blocks.Sum(b => b.data.Length);
+            }
+            else
+            {
+                var startSector = flashSectorsMap.Find(s => s.m_StartAddress == address);
+                if (startSector.m_NumBlocks > 0)
+                {
+                    updatesDeployment = (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
+                    updatesClr = (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
+                    updatesBooter = (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP;
+                }
+
+                totalLength = buffer.Length;
+            }
+
+            // sanity check
+            if (updatesBooter)
+            {
+                // can't handle this update because it touches nanoBooter
+                return false;
+            }
+
+            if(
+                !updatesDeployment &&
+                !updatesClr &&
+                !updatesBooter)
+            {
+                // nothing to update???
+                return false;
+            }
+
+            if (updatesClr &&
+                DebugEngine.ConnectionSource != ConnectionSource.nanoBooter)
+            {
+                // if this is updating the CLR need to launch nanoBooter
+                await ConnectToNanoBooterAsync(cancellationToken);
+            }
+
+            // erase whatever blocks are required
+            if (updatesClr)
+            {
+                if (!await EraseAsync(
+                    EraseOptions.Firmware,
+                    cancellationToken,
+                    progress))
+                {
+                    progress?.Report(new ProgressReport(0, totalLength, "Error erasing nanoCLR device memory."));
+
+                    return false;
                 }
             }
 
-            if (fEraseDeployment)
+            if (updatesDeployment)
             {
-                await EraseAsync(EraseOptions.Deployment, cancellationToken, progress);
-            }
-            else if (DebugEngine.ConnectionSource != ConnectionSource.nanoBooter)
-            {
-                //if we are not writing to the deployment sector then assure that we are talking with nanoBooter
-                await ConnectToNanoBooterAsync(cancellationToken);
+                if (!await EraseAsync(
+                    EraseOptions.Deployment, 
+                    cancellationToken, 
+                    progress))
+                {
+                    progress?.Report(new ProgressReport(0, totalLength, "Error erasing DEPLOYMENT device memory."));
+
+                    return false;
+                }
             }
 
             if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)

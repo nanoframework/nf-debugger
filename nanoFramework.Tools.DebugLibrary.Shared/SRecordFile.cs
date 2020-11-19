@@ -5,11 +5,9 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Windows.Storage;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -22,17 +20,18 @@ namespace nanoFramework.Tools.Debugger
             public bool executable;
         }
 
-        static public async Task<Tuple<uint, List<Block>>> ParseAsync(StorageFile file)
+        static public List<Block> Parse(string file)
         {
+            // validate if file exists
+            if (!File.Exists(file))
+            {
+                throw new FileNotFoundException($"Can't open {file}.");
+            }
+
             uint entrypoint = 0;
             List<Block> blocks = new List<Block>();
 
-            if (!file.IsAvailable)
-            {
-                throw new FileNotFoundException(String.Format("Cannot find {0}", file));
-            }
-
-            var textLines = await FileIO.ReadLinesAsync(file);
+            var textLines = File.ReadAllLines(file);
 
             foreach (string line in textLines)
             {
@@ -46,42 +45,42 @@ namespace nanoFramework.Tools.Debugger
 
                 // we only accept S0, S3 and S7 records (header, memory loadable data, execution address)
                 if (
-                    (Char.ToLower(lineBytes[0]) != 's') ||
+                    (char.ToLower(lineBytes[0]) != 's') ||
                     (lineBytes[1] != '0' && lineBytes[1] != '3' && lineBytes[1] != '7')
                     )
                 {
-                    throw new ArgumentException(String.Format("Unknown format at line {0} of {1}:\n {2}", lineNum, file, line));
+                    throw new ArgumentException($"Unknown format at line {lineNum} of {file}:\n {line}");
                 }
 
                 // we discard S0 records
-                if ((Char.ToLower(lineBytes[0]) == 's') && (lineBytes[1] == '0'))
+                if ((char.ToLower(lineBytes[0]) == 's') && (lineBytes[1] == '0'))
                 {
                     continue;
                 }
 
-                int num = Byte.Parse(new string(lineBytes, 2, 2), System.Globalization.NumberStyles.HexNumber);
+                int num = byte.Parse(new string(lineBytes, 2, 2), System.Globalization.NumberStyles.HexNumber);
                 if (num != ((len / 2) - 2))
                 {
-                    throw new ArgumentException(String.Format("Incorrect length at line {0} of {1}: {2}", lineNum, file, num));
+                    throw new ArgumentException($"Incorrect length at line {lineNum} of {file}: {num}");
                 }
 
                 byte crc = (byte)num;
 
                 for (i = 4; i < len - 2; i += 2)
                 {
-                    crc += Byte.Parse(new string(lineBytes, i, 2), System.Globalization.NumberStyles.HexNumber);
+                    crc += byte.Parse(new string(lineBytes, i, 2), System.Globalization.NumberStyles.HexNumber);
                 }
 
-                byte checksum = Byte.Parse(new string(lineBytes, len - 2, 2), System.Globalization.NumberStyles.HexNumber);
+                byte checksum = byte.Parse(new string(lineBytes, len - 2, 2), System.Globalization.NumberStyles.HexNumber);
 
                 if ((checksum ^ crc) != 0xFF)
                 {
-                    throw new ArgumentException(String.Format("Incorrect crc at line {0} of {1}: got {2:X2}, expected {3:X2}", lineNum, file, crc, checksum));
+                    throw new ArgumentException($"Incorrect crc at line {lineNum} of {file}: got {crc:X2}, expected {checksum:X2}");
                 }
 
                 num -= 5;
 
-                uint address = UInt32.Parse(new string(lineBytes, 4, 8), System.Globalization.NumberStyles.HexNumber);
+                uint address = uint.Parse(new string(lineBytes, 4, 8), System.Globalization.NumberStyles.HexNumber);
 
                 if (lineBytes[1] == '7')
                 {
@@ -107,7 +106,7 @@ namespace nanoFramework.Tools.Debugger
 
                     for (i = 0; i < num; i++)
                     {
-                        bl.data.WriteByte(Byte.Parse(new string(lineBytes, 12 + i * 2, 2), System.Globalization.NumberStyles.HexNumber));
+                        bl.data.WriteByte(byte.Parse(new string(lineBytes, 12 + i * 2, 2), System.Globalization.NumberStyles.HexNumber));
                     }
 
                     for (i = 0; i < blocks.Count; i++)
@@ -154,7 +153,7 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            return new Tuple<uint, List<Block>>(entrypoint, blocks);
+            return blocks;
         }
 
         static public void Encode(Stream stream, byte[] buf, uint address)

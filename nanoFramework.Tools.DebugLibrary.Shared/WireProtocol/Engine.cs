@@ -1468,8 +1468,9 @@ namespace nanoFramework.Tools.Debugger
 
             ThrowOnCommunicationFailure = false;
 
-            // check if device can handle soft reboot
-            if(Capabilities.SoftReboot)
+            // check if device running nanoBooter or if it can handle soft reboot
+            if (ConnectionSource == ConnectionSource.nanoBooter || 
+                Capabilities.SoftReboot)
             {
                 cmd.flags = (uint)options;
             }
