@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.20.0-preview.5...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.20.0-preview.8...HEAD)
+
+**Implemented enhancements:**
+
+- Add DeployBinaryFileAsync to NanoDeviceBase [\#259](https://github.com/nanoframework/nf-debugger/pull/259)
+
+## [v1.20.0-preview.8](https://github.com/nanoframework/nf-debugger/tree/v1.20.0-preview.8) (2020-11-12)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.20.0-preview.5...v1.20.0-preview.8)
 
 **Fixed bugs:**
 
@@ -244,6 +252,7 @@
 
 - General improvements with serial devices [\#223](https://github.com/nanoframework/nf-debugger/pull/223)
 - Improvements on device detection [\#222](https://github.com/nanoframework/nf-debugger/pull/222)
+- Revert some changes in detection workflow [\#220](https://github.com/nanoframework/nf-debugger/pull/220)
 
 **Documentation and other chores:**
 
@@ -252,10 +261,6 @@
 ## [v1.9.0-preview.13](https://github.com/nanoframework/nf-debugger/tree/v1.9.0-preview.13) (2020-02-26)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.9.0-preview.12...v1.9.0-preview.13)
-
-**Implemented enhancements:**
-
-- Revert some changes in detection workflow [\#220](https://github.com/nanoframework/nf-debugger/pull/220)
 
 ## [v1.9.0-preview.12](https://github.com/nanoframework/nf-debugger/tree/v1.9.0-preview.12) (2020-02-26)
 
@@ -511,7 +516,6 @@
 
 - Add new entries to Serial Devices black list [\#175](https://github.com/nanoframework/nf-debugger/pull/175)
 - Work on update device config [\#173](https://github.com/nanoframework/nf-debugger/pull/173)
-- Fix to address ESP32 Memory Erase timeout [\#169](https://github.com/nanoframework/nf-debugger/pull/169)
 
 **Documentation and other chores:**
 
@@ -529,6 +533,14 @@
 ## [v1.0.1-preview008](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview008) (2018-10-31)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.0...v1.0.1-preview008)
+
+**Implemented enhancements:**
+
+- Fix to address ESP32 Memory Erase timeout [\#169](https://github.com/nanoframework/nf-debugger/pull/169)
+
+**Fixed bugs:**
+
+- Add new erase option for configuration block [\#162](https://github.com/nanoframework/nf-debugger/pull/162)
 
 ## [v1.0.0](https://github.com/nanoframework/nf-debugger/tree/v1.0.0) (2018-10-15)
 
@@ -617,7 +629,6 @@
 
 **Fixed bugs:**
 
-- Add new erase option for configuration block [\#162](https://github.com/nanoframework/nf-debugger/pull/162)
 - Improve code to validate deployment before actually commiting it [\#160](https://github.com/nanoframework/nf-debugger/pull/160)
 - Fix issue with WP buffer length [\#159](https://github.com/nanoframework/nf-debugger/pull/159)
 - Fix bug in Engine.ProcessMessage [\#155](https://github.com/nanoframework/nf-debugger/pull/155)
