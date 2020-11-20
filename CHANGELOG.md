@@ -1,8 +1,8 @@
 # Changelog
 
-## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
+## [v1.21.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.21.0-preview.4) (2020-11-20)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.21.0-preview.1...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.21.0-preview.1...v1.21.0-preview.4)
 
 **Implemented enhancements:**
 
@@ -438,6 +438,7 @@
 **Implemented enhancements:**
 
 - Add support for type resolution failed flag [\#197](https://github.com/nanoframework/nf-debugger/pull/197)
+- Work on ReadMemory command [\#195](https://github.com/nanoframework/nf-debugger/pull/195)
 
 **Documentation and other chores:**
 
@@ -454,10 +455,6 @@
 ## [v1.0.1-preview-068](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-068) (2019-03-18)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-066...v1.0.1-preview-068)
-
-**Implemented enhancements:**
-
-- Work on ReadMemory command [\#195](https://github.com/nanoframework/nf-debugger/pull/195)
 
 **Fixed bugs:**
 
