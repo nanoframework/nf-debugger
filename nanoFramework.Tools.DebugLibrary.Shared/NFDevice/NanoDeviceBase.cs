@@ -72,6 +72,42 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public INanoFrameworkDeviceInfo DeviceInfo { get; internal set; }
 
+        /// <summary>
+        /// Start address of the deployment block.
+        /// </summary>
+        public uint DeploymentStartAddress
+        {
+            get
+            {
+                if(DebugEngine != null &&
+                    DebugEngine.FlashSectorMap != null)
+                {
+                    return DebugEngine.FlashSectorMap.First(
+                                s => (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT).m_StartAddress;
+                }
+
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Start address of the CLR block.
+        /// </summary>
+        public uint ClrStartAddress
+        {
+            get
+            {
+                if (DebugEngine != null &&
+                    DebugEngine.FlashSectorMap != null)
+                {
+                    return DebugEngine.FlashSectorMap.First(
+                                s => (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).m_StartAddress;
+                }
+
+                return 0;
+            }
+        }
+
         private readonly object m_serverCert = null;
         private readonly Dictionary<uint, string> m_execSrecHash = new Dictionary<uint, string>();
         private readonly Dictionary<uint, int> m_srecHash = new Dictionary<uint, int>();
