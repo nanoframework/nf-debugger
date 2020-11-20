@@ -125,6 +125,8 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
                     var di = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo();
 
+                    var clrAddress = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].ClrStartAddress;
+
                     Debug.WriteLine("");
                     Debug.WriteLine("");
                     Debug.WriteLine(di.ToString());
@@ -134,7 +136,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                     Debug.WriteLine("Device capabilities:");
 
                     Debug.Write("IFU capable: ");
-                    if (device.DebugEngine.IsIFUCapable)
+                    if (device.IsIFUCapable)
                     {
                         Debug.WriteLine("YES");
                     }
@@ -144,7 +146,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                     }
 
                     Debug.Write("Has proprietary bootloader: ");
-                    if (device.DebugEngine.HasProprietaryBooter)
+                    if (device.HasProprietaryBooter)
                     {
                         Debug.WriteLine("YES");
                     }
