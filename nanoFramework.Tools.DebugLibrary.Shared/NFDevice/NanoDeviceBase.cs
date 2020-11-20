@@ -21,8 +21,6 @@ namespace nanoFramework.Tools.Debugger
 {
     public abstract class NanoDeviceBase
     {
-
-
         /// <summary>
         /// nanoFramework debug engine.
         /// </summary>
@@ -73,17 +71,51 @@ namespace nanoFramework.Tools.Debugger
         public INanoFrameworkDeviceInfo DeviceInfo { get; internal set; }
 
         /// <summary>
+        /// This indicates if the device has a proprietary bootloader.
+        /// </summary>
+        public bool HasProprietaryBooter
+        {
+            get
+            {
+                return DebugEngine != null && DebugEngine.HasProprietaryBooter;
+            }
+        }
+
+        /// <summary>
+        /// This indicates if the target device has nanoBooter.
+        /// </summary>
+        public bool HasNanoBooter
+        {
+            get
+            {
+                return DebugEngine != null && DebugEngine.HasNanoBooter;
+            }
+        }
+
+        /// <summary>
+        ///  This indicates if the target device is IFU capable.
+        /// </summary>
+        public bool IsIFUCapable
+        {
+            get
+            {
+                return DebugEngine != null && DebugEngine.IsIFUCapable;
+            }
+        }
+
+        /// <summary>
         /// Start address of the deployment block.
         /// </summary>
         public uint DeploymentStartAddress
         {
             get
             {
-                if(DebugEngine != null &&
-                    DebugEngine.FlashSectorMap != null)
+                if(DebugEngine != null)
                 {
-                    return DebugEngine.FlashSectorMap.First(
-                                s => (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT).m_StartAddress;
+                    return DebugEngine.FlashSectorMap.FirstOrDefault(s =>
+                    {
+                        return (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
+                    }).m_StartAddress;
                 }
 
                 return 0;
@@ -97,11 +129,12 @@ namespace nanoFramework.Tools.Debugger
         {
             get
             {
-                if (DebugEngine != null &&
-                    DebugEngine.FlashSectorMap != null)
+                if (DebugEngine != null)
                 {
-                    return DebugEngine.FlashSectorMap.First(
-                                s => (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).m_StartAddress;
+                    return DebugEngine.FlashSectorMap.FirstOrDefault(s =>
+                    {
+                        return (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
+                    }).m_StartAddress;
                 }
 
                 return 0;
@@ -116,7 +149,7 @@ namespace nanoFramework.Tools.Debugger
         private readonly AutoResetEvent m_evtMicroBooterError = new AutoResetEvent(false);
         private readonly ManualResetEvent m_evtMicroBooterStart = new ManualResetEvent(false);
 
-        public NanoDeviceBase()
+        protected NanoDeviceBase()
         {
             DeviceInfo = new NanoFrameworkDeviceInfo(this);
         }
@@ -271,7 +304,7 @@ namespace nanoFramework.Tools.Debugger
         }
 
         /// <summary>
-        /// Erases the deployment sectors of the connected .Net Micro Framework device
+        /// Erases the deployment sectors of the connected nanoDevice
         /// </summary>
         /// <param name="options">Identifies which areas are to be erased</param>
         /// <param name="cancellationToken">Cancellation token to allow caller to cancel task</param>
@@ -496,7 +529,6 @@ namespace nanoFramework.Tools.Debugger
             return DeployFile(
                 data,
                 address,
-                cancellationToken,
                 progress);
         }
 
@@ -560,7 +592,6 @@ namespace nanoFramework.Tools.Debugger
                     if (!DeployFile(
                         data,
                         addr,
-                        cancellationToken,
                         progress))
                     {
                         return false;
@@ -574,7 +605,6 @@ namespace nanoFramework.Tools.Debugger
         private bool DeployFile(
             byte[] buffer,
             uint address,
-            CancellationToken cancellationToken,
             IProgress<string> progress = null)
         {
             (AccessMemoryErrorCodes ErrorCode, bool Success) writeResult = DebugEngine.WriteMemory(address, buffer);
@@ -589,13 +619,12 @@ namespace nanoFramework.Tools.Debugger
         }
 
         /// <summary>
-        /// Starts execution on the connected .Net Micro Framework device at the supplied address (parameter entrypoint).
+        /// Starts execution on the connected nanoDevice at the supplied address (parameter entrypoint).
         /// This method is generally used after the Deploy method to jump into the code that was deployed.
         /// </summary>
         /// <param name="entrypoint">Entry point address for execution to begin</param>
         /// <param name="cancellationToken">Cancellation token for caller to cancel task execution</param>
         /// <returns>Returns false if execution fails, true otherwise
-        /// Possible exceptions: MFDeviceNoResponseException
         /// </returns>
         public async Task<bool> ExecuteAync(uint entryPoint, CancellationToken cancellationToken)
         {
@@ -1230,7 +1259,6 @@ namespace nanoFramework.Tools.Debugger
                 cancellationToken,
                 progress);
         }
-
 
         private async Task<bool> PrepareForDeployAsync(
             byte[] buffer,

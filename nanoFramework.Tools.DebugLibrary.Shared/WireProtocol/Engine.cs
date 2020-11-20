@@ -276,8 +276,8 @@ namespace nanoFramework.Tools.Debugger
                 //default capabilities
                 Capabilities = new CLRCapabilities();
 
-                // clear memory map
-                FlashSectorMap = new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
+                // fill flash sector map
+                FlashSectorMap = GetFlashSectorMap();
 
                 var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
 
@@ -294,6 +294,13 @@ namespace nanoFramework.Tools.Debugger
                     // done here
                     return false;
                 }
+            }
+
+            if (ConnectionSource == ConnectionSource.nanoBooter &&
+                requestCapabilities && force)
+            {
+                // fill flash sector map
+                FlashSectorMap = GetFlashSectorMap();
             }
 
             if (connectionSource != ConnectionSource.Unknown && connectionSource != ConnectionSource)
