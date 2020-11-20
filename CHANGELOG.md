@@ -1,5 +1,17 @@
 # Changelog
 
+## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.21.0-preview.5...HEAD)
+
+**Implemented enhancements:**
+
+- Improvements in NanoDevice target properties [\#262](https://github.com/nanoframework/nf-debugger/pull/262)
+
+## [v1.21.0-preview.5](https://github.com/nanoframework/nf-debugger/tree/v1.21.0-preview.5) (2020-11-20)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.21.0-preview.4...v1.21.0-preview.5)
+
 ## [v1.21.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.21.0-preview.4) (2020-11-20)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.21.0-preview.1...v1.21.0-preview.4)
