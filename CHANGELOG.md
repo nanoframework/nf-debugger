@@ -2,7 +2,19 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.22.0-preview.1...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.1...HEAD)
+
+**Fixed bugs:**
+
+- Fix access to Version properties in NanoDevice [\#265](https://github.com/nanoframework/nf-debugger/pull/265)
+
+**Documentation and other chores:**
+
+- Update NuGet packages [\#266](https://github.com/nanoframework/nf-debugger/pull/266)
+
+## [v1.23.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.23.0-preview.1) (2020-11-23)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.22.0-preview.1...v1.23.0-preview.1)
 
 **Implemented enhancements:**
 
@@ -218,10 +230,6 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.15.0-preview.2...v1.15.0-preview.7)
 
-**Implemented enhancements:**
-
-- Improve device detection [\#227](https://github.com/nanoframework/nf-debugger/pull/227)
-
 **Documentation and other chores:**
 
 - Update AccessMemoryErrorCodes enum [\#230](https://github.com/nanoframework/nf-debugger/pull/230)
@@ -245,6 +253,10 @@
 ## [v1.14.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.14.0-preview.1) (2020-03-03)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.12.0-preview.1...v1.14.0-preview.1)
+
+**Implemented enhancements:**
+
+- Improve device detection [\#227](https://github.com/nanoframework/nf-debugger/pull/227)
 
 ## [v1.12.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.12.0-preview.1) (2020-03-03)
 
