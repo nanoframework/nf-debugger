@@ -481,7 +481,7 @@ namespace nanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in eraseSectors)
             {
-                progress?.Report($"Erasing sector 0x{flashSectorData.m_StartAddress:X8}.");
+                progress?.Report($"Erasing sector @ 0x{flashSectorData.m_StartAddress:X8}...");
 
                 (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
 
@@ -569,7 +569,7 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            progress?.Report($"Deploying {Path.GetFileNameWithoutExtension(binFile)}...");
+            progress?.Report($"Start writing to device @ 0x{address:X8}...");
 
             return DeployFile(
                 data,
@@ -652,10 +652,10 @@ namespace nanoFramework.Tools.Debugger
             uint address,
             IProgress<string> progress = null)
         {
-            (AccessMemoryErrorCodes ErrorCode, bool Success) writeResult = DebugEngine.WriteMemory(address, buffer);
-            if (!writeResult.Success)
+            (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.WriteMemory(address, buffer);
+            if (!Success)
             {
-                progress?.Report($"Error writing to device memory @ 0x{address:X8}.");
+                progress?.Report($"Error writing to device memory @ 0x{address:X8}, error {ErrorCode}.");
 
                 return false;
             }
@@ -1394,8 +1394,6 @@ namespace nanoFramework.Tools.Debugger
                     cancellationToken,
                     progress))
                 {
-                    progress?.Report("Error erasing nanoCLR device memory.");
-
                     return false;
                 }
             }
@@ -1407,8 +1405,6 @@ namespace nanoFramework.Tools.Debugger
                     cancellationToken, 
                     progress))
                 {
-                    progress?.Report("Error erasing DEPLOYMENT device memory.");
-
                     return false;
                 }
             }
