@@ -115,7 +115,7 @@ namespace nanoFramework.Tools.Debugger
         }
 
         public CLRCapabilities Capabilities { get; internal set; }
-
+        public TargetInfo TargetInfo { get; private set; }
         public List<Commands.Monitor_FlashSectorMap.FlashSectorData> FlashSectorMap { get; private set; }
 
         public BinaryFormatter CreateBinaryFormatter()
@@ -279,6 +279,9 @@ namespace nanoFramework.Tools.Debugger
                 // fill flash sector map
                 FlashSectorMap = GetFlashSectorMap();
 
+                // get target info
+                TargetInfo = GetMonitorTargetInfo();
+
                 var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
 
                 if (tempCapabilities != null && !tempCapabilities.IsUnknown)
@@ -299,6 +302,9 @@ namespace nanoFramework.Tools.Debugger
             if (ConnectionSource == ConnectionSource.nanoBooter &&
                 requestCapabilities && force)
             {
+                // get target info
+                TargetInfo = GetMonitorTargetInfo();
+
                 // fill flash sector map
                 FlashSectorMap = GetFlashSectorMap();
             }
@@ -1269,6 +1275,25 @@ namespace nanoFramework.Tools.Debugger
                     Commands.Monitor_OemInfo.Reply cmdReply = reply.Payload as Commands.Monitor_OemInfo.Reply;
 
                     return cmdReply.m_releaseInfo;
+                }
+            }
+
+            return null;
+        }
+
+        public TargetInfo GetMonitorTargetInfo()
+        {
+            Commands.Monitor_TargetInfo cmd = new Commands.Monitor_TargetInfo();
+
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_TargetInfo, 0, cmd);
+
+            if (reply != null)
+            {
+                if (reply.Payload is Commands.Monitor_TargetInfo.Reply)
+                {
+                    Commands.Monitor_TargetInfo.Reply cmdReply = reply.Payload as Commands.Monitor_TargetInfo.Reply;
+
+                    return cmdReply.TargetInfo;
                 }
             }
 

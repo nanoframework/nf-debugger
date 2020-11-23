@@ -557,14 +557,28 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             {
                                 if (device.DebugEngine.ConnectionSource == ConnectionSource.nanoBooter)
                                 {
-                                    var deviceInfo = device.DebugEngine.GetMonitorOemInfo();
-                                    if (deviceInfo != null)
+                                    // try first with new command
+                                    var targetInfo = device.DebugEngine.GetMonitorTargetInfo();
+                                    if (targetInfo != null)
                                     {
-                                        device.TargetName = deviceInfo.TargetName;
-                                        device.Platform = deviceInfo.PlatformName;
+                                        device.TargetName = targetInfo.TargetName;
+                                        device.Platform = targetInfo.PlatformName;
 
                                         validDevice = true;
                                         break;
+                                    }
+                                    else
+                                    {
+                                        // try again with deprecated command
+                                        var deviceInfo = device.DebugEngine.GetMonitorOemInfo();
+                                        if (deviceInfo != null)
+                                        {
+                                            device.TargetName = deviceInfo.TargetName;
+                                            device.Platform = deviceInfo.PlatformName;
+
+                                            validDevice = true;
+                                            break;
+                                        }
                                     }
                                 }
                                 else
