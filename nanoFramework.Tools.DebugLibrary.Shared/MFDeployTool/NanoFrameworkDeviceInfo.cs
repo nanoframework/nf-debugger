@@ -231,10 +231,10 @@ namespace nanoFramework.Tools.Debugger
                     output.AppendLine($"  Platform: {Platform?.ToString()}");
                     output.AppendLine();
                     output.AppendLine($"Firmware build Info:");
-                    output.AppendLine($"  Date:     {ImageBuildDate ?? "unknown"}");
-                    output.AppendLine($"  Type:     {VendorInfo ?? "unknown"}");
-                    output.AppendLine($"  Version:  {SolutionBuildVersion}");
-                    output.AppendLine($"  Compiler: {ImageCompilerInfo ?? "unknown"} v{ImageCompilerVersion?.ToString()}");
+                    output.AppendLine($"  Date:        {ImageBuildDate ?? "unknown"}");
+                    output.AppendLine($"  Type:        {VendorInfo ?? "unknown"}");
+                    output.AppendLine($"  CLR Version: {SolutionBuildVersion}");
+                    output.AppendLine($"  Compiler:    {ImageCompilerInfo ?? "unknown"} v{ImageCompilerVersion?.ToString()}");
                     output.AppendLine();
                     output.AppendLine($"OEM Product codes (vendor, model, SKU): {OEM.ToString()}, {Model.ToString()}, {SKU.ToString()}");
                     output.AppendLine();
@@ -242,6 +242,15 @@ namespace nanoFramework.Tools.Debugger
                     output.AppendLine("  " + ModuleSerialNumber);
                     output.AppendLine("  " + SystemSerialNumber);
                     output.AppendLine();
+                    output.AppendLine("Target capabilities:");
+                    output.AppendLine("  Has nanoBooter: " + (Dbg.HasNanoBooter? "YES" : "NO"));
+                    if (Dbg.TargetInfo != null &&
+                        Dbg.HasNanoBooter)
+                    {
+                        output.AppendLine($"  nanoBooter: v{Dbg.TargetInfo.BooterVersion}");
+                    }
+                    output.AppendLine("  IFU capable: " + (Dbg.IsIFUCapable ? "YES" : "NO"));
+                    output.AppendLine("  Has proprietary bootloader: " + (Dbg.HasProprietaryBooter ? "YES" : "NO"));
 
                     output.AppendLine();
                     output.AppendLine("AppDomains:");

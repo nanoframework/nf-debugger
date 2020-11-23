@@ -48,7 +48,7 @@
         <Button Content="Set Device Config" HorizontalAlignment="Left" Margin="378,313,0,0" VerticalAlignment="Top" Width="121" Click="SetDeviceConfigButton_Click" />
         <Button Content="ReScan devices" HorizontalAlignment="Left" Margin="250,157,0,0" VerticalAlignment="Top" Width="98" Click="ReScanDevices_Click" />
         <Button Content="Read Test" HorizontalAlignment="Left" Margin="250,313,0,0" VerticalAlignment="Top" Width="98" Click="ReadTestButton_Click" />
-        <Button Content="OEM Info" HorizontalAlignment="Left" Margin="39,313,0,0" VerticalAlignment="Top" Width="110" Click="OemInfoButton_Click" />
+        <Button Content="Target Info" HorizontalAlignment="Left" Margin="39,313,0,0" VerticalAlignment="Top" Width="110" Click="TargetInfoButton_Click" />
         <Button Content="Reboot to nanoBooter" HorizontalAlignment="Left" Margin="378,157,0,0" VerticalAlignment="Top" Width="121" Click="RebootToNanoBooterButton_Click"/>
         <Button Content="Deploy File" HorizontalAlignment="Left" Margin="162,313,0,0" VerticalAlignment="Top" Width="75" Click="DeployFileTestButton_Click" />
 

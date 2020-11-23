@@ -66,6 +66,42 @@ namespace nanoFramework.Tools.Debugger
         public string SerialNumber { get; internal set; }
 
         /// <summary>
+        /// Version of nanoBooter.
+        /// </summary>
+        public Version BooterVersion
+        {
+            get
+            {
+                try
+                {
+                    return DebugEngine?.TargetInfo?.BooterVersion;
+                }
+                catch
+                {
+                    return new Version();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Version of nanoCLR.
+        /// </summary>
+        public Version ClrVersion
+        {
+            get
+            {
+                try
+                {
+                    return DebugEngine?.TargetInfo?.ClrVersion;
+                }
+                catch
+                {
+                    return new Version();
+                }
+            }
+        }
+
+        /// <summary>
         /// Detailed info about the NanoFramework device hardware, solution and CLR.
         /// </summary>
         public INanoFrameworkDeviceInfo DeviceInfo { get; internal set; }
@@ -100,44 +136,6 @@ namespace nanoFramework.Tools.Debugger
             get
             {
                 return DebugEngine != null && DebugEngine.IsIFUCapable;
-            }
-        }
-
-        /// <summary>
-        /// Start address of the deployment block.
-        /// </summary>
-        public uint DeploymentStartAddress
-        {
-            get
-            {
-                if(DebugEngine != null)
-                {
-                    return DebugEngine.FlashSectorMap.FirstOrDefault(s =>
-                    {
-                        return (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
-                    }).m_StartAddress;
-                }
-
-                return 0;
-            }
-        }
-
-        /// <summary>
-        /// Start address of the CLR block.
-        /// </summary>
-        public uint ClrStartAddress
-        {
-            get
-            {
-                if (DebugEngine != null)
-                {
-                    return DebugEngine.FlashSectorMap.FirstOrDefault(s =>
-                    {
-                        return (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
-                    }).m_StartAddress;
-                }
-
-                return 0;
             }
         }
 
@@ -231,6 +229,40 @@ namespace nanoFramework.Tools.Debugger
         }
 
         /// <summary>
+        /// Start address of the deployment block.
+        /// Returns (-1) as invalid value if the address can't be retrieved from the device properties.
+        /// </summary>
+        public int GetDeploymentStartAddress()
+        {
+            if (DebugEngine != null)
+            {
+                return (int)DebugEngine.FlashSectorMap.FirstOrDefault(s =>
+                {
+                    return (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
+                }).m_StartAddress;
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// Start address of the CLR block.
+        /// Returns (-1) as invalid value if the address can't be retrieved from the device properties.
+        /// </summary>
+        public int GetClrStartAddress()
+        {
+            if (DebugEngine != null)
+            {
+                return (int)DebugEngine.FlashSectorMap.FirstOrDefault(s =>
+                {
+                    return (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
+                }).m_StartAddress;
+            }
+
+            return -1;
+        }
+
+        /// <summary>
         /// Attempt to establish a connection with nanoBooter (with reboot if necessary)
         /// </summary>
         /// <returns>true connection was made, false otherwise</returns>
@@ -244,62 +276,70 @@ namespace nanoFramework.Tools.Debugger
             {
                 if (DebugEngine.ConnectionSource == ConnectionSource.nanoBooter) return true;
 
-                DebugEngine.RebootDevice(RebootOptions.EnterNanoBooter);
-
-                /////////////////////////////////////////
-                // FIXME
-                /////////////////////////////////////////
-                //// nanoBooter is only com port so
-                //if (Transport == TransportType.TcpIp)
-                //{
-                //    _DBG.PortDefinition pdTmp = m_port;
-
-                //    Disconnect();
-
-                //    try
-                //    {
-                //        m_port = m_portNanoBooter;
-
-                //        // digi takes forever to reset
-                //        if (!Connect(60000, true))
-                //        {
-                //            Console.WriteLine(Properties.Resources.ErrorUnableToConnectToNanoBooterSerial);
-                //            return false;
-                //        }
-                //    }
-                //    finally
-                //    {
-                //        m_port = pdTmp;
-                //    }
-                //}
-
-                bool fConnected = false;
-
-                for (int i = 0; i < 40; i++)
+                try
                 {
-                    // check if cancellation was requested 
-                    if (cancellationToken.IsCancellationRequested) return false;
+                    DebugEngine.RebootDevice(RebootOptions.EnterNanoBooter);
 
-                    if(DebugEngine == null)
+                    /////////////////////////////////////////
+                    // FIXME
+                    /////////////////////////////////////////
+                    //// nanoBooter is only com port so
+                    //if (Transport == TransportType.TcpIp)
+                    //{
+                    //    _DBG.PortDefinition pdTmp = m_port;
+
+                    //    Disconnect();
+
+                    //    try
+                    //    {
+                    //        m_port = m_portNanoBooter;
+
+                    //        // digi takes forever to reset
+                    //        if (!Connect(60000, true))
+                    //        {
+                    //            Console.WriteLine(Properties.Resources.ErrorUnableToConnectToNanoBooterSerial);
+                    //            return false;
+                    //        }
+                    //    }
+                    //    finally
+                    //    {
+                    //        m_port = pdTmp;
+                    //    }
+                    //}
+
+                    bool fConnected = false;
+
+                    for (int i = 0; i < 40; i++)
                     {
-                        CreateDebugEngine();
+                        // check if cancellation was requested 
+                        if (cancellationToken.IsCancellationRequested) return false;
+
+                        if (DebugEngine == null)
+                        {
+                            CreateDebugEngine();
+                        }
+
+                        if (fConnected = await DebugEngine.ConnectAsync(1000, true, ConnectionSource.Unknown))
+                        {
+                            Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
+
+                            ret = (reply.Source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter);
+
+                            break;
+                        }
                     }
 
-                    if (fConnected = await DebugEngine.ConnectAsync(1000, true, ConnectionSource.Unknown))
+                    if (!fConnected)
                     {
-                        Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
-
-                        ret = (reply.Source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter);
-
-                        break;
+                        //Debug.WriteLine("Unable to connect to NanoBooter");
                     }
                 }
-
-                if (!fConnected)
+                catch
                 {
-                    //Debug.WriteLine("Unable to connect to NanoBooter");
+                    // need a catch all here because some targets re-enumerate the USB device and that makes it impossible to catch them here
                 }
             }
+
             return ret;
         }
 
@@ -1267,11 +1307,18 @@ namespace nanoFramework.Tools.Debugger
             CancellationToken cancellationToken, 
             IProgress<string> progress = null)
         {
+            // make sure we are connected
+            if(!await DebugEngine.ConnectAsync(5000, true))
+            {
+                return false;
+            }
+
             // get flash sector map, only if needed
-            List<Commands.Monitor_FlashSectorMap.FlashSectorData> flashSectorsMap = DebugEngine.FlashSectorMap.Count == 0 ? DebugEngine.GetFlashSectorMap() : DebugEngine.FlashSectorMap;
+            List<Commands.Monitor_FlashSectorMap.FlashSectorData> flashSectorsMap = DebugEngine.FlashSectorMap;
 
             // sanity check
-            if (flashSectorsMap.Count == 0)
+            if (flashSectorsMap == null ||
+                flashSectorsMap.Count == 0)
             {
                 return false;
             }

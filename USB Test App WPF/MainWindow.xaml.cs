@@ -125,8 +125,6 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
                     var di = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo();
 
-                    var clrAddress = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].ClrStartAddress;
-
                     Debug.WriteLine("");
                     Debug.WriteLine("");
                     Debug.WriteLine(di.ToString());
@@ -1105,7 +1103,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             (sender as Button).IsEnabled = true;
         }
 
-        private async void OemInfoButton_Click(object sender, RoutedEventArgs e)
+        private async void TargetInfoButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
@@ -1116,13 +1114,13 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                 var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
 
 
-                var oemInfo = device.DebugEngine.GetMonitorOemInfo();
+                var targetInfo = device.DebugEngine.GetMonitorTargetInfo();
 
-                if (oemInfo != null)
+                if (targetInfo != null)
                 {
                     Debug.WriteLine("");
                     Debug.WriteLine("");
-                    Debug.WriteLine($"{oemInfo.ToString()}");
+                    Debug.WriteLine($"{targetInfo.ToString()}");
                     Debug.WriteLine("");
                     Debug.WriteLine("");
                 }

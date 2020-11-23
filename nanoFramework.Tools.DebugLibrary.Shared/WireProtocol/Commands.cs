@@ -58,6 +58,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Monitor_OemInfo = 0x0000000E;
         public const uint c_Monitor_QueryConfiguration = 0x0000000F;
         public const uint c_Monitor_UpdateConfiguration = 0x00000010;
+        public const uint c_Monitor_TargetInfo = 0x00000020;
 
         public class Monitor_Message : IConverter
         {
@@ -183,6 +184,19 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
                 {
                     m_releaseInfo = new ReleaseInfo(data.Length);
+                }
+            }
+        }
+
+        public class Monitor_TargetInfo
+        {
+            public class Reply : IConverter
+            {
+                public TargetInfo TargetInfo;
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    TargetInfo = new TargetInfo(data.Length);
                 }
             }
         }
@@ -1810,6 +1824,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 {
                     case c_Monitor_Ping: return new Monitor_Ping.Reply();
                     case c_Monitor_OemInfo: return new Monitor_OemInfo.Reply();
+                    case c_Monitor_TargetInfo: return new Monitor_TargetInfo.Reply();
                     case c_Monitor_ReadMemory: return new Monitor_ReadMemory.Reply();
                     case c_Monitor_WriteMemory: return new Monitor_WriteMemory.Reply();
                     case c_Monitor_CheckMemory: return new Monitor_CheckMemory.Reply();
