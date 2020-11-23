@@ -79,7 +79,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 try
                 {
-                    return DebugEngine?.TargetInfo?.BooterVersion;
+                    return DebugEngine.TargetInfo.BooterVersion;
                 }
                 catch
                 {
@@ -97,7 +97,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 try
                 {
-                    return DebugEngine?.TargetInfo?.ClrVersion;
+                    return DebugEngine.TargetInfo.ClrVersion;
                 }
                 catch
                 {
