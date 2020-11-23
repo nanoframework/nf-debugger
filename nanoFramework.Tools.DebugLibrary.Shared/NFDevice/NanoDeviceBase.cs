@@ -46,6 +46,11 @@ namespace nanoFramework.Tools.Debugger
         public IPort ConnectionPort { get; set; }
 
         /// <summary>
+        /// Id of the connection to the device.
+        /// </summary>
+        public string ConnectionId { get; internal set; }
+
+        /// <summary>
         /// Device description.
         /// </summary>
         public string Description { get; set; }

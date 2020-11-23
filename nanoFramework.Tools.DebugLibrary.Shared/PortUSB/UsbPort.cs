@@ -227,6 +227,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                     newNanoFrameworkDevice.Device.DeviceInformation = new UsbDeviceInformation(deviceInformation, deviceSelector);
                     newNanoFrameworkDevice.ConnectionPort = this;
                     newNanoFrameworkDevice.Transport = TransportType.Usb;
+                    newNanoFrameworkDevice.ConnectionId = newNanoFrameworkDevice.Device.DeviceInformation.InstanceId;
 
                     // Add the new element to the end of the list of devices
                     NanoFrameworkDevices.Add(newNanoFrameworkDevice as NanoDeviceBase);

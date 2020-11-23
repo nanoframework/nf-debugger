@@ -615,6 +615,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                     // set valid baud rate from device detection
                     ((SerialPort)device.ConnectionPort).BaudRate = serialDevice.BaudRate;
+
+                    // store connection ID
+                    device.ConnectionId = serialDevice.PortName;
                 }
  
                 Task.Factory.StartNew(() =>
