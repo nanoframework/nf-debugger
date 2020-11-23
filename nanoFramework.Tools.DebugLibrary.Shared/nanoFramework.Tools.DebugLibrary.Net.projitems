@@ -122,8 +122,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\PingConnectionType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\PortFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\RebootOptions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\TargetInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\ReleaseInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\TargetInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\WireProtocolRequest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\StringEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\ThreadStatus.cs" />
