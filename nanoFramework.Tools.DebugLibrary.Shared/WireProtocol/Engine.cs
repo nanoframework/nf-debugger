@@ -1415,6 +1415,34 @@ namespace nanoFramework.Tools.Debugger
             return WriteMemory(address, buf, 0, buf.Length);
         }
 
+        public bool CheckMemory(uint address, byte[] buf, int offset, int length)
+        {
+            Commands.Monitor_CheckMemory cmd = new Commands.Monitor_CheckMemory();
+
+            cmd.m_address = address;
+            cmd.m_length = (uint)length;
+
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_CheckMemory, 0, cmd);
+
+            if (reply != null)
+            {
+                Commands.Monitor_CheckMemory.Reply cmdReply = reply.Payload as Commands.Monitor_CheckMemory.Reply;
+
+                if (reply.IsPositiveAcknowledge())
+                {
+                    // compute CRC32 of the buffer length and compare with the return value
+                    return CRC.ComputeCRC(buf, offset, length, 0) == cmdReply.m_crc;
+                }
+            }
+
+            return false;
+        }
+
+        public bool CheckMemory(uint address, byte[] buf)
+        {
+            return CheckMemory(address, buf, 0, buf.Length);
+        }
+
         public (AccessMemoryErrorCodes ErrorCode, bool Success) EraseMemory(uint address, uint length)
         {
             DebuggerEventSource.Log.EngineEraseMemory(address, length);
