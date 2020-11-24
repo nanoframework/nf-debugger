@@ -1369,10 +1369,17 @@ namespace nanoFramework.Tools.Debugger
             return ReadMemory(address, length, 0);
         }
 
-        public (AccessMemoryErrorCodes ErrorCode, bool Success) WriteMemory(uint address, byte[] buf, int offset, int length)
+        public (AccessMemoryErrorCodes ErrorCode, bool Success) WriteMemory(
+            uint address,
+            byte[] buf,
+            int offset,
+            int length,
+            IProgress<string> progress = null)
         {
             int count = length;
             int position = offset;
+
+            progress?.Report($"Deploying {length} bytes to device...");
 
             while (count > 0)
             {
@@ -1391,9 +1398,11 @@ namespace nanoFramework.Tools.Debugger
                 {
                     Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
 
-                    if (!reply.IsPositiveAcknowledge() || 
+                    if (!reply.IsPositiveAcknowledge() ||
                         (AccessMemoryErrorCodes)cmdReply.ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
+                        progress?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Error code: {cmdReply.ErrorCode}.");
+
                         return ((AccessMemoryErrorCodes)cmdReply.ErrorCode, false);
                     }
 
@@ -1403,6 +1412,8 @@ namespace nanoFramework.Tools.Debugger
                 }
                 else
                 {
+                    progress?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Unknown error.");
+
                     return (AccessMemoryErrorCodes.Unknown, false);
                 }
             }
@@ -1410,9 +1421,17 @@ namespace nanoFramework.Tools.Debugger
             return (AccessMemoryErrorCodes.NoError, true);
         }
 
-        public (AccessMemoryErrorCodes ErrorCode, bool Success) WriteMemory(uint address, byte[] buf)
+        public (AccessMemoryErrorCodes ErrorCode, bool Success) WriteMemory(
+            uint address, 
+            byte[] buf, 
+            IProgress<string> progress = null)
         {
-            return WriteMemory(address, buf, 0, buf.Length);
+            return WriteMemory(
+                address,
+                buf,
+                0,
+                buf.Length,
+                progress);
         }
 
         public bool CheckMemory(uint address, byte[] buf, int offset, int length)
