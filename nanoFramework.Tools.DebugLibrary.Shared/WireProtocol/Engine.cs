@@ -300,7 +300,8 @@ namespace nanoFramework.Tools.Debugger
             }
 
             if (ConnectionSource == ConnectionSource.nanoBooter &&
-                requestCapabilities && force)
+                requestCapabilities && 
+                (force || TargetInfo == null))
             {
                 // get target info
                 TargetInfo = GetMonitorTargetInfo();
