@@ -71,6 +71,11 @@ namespace nanoFramework.Tools.Debugger
         public string SerialNumber { get; internal set; }
 
         /// <summary>
+        /// Unique ID of the NanoDevice.
+        /// </summary>
+        public Guid DeviceId { get; internal set; }
+
+        /// <summary>
         /// Version of nanoBooter.
         /// </summary>
         public Version BooterVersion
@@ -155,6 +160,8 @@ namespace nanoFramework.Tools.Debugger
         protected NanoDeviceBase()
         {
             DeviceInfo = new NanoFrameworkDeviceInfo(this);
+
+            DeviceId = Guid.NewGuid();
         }
 
         private bool IsClrDebuggerEnabled
