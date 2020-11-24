@@ -2,7 +2,19 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.1...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.4...HEAD)
+
+**Implemented enhancements:**
+
+- Add VerifyMemory method [\#271](https://github.com/nanoframework/nf-debugger/pull/271)
+- Improve serial read/receive operations [\#270](https://github.com/nanoframework/nf-debugger/pull/270)
+- Improve message output [\#269](https://github.com/nanoframework/nf-debugger/pull/269)
+- Improve device detection [\#268](https://github.com/nanoframework/nf-debugger/pull/268)
+- Improve progress messages during DeployBinaryFileAsync [\#267](https://github.com/nanoframework/nf-debugger/pull/267)
+
+## [v1.23.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.23.0-preview.4) (2020-11-23)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.1...v1.23.0-preview.4)
 
 **Fixed bugs:**
 
@@ -393,7 +405,6 @@
 
 **Implemented enhancements:**
 
-- Rework SerialDevice watcher [\#209](https://github.com/nanoframework/nf-debugger/pull/209)
 - Replace chars in ToString output on device capabilities [\#207](https://github.com/nanoframework/nf-debugger/pull/207)
 
 **Fixed bugs:**
@@ -427,6 +438,10 @@
 ## [v1.2.1-preview.19](https://github.com/nanoframework/nf-debugger/tree/v1.2.1-preview.19) (2019-07-13)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.17...v1.2.1-preview.19)
+
+**Implemented enhancements:**
+
+- Rework SerialDevice watcher [\#209](https://github.com/nanoframework/nf-debugger/pull/209)
 
 **Fixed bugs:**
 
