@@ -14,6 +14,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     {
         private ushort lastOutboundMessage;
         private readonly Semaphore _sendSemaphore = new Semaphore(1, 1);
+        private readonly Semaphore _receiveSemaphore = new Semaphore(1, 1);
         private readonly int nextEndpointId;
         private readonly object incrementLock = new object();
 
@@ -46,7 +47,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public async Task<bool> SendAsync(MessageRaw raw, CancellationToken cancellationToken)
         {
-            _sendSemaphore.WaitOne();
+            if(!_sendSemaphore.WaitOne())
+            {
+                return false;
+            }
 
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
@@ -149,6 +153,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         internal async Task<int> ReadBufferAsync(byte[] buffer, int offset, int bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
+            if (!_receiveSemaphore.WaitOne())
+            {
+                return 0;
+            }
+
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
             {
@@ -193,6 +202,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 // catch everything else, doesn't matter
                 return 0;
+            }
+            finally
+            {
+                _receiveSemaphore.Release();
             }
 
             return bytesToReadRequested - bytesToRead;
