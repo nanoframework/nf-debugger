@@ -579,15 +579,15 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            //progress?.Report($"Verifying image...");
+            progress?.Report($"Verifying image...");
 
-            //if (!VerifyMemory(
-            //    data,
-            //    address,
-            //    progress))
-            //{
-            //    return false;
-            //}
+            if (!VerifyMemory(
+                data,
+                address,
+                progress))
+            {
+                return false;
+            }
 
             return true;
         }
@@ -683,28 +683,15 @@ namespace nanoFramework.Tools.Debugger
             uint address,
             IProgress<string> progress = null)
         {
-            (byte[] ReadBuffer, uint ErrorCode, bool Success) = DebugEngine.ReadMemory(address, (uint)buffer.Length);
-            if (!Success)
+            if (!DebugEngine.CheckMemory(address, buffer))
             {
-                progress?.Report($"Error reading from device memory, error {ErrorCode}.");
+                progress?.Report($"Verification failed.");
 
                 return false;
             }
 
-            int index = 0;
-
-            foreach(var b in buffer)
-            {
-                if(ReadBuffer[index] != b)
-                {
-                    progress?.Report($"Verification error @ 0x{(address + index):X8}.");
-                    return false;
-                }
-            }
-
             return true;
         }
-
 
         /// <summary>
         /// Starts execution on the connected nanoDevice at the supplied address (parameter entrypoint).
