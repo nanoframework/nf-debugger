@@ -569,8 +569,6 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            progress?.Report($"Writing to device @ 0x{address:X8}...");
-
             if(!DeployFile(
                 data,
                 address,
@@ -667,7 +665,10 @@ namespace nanoFramework.Tools.Debugger
             uint address,
             IProgress<string> progress = null)
         {
-            (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.WriteMemory(address, buffer);
+            (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.WriteMemory(
+                address,
+                buffer,
+                progress);
             if (!Success)
             {
                 progress?.Report($"Error writing to device memory @ 0x{address:X8}, error {ErrorCode}.");
