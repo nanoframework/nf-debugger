@@ -569,7 +569,7 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            progress?.Report($"Start writing to device @ 0x{address:X8}...");
+            progress?.Report($"Writing to device @ 0x{address:X8}...");
 
             return DeployFile(
                 data,
