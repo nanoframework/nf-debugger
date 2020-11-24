@@ -550,10 +550,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {device.Device.DeviceInformation.DeviceInformation.Id} @ { baudRate }"));
 
                             if (await device.DebugEngine.ConnectAsync(
-                                1000,
+                                2000,
                                 true,
-                                ConnectionSource.Unknown,
-                                false))
+                                ConnectionSource.Unknown))
                             {
                                 if (device.DebugEngine.ConnectionSource == ConnectionSource.nanoBooter)
                                 {
