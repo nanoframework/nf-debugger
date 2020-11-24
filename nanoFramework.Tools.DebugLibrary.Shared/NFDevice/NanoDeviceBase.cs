@@ -367,7 +367,6 @@ namespace nanoFramework.Tools.Debugger
             }
 
             // check if the device is responsive
-            PingConnectionType isPresent = Ping();
             if (Ping() == PingConnectionType.NoConnection)
             {
                 // it's not, try reconnect
@@ -387,9 +386,7 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            List<Commands.Monitor_FlashSectorMap.FlashSectorData> reply = DebugEngine.GetFlashSectorMap();
-
-            if (reply == null)
+            if (DebugEngine.FlashSectorMap == null)
             {
                 return false;
             }
@@ -401,7 +398,6 @@ namespace nanoFramework.Tools.Debugger
 
             bool isConnectedToCLR = ((ping != null) && (ping.Source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR));
 
-
             if (isConnectedToCLR)
             {
                 DebugEngine.PauseExecution();
@@ -409,7 +405,7 @@ namespace nanoFramework.Tools.Debugger
 
             List<Commands.Monitor_FlashSectorMap.FlashSectorData> eraseSectors = new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
 
-            foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in reply)
+            foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in DebugEngine.FlashSectorMap)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -481,27 +477,31 @@ namespace nanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in eraseSectors)
             {
-                progress?.Report($"Erasing sector @ 0x{flashSectorData.m_StartAddress:X8}...");
-
-                (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(flashSectorData.m_StartAddress, (flashSectorData.m_NumBlocks * flashSectorData.m_BytesPerBlock));
-
-                if (!Success)
+                for (int block = 0; block < flashSectorData.m_NumBlocks; block++)
                 {
-                    progress?.Report($"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}.");
-
-                    return false;
-                }
-
-                // check the error code returned
-                if (ErrorCode != AccessMemoryErrorCodes.NoError)
-                {
-                    // operation failed
-                    progress?.Report($"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}. Error code: {ErrorCode}.");
+                    progress?.Report($"Erasing sector @ 0x{flashSectorData.m_StartAddress:X8}...");
                     
-                    // don't bother continuing
-                    return false;
-                }
+                    (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(
+                        (uint)(flashSectorData.m_StartAddress + block * flashSectorData.m_BytesPerBlock),
+                        flashSectorData.m_BytesPerBlock);
 
+                    if (!Success)
+                    {
+                        progress?.Report($"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}.");
+
+                        return false;
+                    }
+
+                    // check the error code returned
+                    if (ErrorCode != AccessMemoryErrorCodes.NoError)
+                    {
+                        // operation failed
+                        progress?.Report($"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}. Error code: {ErrorCode}.");
+
+                        // don't bother continuing
+                        return false;
+                    }
+                }
                 value++;
             }
 
