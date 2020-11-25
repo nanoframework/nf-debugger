@@ -2,7 +2,19 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.10...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.15...HEAD)
+
+**Implemented enhancements:**
+
+- Improvements in device detection [\#277](https://github.com/nanoframework/nf-debugger/pull/277)
+
+**Fixed bugs:**
+
+- Fix output of address on erase operation [\#276](https://github.com/nanoframework/nf-debugger/pull/276)
+
+## [v1.23.0-preview.15](https://github.com/nanoframework/nf-debugger/tree/v1.23.0-preview.15) (2020-11-24)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.10...v1.23.0-preview.15)
 
 **Implemented enhancements:**
 
@@ -770,6 +782,7 @@
 
 **Fixed bugs:**
 
+- Fix issue with Reboot command [\#42](https://github.com/nanoframework/nf-debugger/pull/42)
 - Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
 
 ## [0.4.0-preview019](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview019) (2017-07-19)
@@ -804,10 +817,6 @@
 **Implemented enhancements:**
 
 - Improve code in Deploy incremental method [\#31](https://github.com/nanoframework/nf-debugger/pull/31)
-
-**Fixed bugs:**
-
-- Fix issue with Reboot command [\#42](https://github.com/nanoframework/nf-debugger/pull/42)
 
 ## [0.4.0-preview015](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview015) (2017-06-23)
 
