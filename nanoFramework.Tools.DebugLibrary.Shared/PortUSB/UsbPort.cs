@@ -237,7 +237,8 @@ namespace nanoFramework.Tools.Debugger.Usb
                     if (await ConnectUsbDeviceAsync(newNanoFrameworkDevice.Device.DeviceInformation))
                     {
                         // the device description format is kept to maintain backwards compatibility
-                        newNanoFrameworkDevice.Description = EventHandlerForUsbDevice.Current.DeviceInformation.Name + "_" + await GetDeviceDescriptor(5);
+                        // TODO
+                        // newNanoFrameworkDevice.Description = EventHandlerForUsbDevice.Current.DeviceInformation.Name + "_" + await GetDeviceDescriptor(5);
 
                         NanoDevicesEventSource.Log.ValidDevice(newNanoFrameworkDevice.Description + " @ " + newNanoFrameworkDevice.Device.DeviceInformation.DeviceSelector);
 

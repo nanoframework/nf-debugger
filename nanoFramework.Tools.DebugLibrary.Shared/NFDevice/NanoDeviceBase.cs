@@ -53,7 +53,7 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Device description.
         /// </summary>
-        public string Description { get; set; }
+        public string Description => TargetName + " @ " + ConnectionId;
 
         /// <summary>
         /// Target name.

@@ -6,6 +6,7 @@
 
 using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.WireProtocol;
+using Polly;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -267,6 +268,11 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
+            var flashMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_FlashSectorMap.FlashSectorData>>(r => r == null)
+                                       .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * timeout));
+            var targetInfoPolicy = Policy.Handle<Exception>().OrResult<TargetInfo>(r => r == null)
+                                         .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * timeout));
+
             if (ConnectionSource == ConnectionSource.nanoCLR &&
                 requestCapabilities &&
                 (force || Capabilities.IsUnknown) )
@@ -277,10 +283,10 @@ namespace nanoFramework.Tools.Debugger
                 Capabilities = new CLRCapabilities();
 
                 // fill flash sector map
-                FlashSectorMap = GetFlashSectorMap();
+                FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
 
                 // get target info
-                TargetInfo = GetMonitorTargetInfo();
+                TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
 
                 var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
 
@@ -303,14 +309,25 @@ namespace nanoFramework.Tools.Debugger
                 requestCapabilities && 
                 (force || TargetInfo == null))
             {
-                // get target info
-                TargetInfo = GetMonitorTargetInfo();
-
                 // fill flash sector map
-                FlashSectorMap = GetFlashSectorMap();
+                FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
+
+                // get target info
+                TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
             }
 
             if (connectionSource != ConnectionSource.Unknown && connectionSource != ConnectionSource)
+            {
+                // update flag
+                IsConnected = false;
+
+                // done here
+                return false;
+            }
+
+            if (requestCapabilities &&
+                (FlashSectorMap == null
+                || TargetInfo == null))
             {
                 // update flag
                 IsConnected = false;
@@ -392,6 +409,11 @@ namespace nanoFramework.Tools.Debugger
                 {
                     await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
                 }
+                catch (AggregateException)
+                {
+                    ProcessExited();
+                    break;
+                }
                 catch (DeviceNotConnectedException)
                 {
                     ProcessExited();
@@ -399,9 +421,17 @@ namespace nanoFramework.Tools.Debugger
                 }
                 catch (Exception ex)
                 {
-                    // look for I/O exception
+                    // look for exceptions that are an indication that this is doomed
                     // 0x800703E3
-                    if (ex.HResult == -2147023901)
+                    // 0x80070006
+                    // 0x80070079
+                    // 0x8007001F
+                    // 0x800701B1
+                    if (ex.HResult == -2147023901
+                        || ex.HResult == -2147024890
+                        || ex.HResult == -2147024775
+                        || ex.HResult == -2147024865
+                        || ex.HResult == -2147024463)
                     {
                         ProcessExited();
                         break;
@@ -634,9 +664,9 @@ namespace nanoFramework.Tools.Debugger
             return new Converter(Capabilities);
         }
 
-        public async Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
-            return await _portDefinition.SendBufferAsync(buffer, waitTimeout, cancellationToken);
+            return _portDefinition.SendBufferAsync(buffer, waitTimeout, cancellationToken);
         }
 
         public bool ProcessMessage(IncomingMessage message, bool isReply)
@@ -739,9 +769,9 @@ namespace nanoFramework.Tools.Debugger
             _eventProcessExit?.Invoke(this, EventArgs.Empty);
         }
 
-        public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
-            return await _portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
+            return _portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
         }
 
         private OutgoingMessage CreateMessage(uint cmd, uint flags, object payload)

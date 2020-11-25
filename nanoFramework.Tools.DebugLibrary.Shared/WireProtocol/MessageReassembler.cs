@@ -168,6 +168,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                     }
                                 }
                             }
+                            catch (AggregateException)
+                            {
+                                throw;
+                            }
                             catch (Exception e)
                             {
                                 Debug.WriteLine("Fault at payload de-serialization:\n\n{0}", e.ToString());
@@ -208,6 +212,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                     // setup restart
                                     _state = ReceiveState.Initialize;
                                     return;
+                                }
+                                catch (AggregateException)
+                                {
+                                    throw;
                                 }
                                 catch (Exception e)
                                 {
