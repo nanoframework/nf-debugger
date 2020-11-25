@@ -109,6 +109,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 App.ProcessExited();
             }
+            catch (AggregateException)
+            {
+                App.ProcessExited();
+            }
             catch
             {
                 // catch everything else here, doesn't matter
@@ -197,6 +201,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             catch (TaskCanceledException)
             {
                 // don't do anything here, as this is expected
+            }
+            catch (AggregateException)
+            {
+                App.ProcessExited();
             }
             catch
             {
