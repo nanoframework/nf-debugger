@@ -487,14 +487,16 @@ namespace nanoFramework.Tools.Debugger
                 for (int block = 0; block < flashSectorData.m_NumBlocks; block++)
                 {
                     progress?.Report($"Erasing sector @ 0x{flashSectorData.m_StartAddress:X8}...");
-                    
+
+                    var sectorAddress = (uint)(flashSectorData.m_StartAddress + block * flashSectorData.m_BytesPerBlock);
+
                     (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(
-                        (uint)(flashSectorData.m_StartAddress + block * flashSectorData.m_BytesPerBlock),
+                        sectorAddress,
                         flashSectorData.m_BytesPerBlock);
 
                     if (!Success)
                     {
-                        progress?.Report($"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}.");
+                        progress?.Report($"Error erasing sector @ 0x{sectorAddress:X8}.");
 
                         return false;
                     }
@@ -503,7 +505,7 @@ namespace nanoFramework.Tools.Debugger
                     if (ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
                         // operation failed
-                        progress?.Report($"Error erasing sector @ 0x{flashSectorData.m_StartAddress:X8}. Error code: {ErrorCode}.");
+                        progress?.Report($"Error erasing sector @ 0x{sectorAddress:X8}. Error code: {ErrorCode}.");
 
                         // don't bother continuing
                         return false;
