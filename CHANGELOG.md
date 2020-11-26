@@ -1,5 +1,17 @@
 # Changelog
 
+## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.24.0-preview.3...HEAD)
+
+**Implemented enhancements:**
+
+- Work on async calls [\#278](https://github.com/nanoframework/nf-debugger/pull/278)
+
+## [v1.24.0-preview.3](https://github.com/nanoframework/nf-debugger/tree/v1.24.0-preview.3) (2020-11-26)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.24.0-preview.1...v1.24.0-preview.3)
+
 ## [v1.24.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.24.0-preview.1) (2020-11-25)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.15...v1.24.0-preview.1)
@@ -119,7 +131,6 @@
 
 **Implemented enhancements:**
 
-- Expose capability flags [\#254](https://github.com/nanoframework/nf-debugger/pull/254)
 - Work on capability flags [\#253](https://github.com/nanoframework/nf-debugger/pull/253)
 - Work capability flags [\#252](https://github.com/nanoframework/nf-debugger/pull/252)
 - Update CapabilityFlags [\#250](https://github.com/nanoframework/nf-debugger/pull/250)
@@ -135,6 +146,10 @@
 ## [v1.18.1-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.18.1-preview.1) (2020-09-04)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.18.0-preview.1...v1.18.1-preview.1)
+
+**Implemented enhancements:**
+
+- Expose capability flags [\#254](https://github.com/nanoframework/nf-debugger/pull/254)
 
 **Fixed bugs:**
 
