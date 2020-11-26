@@ -46,11 +46,11 @@ namespace Test_App_UWP
             
         }
 
-        private async void button1_Click(object sender, RoutedEventArgs e)
+        private void button1_Click(object sender, RoutedEventArgs e)
         {
-            var s = await App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.SendBufferAsync(new byte[] { (byte)'x', (byte)'x' }, TimeSpan.FromMilliseconds(1000), new CancellationToken());
+            var s = App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.SendBuffer(new byte[] { (byte)'x', (byte)'x' }, TimeSpan.FromMilliseconds(1000), new CancellationToken());
 
-            var r = await App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.ReadBufferAsync(10, TimeSpan.FromMilliseconds(1000), new CancellationToken());
+            var r = App.NanoFrameworkUsbDebugClient.NanoFrameworkDevices[0].DebugEngine.ReadBuffer(10, TimeSpan.FromMilliseconds(1000), new CancellationToken());
         }
 
         private void pingButton_Click(object sender, RoutedEventArgs e)

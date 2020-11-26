@@ -62,7 +62,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             try
             {
                 // TX header
-                var sendHeaderCount = await SendRawBufferAsync(raw.Header, TimeSpan.FromMilliseconds(1000), cancellationToken);
+                var sendHeaderCount = SendRawBufferAsync(raw.Header, TimeSpan.FromMilliseconds(1000), cancellationToken);
 
                 // check for cancellation request
                 if (cancellationToken.IsCancellationRequested)
@@ -76,7 +76,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     // we have a payload to TX
                     if (sendHeaderCount == raw.Header.Length)
                     {
-                        var sendPayloadCount = await SendRawBufferAsync(raw.Payload, TimeSpan.FromMilliseconds(1000), cancellationToken);
+                        var sendPayloadCount = SendRawBufferAsync(raw.Payload, TimeSpan.FromMilliseconds(1000), cancellationToken);
 
                         if (sendPayloadCount == raw.Payload.Length)
                         {
@@ -107,7 +107,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
             catch (DeviceNotConnectedException)
             {
-                App.ProcessExited();
+                throw;
             }
             catch (AggregateException)
             {
@@ -150,9 +150,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             throw new NotImplementedException();
         }
 
-        private async Task<uint> SendRawBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        private uint SendRawBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
-            return await App.SendBufferAsync(buffer, waiTimeout, cancellationToken);
+            return App.SendBuffer(buffer, waiTimeout, cancellationToken);
         }
 
         internal async Task<int> ReadBufferAsync(byte[] buffer, int offset, int bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
@@ -182,7 +182,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 while (bytesToRead > 0 && !cancellationToken.IsCancellationRequested)
                 {
                     // read next chunk of data async
-                    var readResult = await App.ReadBufferAsync((uint)bytesToRead, waitTimeout, cancellationToken);
+                    var readResult = App.ReadBuffer((uint)bytesToRead, waitTimeout, cancellationToken);
 
                     // any byte read?
                     if (readResult.Length > 0)
@@ -196,7 +196,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
             catch (DeviceNotConnectedException)
             {
-                App.ProcessExited();
+                throw;
             }
             catch (TaskCanceledException)
             {

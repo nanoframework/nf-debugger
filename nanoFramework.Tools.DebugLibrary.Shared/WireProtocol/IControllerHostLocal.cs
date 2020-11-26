@@ -6,7 +6,6 @@
 
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger.WireProtocol
 {
@@ -14,9 +13,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     {
         bool ProcessMessage(IncomingMessage msg, bool fReply);
 
-        Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken);
+        uint SendBuffer(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken);
 
-        Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken);
+        byte[] ReadBuffer(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken);
     }
 }
 

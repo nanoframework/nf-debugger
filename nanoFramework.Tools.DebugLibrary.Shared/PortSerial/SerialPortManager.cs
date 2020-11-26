@@ -316,10 +316,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     newNanoFrameworkDevice.ConnectionPort = new SerialPort(this, newNanoFrameworkDevice);
                     newNanoFrameworkDevice.Transport = TransportType.Serial;
 
-                    if (await newNanoFrameworkDevice.ConnectionPort.ConnectDeviceAsync())
-                    {
-                        await Task.Yield();
+                    await Task.Delay(100);
 
+                    if (await newNanoFrameworkDevice.ConnectionPort.ConnectDevice())
+                    {
                         if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
                         {
                             //add device to the collection
@@ -350,9 +350,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                             OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id} *** 2nd attempt ***"));
 
-                            if (await newNanoFrameworkDevice.ConnectionPort.ConnectDeviceAsync())
+                            if (await newNanoFrameworkDevice.ConnectionPort.ConnectDevice())
                             {
-                                await Task.Yield();
                                 if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
                                 {
                                     //add device to the collection
