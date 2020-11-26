@@ -131,6 +131,7 @@
 
 **Implemented enhancements:**
 
+- Expose capability flags [\#254](https://github.com/nanoframework/nf-debugger/pull/254)
 - Work on capability flags [\#253](https://github.com/nanoframework/nf-debugger/pull/253)
 - Work capability flags [\#252](https://github.com/nanoframework/nf-debugger/pull/252)
 - Update CapabilityFlags [\#250](https://github.com/nanoframework/nf-debugger/pull/250)
@@ -146,10 +147,6 @@
 ## [v1.18.1-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.18.1-preview.1) (2020-09-04)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.18.0-preview.1...v1.18.1-preview.1)
-
-**Implemented enhancements:**
-
-- Expose capability flags [\#254](https://github.com/nanoframework/nf-debugger/pull/254)
 
 **Fixed bugs:**
 
@@ -621,6 +618,10 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview008...v1.0.1-preview-012)
 
+**Fixed bugs:**
+
+- Improve code to validate deployment before actually commiting it [\#160](https://github.com/nanoframework/nf-debugger/pull/160)
+
 **Documentation and other chores:**
 
 - Update dependencies [\#170](https://github.com/nanoframework/nf-debugger/pull/170)
@@ -721,7 +722,6 @@
 **Fixed bugs:**
 
 - Add new erase option for configuration block [\#162](https://github.com/nanoframework/nf-debugger/pull/162)
-- Improve code to validate deployment before actually commiting it [\#160](https://github.com/nanoframework/nf-debugger/pull/160)
 - Fix issue with WP buffer length [\#159](https://github.com/nanoframework/nf-debugger/pull/159)
 - Fix bug in Engine.ProcessMessage [\#155](https://github.com/nanoframework/nf-debugger/pull/155)
 - Fix issue with SerialDevice description [\#151](https://github.com/nanoframework/nf-debugger/pull/151)
