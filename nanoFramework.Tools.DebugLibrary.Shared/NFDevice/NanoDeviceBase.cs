@@ -282,7 +282,10 @@ namespace nanoFramework.Tools.Debugger
         {
             bool ret = false;
 
-            if (!await DebugEngine.ConnectAsync(1000, true)) return false;
+            if (!await DebugEngine.ConnectAsync(1000, true))
+            {
+                return false;
+            }
 
             if (DebugEngine != null)
             {
@@ -537,7 +540,10 @@ namespace nanoFramework.Tools.Debugger
         {
             if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
             {
-                if (await DeployMFUpdateAsync(comprFilePath, cancellationToken, progress)) return true;
+                if (await DeployMFUpdateAsync(comprFilePath, cancellationToken, progress))
+                {
+                    return true;
+                }
             }
 
             return false;
@@ -741,7 +747,7 @@ namespace nanoFramework.Tools.Debugger
 
                         try
                         {
-                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
                             // check if cancellation was requested 
                             if (cancellationToken.IsCancellationRequested)
@@ -749,7 +755,7 @@ namespace nanoFramework.Tools.Debugger
                                 return false;
                             }
 
-                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
                         }
                         catch
                         {
@@ -810,7 +816,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     if (cancellationToken.IsCancellationRequested) return false;
 
-                    await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("xx\n"), TimeSpan.FromMilliseconds(5000), cancellationToken);
+                    DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("xx\n"), TimeSpan.FromMilliseconds(5000), cancellationToken);
 
                     if (m_evtMicroBooterError.WaitOne(100))
                     {
@@ -1069,11 +1075,11 @@ namespace nanoFramework.Tools.Debugger
                                 continue;
                             }
 
-                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
-                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes(parsedFile.Records[key]), TimeSpan.FromMilliseconds(20000), cancellationToken);
+                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes(parsedFile.Records[key]), TimeSpan.FromMilliseconds(20000), cancellationToken);
 
-                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
 
                             if (pipe-- <= 0)
                             {

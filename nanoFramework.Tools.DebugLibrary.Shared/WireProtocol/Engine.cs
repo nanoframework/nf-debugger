@@ -183,7 +183,7 @@ namespace nanoFramework.Tools.Debugger
                             _state.SetValue(EngineState.Value.Starting, true);
 
                             // start task to process background messages
-                            _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListenerAsync(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                            _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListener(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
                             _state.SetValue(EngineState.Value.Started, false);
                         }
@@ -399,7 +399,7 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public async Task IncomingMessagesListenerAsync()
+        public void IncomingMessagesListener()
         {
             var reassembler = new MessageReassembler(_controlller);
 
@@ -407,7 +407,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 try
                 {
-                    await reassembler.ProcessAsync(_backgroundProcessorCancellation.Token);
+                    reassembler.ProcessAsync(_backgroundProcessorCancellation.Token).Wait();
                 }
                 catch (AggregateException)
                 {
@@ -624,7 +624,7 @@ namespace nanoFramework.Tools.Debugger
                 // Start a background task that will complete tcs1.Task
                 Task.Factory.StartNew(() =>
                 {
-                    request.PerformRequestAsync(_controlller).Wait();
+                    request.PerformRequestAsync(_controlller).Wait(millisecondsTimeout, cancellationToken);
                 });
             }
             catch (Exception ex)
@@ -640,7 +640,7 @@ namespace nanoFramework.Tools.Debugger
             return request.TaskCompletionSource.Task;
         }
 
-        private List<IncomingMessage> PerformRequestBatch(List<OutgoingMessage> messages, int timeout = 1000)
+        private List<IncomingMessage> PerformRequestBatch(List<OutgoingMessage> messages)
         {
             List<IncomingMessage> replies = new List<IncomingMessage>();
 
@@ -664,9 +664,9 @@ namespace nanoFramework.Tools.Debugger
             return new Converter(Capabilities);
         }
 
-        public Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public uint SendBuffer(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
-            return _portDefinition.SendBufferAsync(buffer, waitTimeout, cancellationToken);
+            return _portDefinition.SendBuffer(buffer, waitTimeout, cancellationToken);
         }
 
         public bool ProcessMessage(IncomingMessage message, bool isReply)
@@ -706,7 +706,7 @@ namespace nanoFramework.Tools.Debugger
                                 Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
                             };
 
-                            PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, _controlller.CreateConverter(), Flags.c_NonCritical, cmdReply), _backgroundProcessorCancellation.Token).ConfigureAwait(false);
+                            PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, _controlller.CreateConverter(), Flags.c_NonCritical, cmdReply), _backgroundProcessorCancellation.Token);
 
                             // signal that a monitor ping was received
                             _pingEvent.Set();
@@ -769,9 +769,9 @@ namespace nanoFramework.Tools.Debugger
             _eventProcessExit?.Invoke(this, EventArgs.Empty);
         }
 
-        public Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public byte[] ReadBuffer(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
-            return _portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
+            return  _portDefinition.ReadBuffer(bytesToRead, waitTimeout, cancellationToken);
         }
 
         private OutgoingMessage CreateMessage(uint cmd, uint flags, object payload)
@@ -801,7 +801,7 @@ namespace nanoFramework.Tools.Debugger
             if ((_backgroundProcessor != null && _backgroundProcessor.IsCompleted) ||
                 (_backgroundProcessor == null))
             {
-                    _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListenerAsync(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                    _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListener(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
             }
         }
 
@@ -1230,24 +1230,18 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         internal object m_ReqSyncLock = new object();
 
-        private Task<WireProtocolRequest> AsyncMessage(uint command, uint flags, object payload, int timeout)
+        private async Task<WireProtocolRequest> AsyncMessage(uint command, uint flags, object payload, int timeout)
         {
             OutgoingMessage msg = CreateMessage(command, flags, payload);
 
-            return RequestAsync(msg, timeout);
+            return await RequestAsync(msg, timeout);
         }
 
         private async Task<IncomingMessage> MessageAsync(uint command, uint flags, object payload, int timeout)
         {
-            // FIXME
-            // Lock on m_ReqSyncLock object, so only one thread is active inside the block.
-            //lock (m_ReqSyncLock)
-            //{
-            WireProtocolRequest req = await AsyncMessage(command, flags, payload, timeout);
+            _ = await AsyncMessage(command, flags, payload, timeout);
 
-            //return await req.WaitAsync();
             return null;
-            //}
         }
 
         private async Task<IncomingMessage> SyncMessageAsync(uint command, uint flags, object payload)

@@ -437,7 +437,7 @@ namespace nanoFramework.Tools.Debugger.Usb
 
         #endregion
 
-        public Task<bool> ConnectDeviceAsync()
+        public Task<bool> ConnectDevice()
         {
             return ConnectUsbDeviceAsync(null);
         }
@@ -477,7 +477,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             EventHandlerForUsbDevice.Current.CloseDevice();
         }
 
-        public async Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        public uint SendBuffer(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
             uint bytesWritten = 0;
 
@@ -523,7 +523,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                         storeAsyncTask = writer.StoreAsync().AsTask(linkedCancelationToken);
                     }
 
-                    bytesWritten = await storeAsyncTask;
+                    bytesWritten = storeAsyncTask.GetAwaiter().GetResult();
 
                     if (bytesWritten > 0)
                     {
@@ -548,7 +548,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             return bytesWritten;
         }
 
-        public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        public byte[] ReadBuffer(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
             // device must be connected
             if (EventHandlerForUsbDevice.Current.IsDeviceConnected)
@@ -574,7 +574,7 @@ namespace nanoFramework.Tools.Debugger.Usb
 
                 Task<UInt32> loadAsyncTask;
 
-                await semaphore.WaitAsync();
+                //await semaphore.WaitAsync();
 
                 try
                 {
@@ -602,7 +602,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                         if (readCount > 0 &&
                             bytesToRead > 0)
                         {
-                            await reader.LoadAsync(readCount);
+                            _ = reader.LoadAsync(readCount).AsTask().GetAwaiter().GetResult();
 
                             byte[] readBuffer = new byte[bytesToRead];
                             reader.ReadBytes(readBuffer);

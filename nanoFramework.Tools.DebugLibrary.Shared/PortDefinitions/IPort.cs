@@ -11,11 +11,11 @@ namespace nanoFramework.Tools.Debugger
 {
     public interface IPort
     {
-        Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken);
+        uint SendBuffer(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken);
 
-        Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken);
+        byte[] ReadBuffer(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken);
 
-        Task<bool> ConnectDeviceAsync();
+        Task<bool> ConnectDevice();
 
         void DisconnectDevice();
     }
