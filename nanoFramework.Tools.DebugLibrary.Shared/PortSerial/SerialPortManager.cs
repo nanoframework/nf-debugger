@@ -576,6 +576,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             if (await device.DebugEngine.ConnectAsync(
                                 200,
                                 false,
+                                1,
                                 ConnectionSource.Unknown,
                                 false))
                             {

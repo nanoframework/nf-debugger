@@ -334,7 +334,11 @@ namespace nanoFramework.Tools.Debugger
                             CreateDebugEngine();
                         }
 
-                        if (fConnected = await DebugEngine.ConnectAsync(1000, true, ConnectionSource.Unknown))
+                        if (fConnected = await DebugEngine.ConnectAsync(
+                            1000,
+                            true,
+                            3,
+                            ConnectionSource.Unknown))
                         {
                             Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
 
