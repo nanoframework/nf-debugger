@@ -125,12 +125,6 @@ steps:
   inputs:
     versionSpec: '5.4.0'
 
-- task: NuGetCommand@2
-  condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ) )
-  displayName: NuGet restore
-  inputs:
-    restoreSolution: '$(solution)'
-
 - task: VSBuild@1
   condition: ne( variables['StartReleaseCandidate'], true )
   inputs:
