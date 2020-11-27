@@ -4,6 +4,10 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.25.0-preview.9...HEAD)
 
+**Implemented enhancements:**
+
+- Improve serial device check [\#282](https://github.com/nanoframework/nf-debugger/pull/282)
+
 **Fixed bugs:**
 
 - Fix ConnectAsync [\#281](https://github.com/nanoframework/nf-debugger/pull/281)
@@ -86,6 +90,10 @@
 
 - Improvements in NanoDevice target properties [\#262](https://github.com/nanoframework/nf-debugger/pull/262)
 
+**Fixed bugs:**
+
+- Fix check for nanoBooter flag [\#258](https://github.com/nanoframework/nf-debugger/pull/258)
+
 ## [v1.21.0-preview.5](https://github.com/nanoframework/nf-debugger/tree/v1.21.0-preview.5) (2020-11-20)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.21.0-preview.4...v1.21.0-preview.5)
@@ -110,10 +118,6 @@
 ## [v1.20.0-preview.8](https://github.com/nanoframework/nf-debugger/tree/v1.20.0-preview.8) (2020-11-12)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.20.0-preview.5...v1.20.0-preview.8)
-
-**Fixed bugs:**
-
-- Fix check for nanoBooter flag [\#258](https://github.com/nanoframework/nf-debugger/pull/258)
 
 ## [v1.20.0-preview.5](https://github.com/nanoframework/nf-debugger/tree/v1.20.0-preview.5) (2020-11-12)
 
@@ -805,7 +809,6 @@
 **Fixed bugs:**
 
 - Fix issue with Reboot command [\#42](https://github.com/nanoframework/nf-debugger/pull/42)
-- Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
 
 ## [0.4.0-preview019](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview019) (2017-07-19)
 
@@ -815,6 +818,10 @@
 
 - Improvements in test app [\#38](https://github.com/nanoframework/nf-debugger/pull/38)
 - Improvements in flash map output [\#36](https://github.com/nanoframework/nf-debugger/pull/36)
+
+**Fixed bugs:**
+
+- Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
 
 ## [0.4.0-preview018](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview018) (2017-06-30)
 
