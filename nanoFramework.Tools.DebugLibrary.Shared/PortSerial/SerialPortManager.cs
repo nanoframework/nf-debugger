@@ -58,7 +58,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Creates an Serial debug client
         /// </summary>
-        public SerialPortManager(object callerApp, bool startDeviceWatchers = true, List<string> portBlackList = null, int bootTime = 2000)
+        public SerialPortManager(object callerApp, bool startDeviceWatchers = true, List<string> portBlackList = null, int bootTime = 3000)
         {
             _mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, string>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
@@ -529,7 +529,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             bool validDevice = false;
             bool isKnownDevice = false;
-            string deviceId = null;
+
+            // store device ID
+            string deviceId = device.Device.DeviceInformation.DeviceInformation.Id;
 
             try
             {
@@ -545,9 +547,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // sanity check for invalid or null device base
                 if (serialDevice != null)
                 {
-                    // store device ID
-                    deviceId = device.Device.DeviceInformation.DeviceInformation.Id;
-
                     // check against black list
                     if (PortBlackList.Contains(serialDevice.PortName))
                     {
@@ -571,7 +570,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 serialDevice.BaudRate = baudRate;
                             }
 
-                            OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {deviceId} @ { baudRate }"));
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {deviceId} @ { serialDevice.BaudRate }"));
 
                             // try to "just" connect to the device meaning...
                             // ... don't request capabilities or force anything except the absolute minimum required, plus...
