@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.24.0-preview.3...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.25.0-preview.9...HEAD)
+
+**Fixed bugs:**
+
+- Fix ConnectAsync [\#281](https://github.com/nanoframework/nf-debugger/pull/281)
+
+## [v1.25.0-preview.9](https://github.com/nanoframework/nf-debugger/tree/v1.25.0-preview.9) (2020-11-27)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.24.0-preview.3...v1.25.0-preview.9)
 
 **Implemented enhancements:**
 
@@ -46,7 +54,6 @@
 - Add VerifyMemory method [\#271](https://github.com/nanoframework/nf-debugger/pull/271)
 - Improve serial read/receive operations [\#270](https://github.com/nanoframework/nf-debugger/pull/270)
 - Improve message output [\#269](https://github.com/nanoframework/nf-debugger/pull/269)
-- Improve device detection [\#268](https://github.com/nanoframework/nf-debugger/pull/268)
 - Improve progress messages during DeployBinaryFileAsync [\#267](https://github.com/nanoframework/nf-debugger/pull/267)
 
 ## [v1.23.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.23.0-preview.4) (2020-11-23)
@@ -67,6 +74,7 @@
 
 **Implemented enhancements:**
 
+- Improve device detection [\#268](https://github.com/nanoframework/nf-debugger/pull/268)
 - Add ConnectionId to NanoDeviceBase [\#264](https://github.com/nanoframework/nf-debugger/pull/264)
 - Add Monitor\_TargetInfo command [\#263](https://github.com/nanoframework/nf-debugger/pull/263)
 
@@ -91,10 +99,6 @@
 - Add DeploymentStartAddress and ClrStartAddress [\#261](https://github.com/nanoframework/nf-debugger/pull/261)
 - Remove complex ProgressReport [\#260](https://github.com/nanoframework/nf-debugger/pull/260)
 
-**Fixed bugs:**
-
-- Fix reboot options [\#256](https://github.com/nanoframework/nf-debugger/pull/256)
-
 ## [v1.21.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.21.0-preview.1) (2020-11-19)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.20.0-preview.8...v1.21.0-preview.1)
@@ -118,6 +122,10 @@
 **Implemented enhancements:**
 
 - Add flag to Ping to expose support for nanoBooter [\#257](https://github.com/nanoframework/nf-debugger/pull/257)
+
+**Fixed bugs:**
+
+- Fix reboot options [\#256](https://github.com/nanoframework/nf-debugger/pull/256)
 
 ## [v1.20.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.20.0-preview.1) (2020-11-12)
 
@@ -594,10 +602,6 @@
 
 - Improve SerialDevice creation [\#179](https://github.com/nanoframework/nf-debugger/pull/179)
 
-**Documentation and other chores:**
-
-- Update references and dependencies [\#178](https://github.com/nanoframework/nf-debugger/pull/178)
-
 ## [v1.0.1-preview-037](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-037) (2019-01-03)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-035...v1.0.1-preview-037)
@@ -746,6 +750,10 @@
 - Fix declaration of Monitor\_Message [\#65](https://github.com/nanoframework/nf-debugger/pull/65)
 - Correct WriteMemoryAsync [\#56](https://github.com/nanoframework/nf-debugger/pull/56)
 
+**Documentation and other chores:**
+
+- Update references and dependencies [\#178](https://github.com/nanoframework/nf-debugger/pull/178)
+
 ## [0.4.0-preview026](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview026) (2017-09-28)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview025...0.4.0-preview026)
@@ -872,11 +880,14 @@
 **Implemented enhancements:**
 
 - Add field to expose flags as enum [\#25](https://github.com/nanoframework/nf-debugger/pull/25)
-- Revert removal of assembly deployment flags [\#24](https://github.com/nanoframework/nf-debugger/pull/24)
 
 ## [0.4.0-preview010](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview010) (2017-06-14)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview009...0.4.0-preview010)
+
+**Implemented enhancements:**
+
+- Revert removal of assembly deployment flags [\#24](https://github.com/nanoframework/nf-debugger/pull/24)
 
 ## [0.4.0-preview009](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview009) (2017-06-14)
 
