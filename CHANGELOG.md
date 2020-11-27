@@ -54,6 +54,7 @@
 - Add VerifyMemory method [\#271](https://github.com/nanoframework/nf-debugger/pull/271)
 - Improve serial read/receive operations [\#270](https://github.com/nanoframework/nf-debugger/pull/270)
 - Improve message output [\#269](https://github.com/nanoframework/nf-debugger/pull/269)
+- Improve device detection [\#268](https://github.com/nanoframework/nf-debugger/pull/268)
 - Improve progress messages during DeployBinaryFileAsync [\#267](https://github.com/nanoframework/nf-debugger/pull/267)
 
 ## [v1.23.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.23.0-preview.4) (2020-11-23)
@@ -74,7 +75,6 @@
 
 **Implemented enhancements:**
 
-- Improve device detection [\#268](https://github.com/nanoframework/nf-debugger/pull/268)
 - Add ConnectionId to NanoDeviceBase [\#264](https://github.com/nanoframework/nf-debugger/pull/264)
 - Add Monitor\_TargetInfo command [\#263](https://github.com/nanoframework/nf-debugger/pull/263)
 
@@ -602,6 +602,10 @@
 
 - Improve SerialDevice creation [\#179](https://github.com/nanoframework/nf-debugger/pull/179)
 
+**Documentation and other chores:**
+
+- Update references and dependencies [\#178](https://github.com/nanoframework/nf-debugger/pull/178)
+
 ## [v1.0.1-preview-037](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-037) (2019-01-03)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-035...v1.0.1-preview-037)
@@ -749,10 +753,6 @@
 - Fix several issue with connect/disconnect workflow [\#71](https://github.com/nanoframework/nf-debugger/pull/71)
 - Fix declaration of Monitor\_Message [\#65](https://github.com/nanoframework/nf-debugger/pull/65)
 - Correct WriteMemoryAsync [\#56](https://github.com/nanoframework/nf-debugger/pull/56)
-
-**Documentation and other chores:**
-
-- Update references and dependencies [\#178](https://github.com/nanoframework/nf-debugger/pull/178)
 
 ## [0.4.0-preview026](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview026) (2017-09-28)
 
