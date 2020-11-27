@@ -6,6 +6,8 @@
 
 **Implemented enhancements:**
 
+- Add attempts parameter to ConnectAsync [\#280](https://github.com/nanoframework/nf-debugger/pull/280)
+- Rework DeployFile inner methods [\#279](https://github.com/nanoframework/nf-debugger/pull/279)
 - Work on async calls [\#278](https://github.com/nanoframework/nf-debugger/pull/278)
 
 ## [v1.24.0-preview.3](https://github.com/nanoframework/nf-debugger/tree/v1.24.0-preview.3) (2020-11-26)
@@ -89,6 +91,10 @@
 - Add DeploymentStartAddress and ClrStartAddress [\#261](https://github.com/nanoframework/nf-debugger/pull/261)
 - Remove complex ProgressReport [\#260](https://github.com/nanoframework/nf-debugger/pull/260)
 
+**Fixed bugs:**
+
+- Fix reboot options [\#256](https://github.com/nanoframework/nf-debugger/pull/256)
+
 ## [v1.21.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.21.0-preview.1) (2020-11-19)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.20.0-preview.8...v1.21.0-preview.1)
@@ -112,10 +118,6 @@
 **Implemented enhancements:**
 
 - Add flag to Ping to expose support for nanoBooter [\#257](https://github.com/nanoframework/nf-debugger/pull/257)
-
-**Fixed bugs:**
-
-- Fix reboot options [\#256](https://github.com/nanoframework/nf-debugger/pull/256)
 
 ## [v1.20.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.20.0-preview.1) (2020-11-12)
 
@@ -618,10 +620,6 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview008...v1.0.1-preview-012)
 
-**Fixed bugs:**
-
-- Improve code to validate deployment before actually commiting it [\#160](https://github.com/nanoframework/nf-debugger/pull/160)
-
 **Documentation and other chores:**
 
 - Update dependencies [\#170](https://github.com/nanoframework/nf-debugger/pull/170)
@@ -722,6 +720,7 @@
 **Fixed bugs:**
 
 - Add new erase option for configuration block [\#162](https://github.com/nanoframework/nf-debugger/pull/162)
+- Improve code to validate deployment before actually commiting it [\#160](https://github.com/nanoframework/nf-debugger/pull/160)
 - Fix issue with WP buffer length [\#159](https://github.com/nanoframework/nf-debugger/pull/159)
 - Fix bug in Engine.ProcessMessage [\#155](https://github.com/nanoframework/nf-debugger/pull/155)
 - Fix issue with SerialDevice description [\#151](https://github.com/nanoframework/nf-debugger/pull/151)
@@ -873,14 +872,11 @@
 **Implemented enhancements:**
 
 - Add field to expose flags as enum [\#25](https://github.com/nanoframework/nf-debugger/pull/25)
+- Revert removal of assembly deployment flags [\#24](https://github.com/nanoframework/nf-debugger/pull/24)
 
 ## [0.4.0-preview010](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview010) (2017-06-14)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview009...0.4.0-preview010)
-
-**Implemented enhancements:**
-
-- Revert removal of assembly deployment flags [\#24](https://github.com/nanoframework/nf-debugger/pull/24)
 
 ## [0.4.0-preview009](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview009) (2017-06-14)
 
