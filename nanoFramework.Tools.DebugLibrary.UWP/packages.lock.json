@@ -26,6 +26,12 @@
         "resolved": "7.2.1",
         "contentHash": "Od8SnPlpQr+PuAS0YzY3jgtzaDNknlIuAaldN2VEIyTvm/wCg22C5nUkUV1BEG8rIsub5RFMoV/NEQ0tM/+7Uw=="
       },
+      "Polly.Contrib.WaitAndRetry": {
+        "type": "Direct",
+        "requested": "[1.1.1, )",
+        "resolved": "1.1.1",
+        "contentHash": "1MUQLiSo4KDkQe6nzQRhIU05lm9jlexX5BVsbuw0SL82ynZ+GzAHQxJVDPVBboxV37Po3SG077aX8DuSy8TkaA=="
+      },
       "PropertyChanged.Fody": {
         "type": "Direct",
         "requested": "[2.6.1, )",
@@ -85,7 +91,7 @@
       "NETStandard.Library": {
         "type": "Transitive",
         "resolved": "2.0.3",
-        "contentHash": "st47PosZSHrjECdjeIzZQbzivYBJFv6P2nv4cj2ypdI204DO+vZ7l5raGMiX4eXMJ53RfOIg+/s4DHVZ54Nu2A==",
+        "contentHash": "548M6mnBSJWxsIlkQHfbzoYxpiYFXZZSL00p4GHYv8PkiqFBnnT68mW5mGEsA/ch9fDO9GkPgkFQpWiXZN7mAQ==",
         "dependencies": {
           "Microsoft.NETCore.Platforms": "1.1.0"
         }

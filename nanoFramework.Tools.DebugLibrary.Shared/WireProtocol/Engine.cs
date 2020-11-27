@@ -7,6 +7,7 @@
 using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.WireProtocol;
 using Polly;
+using Polly.Contrib.WaitAndRetry;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -166,43 +167,147 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<bool> ConnectAsync(
             int timeout, 
-            bool force = false, 
+            bool force = false,
+            int attempts = 1,
             ConnectionSource connectionSource = ConnectionSource.Unknown, 
             bool requestCapabilities = true)
         {
-            if (force || !IsConnected)
+            // setup linear back-off based on the parameters
+            var delay = Backoff.LinearBackoff(TimeSpan.FromMilliseconds(timeout), retryCount: attempts, fastFirst: true);
+
+            // setup policy
+            var operatioRetryPolicy = Policy.HandleResult<bool>(r => r)
+                .WaitAndRetryAsync(delay);
+
+            // perform connect operation with policy
+            return await operatioRetryPolicy.ExecuteAsync(async () =>
             {
-                // connect to device 
-                if (await Device.ConnectAsync())
+                if (force || !IsConnected)
                 {
-                    if (!IsRunning)
+                    // connect to device 
+                    if (await Device.ConnectAsync())
                     {
-                        if(_state.GetValue() == EngineState.Value.NotStarted)
+                        if (!IsRunning)
                         {
-                            // background processor was never started
-                            _state.SetValue(EngineState.Value.Starting, true);
+                            if (_state.GetValue() == EngineState.Value.NotStarted)
+                            {
+                                // background processor was never started
+                                _state.SetValue(EngineState.Value.Starting, true);
 
-                            // start task to process background messages
-                            _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListener(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                                // start task to process background messages
+                                _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListener(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
-                            _state.SetValue(EngineState.Value.Started, false);
+                                _state.SetValue(EngineState.Value.Started, false);
+                            }
+                            else
+                            {
+                                // background processor is not running, start it
+                                ResumeProcessing();
+                            }
                         }
-                        else
+
+                        Commands.Monitor_Ping cmd = new Commands.Monitor_Ping
                         {
-                            // background processor is not running, start it
-                            ResumeProcessing();
+                            Source = Commands.Monitor_Ping.c_Ping_Source_Host,
+                            Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
+                        };
+
+                        IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
+
+                        if (msg == null || msg?.Payload == null)
+                        {
+                            // update flag
+                            IsConnected = false;
+
+                            // done here
+                            return false;
+                        }
+
+
+                        if (msg.Payload is Commands.Monitor_Ping.Reply reply)
+                        {
+                            IsTargetBigEndian = (reply.Flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
+
+                            IsCRC32EnabledForWireProtocol = (reply.Flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
+
+                            // get Wire Protocol packet size
+                            switch (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_Position)
+                            {
+                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0128:
+                                    WireProtocolPacketSize = 128;
+                                    break;
+                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0256:
+                                    WireProtocolPacketSize = 256;
+                                    break;
+                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0512:
+                                    WireProtocolPacketSize = 512;
+                                    break;
+                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_1024:
+                                    WireProtocolPacketSize = 1024;
+                                    break;
+
+                                default:
+                                    // unsupported packet size
+                                    throw new NotSupportedException("Wire Protocol packet size reported by target device is not supported.");
+                            }
+
+                            // get other device capabilities
+                            ConfigBlockRequiresErase = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase).Equals(Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase);
+
+                            HasProprietaryBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter);
+
+                            HasNanoBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter);
+
+                            IsIFUCapable = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable).Equals(Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable);
+
+
+                            // update flag
+                            IsConnected = true;
+
+                            ConnectionSource = (reply == null || reply.Source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR) ? ConnectionSource.nanoCLR : ConnectionSource.nanoBooter;
+
+                            if (m_silent)
+                            {
+                                SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
+                            }
+
+                            // resume execution for older clients, since server tools no longer do this.
+                            if (!StopDebuggerOnConnect && (msg != null && msg.Payload == null))
+                            {
+                                ResumeExecution();
+                            }
                         }
                     }
+                }
 
-                    Commands.Monitor_Ping cmd = new Commands.Monitor_Ping
+                var flashMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_FlashSectorMap.FlashSectorData>>(r => r == null)
+                                           .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * timeout));
+                var targetInfoPolicy = Policy.Handle<Exception>().OrResult<TargetInfo>(r => r == null)
+                                             .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * timeout));
+
+                if (ConnectionSource == ConnectionSource.nanoCLR &&
+                    requestCapabilities &&
+                    (force || Capabilities.IsUnknown))
+                {
+                    CancellationTokenSource cancellationTSource = new CancellationTokenSource();
+
+                    //default capabilities
+                    Capabilities = new CLRCapabilities();
+
+                    // fill flash sector map
+                    FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
+
+                    // get target info
+                    TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+
+                    var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
+
+                    if (tempCapabilities != null && !tempCapabilities.IsUnknown)
                     {
-                        Source = Commands.Monitor_Ping.c_Ping_Source_Host,
-                        Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
-                    };
-
-                    IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
-
-                    if (msg == null || msg?.Payload == null)
+                        Capabilities = tempCapabilities;
+                        _controlller.Capabilities = Capabilities;
+                    }
+                    else
                     {
                         // update flag
                         IsConnected = false;
@@ -210,92 +315,20 @@ namespace nanoFramework.Tools.Debugger
                         // done here
                         return false;
                     }
-
-
-                    if (msg.Payload is Commands.Monitor_Ping.Reply reply)
-                    {
-                        IsTargetBigEndian = (reply.Flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
-
-                        IsCRC32EnabledForWireProtocol = (reply.Flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
-
-                        // get Wire Protocol packet size
-                        switch (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_Position)
-                        {
-                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0128:
-                                WireProtocolPacketSize = 128;
-                                break;
-                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0256:
-                                WireProtocolPacketSize = 256;
-                                break;
-                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0512:
-                                WireProtocolPacketSize = 512;
-                                break;
-                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_1024:
-                                WireProtocolPacketSize = 1024;
-                                break;
-
-                            default:
-                                // unsupported packet size
-                                throw new NotSupportedException("Wire Protocol packet size reported by target device is not supported.");
-                        }
-
-                        // get other device capabilities
-                        ConfigBlockRequiresErase = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase).Equals(Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase);
-
-                        HasProprietaryBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter);
-                        
-                        HasNanoBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter);
-
-                        IsIFUCapable = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable).Equals(Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable);
-
-
-                        // update flag
-                        IsConnected = true;
-
-                        ConnectionSource = (reply == null || reply.Source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR) ? ConnectionSource.nanoCLR : ConnectionSource.nanoBooter;
-
-                        if (m_silent)
-                        {
-                            SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
-                        }
-
-                        // resume execution for older clients, since server tools no longer do this.
-                        if (!StopDebuggerOnConnect && (msg != null && msg.Payload == null))
-                        {
-                            ResumeExecution();
-                        }
-                    }
                 }
-            }
 
-            var flashMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_FlashSectorMap.FlashSectorData>>(r => r == null)
-                                       .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * timeout));
-            var targetInfoPolicy = Policy.Handle<Exception>().OrResult<TargetInfo>(r => r == null)
-                                         .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * timeout));
-
-            if (ConnectionSource == ConnectionSource.nanoCLR &&
-                requestCapabilities &&
-                (force || Capabilities.IsUnknown) )
-            {
-                CancellationTokenSource cancellationTSource = new CancellationTokenSource();
-
-                //default capabilities
-                Capabilities = new CLRCapabilities();
-
-                // fill flash sector map
-                FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
-
-                // get target info
-                TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
-
-                var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
-
-                if (tempCapabilities != null && !tempCapabilities.IsUnknown)
+                if (ConnectionSource == ConnectionSource.nanoBooter &&
+                    requestCapabilities &&
+                    (force || TargetInfo == null))
                 {
-                    Capabilities = tempCapabilities;
-                    _controlller.Capabilities = Capabilities;
+                    // fill flash sector map
+                    FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
+
+                    // get target info
+                    TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
                 }
-                else
+
+                if (connectionSource != ConnectionSource.Unknown && connectionSource != ConnectionSource)
                 {
                     // update flag
                     IsConnected = false;
@@ -303,40 +336,20 @@ namespace nanoFramework.Tools.Debugger
                     // done here
                     return false;
                 }
-            }
 
-            if (ConnectionSource == ConnectionSource.nanoBooter &&
-                requestCapabilities && 
-                (force || TargetInfo == null))
-            {
-                // fill flash sector map
-                FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
+                if (requestCapabilities &&
+                    (FlashSectorMap == null
+                    || TargetInfo == null))
+                {
+                    // update flag
+                    IsConnected = false;
 
-                // get target info
-                TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
-            }
+                    // done here
+                    return false;
+                }
 
-            if (connectionSource != ConnectionSource.Unknown && connectionSource != ConnectionSource)
-            {
-                // update flag
-                IsConnected = false;
-
-                // done here
-                return false;
-            }
-
-            if (requestCapabilities &&
-                (FlashSectorMap == null
-                || TargetInfo == null))
-            {
-                // update flag
-                IsConnected = false;
-
-                // done here
-                return false;
-            }
-
-            return IsConnected;
+                return IsConnected;
+            });
         }
 
         public bool UpdateDebugFlags()
@@ -1611,7 +1624,11 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<bool> ReconnectAsync(bool fSoftReboot, int timeout = 5000)
         {
-            if (!await ConnectAsync(timeout, true, ConnectionSource.Unknown))
+            if (!await ConnectAsync(
+                timeout,
+                true,
+                3,
+                ConnectionSource.Unknown))
             {
                 if (ThrowOnCommunicationFailure)
                 {
