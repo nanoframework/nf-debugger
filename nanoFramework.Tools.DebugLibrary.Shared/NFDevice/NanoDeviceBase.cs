@@ -556,6 +556,12 @@ namespace nanoFramework.Tools.Debugger
         /// <param name="address">Address to write to.</param>
         /// <returns>Returns false if the deployment fails, true otherwise.
         /// </returns>
+        /// <remarks>
+        /// To perform the update the device has to be running:
+        /// - nanoCLR if this is meant to update the deployment region.
+        /// - nanoBooter if this is meant to update nanoCLR
+        /// Failing to meet this condition will abort the operation.
+        /// </remarks>
         public async Task<bool> DeployBinaryFileAsync(
             string binFile,
             uint address,
@@ -576,7 +582,6 @@ namespace nanoFramework.Tools.Debugger
             var data = File.ReadAllBytes(binFile);
 
             if (!await PrepareForDeployAsync(
-                data,
                 address,
                 cancellationToken,
                 progress))
@@ -684,6 +689,7 @@ namespace nanoFramework.Tools.Debugger
                 address,
                 buffer,
                 progress);
+
             if (!Success)
             {
                 progress?.Report($"Error writing to device memory @ 0x{address:X8}, error {ErrorCode}.");
@@ -1325,13 +1331,11 @@ namespace nanoFramework.Tools.Debugger
         }
 
         private async Task<bool> PrepareForDeployAsync(
-            byte[] buffer,
             uint address,
             CancellationToken cancellationToken,
             IProgress<string> progress = null)
         {
             return await PrepareForDeployAsync(
-                buffer,
                 address,
                 null,
                 cancellationToken,
@@ -1344,7 +1348,6 @@ namespace nanoFramework.Tools.Debugger
             IProgress<string> progress = null)
         {
             return await PrepareForDeployAsync(
-                null,
                 0,
                 blocks,
                 cancellationToken,
@@ -1352,18 +1355,11 @@ namespace nanoFramework.Tools.Debugger
         }
 
         private async Task<bool> PrepareForDeployAsync(
-            byte[] buffer,
             uint address,
             List<SRecordFile.Block> blocks, 
             CancellationToken cancellationToken, 
             IProgress<string> progress = null)
         {
-            // make sure we are connected
-            if(!await DebugEngine.ConnectAsync(5000, true))
-            {
-                return false;
-            }
-
             // get flash sector map, only if needed
             List<Commands.Monitor_FlashSectorMap.FlashSectorData> flashSectorsMap = DebugEngine.FlashSectorMap;
 
@@ -1379,8 +1375,6 @@ namespace nanoFramework.Tools.Debugger
             bool updatesClr = false;
             bool updatesBooter = false;
 
-            long totalLength;
-
             if (blocks != null)
             {
                 foreach (SRecordFile.Block bl in blocks)
@@ -1393,8 +1387,6 @@ namespace nanoFramework.Tools.Debugger
                         updatesBooter ^= (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP;
                     }
                 }
-
-                totalLength = blocks.Sum(b => b.data.Length);
             }
             else
             {
@@ -1405,14 +1397,15 @@ namespace nanoFramework.Tools.Debugger
                     updatesClr = (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
                     updatesBooter = (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP;
                 }
-
-                totalLength = buffer.Length;
             }
 
             // sanity check
             if (updatesBooter)
             {
                 // can't handle this update because it touches nanoBooter
+
+                progress?.Report("Can't deploy file because it updates nanoBooter.");
+
                 return false;
             }
 
@@ -1425,11 +1418,15 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            if (updatesClr &&
-                DebugEngine.ConnectionSource != ConnectionSource.nanoBooter)
+            if (updatesClr)
             {
                 // if this is updating the CLR need to launch nanoBooter
-                await ConnectToNanoBooterAsync(cancellationToken);
+                if (DebugEngine.ConnectionSource != ConnectionSource.nanoBooter)
+                {
+                    progress?.Report("Need to launch nanoBooter before updating the firmware.");
+
+                    return false;
+                }
             }
 
             // erase whatever blocks are required
