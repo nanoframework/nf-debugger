@@ -176,7 +176,7 @@ namespace nanoFramework.Tools.Debugger
             var delay = Backoff.LinearBackoff(TimeSpan.FromMilliseconds(timeout), retryCount: attempts, fastFirst: true);
 
             // setup policy
-            var operatioRetryPolicy = Policy.HandleResult<bool>(r => r)
+            var operatioRetryPolicy = Policy.HandleResult<bool>(r => !r)
                 .WaitAndRetryAsync(delay);
 
             // perform connect operation with policy
