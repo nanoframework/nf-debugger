@@ -481,7 +481,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                deviceInformation.Id.Contains(@"VID&0001009e_PID&400a") ||
 
                // this seems to cover virtual COM ports from Bluetooth devices
-               deviceInformation.Id.Contains("BTHENUM")
+               deviceInformation.Id.Contains("BTHENUM") ||
+               
+               // this seems to cover virtual COM ports by ELTIMA 
+               deviceInformation.Id.Contains("EVSERIAL")
                )
             {
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(deviceInformation.Id));
