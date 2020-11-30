@@ -80,11 +80,11 @@ namespace nanoFramework.Tools.Debugger
         {
             if (Device is NanoUsbDevice)
             {
-                return await ConnectionPort.ConnectDevice();
+                return await ConnectionPort.ConnectDeviceAsync();
             }
             else if (Device is NanoSerialDevice)
             {
-                return await ConnectionPort.ConnectDevice();
+                return await ConnectionPort.ConnectDeviceAsync();
             }
 
             return false;

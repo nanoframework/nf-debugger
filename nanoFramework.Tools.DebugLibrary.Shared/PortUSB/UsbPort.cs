@@ -437,7 +437,7 @@ namespace nanoFramework.Tools.Debugger.Usb
 
         #endregion
 
-        public Task<bool> ConnectDevice()
+        public Task<bool> ConnectDeviceAsync()
         {
             return ConnectUsbDeviceAsync(null);
         }
@@ -477,7 +477,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             EventHandlerForUsbDevice.Current.CloseDevice();
         }
 
-        public uint SendBuffer(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        public async Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
             uint bytesWritten = 0;
 
@@ -523,7 +523,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                         storeAsyncTask = writer.StoreAsync().AsTask(linkedCancelationToken);
                     }
 
-                    bytesWritten = storeAsyncTask.GetAwaiter().GetResult();
+                    bytesWritten = await storeAsyncTask.ConfigureAwait(true);
 
                     if (bytesWritten > 0)
                     {
@@ -548,7 +548,7 @@ namespace nanoFramework.Tools.Debugger.Usb
             return bytesWritten;
         }
 
-        public byte[] ReadBuffer(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
             // device must be connected
             if (EventHandlerForUsbDevice.Current.IsDeviceConnected)
@@ -572,13 +572,13 @@ namespace nanoFramework.Tools.Debugger.Usb
                 // because we have an external cancellation token and the above timeout cancellation token, need to combine both
                 var linkedCancelationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancelatioToken).Token;
 
-                Task<UInt32> loadAsyncTask;
+                //Task<UInt32> loadAsyncTask;
 
-                //await semaphore.WaitAsync();
+                await semaphore.WaitAsync();
 
                 try
                 {
-                    //// Don't start any IO if the task has been cancelled
+                    //// Don't start any IO if the task has been canceled
                     //lock (cancelIoLock)
                     //{
                     //    // set this makes sure that an exception is thrown when the cancellation token is set
@@ -602,7 +602,7 @@ namespace nanoFramework.Tools.Debugger.Usb
                         if (readCount > 0 &&
                             bytesToRead > 0)
                         {
-                            _ = reader.LoadAsync(readCount).AsTask().GetAwaiter().GetResult();
+                            await reader.LoadAsync(readCount).AsTask(linkedCancelationToken).ConfigureAwait(true);
 
                             byte[] readBuffer = new byte[bytesToRead];
                             reader.ReadBytes(readBuffer);

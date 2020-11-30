@@ -677,9 +677,12 @@ namespace nanoFramework.Tools.Debugger
             return new Converter(Capabilities);
         }
 
-        public uint SendBuffer(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
-            return _portDefinition.SendBuffer(buffer, waitTimeout, cancellationToken);
+            return Task.Run(() =>
+            {
+                return _portDefinition.SendBufferAsync(buffer, waitTimeout, cancellationToken);
+            }, cancellationToken);
         }
 
         public bool ProcessMessage(IncomingMessage message, bool isReply)
@@ -782,9 +785,12 @@ namespace nanoFramework.Tools.Debugger
             _eventProcessExit?.Invoke(this, EventArgs.Empty);
         }
 
-        public byte[] ReadBuffer(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
         {
-            return  _portDefinition.ReadBuffer(bytesToRead, waitTimeout, cancellationToken);
+            return Task.Run(() =>
+            {
+               return _portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
+            }, cancellationToken);
         }
 
         private OutgoingMessage CreateMessage(uint cmd, uint flags, object payload)
