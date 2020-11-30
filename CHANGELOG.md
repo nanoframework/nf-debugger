@@ -1,8 +1,8 @@
 # Changelog
 
-## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
+## [v1.26.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.0-preview.1) (2020-11-30)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.25.0-preview.16...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.25.0-preview.16...v1.26.0-preview.1)
 
 **Implemented enhancements:**
 
@@ -602,10 +602,6 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-040...v1.0.1-preview-043)
 
-**Implemented enhancements:**
-
-- Remove NoShutdown from RebootOptions [\#180](https://github.com/nanoframework/nf-debugger/pull/180)
-
 ## [v1.0.1-preview-040](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-040) (2019-01-28)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-037...v1.0.1-preview-040)
@@ -628,6 +624,7 @@
 
 **Implemented enhancements:**
 
+- Remove NoShutdown from RebootOptions [\#180](https://github.com/nanoframework/nf-debugger/pull/180)
 - Add new entries to Serial Devices black list [\#175](https://github.com/nanoframework/nf-debugger/pull/175)
 - Work on update device config [\#173](https://github.com/nanoframework/nf-debugger/pull/173)
 
@@ -778,10 +775,6 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview024...0.4.0-preview025)
 
-**Fixed bugs:**
-
-- Fix wrong return value on SetExecutionModeAsync [\#47](https://github.com/nanoframework/nf-debugger/pull/47)
-
 ## [0.4.0-preview024](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview024) (2017-09-26)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview023...0.4.0-preview024)
@@ -805,6 +798,10 @@
 **Implemented enhancements:**
 
 - Correct method names [\#44](https://github.com/nanoframework/nf-debugger/pull/44)
+
+**Fixed bugs:**
+
+- Fix wrong return value on SetExecutionModeAsync [\#47](https://github.com/nanoframework/nf-debugger/pull/47)
 
 ## [0.4.0-preview021](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview021) (2017-09-06)
 
@@ -832,13 +829,16 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview017...0.4.0-preview018)
 
+**Implemented enhancements:**
+
+- Fixed issues with device add/removal [\#33](https://github.com/nanoframework/nf-debugger/pull/33)
+
 ## [0.4.0-preview017](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview017) (2017-06-29)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview016...0.4.0-preview017)
 
 **Implemented enhancements:**
 
-- Fixed issues with device add/removal [\#33](https://github.com/nanoframework/nf-debugger/pull/33)
 - Fix erase memory command [\#32](https://github.com/nanoframework/nf-debugger/pull/32)
 
 ## [0.4.0-preview016](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview016) (2017-06-23)
