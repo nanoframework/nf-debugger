@@ -39,33 +39,37 @@ steps:
 # get commit message
 - powershell: |
 
+    # default to false
+    $update = false
+
     if($env:Build_Reason -eq 'PullRequest')
     {
-      # PR build, get PR message
-
-      # need to get PR number from branch as the Azure Pipeline var can't be trusted
-      if($env:Build_SourceBranch -match '(?<=(pull\/))\w*(?=(\/))')
-      {
-        $prNumber = $matches[0]
-
-        $prUrl = "https://api.github.com/repos/$env:Build_Repository_Name/pulls/$prNumber"
-
-        $commit = Invoke-RestMethod -Uri $prUrl -ContentType "application/json" -Method GET
-
-        $commitMessage = $commit.body
-      }
+      # PR build, nothing interesting in commit message
     }
     else
     {
-      # not a PR, get subject and commit message for commit
-      $commitMessage = git log --format='%B' -1
+      # build is not from a PR
+
+      # get commit ID
+      $commitId = git rev-parse HEAD
+      
+      # get PR associate with commit
+      $prUrl = "https://api.github.com/repos/nanoframework/nf-debugger/commits/$commitId/pulls"
+      $commit = Invoke-RestMethod -Uri $prUrl -ContentType "application/json" -Headers @{"Accept"="application/vnd.github.groot-preview+json"} -Method GET
+
+      if($commit -ne $null)
+      {
+        # there is a PR, check labels
+        $updateDependents = $commit.labels | where {$_.Name -eq 'CI: Update Dependents'}
+        if($updateDependents -ne $null)
+        {
+          $update = true
+        }
+      }
     }
 
-    # need to flatten message by removing new lines
-    $commitMessage = $commitMessage -replace "`r`n", " "
-
     # set variable to foward to jobs
-    echo "##vso[task.setvariable variable=COMMIT_MESSAGE;isOutput=true]$commitMessage"
+    echo "##vso[task.setvariable variable=UPDATE_DEPENDENTS;isOutput=true]$update"
   name: GetCommitMessage
   displayName: grab commit message
 
@@ -301,7 +305,7 @@ steps:
 
 # update dependencies
 - task: PowerShell@2
-  condition: or(eq(variables['UPDATE_DEPENDENTS'], 'true'), and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), and(not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), contains(variables['GetCommitMessage.COMMIT_MESSAGE'], '***UPDATE_DEPENDENTS***') ) ) )
+  condition: or(eq(variables['UPDATE_DEPENDENTS'], 'true'), eq(variables['GetCommitMessage.UPDATE_DEPENDENTS'], 'true') )
   displayName: Update dependent tools
   inputs:
     targetType: filePath
