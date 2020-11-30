@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.26.0-preview.5](https://github.com/nanoframework/nf-debugger/tree/v1.26.0-preview.5) (2020-11-30)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.0-preview.1...v1.26.0-preview.5)
+
 ## [v1.26.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.0-preview.1) (2020-11-30)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.25.0-preview.16...v1.26.0-preview.1)
@@ -566,6 +570,10 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-064...v1.0.1-preview-066)
 
+**Implemented enhancements:**
+
+- Add new method UpdateDebugFlags [\#191](https://github.com/nanoframework/nf-debugger/pull/191)
+
 **Fixed bugs:**
 
 - Fix progress output on DeploymentExecuteIncremental [\#192](https://github.com/nanoframework/nf-debugger/pull/192)
@@ -576,7 +584,6 @@
 
 **Implemented enhancements:**
 
-- Add new method UpdateDebugFlags [\#191](https://github.com/nanoframework/nf-debugger/pull/191)
 - Add output of error codes on WriteMemory [\#190](https://github.com/nanoframework/nf-debugger/pull/190)
 
 ## [v1.0.1-preview-061](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-061) (2019-03-12)
@@ -602,6 +609,10 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-040...v1.0.1-preview-043)
 
+**Implemented enhancements:**
+
+- Remove NoShutdown from RebootOptions [\#180](https://github.com/nanoframework/nf-debugger/pull/180)
+
 ## [v1.0.1-preview-040](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-040) (2019-01-28)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-037...v1.0.1-preview-040)
@@ -624,7 +635,6 @@
 
 **Implemented enhancements:**
 
-- Remove NoShutdown from RebootOptions [\#180](https://github.com/nanoframework/nf-debugger/pull/180)
 - Add new entries to Serial Devices black list [\#175](https://github.com/nanoframework/nf-debugger/pull/175)
 - Work on update device config [\#173](https://github.com/nanoframework/nf-debugger/pull/173)
 
@@ -775,6 +785,10 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview024...0.4.0-preview025)
 
+**Fixed bugs:**
+
+- Fix wrong return value on SetExecutionModeAsync [\#47](https://github.com/nanoframework/nf-debugger/pull/47)
+
 ## [0.4.0-preview024](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview024) (2017-09-26)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview023...0.4.0-preview024)
@@ -791,6 +805,10 @@
 
 - Exposed compiler details for device capabilities [\#45](https://github.com/nanoframework/nf-debugger/pull/45)
 
+**Fixed bugs:**
+
+- Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
+
 ## [0.4.0-preview022](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview022) (2017-09-11)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview021...0.4.0-preview022)
@@ -798,10 +816,6 @@
 **Implemented enhancements:**
 
 - Correct method names [\#44](https://github.com/nanoframework/nf-debugger/pull/44)
-
-**Fixed bugs:**
-
-- Fix wrong return value on SetExecutionModeAsync [\#47](https://github.com/nanoframework/nf-debugger/pull/47)
 
 ## [0.4.0-preview021](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview021) (2017-09-06)
 
@@ -814,7 +828,6 @@
 **Fixed bugs:**
 
 - Fix issue with Reboot command [\#42](https://github.com/nanoframework/nf-debugger/pull/42)
-- Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
 
 ## [0.4.0-preview019](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview019) (2017-07-19)
 
@@ -828,10 +841,6 @@
 ## [0.4.0-preview018](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview018) (2017-06-30)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview017...0.4.0-preview018)
-
-**Implemented enhancements:**
-
-- Fixed issues with device add/removal [\#33](https://github.com/nanoframework/nf-debugger/pull/33)
 
 ## [0.4.0-preview017](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview017) (2017-06-29)
 
@@ -847,6 +856,7 @@
 
 **Implemented enhancements:**
 
+- Fixed issues with device add/removal [\#33](https://github.com/nanoframework/nf-debugger/pull/33)
 - Improve code in Deploy incremental method [\#31](https://github.com/nanoframework/nf-debugger/pull/31)
 
 ## [0.4.0-preview015](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview015) (2017-06-23)
