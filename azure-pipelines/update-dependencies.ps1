@@ -37,6 +37,7 @@ git checkout --quiet develop | Out-Null
 
 Write-Host "Updating nanoFramework.Tools.Debugger.Net package in VS2017 solution..."
 
+dotnet remove VisualStudio.Extension\VisualStudio.Extension.csproj package nanoFramework.Tools.Debugger.Net
 dotnet add VisualStudio.Extension\VisualStudio.Extension.csproj package nanoFramework.Tools.Debugger.Net --prerelease
 
 ####################
@@ -44,6 +45,7 @@ dotnet add VisualStudio.Extension\VisualStudio.Extension.csproj package nanoFram
 
 Write-Host "Updating nanoFramework.Tools.Debugger.Net package in VS2019 solution..."
 
+dotnet remove VisualStudio.Extension-2019\VisualStudio.Extension.csproj package nanoFramework.Tools.Debugger.Net
 dotnet add VisualStudio.Extension-2019\VisualStudio.Extension.csproj package nanoFramework.Tools.Debugger.Net --prerelease
 
 #####################
