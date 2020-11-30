@@ -227,7 +227,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         #endregion
 
-        public async Task<bool> ConnectDevice()
+        public async Task<bool> ConnectDeviceAsync()
         {
             bool connectFlag = await ConnectSerialDeviceAsync();
 
@@ -351,7 +351,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public DateTime LastActivity { get; set; }
 
-        public uint SendBuffer(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        public async Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
             // device must be connected
             if (IsDeviceConnected && !cancellationToken.IsCancellationRequested)
@@ -368,7 +368,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         // write buffer to device
                         outputStreamWriter.WriteBytes(buffer);
 
-                        // Don't start any IO if the task was cancelled
+                        // Don't start any IO if the task was canceled
                         lock (_sendCancelLock)
                         {
                             cancellationToken.ThrowIfCancellationRequested();
@@ -377,7 +377,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(linkedCts.Token.AddTimeout(waiTimeout));
                         }
 
-                        return storeAsyncTask.GetAwaiter().GetResult();
+                        return await storeAsyncTask.ConfigureAwait(true);
                     }
                     catch (TaskCanceledException)
                     {
@@ -404,7 +404,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return 0;
         }
 
-        public byte[] ReadBuffer(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
         {
             // device must be connected
             if (IsDeviceConnected && !cancellationToken.IsCancellationRequested)
@@ -427,7 +427,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             loadAsyncTask = inputStreamReader.LoadAsync(bytesToRead).AsTask(linkedCts.Token.AddTimeout(waiTimeout));
                         }
 
-                        UInt32 bytesRead = loadAsyncTask.GetAwaiter().GetResult();
+                        UInt32 bytesRead = await loadAsyncTask.ConfigureAwait(true);
 
                         if (bytesRead > 0)
                         {

@@ -757,7 +757,7 @@ namespace nanoFramework.Tools.Debugger
 
                         try
                         {
-                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(true);
 
                             // check if cancellation was requested 
                             if (cancellationToken.IsCancellationRequested)
@@ -765,7 +765,7 @@ namespace nanoFramework.Tools.Debugger
                                 return false;
                             }
 
-                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(true);
                         }
                         catch
                         {
@@ -826,7 +826,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     if (cancellationToken.IsCancellationRequested) return false;
 
-                    DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("xx\n"), TimeSpan.FromMilliseconds(5000), cancellationToken);
+                    await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("xx\n"), TimeSpan.FromMilliseconds(5000), cancellationToken).ConfigureAwait(true);
 
                     if (m_evtMicroBooterError.WaitOne(100))
                     {
@@ -1085,11 +1085,11 @@ namespace nanoFramework.Tools.Debugger
                                 continue;
                             }
 
-                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(true);
 
-                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes(parsedFile.Records[key]), TimeSpan.FromMilliseconds(20000), cancellationToken);
+                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes(parsedFile.Records[key]), TimeSpan.FromMilliseconds(20000), cancellationToken).ConfigureAwait(true);
 
-                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken);
+                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(true);
 
                             if (pipe-- <= 0)
                             {

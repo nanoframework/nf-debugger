@@ -316,11 +316,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     newNanoFrameworkDevice.ConnectionPort = new SerialPort(this, newNanoFrameworkDevice);
                     newNanoFrameworkDevice.Transport = TransportType.Serial;
 
-                    await Task.Delay(100);
+                    await Task.Delay(100).ConfigureAwait(true);
 
-                    if (await newNanoFrameworkDevice.ConnectionPort.ConnectDevice())
+                    if (await newNanoFrameworkDevice.ConnectionPort.ConnectDeviceAsync().ConfigureAwait(true))
                     {
-                        if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
+                        if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice).ConfigureAwait(true))
                         {
                             //add device to the collection
                             NanoFrameworkDevices.Add(newNanoFrameworkDevice);
@@ -346,13 +346,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             {
                                 delay = _delay.Next(200, 600);
                             }
-                            await Task.Delay(BootTime + delay);
+                            await Task.Delay(BootTime + delay).ConfigureAwait(true);
 
                             OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id} *** 2nd attempt ***"));
 
-                            if (await newNanoFrameworkDevice.ConnectionPort.ConnectDevice())
+                            if (await newNanoFrameworkDevice.ConnectionPort.ConnectDeviceAsync().ConfigureAwait(true))
                             {
-                                if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice))
+                                if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice).ConfigureAwait(true))
                                 {
                                     //add device to the collection
                                     NanoFrameworkDevices.Add(newNanoFrameworkDevice);
@@ -580,7 +580,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 false,
                                 1,
                                 ConnectionSource.Unknown,
-                                false))
+                                false).ConfigureAwait(true))
                             {
                                 if (isKnownDevice)
                                 {
