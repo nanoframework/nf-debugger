@@ -40,7 +40,7 @@ steps:
 - powershell: |
 
     # default to false
-    $update = false
+    $update = $false
 
     if($env:Build_Reason -eq 'PullRequest')
     {
@@ -63,15 +63,14 @@ steps:
         $updateDependents = $commit.labels | where {$_.Name -eq 'CI: Update Dependents'}
         if($updateDependents -ne $null)
         {
-          $update = true
+          $update = $true
         }
       }
     }
 
     # set variable to foward to jobs
-    echo "##vso[task.setvariable variable=UPDATE_DEPENDENTS;isOutput=true]$update"
-  name: GetCommitMessage
-  displayName: grab commit message
+    echo "##vso[task.setvariable variable=RUN_UPDATE_DEPENDENTS]$update"
+  displayName: Check PR labels
 
 - task: DotNetCoreCLI@2  
   condition: or( eq( variables['StartReleaseCandidate'], true ), ne(variables['system.pullrequest.isfork'], true) )
@@ -305,7 +304,7 @@ steps:
 
 # update dependencies
 - task: PowerShell@2
-  condition: or(eq(variables['UPDATE_DEPENDENTS'], 'true'), eq(variables['GetCommitMessage.UPDATE_DEPENDENTS'], 'true') )
+  condition: or(eq(variables['UPDATE_DEPENDENTS'], 'true'), eq(variables['RUN_UPDATE_DEPENDENTS'], 'true') )
   displayName: Update dependent tools
   inputs:
     targetType: filePath
