@@ -138,7 +138,6 @@ steps:
   displayName: NuGet restore
   inputs:
     restoreSolution: '$(solution)'
-    noCache: true
 
 - task: VSBuild@1
   condition: and( ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true'))
@@ -185,7 +184,8 @@ steps:
   displayName: Pack .NET NuGet package
   inputs:
     command: 'custom'
-    arguments: 'pack nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.nuspec -Symbols -SymbolPackageFormat snupkg -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
+    arguments: 'pack nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.nuspec -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
+    # arguments: 'pack nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.nuspec -Symbols -SymbolPackageFormat snupkg -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
 
 - task: NuGetCommand@2
   condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
@@ -193,6 +193,7 @@ steps:
   inputs:
     command: 'custom' 
     arguments: 'pack nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.nuspec -Symbols -SymbolPackageFormat snupkg -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
+    # arguments: 'pack nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.nuspec -Symbols -SymbolPackageFormat snupkg -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
 
 # we don't have tests (yet)
 # - task: VSTest@2
