@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.26.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.26.0-preview.11) (2020-12-02)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.0-preview.6...v1.26.0-preview.11)
+
 ## [v1.26.0-preview.6](https://github.com/nanoframework/nf-debugger/tree/v1.26.0-preview.6) (2020-11-30)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.0-preview.5...v1.26.0-preview.6)
@@ -834,7 +838,6 @@
 **Implemented enhancements:**
 
 - Improvements in test app [\#38](https://github.com/nanoframework/nf-debugger/pull/38)
-- Improvements in flash map output [\#36](https://github.com/nanoframework/nf-debugger/pull/36)
 
 ## [0.4.0-preview018](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview018) (2017-06-30)
 
@@ -874,6 +877,7 @@
 
 **Implemented enhancements:**
 
+- Improvements in flash map output [\#36](https://github.com/nanoframework/nf-debugger/pull/36)
 - Remove ConfigureAwait from calls [\#29](https://github.com/nanoframework/nf-debugger/pull/29)
 - Add error code to reply of access memory commands [\#28](https://github.com/nanoframework/nf-debugger/pull/28)
 
