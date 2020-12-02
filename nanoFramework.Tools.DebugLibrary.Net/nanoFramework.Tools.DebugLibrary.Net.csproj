@@ -16,7 +16,11 @@
     </NuGetPackageImportStamp>
     <TargetFrameworkProfile />
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <Deterministic>true</Deterministic>
+    <IncludeSymbols>true</IncludeSymbols>
+     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true'">True</ContinuousIntegrationBuild>
     <!-- need this here to rebuild the packages.lock.json file in case the hashes fail to validate -->
     <!-- <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder> -->
