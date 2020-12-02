@@ -138,6 +138,7 @@ steps:
   displayName: NuGet restore
   inputs:
     restoreSolution: '$(solution)'
+    noCache: true
 
 - task: VSBuild@1
   condition: and( ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true'))

@@ -16,12 +16,12 @@
       },
       "Microsoft.SourceLink.GitHub": {
         "type": "Direct",
-        "requested": "[1.0.0, )",
-        "resolved": "1.0.0",
-        "contentHash": "aZyGyGg2nFSxix+xMkPmlmZSsnGQ3w+mIG23LTxJZHN+GPwTQ5FpPgDo7RMOq+Kcf5D4hFWfXkGhoGstawX13Q==",
+        "requested": "[1.1.0-beta-20204-02, )",
+        "resolved": "1.1.0-beta-20204-02",
+        "contentHash": "nVB0LiCn+q0eprqpQ9BeZ6xMdIobiRTwZlrvyAYDv4Zprek5BUHJ8usXUEtJlCTqQYF5HvLgvwf361jCkhmXCg==",
         "dependencies": {
-          "Microsoft.Build.Tasks.Git": "1.0.0",
-          "Microsoft.SourceLink.Common": "1.0.0"
+          "Microsoft.Build.Tasks.Git": "1.1.0-beta-20204-02",
+          "Microsoft.SourceLink.Common": "1.1.0-beta-20204-02"
         }
       },
       "Nerdbank.GitVersioning": {
@@ -74,8 +74,8 @@
       },
       "Microsoft.Build.Tasks.Git": {
         "type": "Transitive",
-        "resolved": "1.0.0",
-        "contentHash": "z2fpmmt+1Jfl+ZnBki9nSP08S1/tbEOxFdsK1rSR+LBehIJz1Xv9/6qOOoGNqlwnAGGVGis1Oj6S8Kt9COEYlQ=="
+        "resolved": "1.1.0-beta-20204-02",
+        "contentHash": "T7mMbmgoT3XXKrXbLeEj6D9fQLZDmF/T8W5NQsrlcfQ24nOLrkr1Cst9cmI44zIH16rIo+4ws0tEqUN+Jw5Iag=="
       },
       "Microsoft.Net.Native.Compiler": {
         "type": "Transitive",
@@ -105,8 +105,8 @@
       },
       "Microsoft.SourceLink.Common": {
         "type": "Transitive",
-        "resolved": "1.0.0",
-        "contentHash": "G8DuQY8/DK5NN+3jm5wcMcd9QYD90UV7MiLmdljSJixi3U/vNaeBKmmXUqI4DJCOeWizIUEh4ALhSt58mR+5eg=="
+        "resolved": "1.1.0-beta-20204-02",
+        "contentHash": "3tLuYVu7iPSUGVgSygxZnN4q6ZdXFbKd2A/1Zgva5i6VMoVXoTJwggKVZTGyemlWriziOwY76I5MZI+vnJ8ztA=="
       },
       "NETStandard.Library": {
         "type": "Transitive",
