@@ -131,7 +131,7 @@ steps:
   condition: and( ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true'))
   displayName: 'Install specific version of NuGet'
   inputs:
-    versionSpec: '5.4.0'
+    versionSpec: '5.8.0'
 
 - task: NuGetCommand@2
   condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
@@ -286,7 +286,7 @@ steps:
   inputs:
     command: push
     nuGetFeedType: external
-    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg;$(Build.ArtifactStagingDirectory)/*.snupkg'
     publishFeedCredentials: 'AzureArtifacts-debugger'
     allowPackageConflicts: true
 
@@ -299,7 +299,7 @@ steps:
     command: push
     nuGetFeedType: external
     allowPackageConflicts: true
-    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg;$(Build.ArtifactStagingDirectory)/*.snupkg'
     publishFeedCredentials: 'NuGet-debugger'
 
 # update dependencies
