@@ -28,6 +28,8 @@
   </metadata>
   <files>
       <file src="bin\Release\nanoFramework.Tools.Debugger.Net.dll" target="lib/net472" />
+      <file src="bin\Release\nanoFramework.Tools.Debugger.Net.pdb" target="lib/net472" />
+      <file src="**\*.cs" target="src" />
       <file src="..\nf-logo.png" target="images\" />
       <file src="..\LICENSE.md" target="" />
   </files>
