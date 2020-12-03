@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.26.4-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.4-preview.1) (2020-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.3-preview.1...v1.26.4-preview.1)
+
 ## [v1.26.3-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.3-preview.1) (2020-12-03)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.2-preview.1...v1.26.3-preview.1)
@@ -60,7 +64,7 @@
 
 - Add attempts parameter to ConnectAsync [\#280](https://github.com/nanoframework/nf-debugger/pull/280)
 - Rework DeployFile inner methods [\#279](https://github.com/nanoframework/nf-debugger/pull/279)
-- Work on async calls [\#278](https://github.com/nanoframework/nf-debugger/pull/278)
+- Fix EraseAsync [\#274](https://github.com/nanoframework/nf-debugger/pull/274)
 
 ## [v1.24.0-preview.3](https://github.com/nanoframework/nf-debugger/tree/v1.24.0-preview.3) (2020-11-26)
 
@@ -72,6 +76,7 @@
 
 **Implemented enhancements:**
 
+- Work on async calls [\#278](https://github.com/nanoframework/nf-debugger/pull/278)
 - Improvements in device detection [\#277](https://github.com/nanoframework/nf-debugger/pull/277)
 
 **Fixed bugs:**
@@ -85,7 +90,6 @@
 **Implemented enhancements:**
 
 - Add new property DeviceId [\#275](https://github.com/nanoframework/nf-debugger/pull/275)
-- Fix EraseAsync [\#274](https://github.com/nanoframework/nf-debugger/pull/274)
 - Add progress report to WriteMemory methods [\#273](https://github.com/nanoframework/nf-debugger/pull/273)
 - Add CheckMemory command to Engine [\#272](https://github.com/nanoframework/nf-debugger/pull/272)
 
@@ -553,10 +557,6 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.0-preview.11...v1.2.1-preview.13)
 
-**Implemented enhancements:**
-
-- Work TargetName and Platform properties [\#200](https://github.com/nanoframework/nf-debugger/pull/200)
-
 ## [v1.2.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.2.0-preview.11) (2019-06-20)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.1.0-preview.11...v1.2.0-preview.11)
@@ -571,6 +571,7 @@
 
 **Implemented enhancements:**
 
+- Work TargetName and Platform properties [\#200](https://github.com/nanoframework/nf-debugger/pull/200)
 - Add support for type resolution failed flag [\#197](https://github.com/nanoframework/nf-debugger/pull/197)
 - Work on ReadMemory command [\#195](https://github.com/nanoframework/nf-debugger/pull/195)
 
@@ -609,7 +610,6 @@
 **Implemented enhancements:**
 
 - Add new method UpdateDebugFlags [\#191](https://github.com/nanoframework/nf-debugger/pull/191)
-- Add output of error codes on WriteMemory [\#190](https://github.com/nanoframework/nf-debugger/pull/190)
 
 ## [v1.0.1-preview-061](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-061) (2019-03-12)
 
@@ -617,6 +617,7 @@
 
 **Implemented enhancements:**
 
+- Add output of error codes on WriteMemory [\#190](https://github.com/nanoframework/nf-debugger/pull/190)
 - Work on DeploymentExecuteIncremental [\#189](https://github.com/nanoframework/nf-debugger/pull/189)
 - Add output to help debug device state [\#188](https://github.com/nanoframework/nf-debugger/pull/188)
 - Improve disconnection of SerialDevice [\#186](https://github.com/nanoframework/nf-debugger/pull/186)
