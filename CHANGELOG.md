@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.26.3-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.3-preview.1) (2020-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.2-preview.1...v1.26.3-preview.1)
+
 ## [v1.26.2-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.2-preview.1) (2020-12-03)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.1-preview.5...v1.26.2-preview.1)
@@ -31,6 +35,10 @@
 ## [v1.26.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.0-preview.1) (2020-11-30)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.25.0-preview.16...v1.26.0-preview.1)
+
+**Implemented enhancements:**
+
+- Rework async methods [\#283](https://github.com/nanoframework/nf-debugger/pull/283)
 
 ## [v1.25.0-preview.16](https://github.com/nanoframework/nf-debugger/tree/v1.25.0-preview.16) (2020-11-27)
 
@@ -76,7 +84,6 @@
 
 **Implemented enhancements:**
 
-- Rework async methods [\#283](https://github.com/nanoframework/nf-debugger/pull/283)
 - Add new property DeviceId [\#275](https://github.com/nanoframework/nf-debugger/pull/275)
 - Fix EraseAsync [\#274](https://github.com/nanoframework/nf-debugger/pull/274)
 - Add progress report to WriteMemory methods [\#273](https://github.com/nanoframework/nf-debugger/pull/273)
@@ -564,6 +571,7 @@
 
 **Implemented enhancements:**
 
+- Add support for type resolution failed flag [\#197](https://github.com/nanoframework/nf-debugger/pull/197)
 - Work on ReadMemory command [\#195](https://github.com/nanoframework/nf-debugger/pull/195)
 
 **Documentation and other chores:**
@@ -600,7 +608,6 @@
 
 **Implemented enhancements:**
 
-- Add support for type resolution failed flag [\#197](https://github.com/nanoframework/nf-debugger/pull/197)
 - Add new method UpdateDebugFlags [\#191](https://github.com/nanoframework/nf-debugger/pull/191)
 - Add output of error codes on WriteMemory [\#190](https://github.com/nanoframework/nf-debugger/pull/190)
 
@@ -803,6 +810,10 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview024...0.4.0-preview025)
 
+**Fixed bugs:**
+
+- Fix wrong return value on SetExecutionModeAsync [\#47](https://github.com/nanoframework/nf-debugger/pull/47)
+
 ## [0.4.0-preview024](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview024) (2017-09-26)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview023...0.4.0-preview024)
@@ -837,7 +848,6 @@
 
 **Fixed bugs:**
 
-- Fix wrong return value on SetExecutionModeAsync [\#47](https://github.com/nanoframework/nf-debugger/pull/47)
 - Fix issue with Reboot command [\#42](https://github.com/nanoframework/nf-debugger/pull/42)
 - Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
 
