@@ -308,7 +308,7 @@ steps:
 
 # update dependencies
 - task: PowerShell@2
-  condition: or(eq(variables['UPDATE_DEPENDENTS'], 'true'), eq(variables['RUN_UPDATE_DEPENDENTS'], 'true') )
+  condition: and(or(eq(variables['UPDATE_DEPENDENTS'], 'true'), eq(variables['RUN_UPDATE_DEPENDENTS'], 'true') ), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ) )
   displayName: Update dependent tools
   inputs:
     targetType: filePath
