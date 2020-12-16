@@ -1417,6 +1417,7 @@ namespace nanoFramework.Tools.Debugger
             byte[] buf,
             int offset,
             int length,
+            int programAligment = 0,
             IProgress<string> progress = null)
         {
             int count = length;
@@ -1430,6 +1431,11 @@ namespace nanoFramework.Tools.Debugger
 
                 // get packet length, either the maximum allowed size or whatever is still available to TX
                 int packetLength = Math.Min(GetPacketMaxLength(cmd), count);
+
+                if(programAligment != 0 && packetLength % programAligment != 0)
+                {
+                    packetLength -= packetLength % programAligment;
+                }
 
                 cmd.PrepareForSend(address, buf, position, packetLength);
 
@@ -1466,7 +1472,8 @@ namespace nanoFramework.Tools.Debugger
 
         public (AccessMemoryErrorCodes ErrorCode, bool Success) WriteMemory(
             uint address, 
-            byte[] buf, 
+            byte[] buf,
+            int programAligment = 0,
             IProgress<string> progress = null)
         {
             return WriteMemory(
@@ -1474,6 +1481,7 @@ namespace nanoFramework.Tools.Debugger
                 buf,
                 0,
                 buf.Length,
+                programAligment,
                 progress);
         }
 
@@ -2849,7 +2857,7 @@ namespace nanoFramework.Tools.Debugger
 
                 // build the deployment blob from the flash sector map
                 // apply a filter so that we take only the blocks flag for deployment 
-                var deploymentBlob = flashSectorMap.Where(s => (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
+                var deploymentBlob = flashSectorMap.Where(s => (s.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
                     .Select(s => s.ToDeploymentSector())
                     .ToList();
 
@@ -2945,7 +2953,7 @@ namespace nanoFramework.Tools.Debugger
                     }
 
                     // block erased, write buffer
-                    memoryOperationResult = WriteMemory((uint)block.StartAddress, block.DeploymentData);
+                    memoryOperationResult = WriteMemory((uint)block.StartAddress, block.DeploymentData, block.ProgramAligment);
                     if (!memoryOperationResult.Success)
                     {
                         progress?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes).");
@@ -3803,18 +3811,18 @@ namespace nanoFramework.Tools.Debugger
                 }
 
                 // get configuration sector details
-                configSector = FlashSectorMap.FirstOrDefault(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG);
+                configSector = FlashSectorMap.FirstOrDefault(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG);
 
                 // check if the device has a config sector
-                if (configSector.m_NumBlocks > 0)
+                if (configSector.NumBlocks > 0)
                 {
                     // store the current configuration in case we need to revert this for some reason
-                    var readConfigSector = ReadMemory(configSector.m_StartAddress, configSector.m_NumBlocks * configSector.m_BytesPerBlock);
+                    var readConfigSector = ReadMemory(configSector.StartAddress, configSector.NumBlocks * configSector.BytesPerBlock);
 
                     if (readConfigSector.Success)
                     {
                         // start erasing the sector that holds the configuration block
-                        var (ErrorCode, Success) = EraseMemory(configSector.m_StartAddress, 1);
+                        var (ErrorCode, Success) = EraseMemory(configSector.StartAddress, 1);
                         if (Success)
                         {
                             okToUploadConfig = true;

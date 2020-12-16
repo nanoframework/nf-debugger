@@ -388,17 +388,25 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             var p4Size = 752;
 
             assemblies.Add(new byte[p1Size]);
-            assemblies[0][0] = 0x5;
-            assemblies[0][1] = 0x5;
+            assemblies[0][0] = 0xDE;
+            assemblies[0][1] = 0xAD;
+            assemblies[0][2] = 0xBE;
+            assemblies[0][3] = 0xEF;
             assemblies.Add(new byte[p2Size]);
-            assemblies[1][0] = 0x6;
-            assemblies[1][1] = 0x6;
+            assemblies[1][0] = 0xDE;
+            assemblies[1][1] = 0xAD;
+            assemblies[1][2] = 0xBE;
+            assemblies[1][3] = 0xEF;
             assemblies.Add(new byte[p3Size]);
-            assemblies[2][0] = 0x7;
-            assemblies[2][1] = 0x7;
+            assemblies[2][0] = 0xDE;
+            assemblies[2][1] = 0xAD;
+            assemblies[2][2] = 0xBE;
+            assemblies[2][3] = 0xEF;
             assemblies.Add(new byte[p4Size]);
-            assemblies[3][0] = 0x8;
-            assemblies[3][1] = 0x8;
+            assemblies[3][0] = 0xDE;
+            assemblies[3][1] = 0xAD; 
+            assemblies[3][0] = 0xBE;
+            assemblies[3][1] = 0xEF;
 
             var totalSize = p1Size + p2Size + p3Size + p4Size;
 
@@ -424,105 +432,26 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
                     ///////////////////////////////////////////////////////////////
                     // process replicated from VS deploy provider
+                    ///////////////////////////////////////////////////////////////
 
-                    // device needs to be in 'initialized state' for a successful and correct deployment 
-                    // meaning that is not running nor stopped
-                    bool deviceIsInInitializeState = false;
+                    var largePackets = totalSize / (debugEngine.WireProtocolPacketSize - 8);
 
+                    var packetSize = debugEngine.WireProtocolPacketSize == 1024 ? "1k" : $"({ debugEngine.WireProtocolPacketSize / 1024}bytes";
 
-                    // erase the target deployment area to ensure a clean deployment and execution start
-                    if (await device.EraseAsync(EraseOptions.Deployment, CancellationToken.None))
+                    Debug.WriteLine($">>> Sending : {totalSize} bytes.<<<<");
+                    Debug.WriteLine($">>> This is {packetSize} packets plus something bytes.<<<<");
+
+                    var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.DeploymentExecute(assemblies, true);
+
+                    Debug.WriteLine($">>> Deployment result: {result} <<<<");
+
+                    if (result)
                     {
-                        //MessageCentre.InternalErrorMessage("Erase deployment area successful.");
+                        //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
 
-                        // initial check 
-                        if (device.DebugEngine.IsDeviceInInitializeState())
-                        {
-                            //MessageCentre.InternalErrorMessage("Device status verified as being in initialized state. Requesting to resume execution.");
+                        //Task.Delay(1000).Wait();
 
-                            // set flag
-                            deviceIsInInitializeState = true;
-
-                            // device is still in initialization state, try resume execution
-                            device.DebugEngine.ResumeExecution();
-                        }
-
-                        // handle the workflow required to try resuming the execution on the device
-                        // only required if device is not already there
-                        // retry 5 times with a 500ms interval between retries
-                        while (retryCount++ < _numberOfRetries && deviceIsInInitializeState)
-                        {
-                            if (!device.DebugEngine.IsDeviceInInitializeState())
-                            {
-                                //MessageCentre.InternalErrorMessage("Device has completed initialization.");
-
-                                // done here
-                                deviceIsInInitializeState = false;
-                                break;
-                            }
-
-                            //MessageCentre.InternalErrorMessage($"Waiting for device to report initialization completed ({retryCount}/{_numberOfRetries}).");
-
-                            // provide feedback to user on the 1st pass
-                            if (retryCount == 0)
-                            {
-                                //await outputPaneWriter.WriteLineAsync(ResourceStrings.WaitingDeviceInitialization);
-                            }
-
-                            if (device.DebugEngine.ConnectionSource == ConnectionSource.nanoBooter)
-                            {
-                                //MessageCentre.InternalErrorMessage("Device reported running nanoBooter. Requesting to load nanoCLR.");
-
-                                // request nanoBooter to load CLR
-                                device.DebugEngine.ExecuteMemory(0);
-                            }
-                            else if (device.DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
-                            {
-                                //MessageCentre.InternalErrorMessage("Device reported running nanoCLR. Requesting to reboot nanoCLR.");
-
-                                await Task.Run(delegate
-                                {
-                                    // already running nanoCLR try rebooting the CLR
-                                    device.DebugEngine.RebootDevice(RebootOptions.ClrOnly);
-                                });
-                            }
-
-                            // wait before next pass
-                            // use a back-off strategy of increasing the wait time to accommodate slower or less responsive targets (such as networked ones)
-                            await Task.Delay(TimeSpan.FromMilliseconds(_timeoutMiliseconds * (retryCount + 1)));
-
-                            await Task.Yield();
-                        }
-                    }
-
-                    // check if device is still in initialized state
-                    if (!deviceIsInInitializeState)
-                    {
-                        ///////////////////////////////////////////////////////////////
-
-                        var largePackets = totalSize / (debugEngine.WireProtocolPacketSize - 8);
-
-                        var packetSize = debugEngine.WireProtocolPacketSize == 1024 ? "1k" : $"({ debugEngine.WireProtocolPacketSize / 1024}bytes";
-
-                        Debug.WriteLine($">>> Sending : {totalSize} bytes.<<<<");
-                        Debug.WriteLine($">>> This is {packetSize} packets plus something bytes.<<<<");
-
-                        var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.DeploymentExecute(assemblies, true);
-
-                        Debug.WriteLine($">>> Deployment result: {result} <<<<");
-
-                        if (result)
-                        {
-                            //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
-
-                            //Task.Delay(1000).Wait();
-
-                            (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo(true);
-                        }
-                    }
-                    else
-                    {
-                        Debug.WriteLine($">>> Failed to initialize device.  <<<<");
+                        (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo(true);
                     }
 
                 }));
@@ -1043,10 +972,10 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                 var flashStartAddress = memoryMap.First(m => (m.m_flags & Commands.Monitor_MemoryMap.c_FLASH) == Commands.Monitor_MemoryMap.c_FLASH).m_address;
 
                 // bootloader
-                if (flashSectorMap.Exists(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP))
+                if (flashSectorMap.Exists(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP))
                 {
-                    var startAddress = flashSectorMap.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).m_StartAddress;
-                    var length = (uint)flashSectorMap.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock);
+                    var startAddress = flashSectorMap.First(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).StartAddress;
+                    var length = (uint)flashSectorMap.Where(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.NumBlocks * obj.BytesPerBlock);
 
                     var bootloaderOperation = device.DebugEngine.ReadMemory(startAddress, length);
                     if(bootloaderOperation.Success)
@@ -1064,10 +993,10 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                 //var configSector = flashSectorMap.Where(s => ((s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG)).Select(s => s.ToDeploymentSector()).ToList();
                 
                 // CLR
-                if (flashSectorMap.Exists(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE))
+                if (flashSectorMap.Exists(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE))
                 {
-                    var startAddress = flashSectorMap.First(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).m_StartAddress;
-                    var length = (uint)flashSectorMap.Where(item => (item.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).Sum(obj => obj.m_NumBlocks * obj.m_BytesPerBlock);
+                    var startAddress = flashSectorMap.First(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).StartAddress;
+                    var length = (uint)flashSectorMap.Where(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).Sum(obj => obj.NumBlocks * obj.BytesPerBlock);
 
                     var clrOperation = device.DebugEngine.ReadMemory(startAddress, length);
                     if (clrOperation.Success)

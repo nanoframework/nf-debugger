@@ -22,9 +22,23 @@ namespace nanoFramework.Tools.Debugger.Extensions
 
             List<DeploymentBlock> blocks = new List<DeploymentBlock>();
 
-            for (int i = 0; i < value.m_NumBlocks; i++)
+            for (int i = 0; i < value.NumBlocks; i++)
             {
-                blocks.Add(new DeploymentBlock((int)value.m_StartAddress + (i * (int)value.m_BytesPerBlock), (int)value.m_BytesPerBlock));
+                int programmingAlignment = 0;
+
+                // check alignment requirements
+                if ((value.Flags
+                     & BlockRegionAttributes_MASK
+                     & BlockRegionAttribute_ProgramWidthIs64bits) == BlockRegionAttribute_ProgramWidthIs64bits)
+                {
+                    // programming width is 64bits => 8 bytes
+                    programmingAlignment = 8;
+                }
+
+                blocks.Add(new DeploymentBlock(
+                    (int)value.StartAddress + (i * (int)value.BytesPerBlock),
+                    (int)value.BytesPerBlock,
+                    programmingAlignment));
             }
 
             return new DeploymentSector(blocks);
