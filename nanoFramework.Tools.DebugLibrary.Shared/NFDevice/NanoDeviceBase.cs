@@ -250,8 +250,8 @@ namespace nanoFramework.Tools.Debugger
             {
                 return (int)DebugEngine.FlashSectorMap.FirstOrDefault(s =>
                 {
-                    return (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
-                }).m_StartAddress;
+                    return (s.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
+                }).StartAddress;
             }
 
             return -1;
@@ -267,8 +267,8 @@ namespace nanoFramework.Tools.Debugger
             {
                 return (int)DebugEngine.FlashSectorMap.FirstOrDefault(s =>
                 {
-                    return (s.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
-                }).m_StartAddress;
+                    return (s.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
+                }).StartAddress;
             }
 
             return -1;
@@ -426,7 +426,7 @@ namespace nanoFramework.Tools.Debugger
                     return false;
                 }
 
-                switch (flashSectorData.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK)
+                switch (flashSectorData.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK)
                 {
                     case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT:
                         if (EraseOptions.Deployment == (options & EraseOptions.Deployment))
@@ -491,15 +491,15 @@ namespace nanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in eraseSectors)
             {
-                for (int block = 0; block < flashSectorData.m_NumBlocks; block++)
+                for (int block = 0; block < flashSectorData.NumBlocks; block++)
                 {
-                    progress?.Report($"Erasing sector @ 0x{flashSectorData.m_StartAddress:X8}...");
+                    progress?.Report($"Erasing sector @ 0x{flashSectorData.StartAddress:X8}...");
 
-                    var sectorAddress = (uint)(flashSectorData.m_StartAddress + block * flashSectorData.m_BytesPerBlock);
+                    var sectorAddress = (uint)(flashSectorData.StartAddress + block * flashSectorData.BytesPerBlock);
 
                     (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(
                         sectorAddress,
-                        flashSectorData.m_BytesPerBlock);
+                        flashSectorData.BytesPerBlock);
 
                     if (!Success)
                     {
@@ -596,6 +596,7 @@ namespace nanoFramework.Tools.Debugger
             if(!DeployFile(
                 data,
                 address,
+                0,
                 progress))
             {
                 return false;
@@ -674,6 +675,7 @@ namespace nanoFramework.Tools.Debugger
                     if (!DeployFile(
                         data,
                         addr,
+                        0,
                         progress))
                     {
                         return false;
@@ -687,11 +689,13 @@ namespace nanoFramework.Tools.Debugger
         private bool DeployFile(
             byte[] buffer,
             uint address,
+            int programAligment = 0,
             IProgress<string> progress = null)
         {
             (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.WriteMemory(
                 address,
                 buffer,
+                programAligment,
                 progress);
 
             if (!Success)
@@ -1383,23 +1387,23 @@ namespace nanoFramework.Tools.Debugger
             {
                 foreach (SRecordFile.Block bl in blocks)
                 {
-                    var startSector = flashSectorsMap.Find(s => s.m_StartAddress == bl.address);
-                    if (startSector.m_NumBlocks > 0)
+                    var startSector = flashSectorsMap.Find(s => s.StartAddress == bl.address);
+                    if (startSector.NumBlocks > 0)
                     {
-                        updatesDeployment ^= (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
-                        updatesClr ^= (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
-                        updatesBooter ^= (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP;
+                        updatesDeployment ^= (startSector.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
+                        updatesClr ^= (startSector.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
+                        updatesBooter ^= (startSector.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP;
                     }
                 }
             }
             else
             {
-                var startSector = flashSectorsMap.Find(s => s.m_StartAddress == address);
-                if (startSector.m_NumBlocks > 0)
+                var startSector = flashSectorsMap.Find(s => s.StartAddress == address);
+                if (startSector.NumBlocks > 0)
                 {
-                    updatesDeployment = (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
-                    updatesClr = (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
-                    updatesBooter = (startSector.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP;
+                    updatesDeployment = (startSector.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT;
+                    updatesClr = (startSector.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE;
+                    updatesBooter = (startSector.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP;
                 }
             }
 

@@ -38,17 +38,24 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         }
 
         /// <summary>
+        /// Required aliment of programming word.
+        /// </summary>
+        public int ProgramAligment { get; } = 0;
+
+        /// <summary>
         /// Creates a new <see cref="DeploymentBlock"/> starting at <paramref name="startAddress"/> with <paramref name="size"/> size.
         /// </summary>
         /// <param name="startAddress">Start address of the block.</param>
         /// <param name="size">Size of the block.</param>
-        public DeploymentBlock(int startAddress, int size)
+        /// <param name="programAligment">Alignment size for programming.</param>
+        public DeploymentBlock(int startAddress, int size, int programAligment)
         {
-            // empty deploymentdata
+            // empty deployment data
             _deploymentData = new byte[0];
 
             StartAddress = startAddress;
             Size = size;
+            ProgramAligment = programAligment;
         }
 
         internal void AddDeploymentData(byte[] buffer)

@@ -94,12 +94,19 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint c_MEMORY_USAGE_STORAGE_B = 0x000000F0;
             public const uint c_MEMORY_USAGE_MASK = 0x000000F0;
 
+            // media attributes
+            public const uint BlockRegionAttributes_MASK = 0x0000FF00;
+
+            public const uint BlockRegionAttribute_MemoryMapped = 0x0100;
+            // programming width is 64bits
+            public const uint BlockRegionAttribute_ProgramWidthIs64bits = 0x0200;
+
             public struct FlashSectorData
             {
-                public uint m_StartAddress;
-                public uint m_NumBlocks;
-                public uint m_BytesPerBlock;
-                public uint m_flags;
+                public uint StartAddress;
+                public uint NumBlocks;
+                public uint BytesPerBlock;
+                public uint Flags;
             }
 
             public class Reply : IConverter

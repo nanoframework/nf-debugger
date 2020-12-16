@@ -11,7 +11,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
     {
         public static string UsageAsString(this Commands.Monitor_FlashSectorMap.FlashSectorData value)
         {
-            switch (value.m_flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK)
+            switch (value.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK)
             {
                 case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP:
                     return "nanoBooter";
