@@ -1,5 +1,17 @@
 # Changelog
 
+## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.5-preview.3...HEAD)
+
+**Implemented enhancements:**
+
+- Work Flash Sector Data [\#285](https://github.com/nanoframework/nf-debugger/pull/285)
+
+## [v1.26.5-preview.3](https://github.com/nanoframework/nf-debugger/tree/v1.26.5-preview.3) (2020-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.5-preview.1...v1.26.5-preview.3)
+
 ## [v1.26.5-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.5-preview.1) (2020-12-03)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.4-preview.1...v1.26.5-preview.1)
@@ -509,10 +521,6 @@
 
 - Fix getters of ReleaseInfo class [\#208](https://github.com/nanoframework/nf-debugger/pull/208)
 
-**Documentation and other chores:**
-
-- Update serial baud rate to 921600 [\#204](https://github.com/nanoframework/nf-debugger/pull/204)
-
 ## [v1.3.1-preview.18](https://github.com/nanoframework/nf-debugger/tree/v1.3.1-preview.18) (2019-07-24)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.3.0-preview.14...v1.3.1-preview.18)
@@ -532,6 +540,10 @@
 ## [v1.3.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.3.0-preview.11) (2019-07-23)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.19...v1.3.0-preview.11)
+
+**Documentation and other chores:**
+
+- Update serial baud rate to 921600 [\#204](https://github.com/nanoframework/nf-debugger/pull/204)
 
 ## [v1.2.1-preview.19](https://github.com/nanoframework/nf-debugger/tree/v1.2.1-preview.19) (2019-07-13)
 
@@ -933,6 +945,10 @@
 
 - Add field to expose flags as enum [\#25](https://github.com/nanoframework/nf-debugger/pull/25)
 
+**Fixed bugs:**
+
+- Refactor RegisterForDeviceAccessStatusChange [\#15](https://github.com/nanoframework/nf-debugger/pull/15)
+
 ## [0.4.0-preview010](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview010) (2017-06-14)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview009...0.4.0-preview010)
@@ -977,10 +993,6 @@
 ## [0.3.0-preview005](https://github.com/nanoframework/nf-debugger/tree/0.3.0-preview005) (2017-05-30)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.3.0-preview004...0.3.0-preview005)
-
-**Fixed bugs:**
-
-- Refactor RegisterForDeviceAccessStatusChange [\#15](https://github.com/nanoframework/nf-debugger/pull/15)
 
 ## [0.3.0-preview004](https://github.com/nanoframework/nf-debugger/tree/0.3.0-preview004) (2017-05-26)
 
