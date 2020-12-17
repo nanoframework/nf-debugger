@@ -669,7 +669,17 @@ namespace nanoFramework.Tools.Debugger
         {
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Ping, 0, null);
 
-            return reply != null ? reply.Payload as Commands.Monitor_Ping.Reply : null;
+            if (reply != null)
+            {
+                var connectionSource = reply.Payload as Commands.Monitor_Ping.Reply;
+
+                // update field
+                ConnectionSource = (ConnectionSource)connectionSource.Source;
+
+                return connectionSource;
+            }
+
+            return null;
         }
 
         internal Converter CreateConverter()

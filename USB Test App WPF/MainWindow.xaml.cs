@@ -749,7 +749,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
-                    Debug.WriteLine($"Erased deployment area.");
+                    Debug.WriteLine($"Erased deployment area SUCCESFULL.");
                     Debug.WriteLine("");
                     Debug.WriteLine("");
 
