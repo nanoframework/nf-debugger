@@ -374,6 +374,7 @@ namespace nanoFramework.Tools.Debugger
         public async Task<bool> EraseAsync(EraseOptions options, CancellationToken cancellationToken, IProgress<string> progress = null)
         {
             bool fReset = false;
+            bool requestBooter = false;
 
             if (DebugEngine == null)
             {
@@ -392,12 +393,15 @@ namespace nanoFramework.Tools.Debugger
 
             if (!IsClrDebuggerEnabled || 0 != (options & EraseOptions.Firmware))
             {
-                fReset = (Ping() == PingConnectionType.nanoCLR);
+                fReset = DebugEngine.ConnectionSource == ConnectionSource.nanoCLR;
 
                 if (!await ConnectToNanoBooterAsync(cancellationToken))
                 {
                     return false;
                 }
+
+                // flag request to launch nanoBooter 
+                requestBooter = true;
             }
 
             if (DebugEngine.FlashSectorMap == null)
@@ -405,14 +409,16 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            Commands.Monitor_Ping.Reply ping = DebugEngine.GetConnectionSource();
+            Commands.Monitor_Ping.Reply ping;
+            if (requestBooter)
+            {
+                ping = DebugEngine.GetConnectionSource();               
+            }
 
             long total = 0;
             long value = 0;
 
-            bool isConnectedToCLR = ((ping != null) && (ping.Source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR));
-
-            if (isConnectedToCLR)
+            if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
             {
                 DebugEngine.PauseExecution();
             }
@@ -528,7 +534,7 @@ namespace nanoFramework.Tools.Debugger
             }
 
             // reboot if we are talking to the CLR
-            if (isConnectedToCLR)
+            if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
             {
                 progress?.Report("Rebooting...");
 
