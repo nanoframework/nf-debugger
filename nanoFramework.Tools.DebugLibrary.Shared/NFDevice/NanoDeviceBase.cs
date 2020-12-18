@@ -289,7 +289,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (DebugEngine != null)
             {
-                if (DebugEngine.ConnectionSource == ConnectionSource.nanoBooter) return true;
+                if (DebugEngine.IsConnectedTonanoBooter) return true;
 
                 try
                 {
@@ -393,7 +393,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (!IsClrDebuggerEnabled || 0 != (options & EraseOptions.Firmware))
             {
-                fReset = DebugEngine.ConnectionSource == ConnectionSource.nanoCLR;
+                fReset = DebugEngine.IsConnectedTonanoCLR;
 
                 if (!await ConnectToNanoBooterAsync(cancellationToken))
                 {
@@ -418,7 +418,7 @@ namespace nanoFramework.Tools.Debugger
             long total = 0;
             long value = 0;
 
-            if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
+            if (DebugEngine.IsConnectedTonanoCLR)
             {
                 DebugEngine.PauseExecution();
             }
@@ -534,7 +534,7 @@ namespace nanoFramework.Tools.Debugger
             }
 
             // reboot if we are talking to the CLR
-            if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
+            if (DebugEngine.IsConnectedTonanoCLR)
             {
                 progress?.Report("Rebooting...");
 
@@ -548,7 +548,7 @@ namespace nanoFramework.Tools.Debugger
 
         public async Task<bool> DeployUpdateAsync(StorageFile comprFilePath, CancellationToken cancellationToken, IProgress<string> progress = null)
         {
-            if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
+            if (DebugEngine.IsConnectedTonanoCLR)
             {
                 if (await DeployMFUpdateAsync(comprFilePath, cancellationToken, progress))
                 {
@@ -1435,7 +1435,7 @@ namespace nanoFramework.Tools.Debugger
             if (updatesClr)
             {
                 // if this is updating the CLR need to launch nanoBooter
-                if (DebugEngine.ConnectionSource != ConnectionSource.nanoBooter)
+                if (!DebugEngine.IsConnectedTonanoBooter)
                 {
                     progress?.Report("Need to launch nanoBooter before updating the firmware.");
 
@@ -1466,7 +1466,7 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            if (DebugEngine.ConnectionSource == ConnectionSource.nanoCLR)
+            if (DebugEngine.IsConnectedTonanoCLR)
             {
                 DebugEngine.PauseExecution();
             }
