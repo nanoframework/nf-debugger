@@ -1566,6 +1566,9 @@ namespace nanoFramework.Tools.Debugger
                 m_length = length
             };
 
+            // 2kB sector:  25ms 
+            const int eraseTimeout2kSector = 25;
+
             // typical max Flash erase times for STM32 parts with PSIZE set to 16bits are:
             // 16kB sector:  600ms  >> 38ms/kB
             const int eraseTimeout16kSector = 600;
@@ -1585,7 +1588,13 @@ namespace nanoFramework.Tools.Debugger
             // default timeout is 0ms
             var timeout = 0;
 
-            if (length <= (16 * 1024))
+
+            if (length <= (2 * 1024))
+            {
+                // timeout for 2kB sector
+                timeout = eraseTimeout2kSector + extraTimeoutForErase;
+            }
+            else if (length <= (16 * 1024))
             {
                 // timeout for 16kB sector
                 timeout = eraseTimeout16kSector + extraTimeoutForErase;
@@ -1607,10 +1616,15 @@ namespace nanoFramework.Tools.Debugger
             }
 
             // minimum timeout required for ESP32
-            if (timeout < 10000)
+            if(Capabilities.SolutionReleaseInfo.Platform.StartsWith("ESP32"))
+            {
                 timeout = 10000;
+            }
 
-            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_EraseMemory, 0, cmd, timeout);
+            var getExecutionModePolicy = Policy.Handle<Exception>().OrResult<IncomingMessage>(r => r == null)
+                                       .WaitAndRetry(3, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
+
+            var reply = getExecutionModePolicy.Execute(() => PerformSyncRequest(Commands.c_Monitor_EraseMemory, 0, cmd, timeout));
 
             if (reply != null)
             {
@@ -1634,7 +1648,9 @@ namespace nanoFramework.Tools.Debugger
             return reply != null && reply.IsPositiveAcknowledge();
         }
 
-        public void RebootDevice(RebootOptions options = RebootOptions.NormalReboot)
+        public void RebootDevice(
+            RebootOptions options = RebootOptions.NormalReboot,
+            IProgress<string> log = null)
         {
             Commands.MonitorReboot cmd = new Commands.MonitorReboot();
 
@@ -1658,8 +1674,17 @@ namespace nanoFramework.Tools.Debugger
             {
                 _pingEvent.Reset();
 
+                log?.Report($"Rebooting ({(RebootOptions)cmd.flags})");
+
                 // don't keep hopes too high on a reply from reboot request, so make it with a very short timeout
-                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 500);
+                var reqResult = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 500);
+
+                if(reqResult != null)
+                {
+                    var result = reqResult.IsPositiveAcknowledge() ? "successfully" : " without reply";
+
+                    log?.Report($"Reboot command executed {result}");
+                }
 
                 // if reboot options ends on a hard reboot, force connection state to disconnected
                 if (((RebootOptions)cmd.flags == RebootOptions.EnterNanoBooter) ||
@@ -1670,7 +1695,16 @@ namespace nanoFramework.Tools.Debugger
                 else
                 {
                     // wait for ping after reboot
-                    var eventOcurred = _pingEvent.WaitOne(10000);
+                    log?.Report($"Waiting for ping event...");
+
+                    if(_pingEvent.WaitOne(10000))
+                    {
+                        log?.Report($"Ping arrived!");
+                    }
+                    else
+                    {
+                        log?.Report($"No presence from device");
+                    }
                 }
             }
             finally
@@ -2886,8 +2920,10 @@ namespace nanoFramework.Tools.Debugger
         }
 
         private bool DeploymentExecuteIncremental(
-            List<byte[]> assemblies, 
-            IProgress<string> progress)
+            List<byte[]> assemblies,
+            bool skipErase = false,
+            IProgress<MessageWithProgress> progress = null,
+            IProgress<string> log = null)
         {
             // get flash sector map from device
             var flashSectorMap = GetFlashSectorMap();
@@ -2910,8 +2946,8 @@ namespace nanoFramework.Tools.Debugger
                     // compose error message
                     string errorMessage = $"Deployment storage (available size: {deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size)} bytes) is not large enough for assemblies to deploy (total size: {deployLength} bytes).";
 
-                    progress?.Report(errorMessage);
-
+                    log?.Report(errorMessage);
+                    progress?.Report(new MessageWithProgress(""));
                     return false;
                 }
 
@@ -2922,8 +2958,8 @@ namespace nanoFramework.Tools.Debugger
                     //
                     if (assemblies.First().Length % 4 != 0)
                     {
-                        progress?.Report($"It's only possible to deploy word aligned assemblies. Failed to deploy assembly with {assemblies.First().Length} bytes.");
-
+                        log?.Report($"It's only possible to deploy word aligned assemblies. Failed to deploy assembly with {assemblies.First().Length} bytes.");
+                        progress?.Report(new MessageWithProgress(""));
                         return false;
                     }
 
@@ -2967,8 +3003,8 @@ namespace nanoFramework.Tools.Debugger
                         // shouldn't happen, but couldn't find enough space to deploy all the assemblies!!
                         string errorMessage = $"Couldn't find a free deployment block to complete the deployment (remaining: {remainingBytes} bytes).";
 
-                        progress?.Report(errorMessage);
-
+                        log?.Report(errorMessage);
+                        progress?.Report(new MessageWithProgress(""));
                         return false;
                     }
                 }
@@ -2979,62 +3015,74 @@ namespace nanoFramework.Tools.Debugger
 
                 foreach (DeploymentBlock block in blocksToDeploy)
                 {
-                    // erase memory sector
-                    (AccessMemoryErrorCodes ErrorCode, bool Success) memoryOperationResult = EraseMemory((uint)block.StartAddress, (uint)block.Size);
-                    if (!memoryOperationResult.Success)
+                    // check if skip erase step was requested
+                    if(!skipErase)
                     {
-                        progress?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}.");
+                        log?.Report($"Erasing block @ 0x{block.StartAddress}");
 
-                        return false;
-                    }
-                    // check the error code returned
-                    if(memoryOperationResult.ErrorCode != AccessMemoryErrorCodes.NoError)
-                    {
-                        progress?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}. Error code: {memoryOperationResult.ErrorCode}.");
+                        // erase memory sector
+                        (AccessMemoryErrorCodes ErrorCode, bool Success) eraseMemoryResult = EraseMemory((uint)block.StartAddress, (uint)block.Size);
+                        if (!eraseMemoryResult.Success)
+                        {
+                            log?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}.");
 
-                        return false;
+                            return false;
+                        }
+                        // check the error code returned
+                        if(eraseMemoryResult.ErrorCode != AccessMemoryErrorCodes.NoError)
+                        {
+                            log?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}. Error code: {eraseMemoryResult.ErrorCode}.");
+                            progress?.Report(new MessageWithProgress(""));
+                            return false;
+                        }
                     }
 
                     // block erased, write buffer
-                    memoryOperationResult = WriteMemory((uint)block.StartAddress, block.DeploymentData, block.ProgramAligment);
-                    if (!memoryOperationResult.Success)
+                    (AccessMemoryErrorCodes ErrorCode, bool Success) writeMemoryResult = WriteMemory((uint)block.StartAddress, block.DeploymentData, block.ProgramAligment);
+                    if (!writeMemoryResult.Success)
                     {
-                        progress?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes).");
-
+                        log?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes).");
+                        progress?.Report(new MessageWithProgress(""));
                         return false;
                     }
                     // check the error code returned
-                    if (memoryOperationResult.ErrorCode != AccessMemoryErrorCodes.NoError)
+                    if (writeMemoryResult.ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
-                        progress?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes). Error code: {memoryOperationResult.ErrorCode}.");
-
+                        log?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes). Error code: {writeMemoryResult.ErrorCode}.");
+                        progress?.Report(new MessageWithProgress(""));
                         return false;
                     }
 
 #if DEBUG
-                    // read back
-                    var memCopy = ReadMemory((uint)block.StartAddress, (uint)block.DeploymentData.Length, 0);
-                    Debug.Assert(memCopy.Success, "Failed reading data from device.");
-                    Debug.Assert(memCopy.Buffer.Length == block.DeploymentData.Length, "Comparison of data flashed to device and read back failed.");
-                    var comparer = new ArrayEqualityComparer<byte>();
-                    Debug.Assert(comparer.Equals(memCopy.Buffer, block.DeploymentData), "Comparison of data flashed to device and read back failed.");
+                    if (System.Diagnostics.Debugger.IsAttached)
+                    {
+                        // read back
+                        var memCopy = ReadMemory((uint)block.StartAddress, (uint)block.DeploymentData.Length, 0);
+                        Debug.Assert(memCopy.Success, "Failed reading data from device.");
+                        Debug.Assert(memCopy.Buffer.Length == block.DeploymentData.Length, "Comparison of data flashed to device and read back failed.");
+                        var comparer = new ArrayEqualityComparer<byte>();
+                        Debug.Assert(comparer.Equals(memCopy.Buffer, block.DeploymentData), "Comparison of data flashed to device and read back failed.");
+                    }
 #endif
 
                     deployedBytes += block.DeploymentData.Length;
 
                     // report progress
-                    progress?.Report($"Deployed { deployedBytes }/{ blocksToDeploy.Sum(b => b.DeploymentData.Length) } bytes.");
+                    progress?.Report(new MessageWithProgress($"Deployed { deployedBytes }/{ blocksToDeploy.Sum(b => b.DeploymentData.Length) } bytes...", (uint)deployedBytes, (uint)blocksToDeploy.Sum(b => b.DeploymentData.Length)));
+                    log?.Report($"Deployed { deployedBytes }/{ blocksToDeploy.Sum(b => b.DeploymentData.Length) } bytes.");
                 }
 
                 // report progress
-                progress?.Report($"Deployed assemblies with a total size of {blocksToDeploy.Sum(b => b.DeploymentData.Length)} bytes.");
+                progress?.Report(new MessageWithProgress(""));
+                log?.Report($"Deployed assemblies with a total size of {blocksToDeploy.Sum(b => b.DeploymentData.Length)} bytes.");
 
                 // deployment successful
                 return true;
             }
 
             // invalid flash map
-            progress?.Report("Error retrieving device flash map.");
+            progress?.Report(new MessageWithProgress(""));
+            log?.Report("Error retrieving device flash map.");
 
             return false;
         }
@@ -3112,9 +3160,14 @@ namespace nanoFramework.Tools.Debugger
         //    return Deployment_Execute(assemblies, true, null);
         //}
 
-        public bool DeploymentExecute(List<byte[]> assemblies, bool fRebootAfterDeploy = true, IProgress<string> progress = null)
+        public bool DeploymentExecute(
+            List<byte[]> assemblies,
+            bool rebootAfterDeploy = true,
+            bool skipErase = false,
+            IProgress<MessageWithProgress> progress = null,
+            IProgress<string> log = null)
         {
-            bool fDeployedOK = false;
+            bool deployedOK;
 
             if (!PauseExecution())
             {
@@ -3123,9 +3176,13 @@ namespace nanoFramework.Tools.Debugger
 
             if (Capabilities.IncrementalDeployment)
             {
-                progress?.Report("Incrementally deploying assemblies to the device");
+                log?.Report("Incrementally deploying assemblies to the device");
 
-                fDeployedOK = DeploymentExecuteIncremental(assemblies, progress);
+                deployedOK = DeploymentExecuteIncremental(
+                    assemblies,
+                    skipErase,
+                    progress,
+                    log);
             }
             else
             {
@@ -3135,24 +3192,25 @@ namespace nanoFramework.Tools.Debugger
                 //fDeployedOK = await DeploymentExecuteFullAsync(assemblies, progress);
             }
 
-            if (!fDeployedOK)
+            if (!deployedOK)
             {
-                progress?.Report("Error deploying assemblies to the device.");
+                log?.Report("Error deploying assemblies to the device.");
             }
             else
             {
-                progress?.Report("Assemblies successfully deployed to the device.");
+                log?.Report("Assemblies successfully deployed to the device.");
 
-                if (fRebootAfterDeploy)
+                if (rebootAfterDeploy)
                 {
 
-                    progress?.Report("Rebooting device...");
+                    progress?.Report(new MessageWithProgress("Rebooting device..."));
+                    log?.Report("Rebooting device...");
 
-                    RebootDevice(RebootOptions.ClrOnly);
+                    RebootDevice(RebootOptions.ClrOnly, log);
                 }
             }
 
-            return fDeployedOK;
+            return deployedOK;
         }
 
         public (uint Current, bool Success) SetProfilingMode(uint iSet, uint iReset)

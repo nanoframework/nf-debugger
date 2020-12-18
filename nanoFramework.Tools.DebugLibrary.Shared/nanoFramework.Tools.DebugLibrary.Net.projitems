@@ -47,6 +47,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\TypeExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Message.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MessageCall.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MessageWithProgress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MFDeployTool\AssemblyInfoFromResolveAssembly.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MFDeployTool\INanoFrameworkDeviceInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MFDeployTool\IAssemblyInfo.cs" />
