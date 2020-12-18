@@ -169,7 +169,7 @@ namespace nanoFramework.Tools.Debugger
             int timeout, 
             bool force = false,
             int attempts = 1,
-            ConnectionSource connectionSource = ConnectionSource.Unknown, 
+            ConnectionSource requestedConnectionSource = ConnectionSource.Unknown, 
             bool requestCapabilities = true)
         {
             // setup linear back-off based on the parameters
@@ -264,7 +264,21 @@ namespace nanoFramework.Tools.Debugger
                             // update flag
                             IsConnected = true;
 
-                            ConnectionSource = (reply == null || reply.Source == Commands.Monitor_Ping.c_Ping_Source_NanoCLR) ? ConnectionSource.nanoCLR : ConnectionSource.nanoBooter;
+                            // update field
+                            switch (reply.Source)
+                            {
+                                case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
+                                    ConnectionSource = ConnectionSource.nanoCLR;
+                                    break;
+
+                                case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
+                                    ConnectionSource = ConnectionSource.nanoBooter;
+                                    break;
+
+                                default:
+                                    ConnectionSource = ConnectionSource.Unknown;
+                                    break;
+                            }
 
                             if (m_silent)
                             {
@@ -328,7 +342,7 @@ namespace nanoFramework.Tools.Debugger
                     TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
                 }
 
-                if (connectionSource != ConnectionSource.Unknown && connectionSource != ConnectionSource)
+                if (requestedConnectionSource != ConnectionSource.Unknown && requestedConnectionSource != ConnectionSource)
                 {
                     // update flag
                     IsConnected = false;
@@ -674,7 +688,20 @@ namespace nanoFramework.Tools.Debugger
                 var connectionSource = reply.Payload as Commands.Monitor_Ping.Reply;
 
                 // update field
-                ConnectionSource = (ConnectionSource)connectionSource.Source;
+                switch (connectionSource.Source)
+                {
+                    case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
+                        ConnectionSource = ConnectionSource.nanoCLR;
+                        break;
+
+                    case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
+                        ConnectionSource = ConnectionSource.nanoBooter;
+                        break;
+
+                    default:
+                        ConnectionSource = ConnectionSource.Unknown;
+                        break;
+                }
 
                 return connectionSource;
             }
