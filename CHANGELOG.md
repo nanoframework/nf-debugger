@@ -2,7 +2,17 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.27.0-preview.4...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.27.0-preview.7...HEAD)
+
+**Implemented enhancements:**
+
+- Add retry policy to Ping [\#291](https://github.com/nanoframework/nf-debugger/pull/291)
+- Add retry policy to IsDeviceInInitializeState [\#290](https://github.com/nanoframework/nf-debugger/pull/290)
+- Improve DeploymentExecuteIncremental [\#289](https://github.com/nanoframework/nf-debugger/pull/289)
+
+## [v1.27.0-preview.7](https://github.com/nanoframework/nf-debugger/tree/v1.27.0-preview.7) (2020-12-18)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.27.0-preview.4...v1.27.0-preview.7)
 
 **Implemented enhancements:**
 
@@ -871,6 +881,10 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview021...0.4.0-preview022)
 
+**Implemented enhancements:**
+
+- Correct method names [\#44](https://github.com/nanoframework/nf-debugger/pull/44)
+
 ## [0.4.0-preview021](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview021) (2017-09-06)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview020...0.4.0-preview021)
@@ -890,7 +904,6 @@
 
 **Implemented enhancements:**
 
-- Correct method names [\#44](https://github.com/nanoframework/nf-debugger/pull/44)
 - Improvements in test app [\#38](https://github.com/nanoframework/nf-debugger/pull/38)
 - Improvements in flash map output [\#36](https://github.com/nanoframework/nf-debugger/pull/36)
 
