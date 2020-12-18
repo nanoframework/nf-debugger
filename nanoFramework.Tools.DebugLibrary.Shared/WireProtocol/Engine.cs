@@ -3011,6 +3011,15 @@ namespace nanoFramework.Tools.Debugger
                         return false;
                     }
 
+#if DEBUG
+                    // read back
+                    var memCopy = ReadMemory((uint)block.StartAddress, (uint)block.DeploymentData.Length, 0);
+                    Debug.Assert(memCopy.Success, "Failed reading data from device.");
+                    Debug.Assert(memCopy.Buffer.Length == block.DeploymentData.Length, "Comparison of data flashed to device and read back failed.");
+                    var comparer = new ArrayEqualityComparer<byte>();
+                    Debug.Assert(comparer.Equals(memCopy.Buffer, block.DeploymentData), "Comparison of data flashed to device and read back failed.");
+#endif
+
                     deployedBytes += block.DeploymentData.Length;
 
                     // report progress

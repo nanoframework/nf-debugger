@@ -42,6 +42,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\MonitorFlashSectorMapExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\OutputExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\IncomingMessageExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ArrayEqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\TaskExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\TypeExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Message.cs" />
