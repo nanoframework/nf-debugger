@@ -3,6 +3,9 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using nanoFramework.Tools.Debugger.WireProtocol;
+using Polly;
+using System;
 using System.Diagnostics;
 
 namespace nanoFramework.Tools.Debugger.Extensions
@@ -10,22 +13,28 @@ namespace nanoFramework.Tools.Debugger.Extensions
     public static class DebuggerExtensions
     {
         /// <summary>
-        /// Check if device state is <see cref=""/>.
+        /// Check if device state is Initialized state (see remarks).
         /// </summary>
         /// <param name="debugEngine"></param>
-        /// <returns></returns>
+        /// <returns><see langword="true"/> if the device is in initialized state. <see langword="false"/> otherwise.</returns>
+        /// <remarks>
+        /// A device is in initialized state if it's not running a program or if the program execution is stopped (after having running one).
+        /// </remarks>
         public static bool IsDeviceInInitializeState(this Engine debugEngine)
         {
-            var result = debugEngine.GetExecutionMode();
+            var getExecutionModePolicy = Policy.Handle<Exception>().OrResult<Commands.DebuggingExecutionChangeConditions.State>(r => r == Commands.DebuggingExecutionChangeConditions.State.Unknown)
+                                       .WaitAndRetry(3, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
 
-            if (result != WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Unknown)
+            var result = getExecutionModePolicy.Execute(() => debugEngine.GetExecutionMode());
+
+            if (result != Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
-                // engine is in initialised state if it's not running a program or if the program execution is stopped (after having running one)
-                var filteredResult = result & (WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramExited | WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ProgramRunning);
+                // engine is in initialized state if it's not running a program or if the program execution is stopped (after having running one)
+                var filteredResult = result & (Commands.DebuggingExecutionChangeConditions.State.ProgramExited | Commands.DebuggingExecutionChangeConditions.State.ProgramRunning);
 
                 Debug.WriteLine($"Device state is: {filteredResult.OutputDeviceExecutionState()}.");
 
-                return (filteredResult == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Initialize);
+                return (filteredResult == Commands.DebuggingExecutionChangeConditions.State.Initialize);
             }
             else
             {
