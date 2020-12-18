@@ -600,7 +600,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 var targetReleaseInfoPolicy = Policy.Handle<NullReferenceException>().OrResult<ReleaseInfo>(r => r == null)
                                                              .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
 
-                                if (device.DebugEngine.ConnectionSource == ConnectionSource.nanoBooter)
+                                if (device.DebugEngine.IsConnectedTonanoBooter)
                                 {
                                     // try first with new command
                                     var targetInfo = targetInfoPolicy.Execute(() => device.DebugEngine.GetMonitorTargetInfo());

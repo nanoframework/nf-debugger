@@ -147,9 +147,16 @@ namespace nanoFramework.Tools.Debugger
 
         public bool IsConnected { get; internal set; }
 
-        public ConnectionSource ConnectionSource { get; internal set; }
+        private ConnectionSource _connectionSource = ConnectionSource.Unknown;
 
-        public bool IsConnectedTonanoCLR { get { return ConnectionSource == ConnectionSource.nanoCLR; } }
+        [Obsolete("Please use IsConnectedTonanoCLR or IsConnectedTonanoBooter instead. This will be removed in a future version.")]
+#pragma warning disable S2292 // Need to keep this here to allow transition period before remove it for good.
+        public ConnectionSource ConnectionSource { get => _connectionSource; set => _connectionSource = value; }
+#pragma warning restore S2292 // Trivial properties should be auto-implemented
+
+        public bool IsConnectedTonanoCLR => _connectionSource == ConnectionSource.nanoCLR;
+
+        public bool IsConnectedTonanoBooter => _connectionSource == ConnectionSource.nanoBooter;
 
         public bool IsTargetBigEndian { get; internal set; }
 
@@ -268,15 +275,15 @@ namespace nanoFramework.Tools.Debugger
                             switch (reply.Source)
                             {
                                 case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
-                                    ConnectionSource = ConnectionSource.nanoCLR;
+                                    _connectionSource = ConnectionSource.nanoCLR;
                                     break;
 
                                 case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
-                                    ConnectionSource = ConnectionSource.nanoBooter;
+                                    _connectionSource = ConnectionSource.nanoBooter;
                                     break;
 
                                 default:
-                                    ConnectionSource = ConnectionSource.Unknown;
+                                    _connectionSource = ConnectionSource.Unknown;
                                     break;
                             }
 
@@ -299,7 +306,7 @@ namespace nanoFramework.Tools.Debugger
                 var targetInfoPolicy = Policy.Handle<Exception>().OrResult<TargetInfo>(r => r == null)
                                              .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * timeout));
 
-                if (ConnectionSource == ConnectionSource.nanoCLR &&
+                if (IsConnectedTonanoCLR &&
                     requestCapabilities &&
                     (force || Capabilities.IsUnknown))
                 {
@@ -331,7 +338,7 @@ namespace nanoFramework.Tools.Debugger
                     }
                 }
 
-                if (ConnectionSource == ConnectionSource.nanoBooter &&
+                if (IsConnectedTonanoBooter &&
                     requestCapabilities &&
                     (force || TargetInfo == null))
                 {
@@ -342,7 +349,7 @@ namespace nanoFramework.Tools.Debugger
                     TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
                 }
 
-                if (requestedConnectionSource != ConnectionSource.Unknown && requestedConnectionSource != ConnectionSource)
+                if (requestedConnectionSource != ConnectionSource.Unknown && requestedConnectionSource != _connectionSource)
                 {
                     // update flag
                     IsConnected = false;
@@ -691,15 +698,15 @@ namespace nanoFramework.Tools.Debugger
                 switch (connectionSource.Source)
                 {
                     case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
-                        ConnectionSource = ConnectionSource.nanoCLR;
+                        _connectionSource = ConnectionSource.nanoCLR;
                         break;
 
                     case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
-                        ConnectionSource = ConnectionSource.nanoBooter;
+                        _connectionSource = ConnectionSource.nanoBooter;
                         break;
 
                     default:
-                        ConnectionSource = ConnectionSource.Unknown;
+                        _connectionSource = ConnectionSource.Unknown;
                         break;
                 }
 
@@ -879,7 +886,6 @@ namespace nanoFramework.Tools.Debugger
         }
 
         public bool IsRunning => _state.IsRunning;
-
 
         #region RPC Support
 
@@ -1637,7 +1643,7 @@ namespace nanoFramework.Tools.Debugger
             ThrowOnCommunicationFailure = false;
 
             // check if device running nanoBooter or if it can handle soft reboot
-            if (ConnectionSource == ConnectionSource.nanoBooter || 
+            if (IsConnectedTonanoBooter || 
                 Capabilities.SoftReboot)
             {
                 cmd.flags = (uint)options;
@@ -3832,8 +3838,8 @@ namespace nanoFramework.Tools.Debugger
             // when running nanoBooter those are not available
             // currently the only target that doesn't have nanoBooter is ESP32, so we are assuming that the remaining ones (being STM32 based) use internal flash for storing configuration blocks
             // if that is not the case, then the flash map won't show any config blocks and this step will be skipped 
-            if ((ConnectionSource == ConnectionSource.nanoCLR && Capabilities.ConfigBlockRequiresErase) ||
-                ConnectionSource == ConnectionSource.nanoBooter)
+            if ((IsConnectedTonanoCLR && Capabilities.ConfigBlockRequiresErase) ||
+                IsConnectedTonanoBooter)
             { 
                 // this devices probably requires flash erase before updating the configuration block
 
