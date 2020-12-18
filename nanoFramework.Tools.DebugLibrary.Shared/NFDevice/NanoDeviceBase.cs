@@ -5,6 +5,7 @@
 //
 
 using nanoFramework.Tools.Debugger.WireProtocol;
+using Polly;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -220,7 +221,10 @@ namespace nanoFramework.Tools.Debugger
                 return PingConnectionType.NoConnection;
             }
 
-            Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
+            var pingPolicy = Policy.Handle<Exception>().OrResult<Commands.Monitor_Ping.Reply>(r => r == null)
+                           .WaitAndRetry(3, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
+
+            var reply = pingPolicy.Execute(() => DebugEngine.GetConnectionSource());
 
             if (reply != null)
             {
