@@ -2,12 +2,20 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.27.0-preview.7...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.27.0-preview.11...HEAD)
+
+**Implemented enhancements:**
+
+- Improvements on deploy and erase [\#292](https://github.com/nanoframework/nf-debugger/pull/292)
+- Add retry policy to IsDeviceInInitializeState [\#290](https://github.com/nanoframework/nf-debugger/pull/290)
+
+## [v1.27.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.27.0-preview.11) (2020-12-18)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.27.0-preview.7...v1.27.0-preview.11)
 
 **Implemented enhancements:**
 
 - Add retry policy to Ping [\#291](https://github.com/nanoframework/nf-debugger/pull/291)
-- Add retry policy to IsDeviceInInitializeState [\#290](https://github.com/nanoframework/nf-debugger/pull/290)
 - Improve DeploymentExecuteIncremental [\#289](https://github.com/nanoframework/nf-debugger/pull/289)
 
 ## [v1.27.0-preview.7](https://github.com/nanoframework/nf-debugger/tree/v1.27.0-preview.7) (2020-12-18)
@@ -94,6 +102,7 @@
 **Implemented enhancements:**
 
 - Improve serial device check [\#282](https://github.com/nanoframework/nf-debugger/pull/282)
+- Add attempts parameter to ConnectAsync [\#280](https://github.com/nanoframework/nf-debugger/pull/280)
 
 **Fixed bugs:**
 
@@ -105,7 +114,6 @@
 
 **Implemented enhancements:**
 
-- Add attempts parameter to ConnectAsync [\#280](https://github.com/nanoframework/nf-debugger/pull/280)
 - Rework DeployFile inner methods [\#279](https://github.com/nanoframework/nf-debugger/pull/279)
 - Work on async calls [\#278](https://github.com/nanoframework/nf-debugger/pull/278)
 
@@ -210,14 +218,6 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.20.0-preview.1...v1.20.0-preview.5)
 
-**Implemented enhancements:**
-
-- Add flag to Ping to expose support for nanoBooter [\#257](https://github.com/nanoframework/nf-debugger/pull/257)
-
-**Fixed bugs:**
-
-- Fix reboot options [\#256](https://github.com/nanoframework/nf-debugger/pull/256)
-
 ## [v1.20.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.20.0-preview.1) (2020-11-12)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.19.0-preview.4...v1.20.0-preview.1)
@@ -232,10 +232,15 @@
 
 **Implemented enhancements:**
 
+- Add flag to Ping to expose support for nanoBooter [\#257](https://github.com/nanoframework/nf-debugger/pull/257)
 - Expose capability flags [\#254](https://github.com/nanoframework/nf-debugger/pull/254)
 - Work on capability flags [\#253](https://github.com/nanoframework/nf-debugger/pull/253)
 - Work capability flags [\#252](https://github.com/nanoframework/nf-debugger/pull/252)
 - Update CapabilityFlags [\#250](https://github.com/nanoframework/nf-debugger/pull/250)
+
+**Fixed bugs:**
+
+- Fix reboot options [\#256](https://github.com/nanoframework/nf-debugger/pull/256)
 
 ## [v1.18.2-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.18.2-preview.1) (2020-09-05)
 
@@ -276,6 +281,7 @@
 **Implemented enhancements:**
 
 - Improve description on some Wireless config enums [\#245](https://github.com/nanoframework/nf-debugger/pull/245)
+- Add short timeout to reboot request [\#241](https://github.com/nanoframework/nf-debugger/pull/241)
 
 ## [v1.17.0-preview.3](https://github.com/nanoframework/nf-debugger/tree/v1.17.0-preview.3) (2020-06-03)
 
@@ -311,7 +317,6 @@
 
 **Implemented enhancements:**
 
-- Add short timeout to reboot request [\#241](https://github.com/nanoframework/nf-debugger/pull/241)
 - Improve reboot handling [\#240](https://github.com/nanoframework/nf-debugger/pull/240)
 
 **Fixed bugs:**
@@ -462,6 +467,7 @@
 **Implemented enhancements:**
 
 - Expose bootTime property [\#219](https://github.com/nanoframework/nf-debugger/pull/219)
+- Major code refactoring [\#217](https://github.com/nanoframework/nf-debugger/pull/217)
 
 ## [v1.9.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.9.0-preview.11) (2020-02-26)
 
@@ -474,10 +480,6 @@
 ## [v1.8.1-preview.12](https://github.com/nanoframework/nf-debugger/tree/v1.8.1-preview.12) (2020-02-26)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.8.0-preview.11...v1.8.1-preview.12)
-
-**Implemented enhancements:**
-
-- Major code refactoring [\#217](https://github.com/nanoframework/nf-debugger/pull/217)
 
 ## [v1.8.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.8.0-preview.11) (2020-02-24)
 
@@ -611,6 +613,7 @@
 **Implemented enhancements:**
 
 - Add target name and platform name properties [\#199](https://github.com/nanoframework/nf-debugger/pull/199)
+- Improvements in EraseAsync [\#194](https://github.com/nanoframework/nf-debugger/pull/194)
 
 ## [v1.1.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.1.0-preview.11) (2019-06-05)
 
@@ -628,10 +631,6 @@
 ## [v1.0.1-preview-070](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-070) (2019-03-19)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-068...v1.0.1-preview-070)
-
-**Implemented enhancements:**
-
-- Improvements in EraseAsync [\#194](https://github.com/nanoframework/nf-debugger/pull/194)
 
 ## [v1.0.1-preview-068](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-068) (2019-03-18)
 
@@ -986,7 +985,6 @@
 
 **Implemented enhancements:**
 
-- Add test to debugger extension [\#22](https://github.com/nanoframework/nf-debugger/pull/22)
 - major rework to bring C\#7.0 improvements to code [\#21](https://github.com/nanoframework/nf-debugger/pull/21)
 
 ## [0.4.0-preview008](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview008) (2017-06-13)
@@ -1027,6 +1025,7 @@
 
 **Implemented enhancements:**
 
+- Add test to debugger extension [\#22](https://github.com/nanoframework/nf-debugger/pull/22)
 - Add strong name to debug assemblies [\#13](https://github.com/nanoframework/nf-debugger/pull/13)
 - Improvements to debugger component [\#12](https://github.com/nanoframework/nf-debugger/pull/12)
 - Further work on debug library [\#11](https://github.com/nanoframework/nf-debugger/pull/11)
