@@ -371,11 +371,15 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         /// <param name="options">Identifies which areas are to be erased</param>
         /// <param name="cancellationToken">Cancellation token to allow caller to cancel task</param>
-        /// <param name="progress">Progress report of execution</param>
+        /// <param name="log">Progress report of execution</param>
         /// <returns>Returns false if the erase fails, true otherwise
         /// Possible exceptions: MFUserExitException, MFDeviceNoResponseException
         /// </returns>
-        public async Task<bool> EraseAsync(EraseOptions options, CancellationToken cancellationToken, IProgress<string> progress = null)
+        public async Task<bool> EraseAsync(
+            EraseOptions options,
+            CancellationToken cancellationToken,
+            IProgress<MessageWithProgress> progress = null,
+            IProgress<string> log = null)
         {
             bool fReset = false;
             bool requestBooter = false;
@@ -385,9 +389,13 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
+            log?.Report("Check device presence...");
+
             // check if the device is responsive
             if (Ping() == PingConnectionType.NoConnection)
             {
+                log?.Report("Attempting to reconnect...");
+
                 // it's not, try reconnect
                 if (!await DebugEngine.ConnectAsync(5000, true))
                 {
@@ -397,10 +405,14 @@ namespace nanoFramework.Tools.Debugger
 
             if (!IsClrDebuggerEnabled || 0 != (options & EraseOptions.Firmware))
             {
+                log?.Report("Connecting to nanoBooter...");
+
                 fReset = DebugEngine.IsConnectedTonanoCLR;
 
                 if (!await ConnectToNanoBooterAsync(cancellationToken))
                 {
+                    log?.Report("Request to connect to nanoBooter failed!");
+
                     return false;
                 }
 
@@ -410,13 +422,16 @@ namespace nanoFramework.Tools.Debugger
 
             if (DebugEngine.FlashSectorMap == null)
             {
+                log?.Report("No flash map for device available. Aborting...");
+
                 return false;
             }
 
-            Commands.Monitor_Ping.Reply ping;
             if (requestBooter)
             {
-                ping = DebugEngine.GetConnectionSource();               
+                log?.Report("Getting connection source...");
+
+                DebugEngine.GetConnectionSource();               
             }
 
             long total = 0;
@@ -424,6 +439,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (DebugEngine.IsConnectedTonanoCLR)
             {
+                log?.Report("Connected to CLR. Pausing execution...");
+
                 DebugEngine.PauseExecution();
             }
 
@@ -499,13 +516,18 @@ namespace nanoFramework.Tools.Debugger
 
             }
 
+            uint totalBytes = (uint)eraseSectors.Sum(s => s.NumBlocks * s.BytesPerBlock);
+            uint current = 0;
+
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in eraseSectors)
             {
                 for (int block = 0; block < flashSectorData.NumBlocks; block++)
                 {
-                    progress?.Report($"Erasing sector @ 0x{flashSectorData.StartAddress:X8}...");
-
                     var sectorAddress = (uint)(flashSectorData.StartAddress + block * flashSectorData.BytesPerBlock);
+                    current += flashSectorData.BytesPerBlock;
+
+                    progress?.Report(new MessageWithProgress($"Erasing sector @ 0x{sectorAddress:X8}...", current, totalBytes));
+                    log?.Report($"Erasing sector @ 0x{sectorAddress:X8}...");
 
                     (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(
                         sectorAddress,
@@ -513,7 +535,7 @@ namespace nanoFramework.Tools.Debugger
 
                     if (!Success)
                     {
-                        progress?.Report($"Error erasing sector @ 0x{sectorAddress:X8}.");
+                        log?.Report($"Error erasing sector @ 0x{sectorAddress:X8}.");
 
                         return false;
                     }
@@ -522,7 +544,7 @@ namespace nanoFramework.Tools.Debugger
                     if (ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
                         // operation failed
-                        progress?.Report($"Error erasing sector @ 0x{sectorAddress:X8}. Error code: {ErrorCode}.");
+                        log?.Report($"Error erasing sector @ 0x{sectorAddress:X8}. Error code: {ErrorCode}.");
 
                         // don't bother continuing
                         return false;
@@ -534,17 +556,18 @@ namespace nanoFramework.Tools.Debugger
             // reset if we specifically entered nanoBooter to erase
             if (fReset)
             {
+                log?.Report("Executing memory...");
                 DebugEngine.ExecuteMemory(0);
             }
 
             // reboot if we are talking to the CLR
             if (DebugEngine.IsConnectedTonanoCLR)
             {
-                progress?.Report("Rebooting...");
+                progress?.Report(new MessageWithProgress("Rebooting..."));
 
                 RebootOptions rebootOptions = RebootOptions.ClrOnly;
 
-                DebugEngine.RebootDevice(rebootOptions);
+                DebugEngine.RebootDevice(rebootOptions, log);
             }
 
             return true;
@@ -1453,6 +1476,7 @@ namespace nanoFramework.Tools.Debugger
                 if (!await EraseAsync(
                     EraseOptions.Firmware,
                     cancellationToken,
+                    null,
                     progress))
                 {
                     return false;
@@ -1463,7 +1487,8 @@ namespace nanoFramework.Tools.Debugger
             {
                 if (!await EraseAsync(
                     EraseOptions.Deployment, 
-                    cancellationToken, 
+                    cancellationToken,
+                    null,
                     progress))
                 {
                     return false;
