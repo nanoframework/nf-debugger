@@ -435,7 +435,6 @@ namespace nanoFramework.Tools.Debugger
             }
 
             long total = 0;
-            long value = 0;
 
             if (DebugEngine.IsConnectedTonanoCLR)
             {
@@ -521,36 +520,33 @@ namespace nanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in eraseSectors)
             {
-                for (int block = 0; block < flashSectorData.NumBlocks; block++)
+                var sectorSize = flashSectorData.NumBlocks * flashSectorData.BytesPerBlock;
+
+                progress?.Report(new MessageWithProgress($"Erasing sector @ 0x{flashSectorData.StartAddress:X8}...", current, totalBytes));
+                log?.Report($"Erasing sector @ 0x{flashSectorData.StartAddress:X8}...");
+
+                (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(
+                    flashSectorData.StartAddress,
+                    sectorSize);
+
+                if (!Success)
                 {
-                    var sectorAddress = (uint)(flashSectorData.StartAddress + block * flashSectorData.BytesPerBlock);
-                    current += flashSectorData.BytesPerBlock;
+                    log?.Report($"Error erasing sector @ 0x{flashSectorData.StartAddress:X8}.");
 
-                    progress?.Report(new MessageWithProgress($"Erasing sector @ 0x{sectorAddress:X8}...", current, totalBytes));
-                    log?.Report($"Erasing sector @ 0x{sectorAddress:X8}...");
-
-                    (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(
-                        sectorAddress,
-                        flashSectorData.BytesPerBlock);
-
-                    if (!Success)
-                    {
-                        log?.Report($"Error erasing sector @ 0x{sectorAddress:X8}.");
-
-                        return false;
-                    }
-
-                    // check the error code returned
-                    if (ErrorCode != AccessMemoryErrorCodes.NoError)
-                    {
-                        // operation failed
-                        log?.Report($"Error erasing sector @ 0x{sectorAddress:X8}. Error code: {ErrorCode}.");
-
-                        // don't bother continuing
-                        return false;
-                    }
+                    return false;
                 }
-                value++;
+
+                // check the error code returned
+                if (ErrorCode != AccessMemoryErrorCodes.NoError)
+                {
+                    // operation failed
+                    log?.Report($"Error erasing sector @ 0x{flashSectorData.StartAddress:X8}. Error code: {ErrorCode}.");
+
+                    // don't bother continuing
+                    return false;
+                }
+
+                current += sectorSize;
             }
 
             // reset if we specifically entered nanoBooter to erase
