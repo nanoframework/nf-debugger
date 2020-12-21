@@ -3018,7 +3018,7 @@ namespace nanoFramework.Tools.Debugger
                     // check if skip erase step was requested
                     if(!skipErase)
                     {
-                        log?.Report($"Erasing block @ 0x{block.StartAddress}");
+                        log?.Report($"Erasing block @ 0x{block.StartAddress:X8}...");
 
                         // erase memory sector
                         (AccessMemoryErrorCodes ErrorCode, bool Success) eraseMemoryResult = EraseMemory((uint)block.StartAddress, (uint)block.Size);
