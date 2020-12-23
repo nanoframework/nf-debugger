@@ -291,12 +291,6 @@ namespace nanoFramework.Tools.Debugger
                             {
                                 SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
                             }
-
-                            // resume execution for older clients, since server tools no longer do this.
-                            if (!StopDebuggerOnConnect && (msg != null && msg.Payload == null))
-                            {
-                                ResumeExecution();
-                            }
                         }
                     }
                 }
@@ -397,12 +391,6 @@ namespace nanoFramework.Tools.Debugger
                 if (m_silent)
                 {
                     SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
-                }
-
-                // resume execution for older clients, since server tools no longer do this.
-                if (!StopDebuggerOnConnect && msg?.Payload == null)
-                {
-                    ResumeExecution();
                 }
 
                 // done here
