@@ -1616,7 +1616,7 @@ namespace nanoFramework.Tools.Debugger
             }
 
             // minimum timeout required for ESP32
-            if(Capabilities.SolutionReleaseInfo.Platform.StartsWith("ESP32"))
+            if(TargetInfo.PlatformName.StartsWith("ESP32"))
             {
                 timeout = 10000;
             }
