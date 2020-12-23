@@ -2,7 +2,19 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.28.0-preview.1...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.28.0-preview.4...HEAD)
+
+**Implemented enhancements:**
+
+- StopDebuggerOnConnect shouldn't resume execution [\#296](https://github.com/nanoframework/nf-debugger/pull/296)
+
+**Fixed bugs:**
+
+- Fix access to platform name [\#295](https://github.com/nanoframework/nf-debugger/pull/295)
+
+## [v1.28.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.28.0-preview.4) (2020-12-21)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.28.0-preview.1...v1.28.0-preview.4)
 
 **Implemented enhancements:**
 
@@ -947,10 +959,6 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview015...0.4.0-preview016)
 
-**Implemented enhancements:**
-
-- Improve code in Deploy incremental method [\#31](https://github.com/nanoframework/nf-debugger/pull/31)
-
 ## [0.4.0-preview015](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview015) (2017-06-23)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview014...0.4.0-preview015)
@@ -965,6 +973,7 @@
 
 **Implemented enhancements:**
 
+- Improve code in Deploy incremental method [\#31](https://github.com/nanoframework/nf-debugger/pull/31)
 - Remove ConfigureAwait from calls [\#29](https://github.com/nanoframework/nf-debugger/pull/29)
 - Add error code to reply of access memory commands [\#28](https://github.com/nanoframework/nf-debugger/pull/28)
 
@@ -1050,7 +1059,6 @@
 - Add strong name to debug assemblies [\#13](https://github.com/nanoframework/nf-debugger/pull/13)
 - Improvements to debugger component [\#12](https://github.com/nanoframework/nf-debugger/pull/12)
 - Further work on debug library [\#11](https://github.com/nanoframework/nf-debugger/pull/11)
-- Add library for Net46 [\#7](https://github.com/nanoframework/nf-debugger/pull/7)
 - Rename solutioninfo to targetinfo [\#4](https://github.com/nanoframework/nf-debugger/pull/4)
 
 ## [v0.2.20-preview20](https://github.com/nanoframework/nf-debugger/tree/v0.2.20-preview20) (2017-03-29)
@@ -1059,6 +1067,7 @@
 
 **Implemented enhancements:**
 
+- Add library for Net46 [\#7](https://github.com/nanoframework/nf-debugger/pull/7)
 - Correct structure for flash map command [\#1](https://github.com/nanoframework/nf-debugger/pull/1)
 
 
