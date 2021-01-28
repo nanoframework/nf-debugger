@@ -17,23 +17,23 @@ namespace nanoFramework.Tools.Debugger
         {
             Type t;
 
-            switch ((RuntimeDataType)handle.m_dt)
+            switch ((nanoClrDataType)handle.m_dt)
             {
-                case RuntimeDataType.DATATYPE_BOOLEAN: t = typeof(bool); break;
-                case RuntimeDataType.DATATYPE_I1: t = typeof(sbyte); break;
-                case RuntimeDataType.DATATYPE_U1: t = typeof(byte); break;
+                case nanoClrDataType.DATATYPE_BOOLEAN: t = typeof(bool); break;
+                case nanoClrDataType.DATATYPE_I1: t = typeof(sbyte); break;
+                case nanoClrDataType.DATATYPE_U1: t = typeof(byte); break;
 
-                case RuntimeDataType.DATATYPE_CHAR: t = typeof(char); break;
-                case RuntimeDataType.DATATYPE_I2: t = typeof(short); break;
-                case RuntimeDataType.DATATYPE_U2: t = typeof(ushort); break;
+                case nanoClrDataType.DATATYPE_CHAR: t = typeof(char); break;
+                case nanoClrDataType.DATATYPE_I2: t = typeof(short); break;
+                case nanoClrDataType.DATATYPE_U2: t = typeof(ushort); break;
 
-                case RuntimeDataType.DATATYPE_I4: t = typeof(int); break;
-                case RuntimeDataType.DATATYPE_U4: t = typeof(uint); break;
-                case RuntimeDataType.DATATYPE_R4: t = typeof(float); break;
+                case nanoClrDataType.DATATYPE_I4: t = typeof(int); break;
+                case nanoClrDataType.DATATYPE_U4: t = typeof(uint); break;
+                case nanoClrDataType.DATATYPE_R4: t = typeof(float); break;
 
-                case RuntimeDataType.DATATYPE_I8: t = typeof(long); break;
-                case RuntimeDataType.DATATYPE_U8: t = typeof(ulong); break;
-                case RuntimeDataType.DATATYPE_R8: t = typeof(double); break;
+                case nanoClrDataType.DATATYPE_I8: t = typeof(long); break;
+                case nanoClrDataType.DATATYPE_U8: t = typeof(ulong); break;
+                case nanoClrDataType.DATATYPE_R8: t = typeof(double); break;
 
                 default: throw new ArgumentException(String.Format("Not a primitive: {0}", handle.m_dt));
             }

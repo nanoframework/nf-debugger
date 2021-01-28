@@ -5,6 +5,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -63,7 +64,13 @@ namespace nanoFramework.Tools.Debugger
         ELEMENT_TYPE_END = 0x0
     }
 
-    public enum RuntimeDataType : uint
+    /////////////////////////////////////////////////////////////////////////////////////
+    // !!! KEEP IN SYNC WITH enum nanoClrDataType (in nanoCLR_Types in CLR)        !!! //
+    // !!! KEEP IN SYNC WITH enum nanoClrDataType (in nanoCLR_TypeSystem Debugger) !!! //
+    /////////////////////////////////////////////////////////////////////////////////////
+
+
+    public enum nanoClrDataType : uint
     {
         DATATYPE_VOID,
 
@@ -91,6 +98,10 @@ namespace nanoFramework.Tools.Debugger
         DATATYPE_VALUETYPE,
         DATATYPE_SZARRAY,
         DATATYPE_BYREF,
+
+        DATATYPE_VAR,
+        DATATYPE_GENERICINST,
+        DATATYPE_MVAR,
 
         DATATYPE_FREEBLOCK,
         DATATYPE_CACHEDBLOCK,
@@ -133,7 +144,7 @@ namespace nanoFramework.Tools.Debugger
         DATATYPE_FIRST_INVALID,
     }
 
-    public abstract class RuntimeValue
+public abstract class RuntimeValue
     {
         protected Engine m_eng;
         protected internal WireProtocol.Commands.Debugging_Value m_handle;
@@ -144,43 +155,47 @@ namespace nanoFramework.Tools.Debugger
             m_eng = eng;
             m_handle = handle;
 
-            switch ((RuntimeDataType)handle.m_dt)
+            switch ((nanoClrDataType)handle.m_dt)
             {
-                case RuntimeDataType.DATATYPE_BOOLEAN: m_corElementType = CorElementType.ELEMENT_TYPE_BOOLEAN; break;
-                case RuntimeDataType.DATATYPE_I1: m_corElementType = CorElementType.ELEMENT_TYPE_I1; break;
-                case RuntimeDataType.DATATYPE_U1: m_corElementType = CorElementType.ELEMENT_TYPE_U1; break;
+                case nanoClrDataType.DATATYPE_BOOLEAN: m_corElementType = CorElementType.ELEMENT_TYPE_BOOLEAN; break;
+                case nanoClrDataType.DATATYPE_I1: m_corElementType = CorElementType.ELEMENT_TYPE_I1; break;
+                case nanoClrDataType.DATATYPE_U1: m_corElementType = CorElementType.ELEMENT_TYPE_U1; break;
 
-                case RuntimeDataType.DATATYPE_CHAR: m_corElementType = CorElementType.ELEMENT_TYPE_CHAR; break;
-                case RuntimeDataType.DATATYPE_I2: m_corElementType = CorElementType.ELEMENT_TYPE_I2; break;
-                case RuntimeDataType.DATATYPE_U2: m_corElementType = CorElementType.ELEMENT_TYPE_U2; break;
+                case nanoClrDataType.DATATYPE_CHAR: m_corElementType = CorElementType.ELEMENT_TYPE_CHAR; break;
+                case nanoClrDataType.DATATYPE_I2: m_corElementType = CorElementType.ELEMENT_TYPE_I2; break;
+                case nanoClrDataType.DATATYPE_U2: m_corElementType = CorElementType.ELEMENT_TYPE_U2; break;
 
-                case RuntimeDataType.DATATYPE_I4: m_corElementType = CorElementType.ELEMENT_TYPE_I4; break;
-                case RuntimeDataType.DATATYPE_U4: m_corElementType = CorElementType.ELEMENT_TYPE_U4; break;
-                case RuntimeDataType.DATATYPE_R4: m_corElementType = CorElementType.ELEMENT_TYPE_R4; break;
+                case nanoClrDataType.DATATYPE_I4: m_corElementType = CorElementType.ELEMENT_TYPE_I4; break;
+                case nanoClrDataType.DATATYPE_U4: m_corElementType = CorElementType.ELEMENT_TYPE_U4; break;
+                case nanoClrDataType.DATATYPE_R4: m_corElementType = CorElementType.ELEMENT_TYPE_R4; break;
 
-                case RuntimeDataType.DATATYPE_I8: m_corElementType = CorElementType.ELEMENT_TYPE_I8; break;
-                case RuntimeDataType.DATATYPE_U8: m_corElementType = CorElementType.ELEMENT_TYPE_U8; break;
-                case RuntimeDataType.DATATYPE_R8: m_corElementType = CorElementType.ELEMENT_TYPE_R8; break;
+                case nanoClrDataType.DATATYPE_I8: m_corElementType = CorElementType.ELEMENT_TYPE_I8; break;
+                case nanoClrDataType.DATATYPE_U8: m_corElementType = CorElementType.ELEMENT_TYPE_U8; break;
+                case nanoClrDataType.DATATYPE_R8: m_corElementType = CorElementType.ELEMENT_TYPE_R8; break;
 
-                case RuntimeDataType.DATATYPE_DATETIME: m_corElementType = CorElementType.ELEMENT_TYPE_VALUETYPE; break;
-                case RuntimeDataType.DATATYPE_TIMESPAN: m_corElementType = CorElementType.ELEMENT_TYPE_VALUETYPE; break;
+                case nanoClrDataType.DATATYPE_DATETIME: m_corElementType = CorElementType.ELEMENT_TYPE_VALUETYPE; break;
+                case nanoClrDataType.DATATYPE_TIMESPAN: m_corElementType = CorElementType.ELEMENT_TYPE_VALUETYPE; break;
 
-                case RuntimeDataType.DATATYPE_STRING: m_corElementType = CorElementType.ELEMENT_TYPE_STRING; break;
+                case nanoClrDataType.DATATYPE_STRING: m_corElementType = CorElementType.ELEMENT_TYPE_STRING; break;
 
-                case RuntimeDataType.DATATYPE_OBJECT: m_corElementType = CorElementType.ELEMENT_TYPE_OBJECT; break;
-                case RuntimeDataType.DATATYPE_BYREF: m_corElementType = CorElementType.ELEMENT_TYPE_BYREF; break;
-                case RuntimeDataType.DATATYPE_ARRAY_BYREF: m_corElementType = CorElementType.ELEMENT_TYPE_BYREF; break;
+                case nanoClrDataType.DATATYPE_OBJECT: m_corElementType = CorElementType.ELEMENT_TYPE_OBJECT; break;
+                case nanoClrDataType.DATATYPE_BYREF: m_corElementType = CorElementType.ELEMENT_TYPE_BYREF; break;
+                case nanoClrDataType.DATATYPE_ARRAY_BYREF: m_corElementType = CorElementType.ELEMENT_TYPE_BYREF; break;
 
-                case RuntimeDataType.DATATYPE_CLASS: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
-                case RuntimeDataType.DATATYPE_VALUETYPE: m_corElementType = CorElementType.ELEMENT_TYPE_VALUETYPE; break;
+                case nanoClrDataType.DATATYPE_CLASS: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
+                case nanoClrDataType.DATATYPE_VALUETYPE: m_corElementType = CorElementType.ELEMENT_TYPE_VALUETYPE; break;
 
-                case RuntimeDataType.DATATYPE_SZARRAY: m_corElementType = CorElementType.ELEMENT_TYPE_SZARRAY; break;
+                case nanoClrDataType.DATATYPE_VAR: m_corElementType = CorElementType.ELEMENT_TYPE_VAR; break;
+                case nanoClrDataType.DATATYPE_GENERICINST: m_corElementType = CorElementType.ELEMENT_TYPE_GENERICINST; break;
+                case nanoClrDataType.DATATYPE_MVAR: m_corElementType = CorElementType.ELEMENT_TYPE_MVAR; break;
 
-                case RuntimeDataType.DATATYPE_REFLECTION: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
-                case RuntimeDataType.DATATYPE_DELEGATE_HEAD: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
-                case RuntimeDataType.DATATYPE_DELEGATELIST_HEAD: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
-                case RuntimeDataType.DATATYPE_WEAKCLASS: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
-                case RuntimeDataType.DATATYPE_TRANSPARENT_PROXY: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
+                case nanoClrDataType.DATATYPE_SZARRAY: m_corElementType = CorElementType.ELEMENT_TYPE_SZARRAY; break;
+
+                case nanoClrDataType.DATATYPE_REFLECTION: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
+                case nanoClrDataType.DATATYPE_DELEGATE_HEAD: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
+                case nanoClrDataType.DATATYPE_DELEGATELIST_HEAD: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
+                case nanoClrDataType.DATATYPE_WEAKCLASS: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
+                case nanoClrDataType.DATATYPE_TRANSPARENT_PROXY: m_corElementType = CorElementType.ELEMENT_TYPE_CLASS; break;
             }
         }
 
@@ -205,9 +220,9 @@ namespace nanoFramework.Tools.Debugger
         public virtual bool IsArrayReference { get { return m_handle.m_arrayref_referenceID != 0; } }
         public abstract bool IsReflection { get; }
 
-        public virtual RuntimeDataType DataType
+        public virtual nanoClrDataType DataType
         {
-            get { return (RuntimeDataType)m_handle.m_dt; }
+            get { return (nanoClrDataType)m_handle.m_dt; }
         }
 
         public virtual CorElementType CorElementType
@@ -292,42 +307,46 @@ namespace nanoFramework.Tools.Debugger
 
             if (src == null) return null;
 
-            switch ((RuntimeDataType)src.m_dt)
+            switch ((nanoClrDataType)src.m_dt)
             {
-                case RuntimeDataType.DATATYPE_BOOLEAN: return new RuntimeValue_Primitive(eng, src);
-                case RuntimeDataType.DATATYPE_I1: return new RuntimeValue_Primitive(eng, src);
-                case RuntimeDataType.DATATYPE_U1: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_BOOLEAN: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_I1: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_U1: return new RuntimeValue_Primitive(eng, src);
 
-                case RuntimeDataType.DATATYPE_CHAR: return new RuntimeValue_Primitive(eng, src);
-                case RuntimeDataType.DATATYPE_I2: return new RuntimeValue_Primitive(eng, src);
-                case RuntimeDataType.DATATYPE_U2: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_CHAR: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_I2: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_U2: return new RuntimeValue_Primitive(eng, src);
 
-                case RuntimeDataType.DATATYPE_I4: return new RuntimeValue_Primitive(eng, src);
-                case RuntimeDataType.DATATYPE_U4: return new RuntimeValue_Primitive(eng, src);
-                case RuntimeDataType.DATATYPE_R4: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_I4: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_U4: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_R4: return new RuntimeValue_Primitive(eng, src);
 
-                case RuntimeDataType.DATATYPE_I8: return new RuntimeValue_Primitive(eng, src);
-                case RuntimeDataType.DATATYPE_U8: return new RuntimeValue_Primitive(eng, src);
-                case RuntimeDataType.DATATYPE_R8: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_I8: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_U8: return new RuntimeValue_Primitive(eng, src);
+                case nanoClrDataType.DATATYPE_R8: return new RuntimeValue_Primitive(eng, src);
 
-                case RuntimeDataType.DATATYPE_DATETIME: return new RuntimeValue_ValueType(eng, src);
-                case RuntimeDataType.DATATYPE_TIMESPAN: return new RuntimeValue_ValueType(eng, src);
+                case nanoClrDataType.DATATYPE_DATETIME: return new RuntimeValue_ValueType(eng, src);
+                case nanoClrDataType.DATATYPE_TIMESPAN: return new RuntimeValue_ValueType(eng, src);
 
-                case RuntimeDataType.DATATYPE_STRING: return new RuntimeValue_String(eng, src);
+                case nanoClrDataType.DATATYPE_STRING: return new RuntimeValue_String(eng, src);
 
-                case RuntimeDataType.DATATYPE_OBJECT: return new RuntimeValue_Object(eng, array, pos);
-                case RuntimeDataType.DATATYPE_BYREF: return new RuntimeValue_ByRef(eng, array, pos);
-                case RuntimeDataType.DATATYPE_ARRAY_BYREF: return new RuntimeValue_ByRef(eng, array, pos);
+                case nanoClrDataType.DATATYPE_OBJECT: return new RuntimeValue_Object(eng, array, pos);
+                case nanoClrDataType.DATATYPE_BYREF: return new RuntimeValue_ByRef(eng, array, pos);
+                case nanoClrDataType.DATATYPE_ARRAY_BYREF: return new RuntimeValue_ByRef(eng, array, pos);
 
-                case RuntimeDataType.DATATYPE_CLASS: return new RuntimeValue_Class(eng, src);
-                case RuntimeDataType.DATATYPE_VALUETYPE: return new RuntimeValue_ValueType(eng, src);
+                case nanoClrDataType.DATATYPE_CLASS: return new RuntimeValue_Class(eng, src);
+                case nanoClrDataType.DATATYPE_VALUETYPE: return new RuntimeValue_ValueType(eng, src);
 
-                case RuntimeDataType.DATATYPE_SZARRAY: return new RuntimeValue_Array(eng, src);
+                case nanoClrDataType.DATATYPE_VAR: return new RuntimeValue_Class(eng, src);
+                case nanoClrDataType.DATATYPE_GENERICINST: return new RuntimeValue_Class(eng, src);
+                case nanoClrDataType.DATATYPE_MVAR: return new RuntimeValue_Class(eng, src);
 
-                case RuntimeDataType.DATATYPE_REFLECTION: return new RuntimeValue_Reflection(eng, src);
-                case RuntimeDataType.DATATYPE_DELEGATE_HEAD: return new RuntimeValue_Class(eng, src);
-                case RuntimeDataType.DATATYPE_DELEGATELIST_HEAD: return new RuntimeValue_Class(eng, src);
-                case RuntimeDataType.DATATYPE_WEAKCLASS: return new RuntimeValue_Class(eng, src);
+                case nanoClrDataType.DATATYPE_SZARRAY: return new RuntimeValue_Array(eng, src);
+
+                case nanoClrDataType.DATATYPE_REFLECTION: return new RuntimeValue_Reflection(eng, src);
+                case nanoClrDataType.DATATYPE_DELEGATE_HEAD: return new RuntimeValue_Class(eng, src);
+                case nanoClrDataType.DATATYPE_DELEGATELIST_HEAD: return new RuntimeValue_Class(eng, src);
+                case nanoClrDataType.DATATYPE_WEAKCLASS: return new RuntimeValue_Class(eng, src);
 
                 default: return new RuntimeValue_Internal(eng, src);
             }
@@ -383,7 +402,7 @@ namespace nanoFramework.Tools.Debugger
             if (IsReflection || (val != null && val.IsReflection))
             {
                 byte[] data = new byte[8];
-                uint dt = (uint)RuntimeDataType.DATATYPE_OBJECT;
+                uint dt = (uint)nanoClrDataType.DATATYPE_OBJECT;
 
                 if (val != null)
                 {
