@@ -44,7 +44,7 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public override RuntimeDataType DataType { get { return (m_value == null) ? RuntimeDataType.DATATYPE_FIRST_INVALID : m_value.DataType; } }
+        public override nanoClrDataType DataType { get { return (m_value == null) ? nanoClrDataType.DATATYPE_FIRST_INVALID : m_value.DataType; } }
 
         public override bool IsReference { get { return false; } }
         public override bool IsNull { get { return m_value == null; } }
