@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -826,6 +827,18 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                      if (deviceConfig.WirelessAPConfigurations.Count > 0)
                      {
                          Debug.WriteLine(deviceConfig.WirelessAPConfigurations[0].ToStringForOutput());
+                     }
+
+                     if (deviceConfig.X509Certificates.Count > 0)
+                     {
+                         X509Certificate2 cert = new X509Certificate2(deviceConfig.X509Certificates[0].Certificate);
+                         Debug.WriteLine(cert.ToString());
+                     }
+
+                     if (deviceConfig.X509DeviceCertificates.Count > 0)
+                     {
+                         X509Certificate2 deviceCert = new X509Certificate2(deviceConfig.X509Certificates[0].Certificate);
+                         Debug.WriteLine(deviceCert.ToString());
                      }
 
                      //Debug.WriteLine(string.Empty);

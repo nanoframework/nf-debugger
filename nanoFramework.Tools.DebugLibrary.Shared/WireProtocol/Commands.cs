@@ -475,6 +475,23 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     Certificate = new byte[size - 4 - 4];
                 }
             }
+
+            public class X509DeviceCertificatesConfig : X509DeviceCertificatesBase, IConverter
+            {
+                public X509DeviceCertificatesConfig()
+                {
+                    Marker = new byte[4];
+                    CertificateSize = 0xFFFF;
+                    Certificate = new byte[64];
+                }
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    Marker = new byte[4];
+                    CertificateSize = 0xFFFF;
+                    Certificate = new byte[size - 4 - 4];
+                }
+            }
         }
 
         public class Monitor_UpdateConfiguration : OverheadBase

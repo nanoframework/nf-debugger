@@ -15,5 +15,7 @@ namespace nanoFramework.Tools.Debugger
         public WirelessAPConfigurationBase[] WirelessAPConfigurations { get; internal set; }
 
         public X509CaRootBundleBase[] X509CaRootBundle { get; internal set; }
+        
+        public X509DeviceCertificatesBase[] X509DeviceCertificates { get; internal set; }
     }
 }

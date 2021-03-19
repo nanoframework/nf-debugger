@@ -3621,11 +3621,22 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
+            // get all wireless network configuration blocks
+            var x509DeviceCertificates = GetAllX509DeviceCertificates();
+            // check for cancellation request
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // cancellation requested
+                Debug.WriteLine("cancellation requested");
+                return null;
+            }
+
             return new DeviceConfiguration(
                 networkConfigs, 
                 networkWirelessConfigs, 
                 networkWirelessAPConfigs,
-                x509Certificates);
+                x509Certificates,
+                x509DeviceCertificates);
         }
 
         public List<DeviceConfiguration.NetworkConfigurationProperties> GetAllNetworkConfigurations()
@@ -3756,6 +3767,38 @@ namespace nanoFramework.Tools.Debugger
             return x509Certificates;
         }
 
+        public List<DeviceConfiguration.X509DeviceCertificatesProperties> GetAllX509DeviceCertificates()
+        {
+            List<DeviceConfiguration.X509DeviceCertificatesProperties> x509DeviceCertificates = new List<DeviceConfiguration.X509DeviceCertificatesProperties>();
+
+            DeviceConfiguration.X509DeviceCertificatesProperties x509DeviceCertificatesProperties = null;
+            uint index = 0;
+
+            do
+            {
+                // get next X509 certificate configuration block, if available
+                x509DeviceCertificatesProperties = GetX509DeviceCertificatesProperties(index++);
+
+                // was there an answer?
+                if (x509DeviceCertificatesProperties != null)
+                {
+                    // add to list, if valid
+                    if (!x509DeviceCertificatesProperties.IsUnknown)
+                    {
+                        x509DeviceCertificates.Add(x509DeviceCertificatesProperties);
+                    }
+                }
+                else
+                {
+                    // no reply from device or no more config blocks available
+                    break;
+                }
+            }
+            while (!x509DeviceCertificatesProperties.IsUnknown);
+
+            return x509DeviceCertificates;
+        }
+
         public DeviceConfiguration.NetworkConfigurationProperties GetNetworkConfiguratonProperties(uint configurationBlockIndex)
         {
             Debug.WriteLine("NetworkConfiguratonProperties");
@@ -3865,6 +3908,32 @@ namespace nanoFramework.Tools.Debugger
             }
 
             return x509CertificateProperties;
+        }
+
+        public DeviceConfiguration.X509DeviceCertificatesProperties GetX509DeviceCertificatesProperties(uint configurationBlockIndex)
+        {
+            Debug.WriteLine("X509DeviceCertificateProperties");
+
+            IncomingMessage reply = GetDeviceConfiguration((uint)DeviceConfiguration.DeviceConfigurationOption.X509DeviceCertificates, configurationBlockIndex);
+
+            Commands.Monitor_QueryConfiguration.X509DeviceCertificatesConfig x509DeviceCertificates = new Commands.Monitor_QueryConfiguration.X509DeviceCertificatesConfig();
+
+            DeviceConfiguration.X509DeviceCertificatesProperties x509DeviceCertificateProperties = null;
+
+            if (reply != null)
+            {
+                if (reply.IsPositiveAcknowledge())
+                {
+                    if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
+                    {
+                        new Converter().Deserialize(x509DeviceCertificates, cmdReply.Data);
+
+                        x509DeviceCertificateProperties = new DeviceConfiguration.X509DeviceCertificatesProperties(x509DeviceCertificates);
+                    }
+                }
+            }
+
+            return x509DeviceCertificateProperties;
         }
 
         private IncomingMessage GetDeviceConfiguration(uint configuration, uint configurationBlockIndex)
@@ -4101,6 +4170,18 @@ namespace nanoFramework.Tools.Debugger
                             currentConfiguration.X509Certificates[(int)blockIndex] = configuration as DeviceConfiguration.X509CaRootBundleProperties;
                         }
                     }
+                    else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509DeviceCertificatesProperties)))
+                    {
+                        // if list is empty and request index is 0
+                        if (currentConfiguration.X509DeviceCertificates.Count == 0 && blockIndex == 0)
+                        {
+                            currentConfiguration.X509DeviceCertificates.Add(configuration as DeviceConfiguration.X509DeviceCertificatesProperties);
+                        }
+                        else
+                        {
+                            currentConfiguration.X509DeviceCertificates[(int)blockIndex] = configuration as DeviceConfiguration.X509DeviceCertificatesProperties;
+                        }
+                    }
 
                     if (UpdateDeviceConfiguration(currentConfiguration))
                     {
@@ -4223,6 +4304,11 @@ namespace nanoFramework.Tools.Debugger
                 var configBase = configuration as DeviceConfiguration.X509CaRootBundleProperties;
                 return CreateConverter().Serialize(configBase);
             }
+            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509DeviceCertificatesProperties)))
+            {
+                var configBase = configuration as DeviceConfiguration.X509DeviceCertificatesProperties;
+                return CreateConverter().Serialize(configBase);
+            }
             else
             {
                 throw new NotSupportedException();
@@ -4246,6 +4332,10 @@ namespace nanoFramework.Tools.Debugger
             else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
             {
                 return DeviceConfiguration.DeviceConfigurationOption.X509Certificate;
+            }
+            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509DeviceCertificatesProperties)))
+            {
+                return DeviceConfiguration.DeviceConfigurationOption.X509DeviceCertificates;
             }
             else
             {
