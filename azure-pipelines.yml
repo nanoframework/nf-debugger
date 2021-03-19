@@ -192,7 +192,7 @@ steps:
   displayName: Pack UWP NuGet package
   inputs:
     command: 'custom' 
-    arguments: 'pack nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.nuspec -Symbols -SymbolPackageFormat snupkg -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
+    arguments: 'pack nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.nuspec -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
     # arguments: 'pack nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.nuspec -Symbols -SymbolPackageFormat snupkg -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
 
 # we don't have tests (yet)
