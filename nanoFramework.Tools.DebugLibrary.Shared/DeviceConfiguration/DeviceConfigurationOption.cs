@@ -37,6 +37,11 @@ namespace nanoFramework.Tools.Debugger
             X509Certificate = 4,
 
             /// <summary>
+            /// X509 Device Certificates
+            /// </summary>
+            X509DeviceCertificates = 5,
+
+            /// <summary>
             /// All configuration blocks
             /// </summary>
             All = 255,

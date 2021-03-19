@@ -40,6 +40,11 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public static string MarkerConfigurationX509CaRootBundle_v1 = "XB1\0";
 
+        /// <summary>
+        /// X509 Device certificate configuration marker
+        /// </summary>
+        public static string MarkerConfigurationX509DeviceCertificate_v1 = "XD1\0";
+
         /////////////////////////////////////////////////////////////
 
         /// <summary>
@@ -62,11 +67,17 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public List<X509CaRootBundleProperties> X509Certificates { get; set; }
 
+        /// <summary>
+        /// Collection of <see cref="X509DeviceCertificatesProperties"/> blocks in a target device.
+        /// </summary>
+        public List<X509DeviceCertificatesProperties> X509DeviceCertificates { get; }
+
         public DeviceConfiguration()
             : this(new List<NetworkConfigurationProperties>(),
                    new List<Wireless80211ConfigurationProperties>(),
                    new List<WirelessAPConfigurationProperties>(),
-                   new List<X509CaRootBundleProperties>())
+                   new List<X509CaRootBundleProperties>(),
+                   new List<X509DeviceCertificatesProperties>())
         {
         }
 
@@ -74,13 +85,15 @@ namespace nanoFramework.Tools.Debugger
             List<NetworkConfigurationProperties> networkConfiguratons,
             List<Wireless80211ConfigurationProperties> networkWirelessConfiguratons,
             List<WirelessAPConfigurationProperties> networkWirelessAPConfiguratons,
-            List<X509CaRootBundleProperties> x509Certificates
+            List<X509CaRootBundleProperties> x509Certificates,
+            List<X509DeviceCertificatesProperties> x509DeviceCertificates
             )
         {
             NetworkConfigurations = networkConfiguratons;
             Wireless80211Configurations = networkWirelessConfiguratons;
             WirelessAPConfigurations = networkWirelessAPConfiguratons;
             X509Certificates = x509Certificates;
+            X509DeviceCertificates = x509DeviceCertificates;
         }
 
         // operator to allow cast_ing a DeviceConfiguration object to DeviceConfigurationBase
@@ -91,7 +104,8 @@ namespace nanoFramework.Tools.Debugger
                 NetworkConfigurations = value.NetworkConfigurations.Select(i => (NetworkConfigurationBase)i).ToArray(),
                 Wireless80211Configurations = value.Wireless80211Configurations.Select(i => (Wireless80211ConfigurationBase)i).ToArray(),
                 WirelessAPConfigurations = value.WirelessAPConfigurations.Select(i => (WirelessAPConfigurationBase)i).ToArray(),
-                X509CaRootBundle = value.X509Certificates.Select(i => (X509CaRootBundleBase)i).ToArray()
+                X509CaRootBundle = value.X509Certificates.Select(i => (X509CaRootBundleBase)i).ToArray(),
+                X509DeviceCertificates = value.X509DeviceCertificates.Select(i => (X509DeviceCertificatesBase)i).ToArray()
             };
         }
 
@@ -345,6 +359,40 @@ namespace nanoFramework.Tools.Debugger
                 var x509Certificate = new X509CaRootBundleBase()
                 {
                     Marker = Encoding.UTF8.GetBytes(MarkerConfigurationX509CaRootBundle_v1),
+
+                    CertificateSize = (uint)value.Certificate.Length,
+                    Certificate = value.Certificate,
+                };
+
+                return x509Certificate;
+            }
+        }
+
+        [AddINotifyPropertyChangedInterface]
+        public class X509DeviceCertificatesProperties : X509DeviceCertificatesPropertiesBase
+        {
+            public bool IsUnknown { get; set; } = true;
+
+            public X509DeviceCertificatesProperties()
+            {
+
+            }
+
+            public X509DeviceCertificatesProperties(X509DeviceCertificatesBase certificate)
+            {
+                CertificateSize = (uint)certificate.Certificate.Length;
+                Certificate = certificate.Certificate;
+
+                // reset unknown flag
+                IsUnknown = false;
+            }
+
+            // operator to allow cast_ing a X509DeviceCertificatesBaseProperties object to X509DeviceCertificatesBase
+            public static explicit operator X509DeviceCertificatesBase(X509DeviceCertificatesProperties value)
+            {
+                var x509Certificate = new X509DeviceCertificatesBase()
+                {
+                    Marker = Encoding.UTF8.GetBytes(MarkerConfigurationX509DeviceCertificate_v1),
 
                     CertificateSize = (uint)value.Certificate.Length,
                     Certificate = value.Certificate,
