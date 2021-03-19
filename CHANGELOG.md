@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.28.0-preview.7...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.29.0-preview.1...HEAD)
+
+**Implemented enhancements:**
+
+- Add support for device certificate in configuration block [\#299](https://github.com/nanoframework/nf-debugger/pull/299)
+
+## [v1.29.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.29.0-preview.1) (2021-01-29)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.28.0-preview.7...v1.29.0-preview.1)
 
 **Implemented enhancements:**
 
@@ -482,7 +490,6 @@
 
 - General improvements with serial devices [\#223](https://github.com/nanoframework/nf-debugger/pull/223)
 - Improvements on device detection [\#222](https://github.com/nanoframework/nf-debugger/pull/222)
-- Update .NET framework to 4.7.2 [\#216](https://github.com/nanoframework/nf-debugger/pull/216)
 
 **Documentation and other chores:**
 
@@ -500,6 +507,10 @@
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.9.0-preview.11...v1.9.0-preview.12)
 
+**Implemented enhancements:**
+
+- Expose bootTime property [\#219](https://github.com/nanoframework/nf-debugger/pull/219)
+
 ## [v1.9.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.9.0-preview.11) (2020-02-26)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.8.1-preview.12...v1.9.0-preview.11)
@@ -514,12 +525,15 @@
 
 **Implemented enhancements:**
 
-- Expose bootTime property [\#219](https://github.com/nanoframework/nf-debugger/pull/219)
 - Major code refactoring [\#217](https://github.com/nanoframework/nf-debugger/pull/217)
 
 ## [v1.8.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.8.0-preview.11) (2020-02-24)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.7.0-preview.12...v1.8.0-preview.11)
+
+**Implemented enhancements:**
+
+- Update .NET framework to 4.7.2 [\#216](https://github.com/nanoframework/nf-debugger/pull/216)
 
 ## [v1.7.0-preview.12](https://github.com/nanoframework/nf-debugger/tree/v1.7.0-preview.12) (2020-02-13)
 
@@ -1030,7 +1044,6 @@
 **Implemented enhancements:**
 
 - Work on DebuggingResolveAssembly [\#19](https://github.com/nanoframework/nf-debugger/pull/19)
-- Work on debug component stability [\#17](https://github.com/nanoframework/nf-debugger/pull/17)
 
 ## [0.4.0-preview007](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview007) (2017-06-06)
 
@@ -1043,6 +1056,10 @@
 ## [0.4.0-preview006](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview006) (2017-06-05)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.3.0-preview005...0.4.0-preview006)
+
+**Implemented enhancements:**
+
+- Work on debug component stability [\#17](https://github.com/nanoframework/nf-debugger/pull/17)
 
 ## [0.3.0-preview005](https://github.com/nanoframework/nf-debugger/tree/0.3.0-preview005) (2017-05-30)
 
