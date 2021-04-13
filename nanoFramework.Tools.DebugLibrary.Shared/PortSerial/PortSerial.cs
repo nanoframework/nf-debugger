@@ -15,14 +15,14 @@ using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
-    public partial class SerialPort : PortMessageBase, IPort
+    public partial class PortSerial : PortMessageBase, IPort
     {
         // R/W operation cancellation tokens objects
         private CancellationTokenSource _readCancellationTokenSource;
         private CancellationTokenSource _sendCancellationTokenSource;
         private readonly object _readCancelLock = new object();
         private readonly object _sendCancelLock = new object();
-        private readonly SerialPortManager _portManager;
+        private readonly PortSerialManager _portManager;
 
         public SerialDevice Device { get; internal set; }
 
@@ -56,7 +56,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         /// <param name="deviceInfo">Device information of the device to be opened</param>
         /// <param name="deviceSelector">The AQS used to find this device</param>
-        public SerialPort(SerialPortManager portManager, NanoDevice<NanoSerialDevice> serialDevice)
+        public PortSerial(PortSerialManager portManager, NanoDevice<NanoSerialDevice> serialDevice)
         {
             _portManager = portManager ?? throw new ArgumentNullException(nameof(portManager));
             NanoDevice = serialDevice ?? throw new ArgumentNullException(nameof(serialDevice));
@@ -93,6 +93,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 var cts = new CancellationTokenSource();
                 cts.CancelAfter(1000);
+
 
                 Device = await SerialDevice.FromIdAsync(DeviceInformation.Id).AsTask(cts.Token).CancelAfterAsync(1000, cts);
 

@@ -5,7 +5,7 @@
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
-    public partial class SerialPort
+    public partial class PortSerial
     {
     }
 }

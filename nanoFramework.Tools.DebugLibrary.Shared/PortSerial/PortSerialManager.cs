@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
-    public partial class SerialPortManager : PortBase
+    public partial class PortSerialManager : PortBase
     {
         // dictionary with mapping between Serial device watcher and the device ID
         private readonly Dictionary<DeviceWatcher, string> _mapDeviceWatchersToDeviceSelector;
@@ -46,34 +46,16 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private readonly ConcurrentDictionary<string, CachedDeviceInfo> _devicesCache = new ConcurrentDictionary<string, CachedDeviceInfo>();
 
-        // A pointer back to the calling app.  This is needed to reach methods and events there 
-#if WINDOWS_UWP
-       public static Windows.UI.Xaml.Application CallerApp { get; set; }
-#else
-        public static System.Windows.Application CallerApp { get; set; }
-#endif
-
         public int BootTime { get; set; }
 
         /// <summary>
         /// Creates an Serial debug client
         /// </summary>
-        public SerialPortManager(object callerApp, bool startDeviceWatchers = true, List<string> portBlackList = null, int bootTime = 3000)
+        public PortSerialManager(bool startDeviceWatchers = true, List<string> portBlackList = null, int bootTime = 3000)
         {
             _mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, string>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
             _serialDevices = new List<SerialDeviceInformation>();
-
-            // set caller app property, if any
-            if (callerApp != null)
-            {
-
-#if WINDOWS_UWP
-                CallerApp = callerApp as Windows.UI.Xaml.Application;
-#else
-                CallerApp = callerApp as System.Windows.Application;
-#endif
-            };
 
             BootTime = bootTime;
 
@@ -313,7 +295,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // Create a new element for this device and...
                     var newNanoFrameworkDevice = new NanoDevice<NanoSerialDevice>();
                     newNanoFrameworkDevice.Device.DeviceInformation = new SerialDeviceInformation(deviceInformation, deviceSelector);
-                    newNanoFrameworkDevice.ConnectionPort = new SerialPort(this, newNanoFrameworkDevice);
+                    newNanoFrameworkDevice.ConnectionPort = new PortSerial(this, newNanoFrameworkDevice);
                     newNanoFrameworkDevice.Transport = TransportType.Serial;
 
                     await Task.Delay(100).ConfigureAwait(true);
@@ -558,7 +540,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         isKnownDevice = _devicesCache.TryGetValue(deviceId, out var cachedDevice);
 
                         // need to go through all the valid baud rates: 921600, 460800 and 115200.
-                        foreach (uint baudRate in SerialPort.ValidBaudRates)
+                        foreach (uint baudRate in PortSerial.ValidBaudRates)
                         {
                             if (isKnownDevice)
                             {
@@ -658,7 +640,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     device.SerialNumber = GetSerialNumber(deviceId);
 
                     // set valid baud rate from device detection
-                    ((SerialPort)device.ConnectionPort).BaudRate = serialDevice.BaudRate;
+                    ((PortSerial)device.ConnectionPort).BaudRate = serialDevice.BaudRate;
 
                     // store connection ID
                     device.ConnectionId = serialDevice.PortName;

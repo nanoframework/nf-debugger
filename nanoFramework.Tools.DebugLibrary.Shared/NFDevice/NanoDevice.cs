@@ -18,11 +18,7 @@ namespace nanoFramework.Tools.Debugger
         {
             Device = new T();
 
-            if (Device is NanoUsbDevice)
-            {
-                Transport = TransportType.Usb;
-            }
-            else if (Device is NanoSerialDevice)
+            if (Device is NanoSerialDevice)
             {
                 Transport = TransportType.Serial;
             }
@@ -78,11 +74,7 @@ namespace nanoFramework.Tools.Debugger
         /// <returns>True if operation is successful</returns>
         public async Task<bool> ConnectAsync()
         {
-            if (Device is NanoUsbDevice)
-            {
-                return await ConnectionPort.ConnectDeviceAsync();
-            }
-            else if (Device is NanoSerialDevice)
+            if (Device is NanoSerialDevice)
             {
                 return await ConnectionPort.ConnectDeviceAsync();
             }

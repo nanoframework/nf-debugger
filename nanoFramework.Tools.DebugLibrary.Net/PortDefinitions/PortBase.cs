@@ -12,22 +12,22 @@ namespace nanoFramework.Tools.Debugger
     {       
         public static PortBase CreateInstanceForSerial(string displayName, List<string> portBlackList = null)
         {
-            return new SerialPortManager(null, true, portBlackList);
+            return new PortSerialManager(true, portBlackList);
         }
 
         public static PortBase CreateInstanceForSerial(string displayName, bool startDeviceWatchers = true, List<string> portBlackList = null)
         {
-            return new SerialPortManager(null, startDeviceWatchers, portBlackList);
+            return new PortSerialManager(startDeviceWatchers, portBlackList);
         }
 
-        public static PortBase CreateInstanceForSerial(string displayName, object callerApp = null, bool startDeviceWatchers = true, int bootTime = 1000)
+        public static PortBase CreateInstanceForSerial(string displayName, bool startDeviceWatchers = true, int bootTime = 1000)
         {
-            return new SerialPortManager(callerApp, startDeviceWatchers, null, bootTime);
+            return new PortSerialManager(startDeviceWatchers, null, bootTime);
         }
 
-        public static PortBase CreateInstanceForSerial(string displayName, object callerApp = null, bool startDeviceWatchers = true, List<string> portBlackList = null, int bootTime = 1000)
+        public static PortBase CreateInstanceForSerial(string displayName, bool startDeviceWatchers = true, List<string> portBlackList = null, int bootTime = 1000)
         {
-            return new SerialPortManager(callerApp, startDeviceWatchers, portBlackList, bootTime);
+            return new PortSerialManager(startDeviceWatchers, portBlackList, bootTime);
         }
     }
 }
