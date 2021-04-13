@@ -1,8 +1,8 @@
 trigger:
   branches:
-    include: [main, master, develop, "release-*" ]
+    include: [main, develop, "release-*" ]
   paths:
-    exclude: ["*.md", .gitignore]
+    exclude: [README.md, LICENSE.md, CHANGELOG.md, version.json, "*.md", .gitignore]
   tags:
     include: ["v*"]
 
@@ -44,28 +44,27 @@ steps:
 
     if($env:Build_Reason -eq 'PullRequest')
     {
-      # PR build, nothing interesting in commit message
+        # PR build, nothing interesting in commit message
+        Write-Host "Build from PR"
     }
     else
     {
-      # build is not from a PR
+        # build NOT from PR
+        Write-Host "Build NOT from PR, commit ID: $env:Build_SourceVersion"
+    
+        # get PR associate with commit
+        $prUrl = "https://api.github.com/repos/$env:Build_Repository_Name/commits/$env:Build_SourceVersion/pulls"
+        $commit = Invoke-RestMethod -Uri $prUrl -ContentType "application/json" -Headers @{"Accept"="application/vnd.github.groot-preview+json"} -Method GET
 
-      # get commit ID
-      $commitId = git rev-parse HEAD
-      
-      # get PR associate with commit
-      $prUrl = "https://api.github.com/repos/nanoframework/nf-debugger/commits/$commitId/pulls"
-      $commit = Invoke-RestMethod -Uri $prUrl -ContentType "application/json" -Headers @{"Accept"="application/vnd.github.groot-preview+json"} -Method GET
-
-      if($commit -ne $null)
-      {
-        # there is a PR, check labels
-        $updateDependents = $commit.labels | where {$_.Name -eq 'CI: Update Dependents'}
-        if($updateDependents -ne $null)
+        if($commit -ne $null)
         {
-          $update = $true
+            # there is a PR, check labels
+            $updateDependents = $commit.labels | where {$_.Name -eq 'CI: Update Dependents'}
+            if($updateDependents -ne $null)
+            {
+                $update = $true
+            }
         }
-      }
     }
 
     # set variable to foward to jobs
@@ -153,21 +152,22 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-        $MyNuGetVersion = $env:NBGV_NuGetPackageVersion -replace "\-g$env:NBGV_GitCommitIdShort", ""
+      $MyNuGetVersion = $env:NBGV_NuGetPackageVersion -replace "\-g$env:NBGV_GitCommitIdShort", ""
 
-        # replace preview with alpha if this is a PR build
-        if($env:Build_Reason -eq 'PullRequest')
-        {
+      # replace preview with alpha if this is a PR build
+      if($env:Build_Reason -eq 'PullRequest')
+      {
           $MyNuGetVersion = $MyNuGetVersion -replace "preview", "alpha"
-        }
-        if ($env:System_PullRequest_SourceBranch -like 'release*')
-        {
+      }
+
+      if ($env:System_PullRequest_SourceBranch -like 'release*')
+      {
           $MyNuGetVersion = $MyNuGetVersion + "-rc." + $env:NBGV_VersionHeight
-        }
+      }
 
-        Write-Host "NuGet build number is $MyNuGetVersion"
+      Write-Host "NuGet build number is $MyNuGetVersion"
 
-        Write-Host "$("##vso[task.setvariable variable=MY_NUGET_VERSION]")$MyNuGetVersion"
+      Write-Host "$("##vso[task.setvariable variable=MY_NUGET_VERSION]")$MyNuGetVersion"
 
 # update could build number (only possible if this is not a PR from a fork)
 - task: PowerShell@2
@@ -219,17 +219,17 @@ steps:
 
 # generate change log
 - powershell: |
-     gem install github_changelog_generator --quiet --no-document
-     # need to call it passing both cache options with full path otherwise it won't work
-     github_changelog_generator --token $(GitHubToken) --cache-log  $env:AGENT_TEMPDIRECTORY\github-changelog-logger.log --cache-file $env:AGENT_TEMPDIRECTORY\github-changelog-http-cache
+    gem install github_changelog_generator --quiet --no-document
+    # need to call it passing both cache options with full path otherwise it won't work
+    github_changelog_generator --token $(GitHubToken) --cache-log  $env:AGENT_TEMPDIRECTORY\github-changelog-logger.log --cache-file $env:AGENT_TEMPDIRECTORY\github-changelog-http-cache
   condition: and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), not( startsWith(variables['Build.SourceBranchName'], 'master') ), not( contains(variables['Build.SourceBranchName'], 'update-dependencies') ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Generate change log
 
 # generate change log including future version
 - powershell: |
-     gem install github_changelog_generator --quiet --no-document
-     # need to call it passing both cache options with full path otherwise it won't work
-     github_changelog_generator --token $(GitHubToken) --cache-log  $env:AGENT_TEMPDIRECTORY\github-changelog-logger.log --cache-file $env:AGENT_TEMPDIRECTORY\github-changelog-http-cache --future-release v$env:MY_NUGET_VERSION
+    gem install github_changelog_generator --quiet --no-document
+    # need to call it passing both cache options with full path otherwise it won't work
+    github_changelog_generator --token $(GitHubToken) --cache-log  $env:AGENT_TEMPDIRECTORY\github-changelog-logger.log --cache-file $env:AGENT_TEMPDIRECTORY\github-changelog-http-cache --future-release v$env:MY_NUGET_VERSION
   condition: and( succeeded(), and ( ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), startsWith(variables['Build.SourceBranchName'], 'master'), not( contains(variables['Build.SourceBranchName'], 'update-dependencies') ) ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Generate change log
 
@@ -249,17 +249,17 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-        git add CHANGELOG.md
-        git commit -m "Update CHANGELOG for v$(NBGV_Version)" -m"***NO_CI***"
+      git add CHANGELOG.md
+      git commit -m "Update CHANGELOG for v$(NBGV_Version)" -m"***NO_CI***"
 
-        git config user.email 'nanoframework@outlook.com'
-        git config user.name 'nfbot'
-        
-        # compute authorization header in format "AUTHORIZATION: basic 'encoded token'"
-        # 'encoded token' is the Base64 of the string "nfbot:personal-token"
-        $auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$(GitHubToken)"))))"
+      git config user.email 'nanoframework@outlook.com'
+      git config user.name 'nfbot'
+      
+      # compute authorization header in format "AUTHORIZATION: basic 'encoded token'"
+      # 'encoded token' is the Base64 of the string "nfbot:personal-token"
+      $auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$(GitHubToken)"))))"
 
-        git -c http.extraheader="AUTHORIZATION: $auth" push origin "HEAD:$(Build.SourceBranchName)"
+      git -c http.extraheader="AUTHORIZATION: $auth" push origin "HEAD:$(Build.SourceBranchName)"
 
 - task: CopyFiles@1
   condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
