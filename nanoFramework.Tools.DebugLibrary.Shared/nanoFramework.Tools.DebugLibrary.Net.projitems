@@ -74,7 +74,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\NanoSerialDevice.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\NanoUserExitException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NFDevice\SrecParseResult.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)NFDevice\NanoUsbDevice.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortDefinitions\IPort.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortDefinitions\PortMessageBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortDefinitions\PortBase.cs" />
@@ -96,11 +95,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Runtime\RuntimeValue_ValueType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SRecordFile.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SupportedUSBDevices\STM_Discovery4.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PortUSB\EventHandlerForUsbDevice.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PortUSB\UsbPort.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PortUSB\UsbDeviceInformation.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PortUSB\UsbDeviceProperties.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PortUSB\UsbDeviceRequestType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Commands.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\ConnectionSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Controller.cs" />

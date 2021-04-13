@@ -13,10 +13,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Security.Cryptography;
-using Windows.Security.Cryptography.Core;
-using Windows.Storage;
-using Windows.Storage.Streams;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -569,18 +565,18 @@ namespace nanoFramework.Tools.Debugger
             return true;
         }
 
-        public async Task<bool> DeployUpdateAsync(StorageFile comprFilePath, CancellationToken cancellationToken, IProgress<string> progress = null)
-        {
-            if (DebugEngine.IsConnectedTonanoCLR)
-            {
-                if (await DeployMFUpdateAsync(comprFilePath, cancellationToken, progress))
-                {
-                    return true;
-                }
-            }
+        //public async Task<bool> DeployUpdateAsync(StorageFile comprFilePath, CancellationToken cancellationToken, IProgress<string> progress = null)
+        //{
+        //    if (DebugEngine.IsConnectedTonanoCLR)
+        //    {
+        //        if (await DeployMFUpdateAsync(comprFilePath, cancellationToken, progress))
+        //        {
+        //            return true;
+        //        }
+        //    }
 
-            return false;
-        }
+        //    return false;
+        //}
 
         /// <summary>
         /// Attempts to deploy a binary (.bin) file to the connected nanoFramework device. 
@@ -875,497 +871,497 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        private async Task<bool> DeployMFUpdateAsync(StorageFile zipFile, CancellationToken cancellationToken, IProgress<string> progress = null)
-        {
-            if (zipFile.IsAvailable)
-            {
-                byte[] packet = new byte[DebugEngine.WireProtocolPacketSize];
-                try
-                {
-                    int handle = -1;
-                    int idx = 0;
-
-                    Windows.Storage.FileProperties.BasicProperties fileInfo = await zipFile.GetBasicPropertiesAsync();
-                    uint numPkts = (uint)(fileInfo.Size + DebugEngine.WireProtocolPacketSize - 1) / DebugEngine.WireProtocolPacketSize;
-
-                    byte[] hashData = Encoding.UTF8.GetBytes(zipFile.Name + fileInfo.DateModified.ToString());
-
-                    uint updateId = CRC.ComputeCRC(hashData, 0, hashData.Length, 0);
-                    uint imageCRC = 0;
-
-                    byte[] sig = null;
-
-                    //Debug.WriteLine(updateId);
-
-                    handle = DebugEngine.StartUpdate("NetMF", 4, 4, updateId, 0, 0, (uint)fileInfo.Size, DebugEngine.WireProtocolPacketSize, 0);
-                    if (handle > -1)
-                    {
-                        uint authType;
-                        IAsyncResult iar = null;
-
-                        // perform request
-                        (byte[] Response, bool Success) resp = DebugEngine.UpdateAuthCommand(handle, 1, null);
-
-                        // check result
-                        if (!resp.Success || resp.Response.Length < 4) return false;
-
-
-                        using (MemoryStream ms = new MemoryStream(resp.Item1))
-                        using (BinaryReader br = new BinaryReader(ms))
-                        {
-                            authType = br.ReadUInt32();
-                        }
-
-
-                        byte[] pubKey = null;
-
-                        // FIXME
-                        //if (m_serverCert != null)
-                        //{
-
-                        //    RSACryptoServiceProvider rsa = m_serverCert.PrivateKey as RSACryptoServiceProvider;
-
-                        //    if (rsa != null)
-                        //    {
-                        //        pubKey = rsa.ExportCspBlob(false);
-                        //    }
-                        //}
-
-                        if (!DebugEngine.UpdateAuthenticate(handle, pubKey))
-                        {
-                            return false;
-                        }
-
-                        // FIXME
-                        //if (authType == 1 && m_serverCert != null)
-                        //{
-                        //    iar = await DebugEngine.UpgradeConnectionToSsl_Begin(m_serverCert, m_requireClientCert);
-
-                        //    if (0 == WaitHandle.WaitAny(new WaitHandle[] { iar.AsyncWaitHandle, EventCancel }, 10000))
-                        //    {
-                        //        try
-                        //        {
-                        //            if (!m_eng.UpgradeConnectionToSSL_End(iar))
-                        //            {
-                        //                m_eng.Dispose();
-                        //                m_eng = null;
-                        //                return false;
-                        //            }
-                        //        }
-                        //        catch
-                        //        {
-                        //            m_eng.Dispose();
-                        //            m_eng = null;
-                        //            return false;
-                        //        }
-                        //    }
-                        //    else
-                        //    {
-                        //        return false;
-                        //    }
-                        //}
-
-                        // FIXME
-                        //RSAPKCS1SignatureFormatter alg = null;
-                        object alg = null;
-                        HashAlgorithmProvider hash = HashAlgorithmProvider.OpenAlgorithm(HashAlgorithmNames.Sha1);
-                        byte[] hashValue = null;
-
-                        try
-                        {
-                            if (m_serverCert != null)
-                            {
-                                //alg = new RSAPKCS1SignatureFormatter(m_serverCert.PrivateKey);
-                                //alg.SetHashAlgorithm("SHA1");
-                                hash = HashAlgorithmProvider.OpenAlgorithm("SHA1");
-                                hashValue = new byte[hash.HashLength / 8];
-                            }
-                        }
-                        catch
-                        {
-                        }
-
-                        IBuffer buffer = await FileIO.ReadBufferAsync(zipFile);
-                        using (DataReader dataReader = DataReader.FromBuffer(buffer))
-                        {
-                            dataReader.ReadBytes(packet);
-
-                            uint crc = CRC.ComputeCRC(packet, 0, packet.Length, 0);
-
-                            if (!DebugEngine.AddPacket(handle, (uint)idx++, packet, CRC.ComputeCRC(packet, 0, packet.Length, 0))) return false;
-
-                            imageCRC = CRC.ComputeCRC(packet, 0, packet.Length, imageCRC);
-
-                            progress?.Report($"Deploying {idx}...");
-                        }
-
-                        if (hash != null)
-                        {
-                            buffer = await FileIO.ReadBufferAsync(zipFile);
-                                             // hash it
-                            IBuffer hashed = hash.HashData(buffer);
-                            CryptographicBuffer.CopyToByteArray(hashed, out sig);
-                        }
-
-                        if (alg != null)
-                        {
-                            //sig = alg.CreateSignature(hash);
-                            //CryptographicBuffer.CopyToByteArray(sig)
-                        }
-                        else
-                        {
-                            sig = new byte[4];
-                            using (MemoryStream ms = new MemoryStream(sig))
-                            using (BinaryWriter br = new BinaryWriter(ms))
-                            {
-                                br.Write(imageCRC);
-                            }
-                        }
-
-                        if (DebugEngine.InstallUpdate(handle, sig))
-                        {
-                            return true;
-                        }
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            return false;
-        }
-
-        private async Task<Tuple<uint, bool>> DeploySRECAsync(StorageFile srecFile, CancellationToken cancellationToken)
-        {
-            m_srecHash.Clear();
-            m_execSrecHash.Clear();
-
-            // create .EXT file for SREC file
-            StorageFolder folder = await srecFile.GetParentAsync();
-
-            int m_totalSrecs = 0;
-            uint m_minSrecAddr = uint.MaxValue;
-            uint m_maxSrecAddr = 0;
-
-            if (srecFile.IsAvailable)
-            {
-                // check is EXT file exists, if yes delete it
-                StorageFile srecExtFile = await folder.TryGetItemAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext") as StorageFile;
-                if (srecExtFile != null)
-                {
-                    await srecExtFile.DeleteAsync();
-                }
-
-                if (await PreProcesSrecAsync(srecFile))
-                {
-                    srecExtFile = await folder.TryGetItemAsync(srecFile.Name.Replace(srecFile.FileType, "") + ".ext") as StorageFile;
-                }
-
-                // check if cancellation was requested 
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    new Tuple<uint, bool>(0, false);
-                }
-
-                SrecParseResult parsedFile = await ParseSrecFileAsync(srecExtFile);
-
-                try
-                {
-                    int sleepTime = 5000;
-                    UInt32 imageAddr = 0xFFFFFFFF;
-
-                    m_totalSrecs = parsedFile.Records.Count;
-
-                    //m_evtMicroBooterStart.Set();
-                    //m_evtMicroBooter.Reset();
-                    //m_evtMicroBooterError.Reset();
-
-                    while (parsedFile.Records.Count > 0)
-                    {
-                        // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            new Tuple<uint, bool>(0, false);
-                        }
-
-                        List<uint> remove = new List<uint>();
-
-                        const int c_MaxPipeline = 4;
-                        int pipe = c_MaxPipeline;
-
-                        uint[] keys = new uint[parsedFile.Records.Count];
-
-                        parsedFile.Records.Keys.CopyTo(keys, 0);
-
-                        Array.Sort(keys);
-
-                        if (keys[0] < imageAddr) imageAddr = keys[0];
-
-                        foreach (uint key in keys)
-                        {
-                            // check if cancellation was requested 
-                            if (cancellationToken.IsCancellationRequested)
-                            {
-                                new Tuple<uint, bool>(0, false);
-                            }
-
-                            if (key < m_minSrecAddr) m_minSrecAddr = key;
-                            if (key > m_maxSrecAddr) m_maxSrecAddr = key;
-                            if (m_srecHash.ContainsKey(key))
-                            {
-                                remove.Add(key);
-                                continue;
-                            }
-
-                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(true);
-
-                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes(parsedFile.Records[key]), TimeSpan.FromMilliseconds(20000), cancellationToken).ConfigureAwait(true);
-
-                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(true);
-
-                            if (pipe-- <= 0)
-                            {
-                                //m_evtMicroBooter.WaitOne(sleepTime);
-                                pipe = c_MaxPipeline;
-                            }
-                        }
-
-                        int cnt = remove.Count;
-
-                        if (cnt > 0)
-                        {
-                            for (int i = 0; i < cnt; i++)
-                            {
-                                parsedFile.Records.Remove(remove[i]);
-                            }
-                        }
-                    }
-
-                    if (imageAddr != 0)
-                    {
-                        string basefile = Path.GetFileNameWithoutExtension(srecFile.Name);
-
-                        // srecfile might be .bin.ext (for srec updates)
-                        if (!string.IsNullOrEmpty(Path.GetExtension(basefile)))
-                        {
-                            basefile = Path.GetFileNameWithoutExtension(basefile);
-                        }
-
-                        string path = folder.Path;
-                        string binFilePath = "";
-                        string symdefFilePath = "";
-
-                        if (folder.Path.ToLower().EndsWith("\\nanoCLR.hex"))
-                        {
-                            binFilePath = Path.GetDirectoryName(path) + "\\nanoCLR.bin\\" + basefile;
-                            symdefFilePath = Path.GetDirectoryName(path) + "\\nanoCLR.symdefs";
-                        }
-                        else
-                        {
-                            binFilePath = Path.GetDirectoryName(srecFile.Path) + "\\" + basefile + ".bin";
-                            symdefFilePath = Path.GetDirectoryName(srecFile.Path) + "\\" + basefile + ".symdefs";
-                        }
-
-                        StorageFile binFile = await folder.TryGetItemAsync(binFilePath) as StorageFile;
-
-                        StorageFile symdefFile = await folder.TryGetItemAsync(symdefFilePath) as StorageFile;
-
-                        // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            new Tuple<uint, bool>(0, false);
-                        }
-
-                        // send image crc
-                        if (binFile != null && symdefFile != null)
-                        {
-                            Windows.Storage.FileProperties.BasicProperties fileInfo = await binFile.GetBasicPropertiesAsync();
-
-                            UInt32 imageCRC = 0;
-
-                            // read lines from SREC file
-                            IList<string> textLines = await FileIO.ReadLinesAsync(symdefFile);
-
-                            foreach (string line in textLines)
-                            {
-                                // check if cancellation was requested 
-                                if (cancellationToken.IsCancellationRequested)
-                                {
-                                    new Tuple<uint, bool>(0, false);
-                                }
-
-                                if (line.Contains("LOAD_IMAGE_CRC"))
-                                {
-                                    int idxEnd = line.IndexOf(' ', 2);
-                                    imageCRC = UInt32.Parse(line.Substring(2, idxEnd - 2), System.Globalization.NumberStyles.HexNumber);
-                                }
-                            }
-
-                            m_execSrecHash[parsedFile.EntryPoint] = string.Format("<CRC>{0:X08},{1:X08},{2:X08},{3:X08}</CRC>\n", imageAddr, fileInfo.Size, imageCRC, parsedFile.EntryPoint);
-                        }
-                    }
-
-                    return new Tuple<uint, bool>(parsedFile.EntryPoint, true);
-                }
-                finally
-                {
-                    //m_evtMicroBooterStart.Reset();
-                }
-            }
-
-            return new Tuple<uint, bool>(0, false);
-        }
-
-        private async Task<SrecParseResult> ParseSrecFileAsync(StorageFile srecFile)
-        {
-            SrecParseResult reply = new SrecParseResult();
-
-            Dictionary<uint, string> recs = new Dictionary<uint, string>();
-
-            try
-            {
-                int total = 0;
-
-                IList<string> textLines = await FileIO.ReadLinesAsync(srecFile);
-
-                foreach (string line in textLines)
-                {
-                    string addr = line.Substring(4, 8);
-
-                    // we only support s7, s3 records
-                    if (line.ToLower().StartsWith("s7"))
-                    {
-                        reply.EntryPoint = uint.Parse(addr, System.Globalization.NumberStyles.HexNumber);
-                    }
-                    else if (line.ToLower().StartsWith("s3"))
-                    {
-                        total += line.Length - 14;
-                        reply.Records[uint.Parse(addr, System.Globalization.NumberStyles.HexNumber)] = line;
-                    }
-                }
-
-                reply.ImageSize = (uint)total;
-            }
-            catch
-            {
-                return null;
-            }
-
-            return reply;
-        }
-
-        private async Task<bool> PreProcesSrecAsync(StorageFile srecFile)
-        {
-            if (!srecFile.IsAvailable) return false;
-
-            // create .EXT file for SREC file
-            StorageFolder folder = await srecFile.GetParentAsync();
-
-            try
-            {
-                // read lines from SREC file
-                IList<string> textLines = await FileIO.ReadLinesAsync(srecFile);
-
-                StorageFile srecExtFile = await folder.CreateFileAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext", CreationCollisionOption.ReplaceExisting);
-
-                const int c_MaxRecords = 8;
-                int iRecord = 0;
-                int currentCRC = 0;
-                int iDataLength = 0;
-                string s7rec = "";
-                StringBuilder sb = new StringBuilder();
-
-                foreach (string line in textLines)
-                {
-                    // we only support s7, s3 records
-                    if (line.ToLower().StartsWith("s7"))
-                    {
-                        s7rec = line;
-                        continue;
-                    }
-
-                    if (!line.ToLower().StartsWith("s3")) continue;
-
-                    string crcData;
-
-                    if (iRecord == 0)
-                    {
-                        crcData = line.Substring(4, line.Length - 6);
-                    }
-                    else
-                    {
-                        crcData = line.Substring(12, line.Length - 14);
-                    }
-
-                    iDataLength += crcData.Length / 2; // 2 chars per byte
-
-                    if (iRecord == 0)
-                    {
-                        sb.Append(line.Substring(0, 2));
-                    }
-                    sb.Append(crcData);
-
-                    iRecord++;
-
-                    for (int i = 0; i < crcData.Length - 1; i += 2)
-                    {
-                        currentCRC += Byte.Parse(crcData.Substring(i, 2), System.Globalization.NumberStyles.HexNumber);
-                    }
-
-                    if (iRecord == c_MaxRecords)
-                    {
-                        iDataLength += 1; // crc
-
-                        sb = sb.Insert(2, string.Format("{0:X02}", iDataLength));
-
-                        currentCRC += (iDataLength & 0xFF) + ((iDataLength >> 8) & 0xFF);
-
-                        // write crc
-                        sb.Append(string.Format("{0:X02}", (0xFF - (0xFF & currentCRC))));
-
-                        await FileIO.WriteTextAsync(srecExtFile, sb.ToString());
-
-                        currentCRC = 0;
-                        iRecord = 0;
-                        iDataLength = 0;
-                        sb.Length = 0;
-                    }
-                }
-
-                if (iRecord != 0)
-                {
-                    iDataLength += 1; // crc
-
-                    sb = sb.Insert(2, string.Format("{0:X02}", iDataLength));
-
-                    currentCRC += (iDataLength & 0xFF) + ((iDataLength >> 8) & 0xFF);
-
-                    // write crc
-                    sb.Append(string.Format("{0:X02}", (0xFF - (0xFF & currentCRC))));
-
-                    await FileIO.WriteTextAsync(srecExtFile, sb.ToString());
-                }
-
-                if (s7rec != "")
-                {
-                    await FileIO.WriteTextAsync(srecExtFile, s7rec);
-                }
-            }
-            catch
-            {
-                StorageFile thisFile = await folder.TryGetItemAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext") as StorageFile;
-
-                if (thisFile != null)
-                {
-                    await thisFile.DeleteAsync();
-                }
-
-                return false;
-            }
-
-            return true;
-        }
+        //private async Task<bool> DeployMFUpdateAsync(StorageFile zipFile, CancellationToken cancellationToken, IProgress<string> progress = null)
+        //{
+        //    if (zipFile.IsAvailable)
+        //    {
+        //        byte[] packet = new byte[DebugEngine.WireProtocolPacketSize];
+        //        try
+        //        {
+        //            int handle = -1;
+        //            int idx = 0;
+
+        //            Windows.Storage.FileProperties.BasicProperties fileInfo = await zipFile.GetBasicPropertiesAsync();
+        //            uint numPkts = (uint)(fileInfo.Size + DebugEngine.WireProtocolPacketSize - 1) / DebugEngine.WireProtocolPacketSize;
+
+        //            byte[] hashData = Encoding.UTF8.GetBytes(zipFile.Name + fileInfo.DateModified.ToString());
+
+        //            uint updateId = CRC.ComputeCRC(hashData, 0, hashData.Length, 0);
+        //            uint imageCRC = 0;
+
+        //            byte[] sig = null;
+
+        //            //Debug.WriteLine(updateId);
+
+        //            handle = DebugEngine.StartUpdate("NetMF", 4, 4, updateId, 0, 0, (uint)fileInfo.Size, DebugEngine.WireProtocolPacketSize, 0);
+        //            if (handle > -1)
+        //            {
+        //                uint authType;
+        //                IAsyncResult iar = null;
+
+        //                // perform request
+        //                (byte[] Response, bool Success) resp = DebugEngine.UpdateAuthCommand(handle, 1, null);
+
+        //                // check result
+        //                if (!resp.Success || resp.Response.Length < 4) return false;
+
+
+        //                using (MemoryStream ms = new MemoryStream(resp.Item1))
+        //                using (BinaryReader br = new BinaryReader(ms))
+        //                {
+        //                    authType = br.ReadUInt32();
+        //                }
+
+
+        //                byte[] pubKey = null;
+
+        //                // FIXME
+        //                //if (m_serverCert != null)
+        //                //{
+
+        //                //    RSACryptoServiceProvider rsa = m_serverCert.PrivateKey as RSACryptoServiceProvider;
+
+        //                //    if (rsa != null)
+        //                //    {
+        //                //        pubKey = rsa.ExportCspBlob(false);
+        //                //    }
+        //                //}
+
+        //                if (!DebugEngine.UpdateAuthenticate(handle, pubKey))
+        //                {
+        //                    return false;
+        //                }
+
+        //                // FIXME
+        //                //if (authType == 1 && m_serverCert != null)
+        //                //{
+        //                //    iar = await DebugEngine.UpgradeConnectionToSsl_Begin(m_serverCert, m_requireClientCert);
+
+        //                //    if (0 == WaitHandle.WaitAny(new WaitHandle[] { iar.AsyncWaitHandle, EventCancel }, 10000))
+        //                //    {
+        //                //        try
+        //                //        {
+        //                //            if (!m_eng.UpgradeConnectionToSSL_End(iar))
+        //                //            {
+        //                //                m_eng.Dispose();
+        //                //                m_eng = null;
+        //                //                return false;
+        //                //            }
+        //                //        }
+        //                //        catch
+        //                //        {
+        //                //            m_eng.Dispose();
+        //                //            m_eng = null;
+        //                //            return false;
+        //                //        }
+        //                //    }
+        //                //    else
+        //                //    {
+        //                //        return false;
+        //                //    }
+        //                //}
+
+        //                // FIXME
+        //                //RSAPKCS1SignatureFormatter alg = null;
+        //                object alg = null;
+        //                HashAlgorithmProvider hash = HashAlgorithmProvider.OpenAlgorithm(HashAlgorithmNames.Sha1);
+        //                byte[] hashValue = null;
+
+        //                try
+        //                {
+        //                    if (m_serverCert != null)
+        //                    {
+        //                        //alg = new RSAPKCS1SignatureFormatter(m_serverCert.PrivateKey);
+        //                        //alg.SetHashAlgorithm("SHA1");
+        //                        hash = HashAlgorithmProvider.OpenAlgorithm("SHA1");
+        //                        hashValue = new byte[hash.HashLength / 8];
+        //                    }
+        //                }
+        //                catch
+        //                {
+        //                }
+
+        //                IBuffer buffer = await FileIO.ReadBufferAsync(zipFile);
+        //                using (DataReader dataReader = DataReader.FromBuffer(buffer))
+        //                {
+        //                    dataReader.ReadBytes(packet);
+
+        //                    uint crc = CRC.ComputeCRC(packet, 0, packet.Length, 0);
+
+        //                    if (!DebugEngine.AddPacket(handle, (uint)idx++, packet, CRC.ComputeCRC(packet, 0, packet.Length, 0))) return false;
+
+        //                    imageCRC = CRC.ComputeCRC(packet, 0, packet.Length, imageCRC);
+
+        //                    progress?.Report($"Deploying {idx}...");
+        //                }
+
+        //                if (hash != null)
+        //                {
+        //                    buffer = await FileIO.ReadBufferAsync(zipFile);
+        //                                     // hash it
+        //                    IBuffer hashed = hash.HashData(buffer);
+        //                    CryptographicBuffer.CopyToByteArray(hashed, out sig);
+        //                }
+
+        //                if (alg != null)
+        //                {
+        //                    //sig = alg.CreateSignature(hash);
+        //                    //CryptographicBuffer.CopyToByteArray(sig)
+        //                }
+        //                else
+        //                {
+        //                    sig = new byte[4];
+        //                    using (MemoryStream ms = new MemoryStream(sig))
+        //                    using (BinaryWriter br = new BinaryWriter(ms))
+        //                    {
+        //                        br.Write(imageCRC);
+        //                    }
+        //                }
+
+        //                if (DebugEngine.InstallUpdate(handle, sig))
+        //                {
+        //                    return true;
+        //                }
+        //            }
+        //        }
+        //        catch
+        //        {
+        //        }
+        //    }
+
+        //    return false;
+        //}
+
+        //private async Task<Tuple<uint, bool>> DeploySRECAsync(StorageFile srecFile, CancellationToken cancellationToken)
+        //{
+        //    m_srecHash.Clear();
+        //    m_execSrecHash.Clear();
+
+        //    // create .EXT file for SREC file
+        //    StorageFolder folder = await srecFile.GetParentAsync();
+
+        //    int m_totalSrecs = 0;
+        //    uint m_minSrecAddr = uint.MaxValue;
+        //    uint m_maxSrecAddr = 0;
+
+        //    if (srecFile.IsAvailable)
+        //    {
+        //        // check is EXT file exists, if yes delete it
+        //        StorageFile srecExtFile = await folder.TryGetItemAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext") as StorageFile;
+        //        if (srecExtFile != null)
+        //        {
+        //            await srecExtFile.DeleteAsync();
+        //        }
+
+        //        if (await PreProcesSrecAsync(srecFile))
+        //        {
+        //            srecExtFile = await folder.TryGetItemAsync(srecFile.Name.Replace(srecFile.FileType, "") + ".ext") as StorageFile;
+        //        }
+
+        //        // check if cancellation was requested 
+        //        if (cancellationToken.IsCancellationRequested)
+        //        {
+        //            new Tuple<uint, bool>(0, false);
+        //        }
+
+        //        SrecParseResult parsedFile = await ParseSrecFileAsync(srecExtFile);
+
+        //        try
+        //        {
+        //            int sleepTime = 5000;
+        //            UInt32 imageAddr = 0xFFFFFFFF;
+
+        //            m_totalSrecs = parsedFile.Records.Count;
+
+        //            //m_evtMicroBooterStart.Set();
+        //            //m_evtMicroBooter.Reset();
+        //            //m_evtMicroBooterError.Reset();
+
+        //            while (parsedFile.Records.Count > 0)
+        //            {
+        //                // check if cancellation was requested 
+        //                if (cancellationToken.IsCancellationRequested)
+        //                {
+        //                    new Tuple<uint, bool>(0, false);
+        //                }
+
+        //                List<uint> remove = new List<uint>();
+
+        //                const int c_MaxPipeline = 4;
+        //                int pipe = c_MaxPipeline;
+
+        //                uint[] keys = new uint[parsedFile.Records.Count];
+
+        //                parsedFile.Records.Keys.CopyTo(keys, 0);
+
+        //                Array.Sort(keys);
+
+        //                if (keys[0] < imageAddr) imageAddr = keys[0];
+
+        //                foreach (uint key in keys)
+        //                {
+        //                    // check if cancellation was requested 
+        //                    if (cancellationToken.IsCancellationRequested)
+        //                    {
+        //                        new Tuple<uint, bool>(0, false);
+        //                    }
+
+        //                    if (key < m_minSrecAddr) m_minSrecAddr = key;
+        //                    if (key > m_maxSrecAddr) m_maxSrecAddr = key;
+        //                    if (m_srecHash.ContainsKey(key))
+        //                    {
+        //                        remove.Add(key);
+        //                        continue;
+        //                    }
+
+        //                    await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(true);
+
+        //                    await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes(parsedFile.Records[key]), TimeSpan.FromMilliseconds(20000), cancellationToken).ConfigureAwait(true);
+
+        //                    await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(true);
+
+        //                    if (pipe-- <= 0)
+        //                    {
+        //                        //m_evtMicroBooter.WaitOne(sleepTime);
+        //                        pipe = c_MaxPipeline;
+        //                    }
+        //                }
+
+        //                int cnt = remove.Count;
+
+        //                if (cnt > 0)
+        //                {
+        //                    for (int i = 0; i < cnt; i++)
+        //                    {
+        //                        parsedFile.Records.Remove(remove[i]);
+        //                    }
+        //                }
+        //            }
+
+        //            if (imageAddr != 0)
+        //            {
+        //                string basefile = Path.GetFileNameWithoutExtension(srecFile.Name);
+
+        //                // srecfile might be .bin.ext (for srec updates)
+        //                if (!string.IsNullOrEmpty(Path.GetExtension(basefile)))
+        //                {
+        //                    basefile = Path.GetFileNameWithoutExtension(basefile);
+        //                }
+
+        //                string path = folder.Path;
+        //                string binFilePath = "";
+        //                string symdefFilePath = "";
+
+        //                if (folder.Path.ToLower().EndsWith("\\nanoCLR.hex"))
+        //                {
+        //                    binFilePath = Path.GetDirectoryName(path) + "\\nanoCLR.bin\\" + basefile;
+        //                    symdefFilePath = Path.GetDirectoryName(path) + "\\nanoCLR.symdefs";
+        //                }
+        //                else
+        //                {
+        //                    binFilePath = Path.GetDirectoryName(srecFile.Path) + "\\" + basefile + ".bin";
+        //                    symdefFilePath = Path.GetDirectoryName(srecFile.Path) + "\\" + basefile + ".symdefs";
+        //                }
+
+        //                StorageFile binFile = await folder.TryGetItemAsync(binFilePath) as StorageFile;
+
+        //                StorageFile symdefFile = await folder.TryGetItemAsync(symdefFilePath) as StorageFile;
+
+        //                // check if cancellation was requested 
+        //                if (cancellationToken.IsCancellationRequested)
+        //                {
+        //                    new Tuple<uint, bool>(0, false);
+        //                }
+
+        //                // send image crc
+        //                if (binFile != null && symdefFile != null)
+        //                {
+        //                    Windows.Storage.FileProperties.BasicProperties fileInfo = await binFile.GetBasicPropertiesAsync();
+
+        //                    UInt32 imageCRC = 0;
+
+        //                    // read lines from SREC file
+        //                    IList<string> textLines = await FileIO.ReadLinesAsync(symdefFile);
+
+        //                    foreach (string line in textLines)
+        //                    {
+        //                        // check if cancellation was requested 
+        //                        if (cancellationToken.IsCancellationRequested)
+        //                        {
+        //                            new Tuple<uint, bool>(0, false);
+        //                        }
+
+        //                        if (line.Contains("LOAD_IMAGE_CRC"))
+        //                        {
+        //                            int idxEnd = line.IndexOf(' ', 2);
+        //                            imageCRC = UInt32.Parse(line.Substring(2, idxEnd - 2), System.Globalization.NumberStyles.HexNumber);
+        //                        }
+        //                    }
+
+        //                    m_execSrecHash[parsedFile.EntryPoint] = string.Format("<CRC>{0:X08},{1:X08},{2:X08},{3:X08}</CRC>\n", imageAddr, fileInfo.Size, imageCRC, parsedFile.EntryPoint);
+        //                }
+        //            }
+
+        //            return new Tuple<uint, bool>(parsedFile.EntryPoint, true);
+        //        }
+        //        finally
+        //        {
+        //            //m_evtMicroBooterStart.Reset();
+        //        }
+        //    }
+
+        //    return new Tuple<uint, bool>(0, false);
+        //}
+
+        //private async Task<SrecParseResult> ParseSrecFileAsync(StorageFile srecFile)
+        //{
+        //    SrecParseResult reply = new SrecParseResult();
+
+        //    Dictionary<uint, string> recs = new Dictionary<uint, string>();
+
+        //    try
+        //    {
+        //        int total = 0;
+
+        //        IList<string> textLines = await FileIO.ReadLinesAsync(srecFile);
+
+        //        foreach (string line in textLines)
+        //        {
+        //            string addr = line.Substring(4, 8);
+
+        //            // we only support s7, s3 records
+        //            if (line.ToLower().StartsWith("s7"))
+        //            {
+        //                reply.EntryPoint = uint.Parse(addr, System.Globalization.NumberStyles.HexNumber);
+        //            }
+        //            else if (line.ToLower().StartsWith("s3"))
+        //            {
+        //                total += line.Length - 14;
+        //                reply.Records[uint.Parse(addr, System.Globalization.NumberStyles.HexNumber)] = line;
+        //            }
+        //        }
+
+        //        reply.ImageSize = (uint)total;
+        //    }
+        //    catch
+        //    {
+        //        return null;
+        //    }
+
+        //    return reply;
+        //}
+
+        //private async Task<bool> PreProcesSrecAsync(StorageFile srecFile)
+        //{
+        //    if (!srecFile.IsAvailable) return false;
+
+        //    // create .EXT file for SREC file
+        //    StorageFolder folder = await srecFile.GetParentAsync();
+
+        //    try
+        //    {
+        //        // read lines from SREC file
+        //        IList<string> textLines = await FileIO.ReadLinesAsync(srecFile);
+
+        //        StorageFile srecExtFile = await folder.CreateFileAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext", CreationCollisionOption.ReplaceExisting);
+
+        //        const int c_MaxRecords = 8;
+        //        int iRecord = 0;
+        //        int currentCRC = 0;
+        //        int iDataLength = 0;
+        //        string s7rec = "";
+        //        StringBuilder sb = new StringBuilder();
+
+        //        foreach (string line in textLines)
+        //        {
+        //            // we only support s7, s3 records
+        //            if (line.ToLower().StartsWith("s7"))
+        //            {
+        //                s7rec = line;
+        //                continue;
+        //            }
+
+        //            if (!line.ToLower().StartsWith("s3")) continue;
+
+        //            string crcData;
+
+        //            if (iRecord == 0)
+        //            {
+        //                crcData = line.Substring(4, line.Length - 6);
+        //            }
+        //            else
+        //            {
+        //                crcData = line.Substring(12, line.Length - 14);
+        //            }
+
+        //            iDataLength += crcData.Length / 2; // 2 chars per byte
+
+        //            if (iRecord == 0)
+        //            {
+        //                sb.Append(line.Substring(0, 2));
+        //            }
+        //            sb.Append(crcData);
+
+        //            iRecord++;
+
+        //            for (int i = 0; i < crcData.Length - 1; i += 2)
+        //            {
+        //                currentCRC += Byte.Parse(crcData.Substring(i, 2), System.Globalization.NumberStyles.HexNumber);
+        //            }
+
+        //            if (iRecord == c_MaxRecords)
+        //            {
+        //                iDataLength += 1; // crc
+
+        //                sb = sb.Insert(2, string.Format("{0:X02}", iDataLength));
+
+        //                currentCRC += (iDataLength & 0xFF) + ((iDataLength >> 8) & 0xFF);
+
+        //                // write crc
+        //                sb.Append(string.Format("{0:X02}", (0xFF - (0xFF & currentCRC))));
+
+        //                await FileIO.WriteTextAsync(srecExtFile, sb.ToString());
+
+        //                currentCRC = 0;
+        //                iRecord = 0;
+        //                iDataLength = 0;
+        //                sb.Length = 0;
+        //            }
+        //        }
+
+        //        if (iRecord != 0)
+        //        {
+        //            iDataLength += 1; // crc
+
+        //            sb = sb.Insert(2, string.Format("{0:X02}", iDataLength));
+
+        //            currentCRC += (iDataLength & 0xFF) + ((iDataLength >> 8) & 0xFF);
+
+        //            // write crc
+        //            sb.Append(string.Format("{0:X02}", (0xFF - (0xFF & currentCRC))));
+
+        //            await FileIO.WriteTextAsync(srecExtFile, sb.ToString());
+        //        }
+
+        //        if (s7rec != "")
+        //        {
+        //            await FileIO.WriteTextAsync(srecExtFile, s7rec);
+        //        }
+        //    }
+        //    catch
+        //    {
+        //        StorageFile thisFile = await folder.TryGetItemAsync(Path.GetFileNameWithoutExtension(srecFile.Name) + ".ext") as StorageFile;
+
+        //        if (thisFile != null)
+        //        {
+        //            await thisFile.DeleteAsync();
+        //        }
+
+        //        return false;
+        //    }
+
+        //    return true;
+        //}
 
         private async Task<bool> PrepareForDeployAsync(
             uint address,

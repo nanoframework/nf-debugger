@@ -18,27 +18,17 @@
           "Microsoft.SourceLink.Common": "1.1.0-beta-20204-02"
         }
       },
-      "Microsoft.Windows.SDK.Contracts": {
-        "type": "Direct",
-        "requested": "[10.0.19041.1, )",
-        "resolved": "10.0.19041.1",
-        "contentHash": "sgDwuoyubbLFNJR/BINbvfSNRiglF91D+Q0uEAkU4ZTO5Hgbnu8+gA4TCc65S56e1kK7gvR1+H4kphkDTr+9bw==",
-        "dependencies": {
-          "System.Runtime.WindowsRuntime": "4.6.0",
-          "System.Runtime.WindowsRuntime.UI.Xaml": "4.6.0"
-        }
-      },
       "Nerdbank.GitVersioning": {
         "type": "Direct",
-        "requested": "[3.3.37, )",
-        "resolved": "3.3.37",
-        "contentHash": "YlDKV/gSHQGDThWSGqVyPfKeNP/kx1fj/NPFFgGc/cxzgIbXv4jtYOcbFOz3ZIeAKtpCcSAmVNDOikBs3OxI/A=="
+        "requested": "[3.4.194, )",
+        "resolved": "3.4.194",
+        "contentHash": "f4V2lLy9G0BnddqGhfaVa+dKsbu8iCiLiUARHKBo0l899MgJdRjVU2C7e29gHrZWxc2HZkq3aq28OHHK7q0/iQ=="
       },
       "Polly": {
         "type": "Direct",
-        "requested": "[7.2.1, )",
-        "resolved": "7.2.1",
-        "contentHash": "Od8SnPlpQr+PuAS0YzY3jgtzaDNknlIuAaldN2VEIyTvm/wCg22C5nUkUV1BEG8rIsub5RFMoV/NEQ0tM/+7Uw=="
+        "requested": "[7.2.2, )",
+        "resolved": "7.2.2",
+        "contentHash": "E6CeKyS513j7taKAq4q2MESDBvzuzWnR1rQ2Y2zqJvpiVtKMm699Aubb20MUPBDmb0Ov8PmcLHTCVFdCjoy2kA=="
       },
       "Polly.Contrib.WaitAndRetry": {
         "type": "Direct",
@@ -54,6 +44,12 @@
         "dependencies": {
           "Fody": "4.2.1"
         }
+      },
+      "System.IO.Ports": {
+        "type": "Direct",
+        "requested": "[5.0.1, )",
+        "resolved": "5.0.1",
+        "contentHash": "cOfs0q0+lmq8oXgIeYDzzT2IxQ0gIij2/awNDXn3OjykDii26EgzzY09BhabUlxt3rwGNpAOxYkdac5udWWJgQ=="
       },
       "System.Threading.Tasks.Extensions": {
         "type": "Direct",
@@ -84,19 +80,30 @@
         "type": "Transitive",
         "resolved": "4.5.3",
         "contentHash": "3TIsJhD1EiiT0w2CcDMN/iSSwnNnsrnbzeVHSKkaEgV85txMprmuO+Yq2AdSbeVGcg28pdNDTPK87tJhX7VFHw=="
-      },
-      "System.Runtime.WindowsRuntime": {
-        "type": "Transitive",
-        "resolved": "4.6.0",
-        "contentHash": "IWrs1TmbxP65ZZjIglNyvDkFNoV5q2Pofg5WO7I8RKQOpLdFprQSh3xesOoClBqR4JHr4nEB1Xk1MqLPW1jPuQ=="
-      },
-      "System.Runtime.WindowsRuntime.UI.Xaml": {
-        "type": "Transitive",
-        "resolved": "4.6.0",
-        "contentHash": "r4tNw5v5kqRJ9HikWpcyNf3suGw7DjX93svj9iBjtdeLqL8jt9Z+7f+s4wrKZJr84u8IMsrIjt8K6jYvkRqMSg==",
-        "dependencies": {
-          "System.Runtime.WindowsRuntime": "4.6.0"
-        }
+      }
+    },
+    ".NETFramework,Version=v4.7.2/win": {
+      "System.IO.Ports": {
+        "type": "Direct",
+        "requested": "[5.0.1, )",
+        "resolved": "5.0.1",
+        "contentHash": "cOfs0q0+lmq8oXgIeYDzzT2IxQ0gIij2/awNDXn3OjykDii26EgzzY09BhabUlxt3rwGNpAOxYkdac5udWWJgQ=="
+      }
+    },
+    ".NETFramework,Version=v4.7.2/win-x64": {
+      "System.IO.Ports": {
+        "type": "Direct",
+        "requested": "[5.0.1, )",
+        "resolved": "5.0.1",
+        "contentHash": "cOfs0q0+lmq8oXgIeYDzzT2IxQ0gIij2/awNDXn3OjykDii26EgzzY09BhabUlxt3rwGNpAOxYkdac5udWWJgQ=="
+      }
+    },
+    ".NETFramework,Version=v4.7.2/win-x86": {
+      "System.IO.Ports": {
+        "type": "Direct",
+        "requested": "[5.0.1, )",
+        "resolved": "5.0.1",
+        "contentHash": "cOfs0q0+lmq8oXgIeYDzzT2IxQ0gIij2/awNDXn3OjykDii26EgzzY09BhabUlxt3rwGNpAOxYkdac5udWWJgQ=="
       }
     }
   }

@@ -66,7 +66,6 @@
     <Compile Include="BinaryFormatter.cs" />
     <Compile Include="PortDefinitions\PortBase.cs" />
     <Compile Include="PortSerial\SerialPort.cs" />
-    <Compile Include="PortUsb\EventHandlerForUsbDevice.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -85,22 +84,22 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Windows.SDK.Contracts">
-      <Version>10.0.19041.1</Version>
-    </PackageReference>
     <PackageReference Include="Nerdbank.GitVersioning">
-      <Version>3.3.37</Version>
+      <Version>3.4.194</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Polly">
-      <Version>7.2.1</Version>
+      <Version>7.2.2</Version>
     </PackageReference>
     <PackageReference Include="Polly.Contrib.WaitAndRetry">
       <Version>1.1.1</Version>
     </PackageReference>
     <PackageReference Include="PropertyChanged.Fody">
       <Version>2.6.1</Version>
+    </PackageReference>
+    <PackageReference Include="System.IO.Ports">
+      <Version>5.0.1</Version>
     </PackageReference>
     <PackageReference Include="System.Threading.Tasks.Extensions">
       <Version>4.5.4</Version>

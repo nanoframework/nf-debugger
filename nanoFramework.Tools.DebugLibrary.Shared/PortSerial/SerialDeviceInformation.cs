@@ -4,7 +4,7 @@
 //
 
 using System;
-using Windows.Devices.Enumeration;
+
 
 namespace nanoFramework.Tools.Debugger.Serial
 {

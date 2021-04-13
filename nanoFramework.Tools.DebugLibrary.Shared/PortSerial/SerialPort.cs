@@ -9,9 +9,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Devices.Enumeration;
-using Windows.Devices.SerialCommunication;
-using Windows.Storage.Streams;
+
+
+
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {

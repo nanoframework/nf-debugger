@@ -2,7 +2,7 @@
 // Copyright (c) .NET Foundation and Contributors
 // See LICENSE file in the project root for full license information.
 //
-using Windows.Devices.Enumeration;
+
 
 namespace nanoFramework.Tools.Debugger.Extensions
 {

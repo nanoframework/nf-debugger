@@ -7,20 +7,19 @@
 
 ### Welcome to the **nanoFramework** debugger libraries repository!
 
-The debugger library provides debugging and communication capabilities for .NET and UWP applications to debug and communicate with **nanoFramework** devices.
+The debugger library provides debugging and communication capabilities for .NET and to debug and communicate with **nanoFramework** devices.
 It's provided as source code and as a Nuget package that can be integrated on any application.
 
 This repo contains:
 
-- **nanoFramework** debugger library for UWP
 - **nanoFramework** debugger library for .NET
 
 ## Build status
 
-| Component | Build Status | NuGet Package (.NET) | NuGet Package (.UWP) |
+| Component | Build Status | NuGet Package (.NET) |
 |:-|---|---|---|
-| Debugger Library | [![Build Status](https://dev.azure.com/nanoframework/debugger/_apis/build/status/nanoframework.nf-debugger?branchName=develop)](https://dev.azure.com/nanoframework/debugger/_build/latest?definitionId=33?branchName=master) | [![NuGet](https://img.shields.io/nuget/vpre/nanoFramework.Tools.Debugger.Net.svg)](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/) | [![NuGet](https://img.shields.io/nuget/vpre/nanoFramework.Tools.Debugger.UWP.svg)](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.UWP/)
-| Debugger Library (preview) |[![Build Status](https://dev.azure.com/nanoframework/debugger/_apis/build/status/nanoframework.nf-debugger?branchName=develop)](https://dev.azure.com/nanoframework/debugger/_build/latest?definitionId=33?branchName=develop) | [![](https://badgen.net/badge/NuGet/preview/D7B023?icon=https://simpleicons.now.sh/azuredevops/fff)](https://dev.azure.com/nanoframework/feed/_packaging?_a=package&feed=sandbox&package=nanoFramework.Tools.Debugger.Net&protocolType=NuGet&view=overview) | [![](https://badgen.net/badge/NuGet/preview/D7B023?icon=https://simpleicons.now.sh/azuredevops/fff)](https://dev.azure.com/nanoframework/feed/_packaging?_a=package&feed=sandbox&package=nanoFramework.Tools.Debugger.UWP&protocolType=NuGet&view=overview)
+| Debugger Library | [![Build Status](https://dev.azure.com/nanoframework/debugger/_apis/build/status/nanoframework.nf-debugger?branchName=develop)](https://dev.azure.com/nanoframework/debugger/_build/latest?definitionId=33?branchName=master) | [![NuGet](https://img.shields.io/nuget/vpre/nanoFramework.Tools.Debugger.Net.svg)](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/) | 
+| Debugger Library (preview) |[![Build Status](https://dev.azure.com/nanoframework/debugger/_apis/build/status/nanoframework.nf-debugger?branchName=develop)](https://dev.azure.com/nanoframework/debugger/_build/latest?definitionId=33?branchName=develop) | [![](https://badgen.net/badge/NuGet/preview/D7B023?icon=https://simpleicons.now.sh/azuredevops/fff)](https://dev.azure.com/nanoframework/feed/_packaging?_a=package&feed=sandbox&package=nanoFramework.Tools.Debugger.Net&protocolType=NuGet&view=overview) |
 
 ## Feedback and documentation
 
