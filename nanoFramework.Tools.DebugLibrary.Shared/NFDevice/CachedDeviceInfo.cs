@@ -9,12 +9,12 @@ namespace nanoFramework.Tools.Debugger
     {
         public string TargetName;
         public string PlatformName;
-        public uint BaudRate;
+        public int BaudRate;
 
         public CachedDeviceInfo(
             string targetName,
             string platformName,
-            uint baudRate = 0)
+            int baudRate = 0)
         {
             TargetName = targetName;
             PlatformName = platformName;

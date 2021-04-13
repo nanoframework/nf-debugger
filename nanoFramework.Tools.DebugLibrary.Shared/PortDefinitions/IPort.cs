@@ -4,18 +4,16 @@
 //
 
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
 {
     public interface IPort
     {
-        Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken);
+        int SendBuffer(byte[] buffer, TimeSpan waiTimeout);
 
-        Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken);
+        byte[] ReadBuffer(int bytesToRead, TimeSpan waiTimeout);
 
-        Task<bool> ConnectDeviceAsync();
+        bool ConnectDevice();
 
         void DisconnectDevice();
     }

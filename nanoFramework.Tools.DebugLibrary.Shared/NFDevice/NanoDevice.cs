@@ -72,11 +72,11 @@ namespace nanoFramework.Tools.Debugger
         /// Connect to nanoFramework device
         /// </summary>
         /// <returns>True if operation is successful</returns>
-        public async Task<bool> ConnectAsync()
+        public bool Connect()
         {
             if (Device is NanoSerialDevice)
             {
-                return await ConnectionPort.ConnectDeviceAsync();
+                return ConnectionPort.ConnectDevice();
             }
 
             return false;

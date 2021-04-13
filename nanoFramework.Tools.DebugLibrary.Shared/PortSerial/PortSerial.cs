@@ -7,11 +7,9 @@ using nanoFramework.Tools.Debugger.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Ports;
 using System.Threading;
 using System.Threading.Tasks;
-
-
-
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
@@ -24,12 +22,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private readonly object _sendCancelLock = new object();
         private readonly PortSerialManager _portManager;
 
-        public SerialDevice Device { get; internal set; }
+        public SerialPort Device { get; internal set; }
 
         // valid baud rates
-        public static readonly List<uint> ValidBaudRates = new List<uint>() { 921600, 460800, 115200 };
+        public static readonly List<int> ValidBaudRates = new List<int>() { 921600, 460800, 115200 };
 
-        public uint BaudRate { get; internal set; }
+        public int BaudRate { get; internal set; }
 
         public NanoDevice<NanoSerialDevice> NanoDevice { get; }
 
@@ -37,19 +35,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// This DeviceInformation represents which device is connected or which device will be reconnected when
         /// the device is plugged in again (if IsEnabledAutoReconnect is true);.
         /// </summary>
-        public DeviceInformation DeviceInformation
+        public string InstanceId
         {
             get
             {
-                return NanoDevice.Device.DeviceInformation.DeviceInformation;
+                return NanoDevice.Device.DeviceInformation.InstanceId;
             }
         }
-
-        /// <summary>
-        /// Returns DeviceAccessInformation for the device that is currently connected using this EventHandlerForSerialEclo
-        /// object.
-        /// </summary>
-        public DeviceAccessInformation DeviceAccessInformation { get; }
 
         /// <summary>
         /// Creates an Serial debug client
@@ -81,69 +73,28 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         /// <returns>True if the device was successfully opened, false if the device could not be opened for well known reasons.
         /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
-        public async Task<bool> OpenDeviceAsync()
+        public bool OpenDevice()
         {
             bool successfullyOpenedDevice = false;
 
             try
             {
-                // need to wrap the call to FromIdAsync on a task with a timed cancellation token to force a constrained execution time 
-                // as this API call can block execution when an exception occurs inside it (the real reason is undetermined, seems to be with the driver) 
-                // has reportedly been seen with Bluetooth virtual serial ports and some ESP32 serial interfaces
+                /////////////////////////////////////////////////////////////
+                // need to FORCE the parity setting to _NONE_ because        
+                // the default on the current ST Link is different causing 
+                // the communication to fail
+                /////////////////////////////////////////////////////////////
 
-                var cts = new CancellationTokenSource();
-                cts.CancelAfter(1000);
-
-
-                Device = await SerialDevice.FromIdAsync(DeviceInformation.Id).AsTask(cts.Token).CancelAfterAsync(1000, cts);
+                Device = new SerialPort(InstanceId, BaudRate, Parity.None, 8, StopBits.None);
 
                 // Device could have been blocked by user or the device has already been opened by another app.
                 if (Device != null)
                 {
                     successfullyOpenedDevice = true;
 
-                    // adjust settings for serial port
-                    // baud rate is coming from the property
-                    Device.BaudRate = BaudRate;
-                    Device.DataBits = 8;
-
-                    /////////////////////////////////////////////////////////////
-                    // need to FORCE the parity setting to _NONE_ because        
-                    // the default on the current ST Link is different causing 
-                    // the communication to fail
-                    /////////////////////////////////////////////////////////////
-                    Device.Parity = SerialParity.None;
-
-                    Device.WriteTimeout = TimeSpan.FromMilliseconds(500);
-                    Device.ReadTimeout = TimeSpan.FromMilliseconds(1000);
+                    Device.WriteTimeout = 500;
+                    Device.ReadTimeout = 500;
                     Device.ErrorReceived += Device_ErrorReceived;
-
-                    //// Background tasks are not part of the app, so app events will not have an affect on the device
-                    //if (!_isBackgroundTask && (_appSuspendEventHandler == null || _appResumeEventHandler == null))
-                    //{
-                    //    RegisterForAppEvents();
-                    //}
-
-                    //// User can block the device after it has been opened in the Settings charm. We can detect this by registering for the 
-                    //// DeviceAccessInformation.AccessChanged event
-                    //if (_deviceAccessEventHandler == null)
-                    //{
-                    //    RegisterForDeviceAccessStatusChange();
-                    //}
-
-                    //// Create and register device watcher events for the device to be opened unless we're reopening the device
-                    //if (_deviceWatcher == null)
-                    //{
-                    //    _deviceWatcher = DeviceInformation.CreateWatcher(deviceSelector);
-
-                    //    RegisterForDeviceWatcherEvents();
-                    //}
-
-                    //if (!_watcherStarted)
-                    //{
-                    //    // Start the device watcher after we made sure that the device is opened.
-                    //    StartDeviceWatcher();
-                    //}
                 }
                 else
                 {
@@ -221,16 +172,16 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
         }
 
-        private void Device_ErrorReceived(SerialDevice sender, ErrorReceivedEventArgs args)
+        private void Device_ErrorReceived(object sender, SerialErrorReceivedEventArgs e)
         {
             //throw new NotImplementedException();
         }
 
         #endregion
 
-        public async Task<bool> ConnectDeviceAsync()
+        public bool ConnectDevice()
         {
-            bool connectFlag = await ConnectSerialDeviceAsync();
+            bool connectFlag = ConnectSerialDevice();
 
             if(connectFlag && NanoDevice.DeviceBase == null)
             {
@@ -240,7 +191,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return connectFlag;
         }
 
-        private async Task<bool> ConnectSerialDeviceAsync()
+        private bool ConnectSerialDevice()
         {
             // try to determine if we already have this device opened.
             if (Device != null)
@@ -248,16 +199,16 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 return true;
             }
 
-            bool openDeviceResult = await OpenDeviceAsync();
+            bool openDeviceResult = OpenDevice();
 
             if (openDeviceResult)
             {
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.OpenDevice(DeviceInformation.Id));
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.OpenDevice(InstanceId));
             }
             else
             {
                 // Most likely the device is opened by another app, but cannot be sure
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Unknown error opening {DeviceInformation.Id}, possibly opened by another app"));
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Unknown error opening {InstanceId}, possibly opened by another app"));
             }
 
             return openDeviceResult;
@@ -272,7 +223,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // cancel all IO operations
                 CancelAllIoTasks();
 
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.CloseDevice(DeviceInformation.Id));
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.CloseDevice(InstanceId));
 
                 // close device
                 CloseDevice();
@@ -352,48 +303,41 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public DateTime LastActivity { get; set; }
 
-        public async Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        public int SendBuffer(byte[] buffer, TimeSpan waiTimeout)
         {
             // device must be connected
-            if (IsDeviceConnected && !cancellationToken.IsCancellationRequested)
+            if (IsDeviceConnected)
             {
-                DataWriter outputStreamWriter = new DataWriter(Device.OutputStream);
-                Task<UInt32> storeAsyncTask;
+                int oldTimeout = 0;
 
-
-                using (CancellationTokenSource linkedCts =
-                        CancellationTokenSource.CreateLinkedTokenSource(_sendCancellationTokenSource.Token, cancellationToken))
+                if(Device.WriteTimeout != waiTimeout.TotalMilliseconds)
                 {
-                    try
-                    {
-                        // write buffer to device
-                        outputStreamWriter.WriteBytes(buffer);
+                    Device.WriteTimeout = (int)waiTimeout.TotalMilliseconds;
+                }
 
-                        // Don't start any IO if the task was canceled
-                        lock (_sendCancelLock)
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            linkedCts.Token.ThrowIfCancellationRequested();
+                try
+                {
+                    // write buffer to device
+                    Device.Write(buffer, 0, buffer.Length);
 
-                            storeAsyncTask = outputStreamWriter.StoreAsync().AsTask(linkedCts.Token.AddTimeout(waiTimeout));
-                        }
+                    return buffer.Length;
+                }
+                catch (TimeoutException)
+                {
+                    // this is expected to happen when the timeout occurs, no need to do anything with it
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
 
-                        return await storeAsyncTask.ConfigureAwait(true);
-                    }
-                    catch (TaskCanceledException)
+                    throw new DeviceNotConnectedException();
+                }
+                finally
+                {
+                    // check if timeout needs to be restored
+                    if(oldTimeout != 0)
                     {
-                        // this is expected to happen when the timeout occurs, no need to do anything with it
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
-
-                        throw new DeviceNotConnectedException();
-                    }
-                    finally
-                    {
-                        // detach stream
-                        outputStreamWriter?.DetachStream();
+                        Device.WriteTimeout = oldTimeout;
                     }
                 }
             }
@@ -405,57 +349,45 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return 0;
         }
 
-        public async Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        public byte[] ReadBuffer(int bytesToRead, TimeSpan waiTimeout)
         {
             // device must be connected
-            if (IsDeviceConnected && !cancellationToken.IsCancellationRequested)
+            if (IsDeviceConnected)
             {
-                DataReader inputStreamReader = new DataReader(Device.InputStream);
-                Task<UInt32> loadAsyncTask;
+                int oldTimeout = 0;
+                byte[] buffer = new byte[bytesToRead];
 
-                using (CancellationTokenSource linkedCts =
-                        CancellationTokenSource.CreateLinkedTokenSource(_readCancellationTokenSource.Token, cancellationToken))
+                if (Device.ReadTimeout != waiTimeout.TotalMilliseconds)
                 {
+                    Device.ReadTimeout = (int)waiTimeout.TotalMilliseconds;
+                }
 
-                    try
+                try
+                {
+                    var bytesRead = Device.Read(buffer, 0, bytesToRead);
+                    if (bytesRead > 0)
                     {
-                        // Don't start any IO if the task was canceled
-                        lock (_readCancelLock)
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            linkedCts.Token.ThrowIfCancellationRequested();
+                        Array.Resize<byte>(ref buffer, bytesRead);
 
-                            loadAsyncTask = inputStreamReader.LoadAsync(bytesToRead).AsTask(linkedCts.Token.AddTimeout(waiTimeout));
-                        }
-
-                        UInt32 bytesRead = await loadAsyncTask.ConfigureAwait(true);
-
-                        if (bytesRead > 0)
-                        {
-                            byte[] readBuffer = new byte[bytesRead];
-                            inputStreamReader?.ReadBytes(readBuffer);
-
-                            return readBuffer;
-                        }
+                        return buffer;
                     }
-                    catch (TaskCanceledException)
-                    {
-                        // this is expected to happen when the timeout occurs, no need to do anything with it
-                    }
-                    catch (NullReferenceException)
-                    {
-                        // this is expected to happen when there isn't anything to read, don't bother with it
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"ReadBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
+                }
+                catch (TimeoutException)
+                {
+                    // this is expected to happen when the timeout occurs, no need to do anything with it
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"ReadBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
 
-                        throw new DeviceNotConnectedException();
-                    }
-                    finally
+                    throw new DeviceNotConnectedException();
+                }
+                finally
+                {
+                    // check if timeout needs to be restored
+                    if (oldTimeout != 0)
                     {
-                        // detach stream
-                        inputStreamReader?.DetachStream();
+                        Device.ReadTimeout = oldTimeout;
                     }
                 }
             }

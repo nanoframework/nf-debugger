@@ -45,38 +45,24 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             App.ProcessExited();
         }
 
-        public async Task<bool> SendAsync(MessageRaw raw, CancellationToken cancellationToken)
+        public bool Send(MessageRaw raw)
         {
             if(!_sendSemaphore.WaitOne())
             {
                 return false;
             }
 
-            // check for cancellation request
-            if (cancellationToken.IsCancellationRequested)
-            {
-                // cancellation requested
-                return false;
-            }
-
             try
             {
                 // TX header
-                var sendHeaderCount = await SendRawBufferAsync(raw.Header, TimeSpan.FromMilliseconds(1000), cancellationToken);
-
-                // check for cancellation request
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    // cancellation requested
-                    return false;
-                }
+                var sendHeaderCount = SendRawBuffer(raw.Header, TimeSpan.FromMilliseconds(1000));
 
                 if (raw.Payload != null)
                 {
                     // we have a payload to TX
                     if (sendHeaderCount == raw.Header.Length)
                     {
-                        var sendPayloadCount = await SendRawBufferAsync(raw.Payload, TimeSpan.FromMilliseconds(1000), cancellationToken);
+                        var sendPayloadCount = SendRawBuffer(raw.Payload, TimeSpan.FromMilliseconds(1000));
 
                         if (sendPayloadCount == raw.Payload.Length)
                         {
@@ -150,22 +136,15 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             throw new NotImplementedException();
         }
 
-        private Task<uint> SendRawBufferAsync(byte[] buffer, TimeSpan waiTimeout, CancellationToken cancellationToken)
+        private int SendRawBuffer(byte[] buffer, TimeSpan waiTimeout)
         {
-            return App.SendBufferAsync(buffer, waiTimeout, cancellationToken);
+            return App.SendBuffer(buffer, waiTimeout);
         }
 
-        internal async Task<int> ReadBufferAsync(byte[] buffer, int offset, int bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        internal int ReadBuffer(byte[] buffer, int offset, int bytesToRead, TimeSpan waitTimeout)
         {
             if (!_receiveSemaphore.WaitOne())
             {
-                return 0;
-            }
-
-            // check for cancellation request
-            if (cancellationToken.IsCancellationRequested)
-            {
-                // cancellation requested
                 return 0;
             }
 
@@ -179,10 +158,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     return 0;
                 }
 
-                while (bytesToRead > 0 && !cancellationToken.IsCancellationRequested)
+                while (bytesToRead > 0)
                 {
                     // read next chunk of data async
-                    var readResult = await App.ReadBufferAsync((uint)bytesToRead, waitTimeout, cancellationToken).ConfigureAwait(true);
+                    var readResult = App.ReadBuffer(bytesToRead, waitTimeout);
 
                     // any byte read?
                     if (readResult.Length > 0)
@@ -198,7 +177,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 throw;
             }
-            catch (TaskCanceledException)
+            catch (TimeoutException)
             {
                 // don't do anything here, as this is expected
             }

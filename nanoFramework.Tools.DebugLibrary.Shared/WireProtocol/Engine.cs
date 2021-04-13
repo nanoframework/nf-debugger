@@ -172,7 +172,7 @@ namespace nanoFramework.Tools.Debugger
 
         public bool StopDebuggerOnConnect { get; set; }
 
-        public async Task<bool> ConnectAsync(
+        public bool Connect(
             int timeout, 
             bool force = false,
             int attempts = 1,
@@ -184,15 +184,15 @@ namespace nanoFramework.Tools.Debugger
 
             // setup policy
             var operatioRetryPolicy = Policy.HandleResult<bool>(r => !r)
-                .WaitAndRetryAsync(delay);
+                .WaitAndRetry(delay);
 
             // perform connect operation with policy
-            return await operatioRetryPolicy.ExecuteAsync(async () =>
+            return operatioRetryPolicy.Execute(() =>
             {
                 if (force || !IsConnected)
                 {
                     // connect to device 
-                    if (await Device.ConnectAsync())
+                    if (Device.Connect())
                     {
                         if (!IsRunning)
                         {
@@ -709,12 +709,9 @@ namespace nanoFramework.Tools.Debugger
             return new Converter(Capabilities);
         }
 
-        public Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public int SendBuffer(byte[] buffer, TimeSpan waitTimeout)
         {
-            return Task.Run(() =>
-            {
-                return _portDefinition.SendBufferAsync(buffer, waitTimeout, cancellationToken);
-            }, cancellationToken);
+            return _portDefinition.SendBuffer(buffer, waitTimeout);
         }
 
         public bool ProcessMessage(IncomingMessage message, bool isReply)
@@ -817,12 +814,9 @@ namespace nanoFramework.Tools.Debugger
             _eventProcessExit?.Invoke(this, EventArgs.Empty);
         }
 
-        public Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public byte[] ReadBuffer(int bytesToRead, TimeSpan waitTimeout)
         {
-            return Task.Run(() =>
-            {
-               return _portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
-            }, cancellationToken);
+            return _portDefinition.ReadBuffer(bytesToRead, waitTimeout);
         }
 
         private OutgoingMessage CreateMessage(uint cmd, uint flags, object payload)
@@ -1701,9 +1695,9 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public async Task<bool> ReconnectAsync(bool fSoftReboot, int timeout = 5000)
+        public bool Reconnect(bool fSoftReboot, int timeout = 5000)
         {
-            if (!await ConnectAsync(
+            if (!Connect(
                 timeout,
                 true,
                 3,

@@ -11,6 +11,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO.Ports;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +24,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
     public partial class PortSerialManager : PortBase
     {
         // dictionary with mapping between Serial device watcher and the device ID
-        private readonly Dictionary<DeviceWatcher, string> _mapDeviceWatchersToDeviceSelector;
+        // TODO
+        // private readonly Dictionary<DeviceWatcher, string> _mapDeviceWatchersToDeviceSelector;
 
         // Serial device watchers suspended flag
         private bool _watchersSuspended = false;
@@ -53,7 +55,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         public PortSerialManager(bool startDeviceWatchers = true, List<string> portBlackList = null, int bootTime = 3000)
         {
-            _mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, string>();
+            //_mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, string>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
             _serialDevices = new List<SerialDeviceInformation>();
 
@@ -70,7 +72,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 if (startDeviceWatchers)
                 {
-                    StartSerialDeviceWatchers();
+                    //StartSerialDeviceWatchers();
                 }
             });
         }
@@ -83,19 +85,20 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         That initialization method must be called from the InitializeDeviceWatchers() method above so the watcher is actually started.
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
-        /// <summary>
-        /// Registers for Added, Removed, and Enumerated events on the provided deviceWatcher before adding it to an internal list.
-        /// </summary>
-        /// <param name="deviceWatcher">The device watcher to subscribe the events</param>
-        /// <param name="deviceSelector">The AQS used to create the device watcher</param>
-        private void AddDeviceWatcher(DeviceWatcher deviceWatcher, String deviceSelector)
-        {
-            deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(OnDeviceAdded);
-            deviceWatcher.Removed += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(OnDeviceRemoved);
-            deviceWatcher.EnumerationCompleted += new TypedEventHandler<DeviceWatcher, object>(OnDeviceEnumerationComplete);
+        // TODO
+        ///// <summary>
+        ///// Registers for Added, Removed, and Enumerated events on the provided deviceWatcher before adding it to an internal list.
+        ///// </summary>
+        ///// <param name="deviceWatcher">The device watcher to subscribe the events</param>
+        ///// <param name="deviceSelector">The AQS used to create the device watcher</param>
+        //private void AddDeviceWatcher(DeviceWatcher deviceWatcher, String deviceSelector)
+        //{
+        //    deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(OnDeviceAdded);
+        //    deviceWatcher.Removed += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(OnDeviceRemoved);
+        //    deviceWatcher.EnumerationCompleted += new TypedEventHandler<DeviceWatcher, object>(OnDeviceEnumerationComplete);
 
-            _mapDeviceWatchersToDeviceSelector.Add(deviceWatcher, deviceSelector);
-        }
+        //    _mapDeviceWatchersToDeviceSelector.Add(deviceWatcher, deviceSelector);
+        //}
 
         #endregion
 
@@ -105,9 +108,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             Task.Run(delegate
             {
-                StopDeviceWatchersInternal();
+                //StopDeviceWatchersInternal();
 
-                StartDeviceWatchersInternal();
+                //StartDeviceWatchersInternal();
             }).FireAndForget();
         }
 
@@ -115,13 +118,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             if(!_watchersStarted)
             {
-                StartDeviceWatchersInternal();
+                //StartDeviceWatchersInternal();
             }
         }
 
         public override void StopDeviceWatchers()
         {
-            StopDeviceWatchersInternal();
+            //StopDeviceWatchersInternal();
         }
 
         #region Device watcher management and host app status handling
@@ -132,244 +135,201 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private void InitializeDeviceWatchers()
         {
             // Target all Serial Devices present on the system
-            var deviceSelector = SerialDevice.GetDeviceSelector();
+            //var deviceSelector = SerialDevice.GetDeviceSelector();
 
-            // Other variations of GetDeviceSelector() usage are commented for reference
-            //
-            // Target a specific Serial Device using its VID and PID 
-            // var deviceSelector = SerialDevice.GetDeviceSelectorFromUsbVidPid(0x2341, 0x0043);
-            //
-            // Target a specific Serial Device by its COM PORT Name - "COM3"
-            // var deviceSelector = SerialDevice.GetDeviceSelector("COM3");
-            //
-            // Target a specific UART based Serial Device by its COM PORT Name (usually defined in ACPI) - "UART1"
-            // var deviceSelector = SerialDevice.GetDeviceSelector("UART1");
-            //
-
-            // Create a device watcher to look for instances of the Serial Device that match the device selector
-            // used earlier.
-
-            var deviceWatcher = DeviceInformation.CreateWatcher(deviceSelector);
+            //var deviceWatcher = DeviceInformation.CreateWatcher(deviceSelector);
 
             // Allow the EventHandlerForDevice to handle device watcher events that relates or effects our device (i.e. device removal, addition, app suspension/resume)
-            AddDeviceWatcher(deviceWatcher, deviceSelector);
+            //AddDeviceWatcher(deviceWatcher, deviceSelector);
         }
 
-        public void StartSerialDeviceWatchers()
-        {
-            // Initialize the Serial device watchers to be notified when devices are connected/removed
-            StartDeviceWatchersInternal();
-        }
+        // TODO
+        //public void StartSerialDeviceWatchers()
+        //{
+        //    // Initialize the Serial device watchers to be notified when devices are connected/removed
+        //    StartDeviceWatchersInternal();
+        //}
 
-        /// <summary>
-        /// Starts all device watchers including ones that have been individually stopped.
-        /// </summary>
-        private void StartDeviceWatchersInternal()
-        {
-            // Start all device watchers
-            _watchersStarted = true;
-            _deviceWatchersCompletedCount = 0;
-            IsDevicesEnumerationComplete = false;
+        // TODO
+        ///// <summary>
+        ///// Starts all device watchers including ones that have been individually stopped.
+        ///// </summary>
+        //private void StartDeviceWatchersInternal()
+        //{
+        //    // Start all device watchers
+        //    _watchersStarted = true;
+        //    _deviceWatchersCompletedCount = 0;
+        //    IsDevicesEnumerationComplete = false;
 
-            foreach (DeviceWatcher deviceWatcher in _mapDeviceWatchersToDeviceSelector.Keys)
-            {
-                if ((deviceWatcher.Status != DeviceWatcherStatus.Started)
-                    && (deviceWatcher.Status != DeviceWatcherStatus.EnumerationCompleted))
-                {
-                    deviceWatcher.Start();
-                }
-            }
-        }
+        //    foreach (DeviceWatcher deviceWatcher in _mapDeviceWatchersToDeviceSelector.Keys)
+        //    {
+        //        if ((deviceWatcher.Status != DeviceWatcherStatus.Started)
+        //            && (deviceWatcher.Status != DeviceWatcherStatus.EnumerationCompleted))
+        //        {
+        //            deviceWatcher.Start();
+        //        }
+        //    }
+        //}
 
-        /// <summary>
-        /// Should be called on host app OnAppSuspension() event to properly handle that status.
-        /// The DeviceWatchers must be stopped because device watchers will continue to raise events even if
-        /// the app is in suspension, which is not desired (drains battery). The device watchers will be resumed once the app resumes too.
-        /// </summary>
-        public void AppSuspending()
-        {
-            if (_watchersStarted)
-            {
-                _watchersSuspended = true;
-                StopDeviceWatchers();
-            }
-            else
-            {
-                _watchersSuspended = false;
-            }
-        }
+        // TODO
+        ///// <summary>
+        ///// Stops all device watchers.
+        ///// </summary>
+        //private void StopDeviceWatchersInternal()
+        //{
+        //    // Stop all device watchers
+        //    foreach (DeviceWatcher deviceWatcher in _mapDeviceWatchersToDeviceSelector.Keys)
+        //    {
+        //        if ((deviceWatcher.Status == DeviceWatcherStatus.Started)
+        //            || (deviceWatcher.Status == DeviceWatcherStatus.EnumerationCompleted))
+        //        {
+        //            deviceWatcher.Stop();
 
-        /// <summary>
-        /// Should be called on host app OnAppResume() event to properly handle that status.
-        /// See AppSuspending for why we are starting the device watchers again.
-        /// </summary>
-        public void AppResumed()
-        {
-            if (_watchersSuspended)
-            {
-                _watchersSuspended = false;
-                StartDeviceWatchersInternal();
-            }
-        }
+        //            // need to wait for the watcher to be stopped before proceeding to the next 
+        //            // 3 attempts
+        //            for(int i = 0; i < 3; i++)
+        //            {
+        //                if( deviceWatcher.Status == DeviceWatcherStatus.Stopped || deviceWatcher.Status == DeviceWatcherStatus.Aborted)
+        //                {
+        //                    // this is OK now
+        //                    break;
+        //                }
 
-        /// <summary>
-        /// Stops all device watchers.
-        /// </summary>
-        private void StopDeviceWatchersInternal()
-        {
-            // Stop all device watchers
-            foreach (DeviceWatcher deviceWatcher in _mapDeviceWatchersToDeviceSelector.Keys)
-            {
-                if ((deviceWatcher.Status == DeviceWatcherStatus.Started)
-                    || (deviceWatcher.Status == DeviceWatcherStatus.EnumerationCompleted))
-                {
-                    deviceWatcher.Stop();
+        //                Thread.Sleep(300 * i);
+        //            }
+        //        }
+        //    }
 
-                    // need to wait for the watcher to be stopped before proceeding to the next 
-                    // 3 attempts
-                    for(int i = 0; i < 3; i++)
-                    {
-                        if( deviceWatcher.Status == DeviceWatcherStatus.Stopped || deviceWatcher.Status == DeviceWatcherStatus.Aborted)
-                        {
-                            // this is OK now
-                            break;
-                        }
+        //    // Clear the list of devices so we don't have potentially disconnected devices around
+        //    ClearDeviceEntries();
 
-                        Thread.Sleep(300 * i);
-                    }
-                }
-            }
+        //    // also clear nanoFramework devices list
+        //    var devicesToRemove = NanoFrameworkDevices.Select(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).Device.DeviceInformation.DeviceInformation.Id).ToList();
 
-            // Clear the list of devices so we don't have potentially disconnected devices around
-            ClearDeviceEntries();
+        //    foreach (var deviceId in devicesToRemove)
+        //    {
+        //        // get device...
+        //        var device = FindNanoFrameworkDevice(deviceId);
 
-            // also clear nanoFramework devices list
-            var devicesToRemove = NanoFrameworkDevices.Select(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).Device.DeviceInformation.DeviceInformation.Id).ToList();
+        //        // ... and remove it from collection
+        //        NanoFrameworkDevices.Remove(device);
 
-            foreach (var deviceId in devicesToRemove)
-            {
-                // get device...
-                var device = FindNanoFrameworkDevice(deviceId);
+        //        device?.DebugEngine?.StopProcessing();
+        //        device?.DebugEngine?.Dispose();
 
-                // ... and remove it from collection
-                NanoFrameworkDevices.Remove(device);
+        //        device?.Disconnect();
+        //        // This closes the handle to the device
+        //        ((NanoDevice<NanoSerialDevice>)device)?.Dispose();
+        //    }
 
-                device?.DebugEngine?.StopProcessing();
-                device?.DebugEngine?.Dispose();
-
-                device?.Disconnect();
-                // This closes the handle to the device
-                ((NanoDevice<NanoSerialDevice>)device)?.Dispose();
-            }
-
-            _watchersStarted = false;
-        }
+        //    _watchersStarted = false;
+        //}
 
         #endregion
 
 
         #region Methods to manage device list add, remove, etc
 
-        /// <summary>
-        /// Creates a DeviceListEntry for a device and adds it to the list of devices
-        /// </summary>
-        /// <param name="deviceInformation">DeviceInformation on the device to be added to the list</param>
-        /// <param name="deviceSelector">The AQS used to find this device</param>
-        private async Task AddDeviceToListAsync(DeviceInformation deviceInformation, String deviceSelector)
-        {
-            // search the device list for a device with a matching interface ID
-            var serialMatch = FindDevice(deviceInformation.Id);
+        ///// <summary>
+        ///// Creates a DeviceListEntry for a device and adds it to the list of devices
+        ///// </summary>
+        ///// <param name="deviceInformation">DeviceInformation on the device to be added to the list</param>
+        ///// <param name="deviceSelector">The AQS used to find this device</param>
+        //private async Task AddDeviceToListAsync(DeviceInformation deviceInformation, String deviceSelector)
+        //{
+        //    // search the device list for a device with a matching interface ID
+        //    var serialMatch = FindDevice(deviceInformation.Id);
 
-            // Add the device if it's new
-            if (serialMatch == null)
-            {
-                var serialDevice = new SerialDeviceInformation(deviceInformation, deviceSelector);
+        //    // Add the device if it's new
+        //    if (serialMatch == null)
+        //    {
+        //        var serialDevice = new SerialDeviceInformation(deviceInformation, deviceSelector);
 
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.CandidateDevice(deviceInformation.Id));
+        //        OnLogMessageAvailable(NanoDevicesEventSource.Log.CandidateDevice(deviceInformation.Id));
 
-                // search the nanoFramework device list for a device with a matching interface ID
-                var nanoFrameworkDeviceMatch = FindNanoFrameworkDevice(deviceInformation.Id);
+        //        // search the nanoFramework device list for a device with a matching interface ID
+        //        var nanoFrameworkDeviceMatch = FindNanoFrameworkDevice(deviceInformation.Id);
 
-                if (nanoFrameworkDeviceMatch == null)
-                {
-                    // Create a new element for this device and...
-                    var newNanoFrameworkDevice = new NanoDevice<NanoSerialDevice>();
-                    newNanoFrameworkDevice.Device.DeviceInformation = new SerialDeviceInformation(deviceInformation, deviceSelector);
-                    newNanoFrameworkDevice.ConnectionPort = new PortSerial(this, newNanoFrameworkDevice);
-                    newNanoFrameworkDevice.Transport = TransportType.Serial;
+        //        if (nanoFrameworkDeviceMatch == null)
+        //        {
+        //            // Create a new element for this device and...
+        //            var newNanoFrameworkDevice = new NanoDevice<NanoSerialDevice>();
+        //            newNanoFrameworkDevice.Device.DeviceInformation = new SerialDeviceInformation(deviceInformation, deviceSelector);
+        //            newNanoFrameworkDevice.ConnectionPort = new PortSerial(this, newNanoFrameworkDevice);
+        //            newNanoFrameworkDevice.Transport = TransportType.Serial;
 
-                    await Task.Delay(100).ConfigureAwait(true);
+        //            await Task.Delay(100).ConfigureAwait(true);
 
-                    if (await newNanoFrameworkDevice.ConnectionPort.ConnectDeviceAsync().ConfigureAwait(true))
-                    {
-                        if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice).ConfigureAwait(true))
-                        {
-                            //add device to the collection
-                            NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+        //            if (await newNanoFrameworkDevice.ConnectionPort.ConnectDevice().ConfigureAwait(true))
+        //            {
+        //                if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice).ConfigureAwait(true))
+        //                {
+        //                    //add device to the collection
+        //                    NanoFrameworkDevices.Add(newNanoFrameworkDevice);
 
-                            _serialDevices.Add(serialDevice);
+        //                    _serialDevices.Add(serialDevice);
 
-                            OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}"));
-                        }
-                        else
-                        {
-                            // devices powered by the USB cable and that feature a serial converter (like an FTDI chip) 
-                            // are still booting when the USB enumeration event raises
-                            // so need to give them enough time for the boot sequence to complete before trying to communicate with them
+        //                    OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}"));
+        //                }
+        //                else
+        //                {
+        //                    // devices powered by the USB cable and that feature a serial converter (like an FTDI chip) 
+        //                    // are still booting when the USB enumeration event raises
+        //                    // so need to give them enough time for the boot sequence to complete before trying to communicate with them
 
-                            // Failing to connect to debugger engine on first attempt occurs frequently on dual USB devices like ESP32 WROVER KIT.
-                            // Seems to be something related with both devices using the same USB endpoint
-                            // Another reason is that an ESP32 takes around 3 seconds to complete the boot sequence and launch the CLR.
-                            // Until then the device will look non responsive or invalid to the detection mechanism that we're using.
-                            // A nice workaround for this seems to be adding an extra random wait so the comms are not simultaneous.
+        //                    // Failing to connect to debugger engine on first attempt occurs frequently on dual USB devices like ESP32 WROVER KIT.
+        //                    // Seems to be something related with both devices using the same USB endpoint
+        //                    // Another reason is that an ESP32 takes around 3 seconds to complete the boot sequence and launch the CLR.
+        //                    // Until then the device will look non responsive or invalid to the detection mechanism that we're using.
+        //                    // A nice workaround for this seems to be adding an extra random wait so the comms are not simultaneous.
 
-                            int delay;
-                            lock (_delay)
-                            {
-                                delay = _delay.Next(200, 600);
-                            }
-                            await Task.Delay(BootTime + delay).ConfigureAwait(true);
+        //                    int delay;
+        //                    lock (_delay)
+        //                    {
+        //                        delay = _delay.Next(200, 600);
+        //                    }
+        //                    await Task.Delay(BootTime + delay).ConfigureAwait(true);
 
-                            OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id} *** 2nd attempt ***"));
+        //                    OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id} *** 2nd attempt ***"));
 
-                            if (await newNanoFrameworkDevice.ConnectionPort.ConnectDeviceAsync().ConfigureAwait(true))
-                            {
-                                if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice).ConfigureAwait(true))
-                                {
-                                    //add device to the collection
-                                    NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+        //                    if (await newNanoFrameworkDevice.ConnectionPort.ConnectDevice().ConfigureAwait(true))
+        //                    {
+        //                        if (await CheckValidNanoFrameworkSerialDeviceAsync(newNanoFrameworkDevice).ConfigureAwait(true))
+        //                        {
+        //                            //add device to the collection
+        //                            NanoFrameworkDevices.Add(newNanoFrameworkDevice);
 
-                                    _serialDevices.Add(serialDevice);
+        //                            _serialDevices.Add(serialDevice);
 
-                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}"));
-                                }
-                                else
-                                {
-                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
-                                }
-                            }
-                            else
-                            {
-                                OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
-                    }
+        //                            OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.Device.DeviceInformation.DeviceInformation.Id}"));
+        //                        }
+        //                        else
+        //                        {
+        //                            OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
+        //                        }
+        //                    }
+        //                    else
+        //                    {
+        //                        OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
+        //                    }
+        //                }
+        //            }
+        //            else
+        //            {
+        //                OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceInformation.Id));
+        //            }
 
-                    // subtract devices count
-                    _newDevicesCount--;
+        //            // subtract devices count
+        //            _newDevicesCount--;
 
-                    // check if we are done processing arriving devices
-                    if (_newDevicesCount == 0)
-                    {
-                        ProcessDeviceEnumerationComplete();
-                    }
-                }
-            }
-        }
+        //            // check if we are done processing arriving devices
+        //            if (_newDevicesCount == 0)
+        //            {
+        //                ProcessDeviceEnumerationComplete();
+        //            }
+        //        }
+        //    }
+        //}
 
         private void RemoveDeviceFromList(string deviceId)
         {
@@ -407,7 +367,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 foreach (SerialDeviceInformation entry in _serialDevices)
                 {
-                    if (entry.DeviceInformation.Id == deviceId)
+                    if (entry.InstanceId == deviceId)
                     {
                         return entry;
                     }
@@ -422,79 +382,82 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             if (deviceId != null)
             {
                 // SerialMatch.Device.DeviceInformation
-                return NanoFrameworkDevices.FirstOrDefault(d => ((d as NanoDevice<NanoSerialDevice>).Device.DeviceInformation ).DeviceInformation.Id == deviceId);
+                return NanoFrameworkDevices.FirstOrDefault(d => ((d as NanoDevice<NanoSerialDevice>).Device.DeviceInformation ).InstanceId == deviceId);
             }
 
             return null;
         }
 
-        /// <summary>
-        /// Remove the device from the device list 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="deviceInformationUpdate"></param>
-        private void OnDeviceRemoved(DeviceWatcher sender, DeviceInformationUpdate deviceInformationUpdate)
-        {
-            RemoveDeviceFromList(deviceInformationUpdate.Id);
-        }
+        // TODO
+        ///// <summary>
+        ///// Remove the device from the device list 
+        ///// </summary>
+        ///// <param name="sender"></param>
+        ///// <param name="deviceInformationUpdate"></param>
+        //private void OnDeviceRemoved(DeviceWatcher sender, DeviceInformationUpdate deviceInformationUpdate)
+        //{
+        //    RemoveDeviceFromList(deviceInformationUpdate.Id);
+        //}
 
-        /// <summary>
-        /// This function will add the device to the listOfDevices
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="deviceInformation"></param>
-        private void OnDeviceAdded(DeviceWatcher sender, DeviceInformation deviceInformation)
-        {
-            // device black listed
-            // discard known system and unusable devices
-            // 
-            if (
-               deviceInformation.Id.StartsWith(@"\\?\ACPI") ||
+        // TODO
+        ///// <summary>
+        ///// This function will add the device to the listOfDevices
+        ///// </summary>
+        ///// <param name="sender"></param>
+        ///// <param name="deviceInformation"></param>
+        //private void OnDeviceAdded(DeviceWatcher sender, DeviceInformation deviceInformation)
+        //{
+        //    // device black listed
+        //    // discard known system and unusable devices
+        //    // 
+        //    if (
+        //       deviceInformation.Id.StartsWith(@"\\?\ACPI") ||
 
-               // reported in https://github.com/nanoframework/Home/issues/332
-               // COM ports from Broadcom 20702 Bluetooth adapter
-               deviceInformation.Id.Contains(@"VID_0A5C+PID_21E1") ||
+        //       // reported in https://github.com/nanoframework/Home/issues/332
+        //       // COM ports from Broadcom 20702 Bluetooth adapter
+        //       deviceInformation.Id.Contains(@"VID_0A5C+PID_21E1") ||
 
-               // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
-               // COM ports from Broadcom 20702 Bluetooth adapter
-               deviceInformation.Id.Contains(@"VID&00010057_PID&0023") ||
+        //       // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
+        //       // COM ports from Broadcom 20702 Bluetooth adapter
+        //       deviceInformation.Id.Contains(@"VID&00010057_PID&0023") ||
 
-               // reported in Discord channel
-               deviceInformation.Id.Contains(@"VID&0001009e_PID&400a") ||
+        //       // reported in Discord channel
+        //       deviceInformation.Id.Contains(@"VID&0001009e_PID&400a") ||
 
-               // this seems to cover virtual COM ports from Bluetooth devices
-               deviceInformation.Id.Contains("BTHENUM") ||
+        //       // this seems to cover virtual COM ports from Bluetooth devices
+        //       deviceInformation.Id.Contains("BTHENUM") ||
                
-               // this seems to cover virtual COM ports by ELTIMA 
-               deviceInformation.Id.Contains("EVSERIAL")
-               )
-            {
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(deviceInformation.Id));
+        //       // this seems to cover virtual COM ports by ELTIMA 
+        //       deviceInformation.Id.Contains("EVSERIAL")
+        //       )
+        //    {
+        //        OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(deviceInformation.Id));
 
-                // don't even bother with this one
-                return;
-            }
+        //        // don't even bother with this one
+        //        return;
+        //    }
 
-            OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(deviceInformation.Id));
+        //    OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(deviceInformation.Id));
 
-            _newDevicesCount++;
+        //    _newDevicesCount++;
 
-            Task.Run(async delegate
-            {
-                await AddDeviceToListAsync(deviceInformation, _mapDeviceWatchersToDeviceSelector[sender]);
-            }).FireAndForget();
-        }
+        //    Task.Run(async delegate
+        //    {
+        //        await AddDeviceToListAsync(deviceInformation, _mapDeviceWatchersToDeviceSelector[sender]);
+        //    }).FireAndForget();
+        //}
 
         #endregion
 
 
         #region Handlers and events for Device Enumeration Complete 
 
-        private void OnDeviceEnumerationComplete(DeviceWatcher sender, object args)
-        {
-            // add another device watcher completed
-            _deviceWatchersCompletedCount++;
-        }
+        // TODO
+        //private void OnDeviceEnumerationComplete(DeviceWatcher sender, object args)
+        //{
+        //    // add another device watcher completed
+        //    _deviceWatchersCompletedCount++;
+        //}
 
         private void ProcessDeviceEnumerationComplete()
         {
@@ -507,13 +470,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             OnDeviceEnumerationCompleted();
         }
 
-        private async Task<bool> CheckValidNanoFrameworkSerialDeviceAsync(NanoDevice<NanoSerialDevice> device)
+        private bool CheckValidNanoFrameworkSerialDevice(NanoDevice<NanoSerialDevice> device)
         {
             bool validDevice = false;
             bool isKnownDevice = false;
 
             // store device ID
-            string deviceId = device.Device.DeviceInformation.DeviceInformation.Id;
+            string deviceId = device.Device.DeviceInformation.InstanceId;
 
             try
             {
@@ -522,9 +485,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     device.CreateDebugEngine();
                 }
 
-                // get access to Windows.Devices.SerialDevice object
+                // get access to System.IO.Ports.SerialPort object
                 // so we can set it's BaudRate property
-                var serialDevice = (SerialDevice)device.DeviceBase;
+                var serialDevice = (SerialPort)device.DeviceBase;
 
                 // sanity check for invalid or null device base
                 if (serialDevice != null)
@@ -540,7 +503,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         isKnownDevice = _devicesCache.TryGetValue(deviceId, out var cachedDevice);
 
                         // need to go through all the valid baud rates: 921600, 460800 and 115200.
-                        foreach (uint baudRate in PortSerial.ValidBaudRates)
+                        foreach (int baudRate in PortSerial.ValidBaudRates)
                         {
                             if (isKnownDevice)
                             {
@@ -557,12 +520,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             // try to "just" connect to the device meaning...
                             // ... don't request capabilities or force anything except the absolute minimum required, plus...
                             // ... it's OK to use a very short timeout as we'll be exchanging really short packets with the device
-                            if (await device.DebugEngine.ConnectAsync(
+                            if (device.DebugEngine.Connect(
                                 200,
                                 false,
                                 1,
                                 ConnectionSource.Unknown,
-                                false).ConfigureAwait(true))
+                                false))
                             {
                                 if (isKnownDevice)
                                 {
@@ -606,7 +569,16 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 }
                                 else
                                 {
-                                    var deviceInfo = targetInfoPropertiesPolicy.Execute(() => { if (device.DebugEngine != null) { return device.DebugEngine.GetTargetInfo(); } else { return new CLRCapabilities.TargetInfoProperties(); } });
+                                    var deviceInfo = targetInfoPropertiesPolicy.Execute(() => { 
+                                        if (device.DebugEngine != null) 
+                                        { 
+                                            return device.DebugEngine.GetTargetInfo(); 
+                                        }
+                                        else 
+                                        { 
+                                            return new CLRCapabilities.TargetInfoProperties(); 
+                                        }
+                                    });
 
                                     if (!string.IsNullOrEmpty(deviceInfo.TargetName))
                                     {
@@ -618,7 +590,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 if (string.IsNullOrEmpty(device.TargetName)
                                     || string.IsNullOrEmpty(device.Platform))
                                 {
-                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"ERROR: {device.Device.DeviceInformation.DeviceInformation.Id} failed to get target information"));
+                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"ERROR: {device.Device.DeviceInformation.InstanceId} failed to get target information"));
 
                                     validDevice = false;
                                     break;

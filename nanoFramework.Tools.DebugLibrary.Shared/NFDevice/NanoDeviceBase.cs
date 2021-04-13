@@ -93,13 +93,13 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Version of nanoCLR.
         /// </summary>
-        public Version ClrVersion
+        public Version CLRVersion
         {
             get
             {
                 try
                 {
-                    return DebugEngine.TargetInfo.ClrVersion;
+                    return DebugEngine.TargetInfo.CLRVersion;
                 }
                 catch
                 {
@@ -161,7 +161,7 @@ namespace nanoFramework.Tools.Debugger
             DeviceId = Guid.NewGuid();
         }
 
-        private bool IsClrDebuggerEnabled
+        private bool IsCLRDebuggerEnabled
         {
             get
             {
@@ -261,7 +261,7 @@ namespace nanoFramework.Tools.Debugger
         /// Start address of the CLR block.
         /// Returns (-1) as invalid value if the address can't be retrieved from the device properties.
         /// </summary>
-        public int GetClrStartAddress()
+        public int GetCLRStartAddress()
         {
             if (DebugEngine != null)
             {
@@ -278,11 +278,11 @@ namespace nanoFramework.Tools.Debugger
         /// Attempt to establish a connection with nanoBooter (with reboot if necessary)
         /// </summary>
         /// <returns>true connection was made, false otherwise</returns>
-        public async Task<bool> ConnectToNanoBooterAsync(CancellationToken cancellationToken)
+        public bool ConnectToNanoBooter()
         {
             bool ret = false;
 
-            if (!await DebugEngine.ConnectAsync(1000, true))
+            if (!DebugEngine.Connect(1000, true))
             {
                 return false;
             }
@@ -326,15 +326,12 @@ namespace nanoFramework.Tools.Debugger
 
                     for (int i = 0; i < 40; i++)
                     {
-                        // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested) return false;
-
                         if (DebugEngine == null)
                         {
                             CreateDebugEngine();
                         }
 
-                        if (fConnected = await DebugEngine.ConnectAsync(
+                        if (fConnected = DebugEngine.Connect(
                             1000,
                             true,
                             3,
@@ -371,9 +368,8 @@ namespace nanoFramework.Tools.Debugger
         /// <returns>Returns false if the erase fails, true otherwise
         /// Possible exceptions: MFUserExitException, MFDeviceNoResponseException
         /// </returns>
-        public async Task<bool> EraseAsync(
+        public bool Erase(
             EraseOptions options,
-            CancellationToken cancellationToken,
             IProgress<MessageWithProgress> progress = null,
             IProgress<string> log = null)
         {
@@ -393,19 +389,19 @@ namespace nanoFramework.Tools.Debugger
                 log?.Report("Attempting to reconnect...");
 
                 // it's not, try reconnect
-                if (!await DebugEngine.ConnectAsync(5000, true))
+                if (!DebugEngine.Connect(5000, true))
                 {
                     return false;
                 }
             }
 
-            if (!IsClrDebuggerEnabled || 0 != (options & EraseOptions.Firmware))
+            if (!IsCLRDebuggerEnabled || 0 != (options & EraseOptions.Firmware))
             {
                 log?.Report("Connecting to nanoBooter...");
 
                 fReset = DebugEngine.IsConnectedTonanoCLR;
 
-                if (!await ConnectToNanoBooterAsync(cancellationToken))
+                if (!ConnectToNanoBooter())
                 {
                     log?.Report("Request to connect to nanoBooter failed!");
 
@@ -443,10 +439,10 @@ namespace nanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in DebugEngine.FlashSectorMap)
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return false;
-                }
+                //if (cancellationToken.IsCancellationRequested)
+                //{
+                //    return false;
+                //}
 
                 switch (flashSectorData.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK)
                 {
@@ -591,10 +587,9 @@ namespace nanoFramework.Tools.Debugger
         /// - nanoBooter if this is meant to update nanoCLR
         /// Failing to meet this condition will abort the operation.
         /// </remarks>
-        public async Task<bool> DeployBinaryFileAsync(
+        public bool DeployBinaryFile(
             string binFile,
             uint address,
-            CancellationToken cancellationToken, 
             IProgress<string> progress = null)
         {
             // validate if file exists
@@ -610,9 +605,8 @@ namespace nanoFramework.Tools.Debugger
             
             var data = File.ReadAllBytes(binFile);
 
-            if (!await PrepareForDeployAsync(
+            if (!PrepareForDeploy(
                 address,
-                cancellationToken,
                 progress))
             {
                 return false;
@@ -648,7 +642,7 @@ namespace nanoFramework.Tools.Debugger
         /// Also returns the entry point address for the given SREC file.
         /// </returns>
         // TODO this is not working most likely because of the format or parsing.
-        private async Task<bool> DeploySrecFileAsync(
+        private bool DeploySrecFile(
             string srecFile,
             CancellationToken cancellationToken,
             IProgress<string> progress = null)
@@ -676,7 +670,7 @@ namespace nanoFramework.Tools.Debugger
                     total += blocks[i].data.Length;
                 }
 
-                if(!await PrepareForDeployAsync(blocks, cancellationToken, progress))
+                if(!PrepareForDeploy(blocks, progress))
                 {
                     return false;
                 }
@@ -753,24 +747,17 @@ namespace nanoFramework.Tools.Debugger
         /// This method is generally used after the Deploy method to jump into the code that was deployed.
         /// </summary>
         /// <param name="entrypoint">Entry point address for execution to begin</param>
-        /// <param name="cancellationToken">Cancellation token for caller to cancel task execution</param>
         /// <returns>Returns false if execution fails, true otherwise
         /// </returns>
-        public async Task<bool> ExecuteAync(uint entryPoint, CancellationToken cancellationToken)
+        public bool Execute(uint entryPoint)
         {
             if (DebugEngine == null)
             {
                 return false;
             }
 
-            if (await CheckForMicroBooterAsync(cancellationToken))
+            if (CheckForMicroBooter())
             {
-                // check if cancellation was requested 
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return false;
-                }
-
                 if (m_execSrecHash.ContainsKey(entryPoint))
                 {
                     string execRec = m_execSrecHash[entryPoint];
@@ -778,33 +765,15 @@ namespace nanoFramework.Tools.Debugger
 
                     for (int retry = 0; retry < 10; retry++)
                     {
-                        // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            return false;
-                        }
-
                         try
                         {
-                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(true);
+                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000));
 
-                            // check if cancellation was requested 
-                            if (cancellationToken.IsCancellationRequested)
-                            {
-                                return false;
-                            }
-
-                            await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000), cancellationToken).ConfigureAwait(true);
+                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000));
                         }
                         catch
                         {
                             // catch all, doesn't matter the return
-                            return false;
-                        }
-
-                        // check if cancellation was requested 
-                        if (cancellationToken.IsCancellationRequested)
-                        {
                             return false;
                         }
 
@@ -841,7 +810,7 @@ namespace nanoFramework.Tools.Debugger
             return true;
         }
 
-        internal async Task<bool> CheckForMicroBooterAsync(CancellationToken cancellationToken)
+        internal bool CheckForMicroBooter()
         {
             if (DebugEngine == null) return false;
 
@@ -853,9 +822,7 @@ namespace nanoFramework.Tools.Debugger
                 // try to see if we are connected to MicroBooter
                 for (int retry = 0; retry < 5; retry++)
                 {
-                    if (cancellationToken.IsCancellationRequested) return false;
-
-                    await DebugEngine.SendBufferAsync(Encoding.UTF8.GetBytes("xx\n"), TimeSpan.FromMilliseconds(5000), cancellationToken).ConfigureAwait(true);
+                    DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("xx\n"), TimeSpan.FromMilliseconds(5000));
 
                     if (m_evtMicroBooterError.WaitOne(100))
                     {
@@ -1363,34 +1330,29 @@ namespace nanoFramework.Tools.Debugger
         //    return true;
         //}
 
-        private async Task<bool> PrepareForDeployAsync(
+        private bool PrepareForDeploy(
             uint address,
-            CancellationToken cancellationToken,
             IProgress<string> progress = null)
         {
-            return await PrepareForDeployAsync(
+            return PrepareForDeploy(
                 address,
                 null,
-                cancellationToken,
                 progress);
         }
 
-        private async Task<bool> PrepareForDeployAsync(
+        private bool PrepareForDeploy(
             List<SRecordFile.Block> blocks,
-            CancellationToken cancellationToken,
             IProgress<string> progress = null)
         {
-            return await PrepareForDeployAsync(
+            return PrepareForDeploy(
                 0,
                 blocks,
-                cancellationToken,
                 progress);
         }
 
-        private async Task<bool> PrepareForDeployAsync(
+        private bool PrepareForDeploy(
             uint address,
             List<SRecordFile.Block> blocks, 
-            CancellationToken cancellationToken, 
             IProgress<string> progress = null)
         {
             // get flash sector map, only if needed
@@ -1465,9 +1427,8 @@ namespace nanoFramework.Tools.Debugger
             // erase whatever blocks are required
             if (updatesClr)
             {
-                if (!await EraseAsync(
+                if (!Erase(
                     EraseOptions.Firmware,
-                    cancellationToken,
                     null,
                     progress))
                 {
@@ -1477,9 +1438,8 @@ namespace nanoFramework.Tools.Debugger
 
             if (updatesDeployment)
             {
-                if (!await EraseAsync(
+                if (!Erase(
                     EraseOptions.Deployment, 
-                    cancellationToken,
                     null,
                     progress))
                 {

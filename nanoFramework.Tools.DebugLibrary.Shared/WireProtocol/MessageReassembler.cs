@@ -50,7 +50,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         /// Essential Rx method. Drives state machine by reading data and processing it. This works in
         /// conjunction with NotificationThreadWorker [Tx].
         /// </summary>
-        public async Task ProcessAsync(CancellationToken cancellationToken)
+        public void Process(CancellationToken cancellationToken)
         {
             int count;
             int bytesRead;
@@ -88,7 +88,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, operationTimeout, cancellationToken);
+                            bytesRead = _parent.ReadBuffer(_messageRaw.Header, _rawPos, count, operationTimeout);
 
                             _rawPos += bytesRead;
 
@@ -127,7 +127,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Header, _rawPos, count, operationTimeout, cancellationToken);
+                            bytesRead = await _parent.ReadBuffer(_messageRaw.Header, _rawPos, count, operationTimeout, cancellationToken);
 
                             _rawPos += bytesRead;
 
@@ -185,7 +185,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                             // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
                             // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                            bytesRead = await _parent.ReadBufferAsync(_messageRaw.Payload, _rawPos, count, operationTimeout, cancellationToken);
+                            bytesRead = await _parent.ReadBuffer(_messageRaw.Payload, _rawPos, count, operationTimeout, cancellationToken);
 
                             _rawPos += bytesRead;
 
