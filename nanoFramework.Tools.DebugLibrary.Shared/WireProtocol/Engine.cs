@@ -178,147 +178,39 @@ namespace nanoFramework.Tools.Debugger
             ConnectionSource requestedConnectionSource = ConnectionSource.Unknown, 
             bool requestCapabilities = true)
         {
-            // setup policy
-            var operatioRetryPolicy = Policy.HandleResult<bool>(r => !r)
-                .Retry(attempts);
-
-            // perform connect operation with policy
-            return operatioRetryPolicy.Execute(() =>
+            if (force || !IsConnected)
             {
-                if (force || !IsConnected)
+                // connect to device 
+                if (Device.Connect())
                 {
-                    // connect to device 
-                    if (Device.Connect())
+                    if (!IsRunning)
                     {
-                        if (!IsRunning)
+                        if (_state.GetValue() == EngineState.Value.NotStarted)
                         {
-                            if (_state.GetValue() == EngineState.Value.NotStarted)
-                            {
-                                // background processor was never started
-                                _state.SetValue(EngineState.Value.Starting, true);
+                            // background processor was never started
+                            _state.SetValue(EngineState.Value.Starting, true);
 
-                                // start task to process background messages
-                                _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListener(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                            // start task to process background messages
+                            _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListener(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
-                                _state.SetValue(EngineState.Value.Started, false);
-                            }
-                            else
-                            {
-                                // background processor is not running, start it
-                                ResumeProcessing();
-                            }
+                            _state.SetValue(EngineState.Value.Started, false);
                         }
-
-                        Commands.Monitor_Ping cmd = new Commands.Monitor_Ping
+                        else
                         {
-                            Source = Commands.Monitor_Ping.c_Ping_Source_Host,
-                            Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
-                        };
-
-                        IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
-
-                        if (msg == null || msg?.Payload == null)
-                        {
-                            // update flag
-                            IsConnected = false;
-
-                            // done here
-                            return false;
-                        }
-
-
-                        if (msg.Payload is Commands.Monitor_Ping.Reply reply)
-                        {
-                            IsTargetBigEndian = (reply.Flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
-
-                            IsCRC32EnabledForWireProtocol = (reply.Flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
-
-                            // get Wire Protocol packet size
-                            switch (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_Position)
-                            {
-                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0128:
-                                    WireProtocolPacketSize = 128;
-                                    break;
-                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0256:
-                                    WireProtocolPacketSize = 256;
-                                    break;
-                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0512:
-                                    WireProtocolPacketSize = 512;
-                                    break;
-                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_1024:
-                                    WireProtocolPacketSize = 1024;
-                                    break;
-
-                                default:
-                                    // unsupported packet size
-                                    throw new NotSupportedException("Wire Protocol packet size reported by target device is not supported.");
-                            }
-
-                            // get other device capabilities
-                            ConfigBlockRequiresErase = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase).Equals(Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase);
-
-                            HasProprietaryBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter);
-
-                            HasNanoBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter);
-
-                            IsIFUCapable = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable).Equals(Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable);
-
-
-                            // update flag
-                            IsConnected = true;
-
-                            // update field
-                            switch (reply.Source)
-                            {
-                                case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
-                                    _connectionSource = ConnectionSource.nanoCLR;
-                                    break;
-
-                                case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
-                                    _connectionSource = ConnectionSource.nanoBooter;
-                                    break;
-
-                                default:
-                                    _connectionSource = ConnectionSource.Unknown;
-                                    break;
-                            }
-
-                            if (m_silent)
-                            {
-                                SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
-                            }
+                            // background processor is not running, start it
+                            ResumeProcessing();
                         }
                     }
-                }
 
-                var flashMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_FlashSectorMap.FlashSectorData>>(r => r == null)
-                                           .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
-                var targetInfoPolicy = Policy.Handle<Exception>().OrResult<TargetInfo>(r => r == null)
-                                             .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
-
-                if (IsConnectedTonanoCLR &&
-                    requestCapabilities &&
-                    (force || Capabilities.IsUnknown))
-                {
-                    CancellationTokenSource cancellationTSource = new CancellationTokenSource();
-
-                    //default capabilities
-                    Capabilities = new CLRCapabilities();
-
-                    // fill flash sector map
-                    FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
-
-                    // get target info
-                    TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
-
-                    var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
-
-                    if (tempCapabilities != null && !tempCapabilities.IsUnknown)
+                    Commands.Monitor_Ping cmd = new Commands.Monitor_Ping
                     {
-                        Capabilities = tempCapabilities;
-                        _controlller.Capabilities = Capabilities;
-                    }
-                    else
+                        Source = Commands.Monitor_Ping.c_Ping_Source_Host,
+                        Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
+                    };
+
+                    IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
+
+                    if (msg == null || msg?.Payload == null)
                     {
                         // update flag
                         IsConnected = false;
@@ -326,26 +218,100 @@ namespace nanoFramework.Tools.Debugger
                         // done here
                         return false;
                     }
-                }
 
-                if (IsConnectedTonanoBooter &&
-                    requestCapabilities &&
-                    (force || TargetInfo == null))
+
+                    if (msg.Payload is Commands.Monitor_Ping.Reply reply)
+                    {
+                        IsTargetBigEndian = (reply.Flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
+
+                        IsCRC32EnabledForWireProtocol = (reply.Flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
+
+                        // get Wire Protocol packet size
+                        switch (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_Position)
+                        {
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0128:
+                                WireProtocolPacketSize = 128;
+                                break;
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0256:
+                                WireProtocolPacketSize = 256;
+                                break;
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0512:
+                                WireProtocolPacketSize = 512;
+                                break;
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_1024:
+                                WireProtocolPacketSize = 1024;
+                                break;
+
+                            default:
+                                // unsupported packet size
+                                throw new NotSupportedException("Wire Protocol packet size reported by target device is not supported.");
+                        }
+
+                        // get other device capabilities
+                        ConfigBlockRequiresErase = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase).Equals(Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase);
+
+                        HasProprietaryBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter);
+
+                        HasNanoBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter);
+
+                        IsIFUCapable = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable).Equals(Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable);
+
+
+                        // update flag
+                        IsConnected = true;
+
+                        // update field
+                        switch (reply.Source)
+                        {
+                            case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
+                                _connectionSource = ConnectionSource.nanoCLR;
+                                break;
+
+                            case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
+                                _connectionSource = ConnectionSource.nanoBooter;
+                                break;
+
+                            default:
+                                _connectionSource = ConnectionSource.Unknown;
+                                break;
+                        }
+
+                        if (m_silent)
+                        {
+                            SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
+                        }
+                    }
+                }
+            }
+
+            var flashMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_FlashSectorMap.FlashSectorData>>(r => r == null)
+                                        .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
+            var targetInfoPolicy = Policy.Handle<Exception>().OrResult<TargetInfo>(r => r == null)
+                                            .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
+
+            if (IsConnectedTonanoCLR &&
+                requestCapabilities &&
+                (force || Capabilities.IsUnknown))
+            {
+                CancellationTokenSource cancellationTSource = new CancellationTokenSource();
+
+                //default capabilities
+                Capabilities = new CLRCapabilities();
+
+                // fill flash sector map
+                FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
+
+                // get target info
+                TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+
+                var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
+
+                if (tempCapabilities != null && !tempCapabilities.IsUnknown)
                 {
-                    // fill flash sector map
-                    if (FlashSectorMap == null)
-                    {
-                        FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
-                    }
-
-                    // get target info
-                    if (TargetInfo == null)
-                    {
-                        TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
-                    }
+                    Capabilities = tempCapabilities;
+                    _controlller.Capabilities = Capabilities;
                 }
-
-                if (requestedConnectionSource != ConnectionSource.Unknown && requestedConnectionSource != _connectionSource)
+                else
                 {
                     // update flag
                     IsConnected = false;
@@ -353,20 +319,46 @@ namespace nanoFramework.Tools.Debugger
                     // done here
                     return false;
                 }
+            }
 
-                if (requestCapabilities &&
-                    (FlashSectorMap == null
-                    || TargetInfo == null))
+            if (IsConnectedTonanoBooter &&
+                requestCapabilities &&
+                (force || TargetInfo == null))
+            {
+                // fill flash sector map
+                if (FlashSectorMap == null)
                 {
-                    // update flag
-                    IsConnected = false;
-
-                    // done here
-                    return false;
+                    FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
                 }
 
-                return IsConnected;
-            });
+                // get target info
+                if (TargetInfo == null)
+                {
+                    TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                }
+            }
+
+            if (requestedConnectionSource != ConnectionSource.Unknown && requestedConnectionSource != _connectionSource)
+            {
+                // update flag
+                IsConnected = false;
+
+                // done here
+                return false;
+            }
+
+            if (requestCapabilities &&
+                (FlashSectorMap == null
+                || TargetInfo == null))
+            {
+                // update flag
+                IsConnected = false;
+
+                // done here
+                return false;
+            }
+
+            return IsConnected;
         }
 
         public bool UpdateDebugFlags()
@@ -433,43 +425,10 @@ namespace nanoFramework.Tools.Debugger
                 {
                     reassembler.Process();
                 }
-                catch (AggregateException)
-                {
-                    ProcessExited();
-                    break;
-                }
-                catch (DeviceNotConnectedException)
-                {
-                    ProcessExited();
-                    break;
-                } 
-                catch (InvalidOperationException)
-                {
-                    ProcessExited();
-                    break;
-                }
-                catch (IOException)
-                {
-                    ProcessExited();
-                    break;
-                }
                 catch (Exception ex)
                 {
-                    // look for exceptions that are an indication that this is doomed
-                    // 0x800703E3
-                    // 0x80070006
-                    // 0x80070079
-                    // 0x8007001F
-                    // 0x800701B1
-                    if (ex.HResult == -2147023901
-                        || ex.HResult == -2147024890
-                        || ex.HResult == -2147024775
-                        || ex.HResult == -2147024865
-                        || ex.HResult == -2147024463)
-                    {
-                        ProcessExited();
-                        break;
-                    }
+                    ProcessExited();
+                    break;
                 }
             }
 
@@ -660,7 +619,7 @@ namespace nanoFramework.Tools.Debugger
                 // Start a background task that will complete tcs1.Task
                 Task.Factory.StartNew(() =>
                 {
-                    if(!request.PerformRequest(_controlller))
+                    if (!request.PerformRequest(_controlller))
                     {
                         // send failed...
 
