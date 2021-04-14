@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
@@ -35,7 +36,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     
                     while (_started)
                     {
-                        var ports = SerialPort.GetPortNames();
+                        var ports = SerialPort.GetPortNames().Distinct();
 
                         // process ports that have arrived
                         foreach (var port in ports)
