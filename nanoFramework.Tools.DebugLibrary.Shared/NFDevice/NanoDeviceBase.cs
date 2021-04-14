@@ -334,7 +334,6 @@ namespace nanoFramework.Tools.Debugger
                         if (fConnected = DebugEngine.Connect(
                             1000,
                             true,
-                            3,
                             ConnectionSource.Unknown))
                         {
                             Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();

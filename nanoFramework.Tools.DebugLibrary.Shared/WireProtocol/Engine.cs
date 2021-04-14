@@ -175,7 +175,6 @@ namespace nanoFramework.Tools.Debugger
         public bool Connect(
             int timeout, 
             bool force = false,
-            int attempts = 1,
             ConnectionSource requestedConnectionSource = ConnectionSource.Unknown, 
             bool requestCapabilities = true)
         {
@@ -1729,7 +1728,6 @@ namespace nanoFramework.Tools.Debugger
             if (!Connect(
                 timeout,
                 true,
-                3,
                 ConnectionSource.Unknown))
             {
                 if (ThrowOnCommunicationFailure)
