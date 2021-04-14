@@ -168,6 +168,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             if (_deviceWatcher.Status == DeviceWatcherStatus.Started)
             {
                 _deviceWatcher.Stop();
+
+                while (_deviceWatcher.Status != DeviceWatcherStatus.Stopped)
+                {
+                    Thread.Sleep(100);
+                }
             }
 
 
@@ -470,11 +475,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             try
             {
-                if (device.DebugEngine == null)
-                {
-                    device.CreateDebugEngine();
-                }
-
                 // get access to System.IO.Ports.SerialPort object
                 // so we can set it's BaudRate property
                 var serialDevice = (SerialPort)device.DeviceBase;
@@ -488,6 +488,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // need to go through all the valid baud rates: 921600, 460800 and 115200.
                     foreach (int baudRate in PortSerial.ValidBaudRates)
                     {
+                        if (device.DebugEngine == null)
+                        {
+                            device.CreateDebugEngine();
+                        }
+
                         if (isKnownDevice)
                         {
                             // OK to go with stored cache
@@ -582,6 +587,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 validDevice = true;
                                 break;
                             }
+                        }
+                        else
+                        {
+                            // need to kill the debug engine
+                            device.DebugEngine?.Stop();
+                            device.DebugEngine = null;
                         }
                     }
                 }
