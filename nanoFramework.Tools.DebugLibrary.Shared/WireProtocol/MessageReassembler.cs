@@ -55,9 +55,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             int count;
             int bytesRead;
 
-            // compute operation timeout here to ease reuse on calls bellow
-            TimeSpan operationTimeout = new TimeSpan(0,0,0,0, 1000);
-
             try
             {
                 DebuggerEventSource.Log.WireProtocolReceiveState(_state);
@@ -83,9 +80,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case ReceiveState.WaitingForHeader:
                         count = _messageRaw.Header.Length - _rawPos;
 
-                        // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
-                        // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                        bytesRead = _parent.ReadBuffer(_messageRaw.Header, _rawPos, count, operationTimeout);
+                        bytesRead = _parent.ReadBuffer(_messageRaw.Header, _rawPos, count);
 
                         _rawPos += bytesRead;
 
@@ -122,9 +117,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case ReceiveState.ReadingHeader:
                         count = _messageRaw.Header.Length - _rawPos;
 
-                        // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
-                        // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                        bytesRead = _parent.ReadBuffer(_messageRaw.Header, _rawPos, count, operationTimeout);
+                        bytesRead = _parent.ReadBuffer(_messageRaw.Header, _rawPos, count);
 
                         _rawPos += bytesRead;
 
@@ -180,9 +173,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case ReceiveState.ReadingPayload:
                         count = _messageRaw.Payload.Length - _rawPos;
 
-                        // need to have a timeout to cancel the read task otherwise it may end up waiting forever for this to return
-                        // because we have an external cancellation token and the above timeout cancellation token, need to combine both
-                        bytesRead = _parent.ReadBuffer(_messageRaw.Payload, _rawPos, count, operationTimeout);
+                        bytesRead = _parent.ReadBuffer(_messageRaw.Payload, _rawPos, count);
 
                         _rawPos += bytesRead;
 

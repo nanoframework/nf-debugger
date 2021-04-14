@@ -12,9 +12,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     {
         bool ProcessMessage(IncomingMessage msg, bool fReply);
 
-        int SendBuffer(byte[] buffer, TimeSpan waitTimeout);
+        int SendBuffer(byte[] buffer);
 
-        byte[] ReadBuffer(int bytesToRead, TimeSpan waitTimeout);
+        byte[] ReadBuffer(int bytesToRead);
     }
 }
 

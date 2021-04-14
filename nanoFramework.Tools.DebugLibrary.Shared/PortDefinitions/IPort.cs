@@ -9,9 +9,9 @@ namespace nanoFramework.Tools.Debugger
 {
     public interface IPort
     {
-        int SendBuffer(byte[] buffer, TimeSpan waiTimeout);
+        int SendBuffer(byte[] buffer);
 
-        byte[] ReadBuffer(int bytesToRead, TimeSpan waiTimeout);
+        byte[] ReadBuffer(int bytesToRead);
 
         bool ConnectDevice();
 

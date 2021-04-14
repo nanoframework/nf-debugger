@@ -656,6 +656,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 if (deviceId != null)
                 {
                     _devicesCache.TryRemove(deviceId, out var dummy);
+
+
                 }
             }
 

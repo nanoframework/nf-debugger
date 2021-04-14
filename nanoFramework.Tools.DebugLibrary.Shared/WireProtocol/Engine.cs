@@ -179,12 +179,9 @@ namespace nanoFramework.Tools.Debugger
             ConnectionSource requestedConnectionSource = ConnectionSource.Unknown, 
             bool requestCapabilities = true)
         {
-            // setup linear back-off based on the parameters
-            var delay = Backoff.LinearBackoff(TimeSpan.FromMilliseconds(timeout), retryCount: attempts, fastFirst: true);
-
             // setup policy
             var operatioRetryPolicy = Policy.HandleResult<bool>(r => !r)
-                .WaitAndRetry(delay);
+                .Retry(attempts);
 
             // perform connect operation with policy
             return operatioRetryPolicy.Execute(() =>
@@ -296,9 +293,9 @@ namespace nanoFramework.Tools.Debugger
                 }
 
                 var flashMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_FlashSectorMap.FlashSectorData>>(r => r == null)
-                                           .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * timeout));
+                                           .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
                 var targetInfoPolicy = Policy.Handle<Exception>().OrResult<TargetInfo>(r => r == null)
-                                             .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * timeout));
+                                             .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
 
                 if (IsConnectedTonanoCLR &&
                     requestCapabilities &&
@@ -337,10 +334,16 @@ namespace nanoFramework.Tools.Debugger
                     (force || TargetInfo == null))
                 {
                     // fill flash sector map
-                    FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
+                    if (FlashSectorMap == null)
+                    {
+                        FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
+                    }
 
                     // get target info
-                    TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                    if (TargetInfo == null)
+                    {
+                        TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                    }
                 }
 
                 if (requestedConnectionSource != ConnectionSource.Unknown && requestedConnectionSource != _connectionSource)
@@ -437,6 +440,16 @@ namespace nanoFramework.Tools.Debugger
                     break;
                 }
                 catch (DeviceNotConnectedException)
+                {
+                    ProcessExited();
+                    break;
+                } 
+                catch (InvalidOperationException)
+                {
+                    ProcessExited();
+                    break;
+                }
+                catch (IOException)
                 {
                     ProcessExited();
                     break;
@@ -651,7 +664,11 @@ namespace nanoFramework.Tools.Debugger
                     if(!request.PerformRequest(_controlller))
                     {
                         // send failed...
-                        throw new Exception();
+
+                        // remove it from store
+                        _requestsStore.Remove(request.OutgoingMessage.Header);
+
+                        request.TaskCompletionSource.SetException(new InvalidOperationException());
                     }
                 });
             }
@@ -715,9 +732,9 @@ namespace nanoFramework.Tools.Debugger
             return new Converter(Capabilities);
         }
 
-        public int SendBuffer(byte[] buffer, TimeSpan waitTimeout)
+        public int SendBuffer(byte[] buffer)
         {
-            return _portDefinition.SendBuffer(buffer, waitTimeout);
+            return _portDefinition.SendBuffer(buffer);
         }
 
         public bool ProcessMessage(IncomingMessage message, bool isReply)
@@ -827,9 +844,9 @@ namespace nanoFramework.Tools.Debugger
             _eventProcessExit?.Invoke(this, EventArgs.Empty);
         }
 
-        public byte[] ReadBuffer(int bytesToRead, TimeSpan waitTimeout)
+        public byte[] ReadBuffer(int bytesToRead)
         {
-            return _portDefinition.ReadBuffer(bytesToRead, waitTimeout);
+            return _portDefinition.ReadBuffer(bytesToRead);
         }
 
         private OutgoingMessage CreateMessage(uint cmd, uint flags, object payload)

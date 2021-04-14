@@ -197,10 +197,10 @@ namespace nanoFramework.Tools.Debugger
             if (!DeviceInfo.Valid || force)
             {
                 // seems to be invalid so get it from device
-                NanoFrameworkDeviceInfo mfDeviceInfo = new NanoFrameworkDeviceInfo(this);
-                mfDeviceInfo.GetDeviceInfo();
+                NanoFrameworkDeviceInfo nfDeviceInfo = new NanoFrameworkDeviceInfo(this);
+                nfDeviceInfo.GetDeviceInfo();
 
-                DeviceInfo = mfDeviceInfo;
+                DeviceInfo = nfDeviceInfo;
             }
 
             return DeviceInfo;
@@ -767,9 +767,9 @@ namespace nanoFramework.Tools.Debugger
                     {
                         try
                         {
-                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes(execRec), TimeSpan.FromMilliseconds(1000));
+                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes(execRec));
 
-                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("\n"), TimeSpan.FromMilliseconds(1000));
+                            DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("\n"));
                         }
                         catch
                         {
@@ -822,7 +822,7 @@ namespace nanoFramework.Tools.Debugger
                 // try to see if we are connected to MicroBooter
                 for (int retry = 0; retry < 5; retry++)
                 {
-                    DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("xx\n"), TimeSpan.FromMilliseconds(5000));
+                    DebugEngine.SendBuffer(Encoding.UTF8.GetBytes("xx\n"));
 
                     if (m_evtMicroBooterError.WaitOne(100))
                     {

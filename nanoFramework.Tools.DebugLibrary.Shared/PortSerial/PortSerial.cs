@@ -7,6 +7,7 @@ using nanoFramework.Tools.Debugger.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Ports;
 using System.Threading;
 using System.Threading.Tasks;
@@ -215,16 +216,20 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public DateTime LastActivity { get; set; }
 
-        public int SendBuffer(byte[] buffer, TimeSpan waiTimeout)
+        public int SendBuffer(byte[] buffer)
         {
             // device must be connected
             if (IsDeviceConnected)
             {
+                // compute expected operation time
+
                 int oldTimeout = 0;
 
-                if(Device.WriteTimeout != waiTimeout.TotalMilliseconds)
+                var operationTime = OperationTimeInMillisec(buffer.Length);
+
+                if (Device.WriteTimeout != operationTime)
                 {
-                    Device.WriteTimeout = (int)waiTimeout.TotalMilliseconds;
+                    Device.WriteTimeout = operationTime;
                 }
 
                 try
@@ -242,7 +247,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 {
                     Debug.WriteLine($"SendRawBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
 
-                    throw new DeviceNotConnectedException();
+                    throw;
                 }
                 finally
                 {
@@ -261,7 +266,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return 0;
         }
 
-        public byte[] ReadBuffer(int bytesToRead, TimeSpan waiTimeout)
+        public byte[] ReadBuffer(int bytesToRead)
         {
             // device must be connected
             if (IsDeviceConnected)
@@ -269,9 +274,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 int oldTimeout = 0;
                 byte[] buffer = new byte[bytesToRead];
 
-                if (Device.ReadTimeout != waiTimeout.TotalMilliseconds)
+                var operationTime = OperationTimeInMillisec(bytesToRead);
+                if (Device.ReadTimeout != operationTime)
                 {
-                    Device.ReadTimeout = (int)waiTimeout.TotalMilliseconds;
+                    Device.ReadTimeout = operationTime;
                 }
 
                 try
@@ -292,7 +298,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 {
                     Debug.WriteLine($"ReadBufferAsync-Serial-Exception occurred: {ex.Message}\r\n {ex.StackTrace}");
 
-                    throw new DeviceNotConnectedException();
+                    throw;
                 }
                 finally
                 {
@@ -313,5 +319,27 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         }
 
 #endregion
+
+        private int OperationTimeInMillisec(int byteCount)
+        {
+            // minimum operation time 
+            const int minimumOperationTime = 50;
+
+            // get bit time
+            double bitTime = (1.0 / BaudRate) * 1000;
+
+            // time for all bytes plus stop bits
+            // add a couple of extra bits, for just in case
+            int opTime = (int)((byteCount * (8 + (int)Device.StopBits) + 2)  * bitTime);
+
+            if (opTime < minimumOperationTime)
+            {
+                return minimumOperationTime;
+            }
+            else
+            {
+                return opTime;
+            }
+        }
     }
 }

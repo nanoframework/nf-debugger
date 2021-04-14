@@ -26,7 +26,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             App = app;
 
-            Random random = new Random();
+            Random random = new();
 
             lastOutboundMessage = ushort.MaxValue;
             nextEndpointId = random.Next(int.MaxValue);
@@ -55,14 +55,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             try
             {
                 // TX header
-                var sendHeaderCount = SendRawBuffer(raw.Header, TimeSpan.FromMilliseconds(1000));
+                var sendHeaderCount = SendRawBuffer(raw.Header);
 
                 if (raw.Payload != null)
                 {
                     // we have a payload to TX
                     if (sendHeaderCount == raw.Header.Length)
                     {
-                        var sendPayloadCount = SendRawBuffer(raw.Payload, TimeSpan.FromMilliseconds(1000));
+                        var sendPayloadCount = SendRawBuffer(raw.Payload);
 
                         if (sendPayloadCount == raw.Payload.Length)
                         {
@@ -136,12 +136,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             throw new NotImplementedException();
         }
 
-        private int SendRawBuffer(byte[] buffer, TimeSpan waiTimeout)
+        private int SendRawBuffer(byte[] buffer)
         {
-            return App.SendBuffer(buffer, waiTimeout);
+            return App.SendBuffer(buffer);
         }
 
-        internal int ReadBuffer(byte[] buffer, int offset, int bytesToRead, TimeSpan waitTimeout)
+        internal int ReadBuffer(byte[] buffer, int offset, int bytesToRead)
         {
             if (!_receiveSemaphore.WaitOne())
             {
@@ -161,7 +161,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 while (bytesToRead > 0)
                 {
                     // read next chunk of data async
-                    var readResult = App.ReadBuffer(bytesToRead, waitTimeout);
+                    var readResult = App.ReadBuffer(bytesToRead);
 
                     // any byte read?
                     if (readResult.Length > 0)
@@ -181,7 +181,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 // don't do anything here, as this is expected
             }
-            catch (AggregateException)
+            catch (InvalidOperationException)
             {
                 App.ProcessExited();
             }
