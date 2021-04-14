@@ -78,6 +78,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         break;
 
                     case ReceiveState.WaitingForHeader:
+
                         count = _messageRaw.Header.Length - _rawPos;
 
                         bytesRead = _parent.ReadBuffer(_messageRaw.Header, _rawPos, count);
@@ -85,7 +86,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         _rawPos += bytesRead;
 
                         // sanity check
-                        if (bytesRead != 32)
+                        if (bytesRead != _messageRaw.Header.Length)
                         {
                             // doesn't look like a header, better restart
                             _state = ReceiveState.Initialize;
@@ -112,6 +113,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                             Array.Copy(_messageRaw.Header, 1, _messageRaw.Header, 0, --_rawPos);
                         }
+
                         break;
 
                     case ReceiveState.ReadingHeader:
@@ -121,7 +123,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                         _rawPos += bytesRead;
 
-                        if (bytesRead != count) break;
+                        if (bytesRead != count)
+                        {
+                            break;
+                        }
 
                         _state = ReceiveState.CompleteHeader;
                         break;
@@ -143,6 +148,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                         Debug.WriteLine("Invalid payload requested. Initializing.");
 
                                         _state = ReceiveState.Initialize;
+
+                                        break;
                                     }
                                     _messageRaw.Payload = new byte[_messageBase.Header.Size];
                                     //reuse m_rawPos for position in header to read.
