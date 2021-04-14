@@ -15,11 +15,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 {
     public partial class PortSerial : PortMessageBase, IPort
     {
-        // R/W operation cancellation tokens objects
-        private CancellationTokenSource _readCancellationTokenSource;
-        private CancellationTokenSource _sendCancellationTokenSource;
-        private readonly object _readCancelLock = new object();
-        private readonly object _sendCancelLock = new object();
         private readonly PortSerialManager _portManager;
 
         public SerialPort Device { get; internal set; }
@@ -55,9 +50,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             // init default baud rate with 1st value
             BaudRate =  ValidBaudRates[0];
-
-            ResetReadCancellationTokenSource();
-            ResetSendCancellationTokenSource();
         }
 
         #region SerialDevice methods
@@ -146,31 +138,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             if (Device != null)
             {
-                // dispose on a Task to give it a timeout to perform the Dispose()
-                // this is required to be able to actually close devices that get stuck with pending tasks on the in/output streams
-                var closeTask = Task.Factory.StartNew(() =>
-                {
-                    try
-                    {
-                        // This closes the handle to the device
-                        Device?.Dispose();
-                        Device = null;
-                    }
-                    catch
-                    {
-                        // catch all required to deal with possible InteropServices.SEHException
-                    }
-                });
-
-                //need to wrap this in try-catch to catch possible AggregateExceptions
-                try
-                {
-                    Task.WaitAll(new Task[] { closeTask }, TimeSpan.FromMilliseconds(1000));
-                }
-                catch
-                {
-                    // catch all required to deal with possible AggregateExceptions
-                }
+                Device.Close();
+                Device = null;
             }
         }
 
@@ -220,11 +189,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             // disconnecting the current device
 
-            try
-            {
-                // cancel all IO operations
-                CancelAllIoTasks();
-
+            //try
+            //{
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.CloseDevice(InstanceId));
 
                 // close device
@@ -234,71 +200,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 NanoDevice.DebugEngine?.Stop();
                 NanoDevice.DebugEngine?.Dispose();
                 NanoDevice.DebugEngine = null;
-            }
-            catch
-            {
-                // catch all required to deal with possible Exceptions when disconnecting the device
-            }
-        }
-
-        private void CancelReadTask()
-        {
-            lock (_readCancelLock)
-            {
-                if (_readCancellationTokenSource != null)
-                {
-                    if (!_readCancellationTokenSource.IsCancellationRequested)
-                    {
-                        _readCancellationTokenSource.Cancel();
-
-                        // Existing IO already has a local copy of the old cancellation token so this reset won't affect it
-                        ResetReadCancellationTokenSource();
-                    }
-                }
-            }
-        }
-
-        private void CancelWriteTask()
-        {
-            lock (_sendCancelLock)
-            {
-                if (_sendCancellationTokenSource != null)
-                {
-                    if (!_sendCancellationTokenSource.IsCancellationRequested)
-                    {
-                        _sendCancellationTokenSource.Cancel();
-
-                        // Existing IO already has a local copy of the old cancellation token so this reset won't affect it
-                        ResetSendCancellationTokenSource();
-                    }
-                }
-            }
-        }
-
-        private void CancelAllIoTasks()
-        {
-            CancelReadTask();
-            CancelWriteTask();
-        }
-
-        private void ResetReadCancellationTokenSource()
-        {
-            // Create a new cancellation token source so that can cancel all the tokens again
-            _readCancellationTokenSource = new CancellationTokenSource();
-
-            // Hook the cancellation callback (called whenever Task.cancel is called)
-            // TODO this probably could be used to notify the debug engine and others of the cancellation
-            //ReadCancellationTokenSource.Token.Register(() => NotifyReadCancelingTask());
-        }
-
-        private void ResetSendCancellationTokenSource()
-        {
-            // Create a new cancellation token source so that can cancel all the tokens again
-            _sendCancellationTokenSource = new CancellationTokenSource();
-
-            // Hook the cancellation callback (called whenever Task.cancel is called)
-            // TODO this probably could be used to notify the debug engine and others of the cancellation
-            //SendCancellationTokenSource.Token.Register(() => NotifySendCancelingTask());
+            //}
+            //catch
+            //{
+            //    // catch all required to deal with possible Exceptions when disconnecting the device
+            //}
         }
 
         #region Interface implementations
