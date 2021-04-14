@@ -12,7 +12,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
     public class DeviceWatcher
     {
         private bool _started = false;
-        private readonly List<string> _ports = new List<string>();
+        private List<string> _ports;
 
         public delegate void EventDeviceAdded(object sender, string port);
 
@@ -30,6 +30,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 var threadWatch = new Thread(() =>
                 {
+                    _ports = new List<string>();
+
                     _started = true;
 
                     Status = DeviceWatcherStatus.Started;
