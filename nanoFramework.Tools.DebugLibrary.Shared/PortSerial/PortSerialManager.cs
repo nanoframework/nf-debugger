@@ -416,8 +416,16 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // 
 
             // TODO
-            if (serialPort != "COM18")
+            if (serialPort != "COM18" &&
+                serialPort != "COM16")
             {
+                return;
+            }
+
+            // check against black list
+            if (PortBlackList.Contains(serialPort))
+            {
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(serialPort));
                 return;
             }
 
@@ -503,114 +511,106 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // sanity check for invalid or null device base
                 if (serialDevice != null)
                 {
-                    // check against black list
-                    if (PortBlackList.Contains(serialDevice.PortName))
-                    {
-                        OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(deviceId));
-                    }
-                    else
-                    {
-                        // check if this device is on cache
-                        isKnownDevice = _devicesCache.TryGetValue(deviceId, out var cachedDevice);
+                    // check if this device is on cache
+                    isKnownDevice = _devicesCache.TryGetValue(deviceId, out var cachedDevice);
 
-                        // need to go through all the valid baud rates: 921600, 460800 and 115200.
-                        foreach (int baudRate in PortSerial.ValidBaudRates)
+                    // need to go through all the valid baud rates: 921600, 460800 and 115200.
+                    foreach (int baudRate in PortSerial.ValidBaudRates)
+                    {
+                        if (isKnownDevice)
+                        {
+                            // OK to go with stored cache
+                            serialDevice.BaudRate = cachedDevice.BaudRate;
+                        }
+                        else
+                        {
+                            serialDevice.BaudRate = baudRate;
+                        }
+
+                        OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {deviceId} @ { serialDevice.BaudRate }"));
+
+                        // try to "just" connect to the device meaning...
+                        // ... don't request capabilities or force anything except the absolute minimum required, plus...
+                        // ... it's OK to use a very short timeout as we'll be exchanging really short packets with the device
+                        if (device.DebugEngine.Connect(
+                            200,
+                            false,
+                            1,
+                            ConnectionSource.Unknown,
+                            false))
                         {
                             if (isKnownDevice)
                             {
-                                // OK to go with stored cache
-                                serialDevice.BaudRate = cachedDevice.BaudRate;
+                                // skip getting properties from device
+                                device.TargetName = cachedDevice.TargetName;
+                                device.Platform = cachedDevice.PlatformName;
+
+                                validDevice = true;
+                                break;
+                            }
+
+                            // set retry policies
+                            var targetInfoPropertiesPolicy = Policy.Handle<NullReferenceException>().OrResult<CLRCapabilities.TargetInfoProperties>(r => r.TargetName == null)
+                                                        .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
+                            var targetInfoPolicy = Policy.Handle<NullReferenceException>().OrResult<TargetInfo>(r => r.TargetName == null)
+                                                            .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
+                            var targetReleaseInfoPolicy = Policy.Handle<NullReferenceException>().OrResult<ReleaseInfo>(r => r == null)
+                                                            .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
+
+                            if (device.DebugEngine.IsConnectedTonanoBooter)
+                            {
+                                // try first with new command
+                                var targetInfo = targetInfoPolicy.Execute(() => device.DebugEngine.GetMonitorTargetInfo());
+
+                                if (targetInfo != null)
+                                {
+                                    device.TargetName = targetInfo.TargetName;
+                                    device.Platform = targetInfo.PlatformName;
+                                }
+                                else
+                                {
+                                    // try again with deprecated command
+                                    var deviceInfo = targetReleaseInfoPolicy.Execute(() => device.DebugEngine.GetMonitorOemInfo());
+                                        
+                                    if (deviceInfo != null)
+                                    {
+                                        device.TargetName = deviceInfo.TargetName;
+                                        device.Platform = deviceInfo.PlatformName;
+                                    }
+                                }
                             }
                             else
                             {
-                                serialDevice.BaudRate = baudRate;
+                                var deviceInfo = targetInfoPropertiesPolicy.Execute(() => { 
+                                    if (device.DebugEngine != null) 
+                                    { 
+                                        return device.DebugEngine.GetTargetInfo(); 
+                                    }
+                                    else 
+                                    { 
+                                        return new CLRCapabilities.TargetInfoProperties(); 
+                                    }
+                                });
+
+                                if (!string.IsNullOrEmpty(deviceInfo.TargetName))
+                                {
+                                    device.TargetName = deviceInfo.TargetName;
+                                    device.Platform = deviceInfo.Platform;
+                                }
                             }
 
-                            OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {deviceId} @ { serialDevice.BaudRate }"));
-
-                            // try to "just" connect to the device meaning...
-                            // ... don't request capabilities or force anything except the absolute minimum required, plus...
-                            // ... it's OK to use a very short timeout as we'll be exchanging really short packets with the device
-                            if (device.DebugEngine.Connect(
-                                200,
-                                false,
-                                1,
-                                ConnectionSource.Unknown,
-                                false))
+                            if (string.IsNullOrEmpty(device.TargetName)
+                                || string.IsNullOrEmpty(device.Platform))
                             {
-                                if (isKnownDevice)
-                                {
-                                    // skip getting properties from device
-                                    device.TargetName = cachedDevice.TargetName;
-                                    device.Platform = cachedDevice.PlatformName;
+                                OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"ERROR: {device.Device.DeviceInformation.InstanceId} failed to get target information"));
 
-                                    validDevice = true;
-                                    break;
-                                }
-
-                                // set retry policies
-                                var targetInfoPropertiesPolicy = Policy.Handle<NullReferenceException>().OrResult<CLRCapabilities.TargetInfoProperties>(r => r.TargetName == null)
-                                                            .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
-                                var targetInfoPolicy = Policy.Handle<NullReferenceException>().OrResult<TargetInfo>(r => r.TargetName == null)
-                                                             .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
-                                var targetReleaseInfoPolicy = Policy.Handle<NullReferenceException>().OrResult<ReleaseInfo>(r => r == null)
-                                                             .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
-
-                                if (device.DebugEngine.IsConnectedTonanoBooter)
-                                {
-                                    // try first with new command
-                                    var targetInfo = targetInfoPolicy.Execute(() => device.DebugEngine.GetMonitorTargetInfo());
-
-                                    if (targetInfo != null)
-                                    {
-                                        device.TargetName = targetInfo.TargetName;
-                                        device.Platform = targetInfo.PlatformName;
-                                    }
-                                    else
-                                    {
-                                        // try again with deprecated command
-                                        var deviceInfo = targetReleaseInfoPolicy.Execute(() => device.DebugEngine.GetMonitorOemInfo());
-                                        
-                                        if (deviceInfo != null)
-                                        {
-                                            device.TargetName = deviceInfo.TargetName;
-                                            device.Platform = deviceInfo.PlatformName;
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    var deviceInfo = targetInfoPropertiesPolicy.Execute(() => { 
-                                        if (device.DebugEngine != null) 
-                                        { 
-                                            return device.DebugEngine.GetTargetInfo(); 
-                                        }
-                                        else 
-                                        { 
-                                            return new CLRCapabilities.TargetInfoProperties(); 
-                                        }
-                                    });
-
-                                    if (!string.IsNullOrEmpty(deviceInfo.TargetName))
-                                    {
-                                        device.TargetName = deviceInfo.TargetName;
-                                        device.Platform = deviceInfo.Platform;
-                                    }
-                                }
-
-                                if (string.IsNullOrEmpty(device.TargetName)
-                                    || string.IsNullOrEmpty(device.Platform))
-                                {
-                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"ERROR: {device.Device.DeviceInformation.InstanceId} failed to get target information"));
-
-                                    validDevice = false;
-                                    break;
-                                }
-                                else
-                                {
-                                    validDevice = true;
-                                    break;
-                                }
+                                validDevice = false;
+                                break;
+                            }
+                            else
+                            {
+                                validDevice = true;
+                                break;
                             }
                         }
                     }
@@ -644,17 +644,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     _devicesCache.TryRemove(deviceId, out var dummy);
                 }
  
-                Task.Factory.StartNew(() =>
-                {
-                    // perform the Dispose() call on a Task
-                    // this is required to be able to actually close devices that get stuck with pending tasks on the in/output streams
+                // perform the Dispose() call on a Task
+                // this is required to be able to actually close devices that get stuck with pending tasks on the in/output streams
 
-                    device.Disconnect();
-                    // This closes the handle to the device
-                    device?.Dispose();
-                    device = null;
-
-                }).FireAndForget();
+                device.Disconnect();
             }
             catch
             {
