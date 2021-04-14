@@ -13,8 +13,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     public class Controller : IControllerLocal
     {
         private ushort lastOutboundMessage;
-        private readonly Semaphore _sendSemaphore = new Semaphore(1, 1);
-        private readonly Semaphore _receiveSemaphore = new Semaphore(1, 1);
         private readonly int nextEndpointId;
         private readonly object incrementLock = new object();
 
@@ -47,11 +45,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public bool Send(MessageRaw raw)
         {
-            if(!_sendSemaphore.WaitOne())
-            {
-                return false;
-            }
-
             try
             {
                 // TX header
@@ -104,10 +97,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 // catch everything else here, doesn't matter
                 return false;
             }
-            finally
-            {
-                _sendSemaphore.Release();
-            }
 
             return false;
         }
@@ -143,10 +132,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         internal int ReadBuffer(byte[] buffer, int offset, int bytesToRead)
         {
-            if (!_receiveSemaphore.WaitOne())
-            {
-                return 0;
-            }
 
             if (App.AvailableBytes < bytesToRead)
             {
@@ -188,10 +173,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 // catch everything else, doesn't matter
                 return 0;
-            }
-            finally
-            {
-                _receiveSemaphore.Release();
             }
 
             return 0;
