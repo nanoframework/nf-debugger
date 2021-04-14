@@ -25,9 +25,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
     {
         private readonly DeviceWatcher _deviceWatcher = new();
 
-        // Serial device watchers suspended flag
-        private bool _watchersSuspended = false;
-
         // Serial device watchers started flag
         private bool _watchersStarted = false;
 
@@ -53,7 +50,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         public PortSerialManager(bool startDeviceWatchers = true, List<string> portExclusionList = null, int bootTime = 3000)
         {
-            //_mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, string>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
             _serialDevices = new List<SerialDeviceInformation>();
 
@@ -106,9 +102,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             Task.Run(delegate
             {
-                //StopDeviceWatchersInternal();
+                StopDeviceWatchersInternal();
 
-                //StartDeviceWatchersInternal();
+                StartDeviceWatchersInternal();
             }).FireAndForget();
         }
 
@@ -116,13 +112,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             if(!_watchersStarted)
             {
-                //StartDeviceWatchersInternal();
+                StartDeviceWatchersInternal();
             }
         }
 
         public override void StopDeviceWatchers()
         {
-            //StopDeviceWatchersInternal();
+            StopDeviceWatchersInternal();
         }
 
         #region Device watcher management and host app status handling
@@ -147,8 +143,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             // Initialize the Serial device watchers to be notified when devices are connected/removed
             StartDeviceWatchersInternal();
-
-            _deviceWatcher.Start();
         }
 
         /// <summary>
@@ -157,78 +151,51 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private void StartDeviceWatchersInternal()
         {
             // Start all device watchers
+
+            _deviceWatcher.Start();
+
             _watchersStarted = true;
+            
             _deviceWatchersCompletedCount = 0;
             IsDevicesEnumerationComplete = false;
-
-            // TODO
-            // dummy call for testing, remove it
-            //AddDeviceToListAsync("COM18");
-
-            // TODO
-            //foreach (DeviceWatcher deviceWatcher in _mapDeviceWatchersToDeviceSelector.Keys)
-            //{
-            //    if ((deviceWatcher.Status != DeviceWatcherStatus.Started)
-            //        && (deviceWatcher.Status != DeviceWatcherStatus.EnumerationCompleted))
-            //    {
-            //        deviceWatcher.Start();
-            //    }
-            //}
         }
 
-        // TODO
-        ///// <summary>
-        ///// Stops all device watchers.
-        ///// </summary>
-        //private void StopDeviceWatchersInternal()
-        //{
-        //    // Stop all device watchers
-        //    foreach (DeviceWatcher deviceWatcher in _mapDeviceWatchersToDeviceSelector.Keys)
-        //    {
-        //        if ((deviceWatcher.Status == DeviceWatcherStatus.Started)
-        //            || (deviceWatcher.Status == DeviceWatcherStatus.EnumerationCompleted))
-        //        {
-        //            deviceWatcher.Stop();
+        /// <summary>
+        /// Stops all device watchers.
+        /// </summary>
+        private void StopDeviceWatchersInternal()
+        {
+            if (_deviceWatcher.Status == DeviceWatcherStatus.Started)
+            {
+                _deviceWatcher.Stop();
+            }
 
-        //            // need to wait for the watcher to be stopped before proceeding to the next 
-        //            // 3 attempts
-        //            for(int i = 0; i < 3; i++)
-        //            {
-        //                if( deviceWatcher.Status == DeviceWatcherStatus.Stopped || deviceWatcher.Status == DeviceWatcherStatus.Aborted)
-        //                {
-        //                    // this is OK now
-        //                    break;
-        //                }
 
-        //                Thread.Sleep(300 * i);
-        //            }
-        //        }
-        //    }
+            // Clear the list of devices so we don't have potentially disconnected devices around
+            ClearDeviceEntries();
 
-        //    // Clear the list of devices so we don't have potentially disconnected devices around
-        //    ClearDeviceEntries();
+            // also clear nanoFramework devices list
+            var devicesToRemove = NanoFrameworkDevices.Select(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).Device.DeviceInformation.InstanceId).ToList();
 
-        //    // also clear nanoFramework devices list
-        //    var devicesToRemove = NanoFrameworkDevices.Select(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).Device.DeviceInformation.DeviceInformation.Id).ToList();
+            foreach (var deviceId in devicesToRemove)
+            {
+                // get device...
+                var device = FindNanoFrameworkDevice(deviceId);
 
-        //    foreach (var deviceId in devicesToRemove)
-        //    {
-        //        // get device...
-        //        var device = FindNanoFrameworkDevice(deviceId);
+                // ... and remove it from collection
+                NanoFrameworkDevices.Remove(device);
 
-        //        // ... and remove it from collection
-        //        NanoFrameworkDevices.Remove(device);
+                device?.DebugEngine?.StopProcessing();
+                device?.DebugEngine?.Dispose();
 
-        //        device?.DebugEngine?.StopProcessing();
-        //        device?.DebugEngine?.Dispose();
+                device?.Disconnect();
 
-        //        device?.Disconnect();
-        //        // This closes the handle to the device
-        //        ((NanoDevice<NanoSerialDevice>)device)?.Dispose();
-        //    }
+                // This closes the handle to the device
+                ((NanoDevice<NanoSerialDevice>)device)?.Dispose();
+            }
 
-        //    _watchersStarted = false;
-        //}
+            _watchersStarted = false;
+        }
 
         #endregion
 
