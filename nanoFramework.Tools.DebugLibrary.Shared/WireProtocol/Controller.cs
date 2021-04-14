@@ -148,7 +148,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 return 0;
             }
 
-            int bytesToReadRequested = bytesToRead;
+            if (App.AvailableBytes < bytesToRead)
+            {
+                return 0;
+            }
 
             try
             {
@@ -158,19 +161,15 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     return 0;
                 }
 
-                while (bytesToRead > 0)
+                // read data
+                var readResult = App.ReadBuffer(bytesToRead);
+
+                // any byte read?
+                if (readResult.Length > 0)
                 {
-                    // read next chunk of data async
-                    var readResult = App.ReadBuffer(bytesToRead);
+                    Array.Copy(readResult, 0, buffer, offset, readResult.Length);
 
-                    // any byte read?
-                    if (readResult.Length > 0)
-                    {
-                        Array.Copy(readResult, 0, buffer, offset, readResult.Length);
-
-                        offset += readResult.Length;
-                        bytesToRead -= readResult.Length;
-                    }
+                    return readResult.Length;
                 }
             }
             catch (DeviceNotConnectedException)
@@ -195,7 +194,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 _receiveSemaphore.Release();
             }
 
-            return bytesToReadRequested - bytesToRead;
+            return 0;
         }
     }
 }

@@ -849,6 +849,8 @@ namespace nanoFramework.Tools.Debugger
             return _portDefinition.ReadBuffer(bytesToRead);
         }
 
+        public int AvailableBytes => _portDefinition.AvailableBytes;
+
         private OutgoingMessage CreateMessage(uint cmd, uint flags, object payload)
         {
             return new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), cmd, flags, payload);

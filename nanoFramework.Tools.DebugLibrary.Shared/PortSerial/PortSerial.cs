@@ -50,7 +50,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             NanoDevice = serialDevice ?? throw new ArgumentNullException(nameof(serialDevice));
 
             // init default baud rate with 1st value
-            BaudRate =  ValidBaudRates[0];
+            BaudRate = ValidBaudRates[0];
         }
 
         #region SerialDevice methods
@@ -69,6 +69,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         public bool OpenDevice()
         {
             bool successfullyOpenedDevice = false;
+            bool retry = false;
 
             try
             {
@@ -83,7 +84,20 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // Device could have been blocked by user or the device has already been opened by another app.
                 if (Device != null)
                 {
-                    Device.Open();
+                    try
+                    {
+                        Device.Open();
+                    }
+                    catch(IOException)
+                    {
+                        retry = true;
+                    }
+
+                    if(retry)
+                    {
+                        Thread.Sleep(100);
+                        Device.Open();
+                    }
 
                     successfullyOpenedDevice = true;
 
@@ -97,7 +111,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
             }
 #if DEBUG
-            catch(Exception ex)
+            catch (Exception ex)
 #else
             catch()
 #endif
@@ -153,13 +167,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             //throw new NotImplementedException();
         }
 
-#endregion
+        #endregion
 
         public bool ConnectDevice()
         {
             bool connectFlag = ConnectSerialDevice();
 
-            if(connectFlag && NanoDevice.DeviceBase == null)
+            if (connectFlag && NanoDevice.DeviceBase == null)
             {
                 NanoDevice.DeviceBase = Device;
             }
@@ -196,15 +210,15 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             //try
             //{
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.CloseDevice(InstanceId));
+            OnLogMessageAvailable(NanoDevicesEventSource.Log.CloseDevice(InstanceId));
 
-                // close device
-                CloseDevice();
+            // close device
+            CloseDevice();
 
-                // stop and dispose DebugEgine if instantiated
-                NanoDevice.DebugEngine?.Stop();
-                NanoDevice.DebugEngine?.Dispose();
-                NanoDevice.DebugEngine = null;
+            // stop and dispose DebugEgine if instantiated
+            NanoDevice.DebugEngine?.Stop();
+            NanoDevice.DebugEngine?.Dispose();
+            NanoDevice.DebugEngine = null;
             //}
             //catch
             //{
@@ -212,9 +226,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             //}
         }
 
-#region Interface implementations
+        #region Interface implementations
 
         public DateTime LastActivity { get; set; }
+
+        public int AvailableBytes => Device.BytesToRead;
 
         public int SendBuffer(byte[] buffer)
         {
@@ -229,6 +245,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 if (Device.WriteTimeout != operationTime)
                 {
+                    oldTimeout = Device.WriteTimeout;
+
                     Device.WriteTimeout = operationTime;
                 }
 
@@ -275,20 +293,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 byte[] buffer = new byte[bytesToRead];
 
                 var operationTime = OperationTimeInMillisec(bytesToRead);
+
                 if (Device.ReadTimeout != operationTime)
                 {
+                    oldTimeout = Device.ReadTimeout;
+
                     Device.ReadTimeout = operationTime;
                 }
 
                 try
                 {
-                    var bytesRead = Device.Read(buffer, 0, bytesToRead);
-                    if (bytesRead > 0)
-                    {
-                        Array.Resize<byte>(ref buffer, bytesRead);
+                    Device.Read(buffer, 0, bytesToRead);
 
-                        return buffer;
-                    }
+                    return buffer;
                 }
                 catch (TimeoutException)
                 {

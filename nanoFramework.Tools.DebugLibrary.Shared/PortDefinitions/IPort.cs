@@ -9,6 +9,8 @@ namespace nanoFramework.Tools.Debugger
 {
     public interface IPort
     {
+        int AvailableBytes { get; }
+
         int SendBuffer(byte[] buffer);
 
         byte[] ReadBuffer(int bytesToRead);
