@@ -21,10 +21,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public event EventDeviceRemoved Removed;
 
-        public delegate void EventEnumerationCompleted(object sender, List<string> ports);
-
-        public event EventEnumerationCompleted EnumerationCompleted;
-
         public DeviceWatcherStatus Status { get; internal set; }
 
         public void Start()
@@ -34,54 +30,52 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 var threadWatch = new Thread(() =>
                 {
                     _started = true;
+
                     Status = DeviceWatcherStatus.Started;
-                    bool changed = true; ;
+                    
                     while (_started)
                     {
                         var ports = SerialPort.GetPortNames();
-                        
+
+                        // process ports that have arrived
                         foreach (var port in ports)
                         {
                             if (!_ports.Contains(port))
                             {
                                 _ports.Add(port);
                                 Added?.Invoke(this, port);
-                                changed = true;
                             }
                         }
 
-                        List<string> portsToRemove = new List<string>();
+                        // check for ports that departed 
+                        List<string> portsToRemove = new();
 
-                        foreach(var port in _ports)
+                        foreach (var port in _ports)
                         {
-                            if(!ports.Contains(port))
+                            if (!ports.Contains(port))
                             {
                                 portsToRemove.Add(port);
                             }
                         }
 
+                        // process ports that have departed 
                         foreach (var port in portsToRemove)
                         {
                             if (_ports.Contains(port))
                             {
                                 _ports.Remove(port);
                                 Removed?.Invoke(this, port);
-                                changed = true;
                             }
-                        }
-
-                        if(changed)
-                        {
-                            EnumerationCompleted?.Invoke(this, _ports.ToList());
-                            changed = false;
                         }
 
                         Thread.Sleep(200);
                     }
 
                     Status = DeviceWatcherStatus.Stopped;
-                });
-                threadWatch.Priority = ThreadPriority.Lowest;
+                })
+                {
+                    Priority = ThreadPriority.Lowest
+                };
                 threadWatch.Start();
             }
         }
