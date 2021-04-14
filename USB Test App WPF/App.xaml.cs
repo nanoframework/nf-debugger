@@ -41,7 +41,7 @@ namespace Serial_Test_App_WPF
 
         private INFSerialDebugClientService CreateSerialDebugClient()
         {
-            var serialDebugClient = PortBase.CreateInstanceForSerial(new System.Collections.Generic.List<string>() { "COM16" } );
+            var serialDebugClient = PortBase.CreateInstanceForSerial();
 
             return new NFSerialDebugClientService(serialDebugClient);
         }

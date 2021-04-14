@@ -95,7 +95,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     successfullyOpenedDevice = false;
                 }
             }
-            catch
+#if DEBUG
+            catch(Exception ex)
+#else
+            catch()
+#endif
             {
                 // catch all because the device open might fail for a number of reasons
             }
@@ -148,7 +152,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             //throw new NotImplementedException();
         }
 
-        #endregion
+#endregion
 
         public bool ConnectDevice()
         {
@@ -207,7 +211,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             //}
         }
 
-        #region Interface implementations
+#region Interface implementations
 
         public DateTime LastActivity { get; set; }
 
@@ -308,6 +312,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return new byte[0];
         }
 
-        #endregion
+#endregion
     }
 }

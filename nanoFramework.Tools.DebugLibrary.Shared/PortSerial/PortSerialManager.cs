@@ -51,7 +51,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Creates an Serial debug client
         /// </summary>
-        public PortSerialManager(bool startDeviceWatchers = true, List<string> portBlackList = null, int bootTime = 3000)
+        public PortSerialManager(bool startDeviceWatchers = true, List<string> portExclusionList = null, int bootTime = 3000)
         {
             //_mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, string>();
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
@@ -59,9 +59,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             BootTime = bootTime;
 
-            if (portBlackList != null)
+            if (portExclusionList != null)
             {
-                PortBlackList = portBlackList;
+                PortExclusionList = portExclusionList;
             }
 
             Task.Factory.StartNew(() => {
@@ -422,10 +422,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 return;
             }
 
-            // check against black list
-            if (PortBlackList.Contains(serialPort))
+            // check against exclusion list
+            if (PortExclusionList.Contains(serialPort))
             {
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(serialPort));
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingDeviceToExclude(serialPort));
                 return;
             }
 
@@ -450,7 +450,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                serialPort.Contains("EVSERIAL")
                )
             {
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingBlackListedDevice(serialPort));
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingDeviceToExclude(serialPort));
 
                 // don't even bother with this one
                 return;

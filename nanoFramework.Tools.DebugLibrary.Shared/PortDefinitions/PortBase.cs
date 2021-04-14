@@ -11,7 +11,7 @@ namespace nanoFramework.Tools.Debugger
 {
     public abstract partial class PortBase
     {
-        public List<string> PortBlackList { get; set; } = new List<string>();
+        public List<string> PortExclusionList { get; set; } = new List<string>();
 
         public override bool Equals(object obj)
         {

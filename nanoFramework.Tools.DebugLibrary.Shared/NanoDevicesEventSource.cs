@@ -19,9 +19,9 @@ namespace nanoFramework.Tools.Debugger
         private static readonly Lazy<NanoDevicesEventSource> Log_ = new Lazy<NanoDevicesEventSource>(() => new NanoDevicesEventSource());
 
         [Event(1, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
-        public string DroppingBlackListedDevice(string deviceSelector)
+        public string DroppingDeviceToExclude(string deviceSelector)
         {
-            string logMessage = $"NanoDevices: dropping black listed device {deviceSelector}";
+            string logMessage = $"NanoDevices: dropping device in exclusion list {deviceSelector}";
 
             WriteEvent(1, logMessage);
 
