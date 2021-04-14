@@ -10,13 +10,13 @@ namespace nanoFramework.Tools.Debugger.Serial
 {
     public class SerialDeviceInformation
     {
-        private readonly string deviceSelector;
+        private readonly string _deviceSelector;
 
         public string InstanceId
         {
             get
             {
-                return "";
+                return _deviceSelector;
             }
         }
 
@@ -27,7 +27,7 @@ namespace nanoFramework.Tools.Debugger.Serial
         /// <param name="deviceSelector">The AQS used to find this device</param>
         public SerialDeviceInformation(String deviceSelector)
         {
-            this.deviceSelector = deviceSelector;
+            _deviceSelector = deviceSelector;
         }
     }
 }

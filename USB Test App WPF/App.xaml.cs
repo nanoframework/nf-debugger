@@ -41,10 +41,7 @@ namespace Serial_Test_App_WPF
 
         private INFSerialDebugClientService CreateSerialDebugClient()
         {
-            //virtualApp = Windows.UI.Xaml.Application.Current;
-
-            // TODO: check app lifecycle
-            var serialDebugClient = PortBase.CreateInstanceForSerial("", new System.Collections.Generic.List<string>() { "COM16" } );
+            var serialDebugClient = PortBase.CreateInstanceForSerial(new System.Collections.Generic.List<string>() { "COM16" } );
 
             return new NFSerialDebugClientService(serialDebugClient);
         }

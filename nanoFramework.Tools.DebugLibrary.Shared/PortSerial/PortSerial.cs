@@ -85,11 +85,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // the communication to fail
                 /////////////////////////////////////////////////////////////
 
-                Device = new SerialPort(InstanceId, BaudRate, Parity.None, 8, StopBits.None);
+                Device = new SerialPort(InstanceId, BaudRate, Parity.None, 8);
 
                 // Device could have been blocked by user or the device has already been opened by another app.
                 if (Device != null)
                 {
+                    Device.Open();
+
                     successfullyOpenedDevice = true;
 
                     Device.WriteTimeout = 500;

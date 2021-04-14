@@ -429,7 +429,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 try
                 {
-                    reassembler.ProcessAsync(_backgroundProcessorCancellation.Token).Wait();
+                    reassembler.Process();
                 }
                 catch (AggregateException)
                 {
@@ -591,7 +591,7 @@ namespace nanoFramework.Tools.Debugger
         {
             OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
 
-            var request = PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
+            var request = PerformRequestAsync(message, millisecondsTimeout);
 
             try
             {
@@ -612,9 +612,11 @@ namespace nanoFramework.Tools.Debugger
             return request.Result;
         }
 
+        internal object _syncReqLock = new object();
+
         private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = 5000)
         {
-            var request = PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
+            var request = PerformRequestAsync(message, millisecondsTimeout);
 
             try
             {
@@ -636,9 +638,9 @@ namespace nanoFramework.Tools.Debugger
             return request.Result;
         }
 
-        public Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int millisecondsTimeout = 5000)
+        internal Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, int millisecondsTimeout = 5000)
         {
-            WireProtocolRequest request = new WireProtocolRequest(message, cancellationToken, millisecondsTimeout);
+            WireProtocolRequest request = new WireProtocolRequest(message, millisecondsTimeout);
             _requestsStore.Add(request);
 
             try
@@ -646,7 +648,11 @@ namespace nanoFramework.Tools.Debugger
                 // Start a background task that will complete tcs1.Task
                 Task.Factory.StartNew(() =>
                 {
-                    request.PerformRequestAsync(_controlller).Wait(millisecondsTimeout, cancellationToken);
+                    if(!request.PerformRequest(_controlller))
+                    {
+                        // send failed...
+                        throw new Exception();
+                    }
                 });
             }
             catch (Exception ex)
@@ -751,7 +757,14 @@ namespace nanoFramework.Tools.Debugger
                                 Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
                             };
 
-                            PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, _controlller.CreateConverter(), Flags.c_NonCritical, cmdReply), _backgroundProcessorCancellation.Token);
+                            PerformRequestAsync(
+                                new OutgoingMessage(
+                                    _controlller.GetNextSequenceId(),
+                                    message,
+                                    _controlller.CreateConverter(),
+                                    Flags.c_NonCritical,
+                                    cmdReply)
+                                );
 
                             // signal that a monitor ping was received
                             _pingEvent.Set();
@@ -1034,7 +1047,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        private async Task RpcReceiveQuery(IncomingMessage message, Commands.Debugging_Messaging_Query query)
+        private void RpcReceiveQuery(IncomingMessage message, Commands.Debugging_Messaging_Query query)
         {
             Commands.Debugging_Messaging_Address addr = query.m_addr;
             EndPointRegistration eep = RpcFind(addr.m_to_Type, addr.m_to_Id, true);
@@ -1045,7 +1058,7 @@ namespace nanoFramework.Tools.Debugger
                 m_addr = addr
             };
 
-            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, reply), _cancellationTokenSource.Token);
+            PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, reply));
         }
 
         internal bool RpcCheck(Commands.Debugging_Messaging_Address addr)
@@ -1153,7 +1166,7 @@ namespace nanoFramework.Tools.Debugger
                 m_addr = addr
             };
 
-            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), msg, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
+            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), msg, CreateConverter(), Flags.c_NonCritical, res));
 
             if (eep != null)
             {
@@ -1211,7 +1224,7 @@ namespace nanoFramework.Tools.Debugger
                 m_addr = addr
             };
 
-            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
+            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, res));
 
             if (eep != null)
             {
@@ -1240,32 +1253,29 @@ namespace nanoFramework.Tools.Debugger
 
         internal async Task<WireProtocolRequest> RequestAsync(OutgoingMessage message, int timeout)
         {
-            using (CancellationTokenSource cts = new CancellationTokenSource())
+            WireProtocolRequest request = new WireProtocolRequest(message);
+
+            //Checking whether IsRunning and adding the request to m_requests
+            //needs to be atomic to avoid adding a request after the Engine
+            //has been stopped.
+
+            if (!IsRunning)
             {
-                WireProtocolRequest request = new WireProtocolRequest(message, cts.Token);
-
-                //Checking whether IsRunning and adding the request to m_requests
-                //needs to be atomic to avoid adding a request after the Engine
-                //has been stopped.
-
-                if (!IsRunning)
-                {
-                    return request;
-                }
-
-                _requestsStore.Add(request);
-
-                try
-                {
-                    await request.PerformRequestAsync(_controlller);
-                }
-                catch
-                {
-                    _requestsStore.Remove(message.Header);
-                }
-
                 return request;
             }
+
+            _requestsStore.Add(request);
+
+            try
+            {
+                request.PerformRequest(_controlller);
+            }
+            catch
+            {
+                _requestsStore.Remove(message.Header);
+            }
+
+            return request;
         }
 
         /// <summary>
@@ -1883,7 +1893,7 @@ namespace nanoFramework.Tools.Debugger
         //    return iar;
         //}
 
-        //public async Task<bool> UpgradeConnectionToSSL_End(IAsyncResult iar)
+        //public bool UpgradeConnectionToSSL_End(IAsyncResult iar)
         //{
         //    AsyncNetworkStream ans = ((IControllerLocal)m_ctrl).OpenPort() as AsyncNetworkStream;
 

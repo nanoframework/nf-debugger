@@ -561,7 +561,7 @@ namespace nanoFramework.Tools.Debugger
             return true;
         }
 
-        //public async Task<bool> DeployUpdateAsync(StorageFile comprFilePath, CancellationToken cancellationToken, IProgress<string> progress = null)
+        //public bool DeployUpdateAsync(StorageFile comprFilePath, CancellationToken cancellationToken, IProgress<string> progress = null)
         //{
         //    if (DebugEngine.IsConnectedTonanoCLR)
         //    {
@@ -838,7 +838,7 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        //private async Task<bool> DeployMFUpdateAsync(StorageFile zipFile, CancellationToken cancellationToken, IProgress<string> progress = null)
+        //private bool DeployMFUpdateAsync(StorageFile zipFile, CancellationToken cancellationToken, IProgress<string> progress = null)
         //{
         //    if (zipFile.IsAvailable)
         //    {
@@ -1218,7 +1218,7 @@ namespace nanoFramework.Tools.Debugger
         //    return reply;
         //}
 
-        //private async Task<bool> PreProcesSrecAsync(StorageFile srecFile)
+        //private bool PreProcesSrecAsync(StorageFile srecFile)
         //{
         //    if (!srecFile.IsAvailable) return false;
 

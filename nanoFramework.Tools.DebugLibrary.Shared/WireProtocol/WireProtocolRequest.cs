@@ -21,7 +21,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public DateTimeOffset Expires { get; }
         public OutgoingMessage OutgoingMessage { get; }
 
-        public WireProtocolRequest(OutgoingMessage outgoingMessage, CancellationToken cancellationToken, int millisecondsTimeout = 5000, CommandEventHandler callback = null)
+        public WireProtocolRequest(OutgoingMessage outgoingMessage, int millisecondsTimeout = 5000, CommandEventHandler callback = null)
         {
             OutgoingMessage = outgoingMessage;
             _callback = callback;
@@ -31,10 +31,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             // https://blogs.msdn.microsoft.com/pfxteam/2009/06/02/the-nature-of-taskcompletionsourcetresult/
             TaskCompletionSource = new TaskCompletionSource<IncomingMessage>();
-            CancellationToken = cancellationToken;
         }
 
-        internal async Task<bool> PerformRequestAsync(IController controller)
+        internal bool PerformRequest(IController controller)
         {
             Debug.WriteLine($"Performing request");
 
@@ -47,7 +46,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                             , OutgoingMessage.Base.Header.Size
                                             );
 
-            return await controller.SendAsync(OutgoingMessage.Raw, CancellationToken);
+            return controller.Send(OutgoingMessage.Raw);
         }
     }
 }
