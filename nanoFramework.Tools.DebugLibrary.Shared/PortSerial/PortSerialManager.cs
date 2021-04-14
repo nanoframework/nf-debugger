@@ -278,6 +278,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         }
                         else
                         {
+                            // disconnect
+                            newNanoFrameworkDevice.Disconnect();
+
                             // devices powered by the USB cable and that feature a serial converter (like an FTDI chip) 
                             // are still booting when the USB enumeration event raises
                             // so need to give them enough time for the boot sequence to complete before trying to communicate with them
@@ -293,7 +296,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             {
                                 delay = _delay.Next(200, 600);
                             }
-                            //await Task.Delay(BootTime + delay).ConfigureAwait(true);
+
+                            Thread.Sleep(BootTime + delay);
 
                             OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {newNanoFrameworkDevice.Device.DeviceInformation.InstanceId} *** 2nd attempt ***"));
 
