@@ -23,10 +23,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 {
     public partial class PortSerialManager : PortBase
     {
-        // dictionary with mapping between Serial device watcher and the device ID
-        // TODO
-        // private readonly Dictionary<DeviceWatcher, string> _mapDeviceWatchersToDeviceSelector;
-        private readonly DeviceWatcher _deviceWatcher = new DeviceWatcher();
+        private readonly DeviceWatcher _deviceWatcher = new();
 
         // Serial device watchers suspended flag
         private bool _watchersSuspended = false;
@@ -143,8 +140,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // Allow the EventHandlerForDevice to handle device watcher events that relates or effects our device (i.e. device removal, addition, app suspension/resume)
             //AddDeviceWatcher(deviceWatcher, deviceSelector);
             _deviceWatcher.Added += OnDeviceAdded;
-           // _deviceWatcher.EnumerationCompleted += _deviceWatcher_EnumerationCompleted;
-
+            _deviceWatcher.Removed += OnDeviceRemoved;
         }
 
         public void StartSerialDeviceWatchers()
@@ -397,16 +393,15 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return null;
         }
 
-        // TODO
-        ///// <summary>
-        ///// Remove the device from the device list 
-        ///// </summary>
-        ///// <param name="sender"></param>
-        ///// <param name="deviceInformationUpdate"></param>
-        //private void OnDeviceRemoved(DeviceWatcher sender, DeviceInformationUpdate deviceInformationUpdate)
-        //{
-        //    RemoveDeviceFromList(deviceInformationUpdate.Id);
-        //}
+        /// <summary>
+        /// Remove the device from the device list 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="deviceInformationUpdate"></param>
+        private void OnDeviceRemoved(object sender, string serialPort)
+        {
+            RemoveDeviceFromList(serialPort);
+        }
 
         // TODO
         /// <summary>
