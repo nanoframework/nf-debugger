@@ -386,18 +386,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <param name="deviceInformation"></param>
         private void OnDeviceAdded(object sender, string serialPort)
         {
-            // device black listed
-            // discard known system and unusable devices
-            // 
-
-            // TODO
-            if (serialPort != "COM18" &&
-                serialPort != "COM16" &&
-                serialPort != "COM8")
-            {
-                return;
-            }
-
             // check against exclusion list
             if (PortExclusionList.Contains(serialPort))
             {
@@ -405,7 +393,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 return;
             }
 
-            // check if this is a rogue device
+            // discard known system and other rogue devices
             RegistryKey portKeyInfo = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\COM Name Arbiter\Devices");
             if (portKeyInfo != null)
             {
@@ -414,7 +402,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 if (portInfo != null)
                 {
                     Debug.WriteLine($"{nameof(OnDeviceAdded)}: port {serialPort}, portinfo: {portInfo}");
-                    
+
+                    // make  it upper case for comparison
+                    portInfo = portInfo.ToUpperInvariant();
+
                     if (
                        portInfo.StartsWith(@"\\?\ACPI") ||
 
@@ -427,7 +418,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                        portInfo.Contains(@"VID&00010057_PID&0023") ||
 
                        // reported in Discord channel
-                       portInfo.Contains(@"VID&0001009e_PID&400a") ||
+                       portInfo.Contains(@"VID&0001009E_PID&400A") ||
 
                        // this seems to cover virtual COM ports from Bluetooth devices
                        portInfo.Contains("BTHENUM") ||
