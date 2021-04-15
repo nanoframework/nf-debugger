@@ -88,12 +88,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     {
                         Device.Open();
                     }
-                    catch(IOException)
+                    catch (IOException)
                     {
                         retry = true;
                     }
 
-                    if(retry)
+                    if (retry)
                     {
                         Thread.Sleep(100);
                         Device.Open();
