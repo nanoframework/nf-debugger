@@ -25,6 +25,20 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             CompletePayload = 6,
         }
 
+        // constants to use in the inactivity back-off calculation
+        private const int MaxBackoffTime = 500;
+        private const int BackoffTimeStep1 = (int)(MaxBackoffTime * 0.75);
+        private const int BackoffTimeStep2 = (int)(MaxBackoffTime * 0.50);
+        private const int BackoffTimeStep3 = (int)(MaxBackoffTime * 0.25);
+        private const int BackoffTimeStep4 = (int)(MaxBackoffTime * 0.10);
+
+        // constants to use the inactivity calculation
+        private const int MaxInactivityTime = 5000;
+        private const int MaxInactivityTimeStep1 = (int)(MaxInactivityTime * 0.75);
+        private const int MaxInactivityTimeStep2 = (int)(MaxInactivityTime * 0.25);
+        private const int MaxInactivityTimeStep3 = (int)(MaxInactivityTime * 0.05);
+        private const int MaxInactivityTimeStep4 = (int)(MaxInactivityTime * 0.01);
+
         private readonly byte[] _markerDebugger = Encoding.UTF8.GetBytes(Packet.MARKER_DEBUGGER_V1);
         private readonly byte[] _markerPacket = Encoding.UTF8.GetBytes(Packet.MARKER_PACKET_V1);
 
@@ -34,12 +48,22 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         private MessageRaw _messageRaw;
         private int _rawPos;
         private MessageBase _messageBase;
+
+        /// <summary>
+        /// Timeout for the ongoing operation.
+        /// </summary>
         private DateTime _messageEventTimeout;
+
+        /// <summary>
+        /// Time stamp of the last activity (data received).
+        /// </summary>
+        private DateTime _lastActivityTimeStamp;
 
         public MessageReassembler(Controller parent)
         {
             _parent = parent;
             _state = ReceiveState.Initialize;
+            _lastActivityTimeStamp = DateTime.UtcNow;
         }
 
         public IncomingMessage GetCompleteMessage()
@@ -55,11 +79,57 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         {
             int count;
             int bytesRead;
+            int sleepTime = 0;
+            ReceiveState previousState = _state;
+
+            // activity check
+            var inactivityTime = (DateTime.UtcNow - _lastActivityTimeStamp);
+
+            // progressive back-off 
+            if (inactivityTime.TotalMilliseconds >= MaxInactivityTime)
+            {
+                sleepTime = MaxBackoffTime;
+            }
+            else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep1)
+            {
+                sleepTime = BackoffTimeStep1;
+            }
+            else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep2)
+            {
+                sleepTime = BackoffTimeStep2;
+            }
+            else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep3)
+            {
+                sleepTime = BackoffTimeStep3;
+            }
+            else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep4)
+            {
+                sleepTime = BackoffTimeStep4;
+            }
+
+            if (sleepTime > 0)
+            {
+                _state = ReceiveState.Idle;
+            }
+
+        state_machine_start:
 
             try
             {
                 switch (_state)
                 {
+                    case ReceiveState.Idle:
+                        DebuggerEventSource.Log.WireProtocolReceiveState(_state, inactivityTime);
+
+                        // sleep now
+                        Thread.Sleep(sleepTime);
+
+                        // restore previous state
+                        _state = previousState;
+
+                        // resume previous state
+                        goto state_machine_start;
+
                     case ReceiveState.Initialize:
 
                         DebuggerEventSource.Log.WireProtocolReceiveState(_state);
@@ -98,6 +168,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         {
                             // couldn't read a marker, start over
                             break;
+                        }
+
+                        // activity check
+                        if (bytesRead > 0)
+                        {
+                            _lastActivityTimeStamp = DateTime.UtcNow;
                         }
 
                         // loop trying to find the markers in the stream
@@ -152,6 +228,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         bytesRead = _parent.ReadBuffer(_messageRaw.Header, _rawPos, count);
 
                         _rawPos += bytesRead;
+
+                        // activity check
+                        if (bytesRead > 0)
+                        {
+                            _lastActivityTimeStamp = DateTime.UtcNow;
+                        }
 
                         if (bytesRead != count)
                         {
@@ -245,6 +327,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         if (bytesRead != count)
                         {
                             break;
+                        }
+
+                        // activity check
+                        if (bytesRead > 0)
+                        {
+                            _lastActivityTimeStamp = DateTime.UtcNow;
                         }
 
                         _state = ReceiveState.CompletePayload;

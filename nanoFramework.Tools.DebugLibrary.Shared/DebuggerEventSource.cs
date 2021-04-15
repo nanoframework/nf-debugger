@@ -160,6 +160,12 @@ namespace nanoFramework.Tools.Debugger
             Debug.WriteLine($"State machine: {state.ToString()}");
         }
 
+        [Event(3)]
+        public void WireProtocolReceiveState(MessageReassembler.ReceiveState state, TimeSpan idleTime)
+        {
+            Debug.WriteLine($"State machine: {state} for {idleTime:s\\.ffff}s");
+        }
+
         [Event(4)]
         public void EngineEraseMemory(uint address, uint length)
         {
