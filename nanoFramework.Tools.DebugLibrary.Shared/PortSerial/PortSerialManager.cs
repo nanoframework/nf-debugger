@@ -74,6 +74,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             _newDevicesCount = 0;
 
+            // need to reset this here to have intimidate effect
+            IsDevicesEnumerationComplete = false;
+
             Task.Run(delegate
             {
                 StopDeviceWatchersInternal();
@@ -148,7 +151,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     Thread.Sleep(100);
                 }
             }
-
 
             // Clear the list of devices so we don't have potentially disconnected devices around
             ClearDeviceEntries();
