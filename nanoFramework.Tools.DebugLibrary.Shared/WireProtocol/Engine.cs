@@ -120,6 +120,11 @@ namespace nanoFramework.Tools.Debugger
         public TargetInfo TargetInfo { get; private set; }
         public List<Commands.Monitor_FlashSectorMap.FlashSectorData> FlashSectorMap { get; private set; }
 
+        /// <summary>
+        /// Default timeout value for operations (in milliseconds).
+        /// </summary>
+        public int DefaultTimeout { get; set; } = TIMEOUT_DEFAULT;
+
         public BinaryFormatter CreateBinaryFormatter()
         {
             return new BinaryFormatter(Capabilities);
@@ -558,11 +563,13 @@ namespace nanoFramework.Tools.Debugger
 
         #endregion
 
-        private IncomingMessage PerformSyncRequest(uint command, uint flags, object payload, int millisecondsTimeout = 5000)
+        private IncomingMessage PerformSyncRequest(uint command, uint flags, object payload, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
             OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
 
-            var request = PerformRequestAsync(message, millisecondsTimeout);
+            var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
+            var request = PerformRequestAsync(message, timeout);
 
             try
             {
@@ -585,9 +592,11 @@ namespace nanoFramework.Tools.Debugger
 
         internal object _syncReqLock = new object();
 
-        private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = 5000)
+        private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
-            var request = PerformRequestAsync(message, millisecondsTimeout);
+            var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
+            var request = PerformRequestAsync(message, timeout);
 
             try
             {
@@ -609,9 +618,11 @@ namespace nanoFramework.Tools.Debugger
             return request.Result;
         }
 
-        internal Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, int millisecondsTimeout = 5000)
+        internal Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
-            WireProtocolRequest request = new WireProtocolRequest(message, millisecondsTimeout);
+            var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
+            WireProtocolRequest request = new WireProtocolRequest(message, timeout);
 
             try
             {
@@ -1280,7 +1291,7 @@ namespace nanoFramework.Tools.Debugger
 
         private async Task<IncomingMessage> SyncMessageAsync(uint command, uint flags, object payload)
         {
-            return await MessageAsync(command, flags, payload, TIMEOUT_DEFAULT);
+            return await MessageAsync(command, flags, payload, DefaultTimeout);
         }
 
 
@@ -1685,8 +1696,10 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        public bool Reconnect(bool fSoftReboot, int timeout = 5000)
+        public bool Reconnect(bool fSoftReboot, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
+            var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
             if (!Connect(
                 timeout,
                 true,
