@@ -81,7 +81,7 @@ namespace nanoFramework.Tools.Debugger
             // default to false
             IsCRC32EnabledForWireProtocol = false;
 
-            _pendingRequestsTimer = new Timer(ClearPendingRequests, null, 1000, 1000);
+            _pendingRequestsTimer = new Timer(ClearPendingRequests, null, 0, 100);
         }
 
         private void Initialize()
@@ -612,7 +612,6 @@ namespace nanoFramework.Tools.Debugger
         internal Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, int millisecondsTimeout = 5000)
         {
             WireProtocolRequest request = new WireProtocolRequest(message, millisecondsTimeout);
-            _requestsStore.Add(request);
 
             try
             {
@@ -627,6 +626,10 @@ namespace nanoFramework.Tools.Debugger
                         _requestsStore.Remove(request.OutgoingMessage.Header);
 
                         request.TaskCompletionSource.SetException(new InvalidOperationException());
+                    }
+                    else
+                    {
+                        _requestsStore.Add(request);
                     }
                 });
             }
