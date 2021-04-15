@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using Microsoft.Win32;
 using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.Serial;
 using nanoFramework.Tools.Debugger.WireProtocol;
@@ -11,13 +12,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-
-
-
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
@@ -393,7 +392,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             // TODO
             if (serialPort != "COM18" &&
-                serialPort != "COM16")
+                serialPort != "COM16" &&
+                serialPort != "COM8")
             {
                 return;
             }
@@ -405,31 +405,43 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 return;
             }
 
-            if (
-               serialPort.StartsWith(@"\\?\ACPI") ||
-
-               // reported in https://github.com/nanoframework/Home/issues/332
-               // COM ports from Broadcom 20702 Bluetooth adapter
-               serialPort.Contains(@"VID_0A5C+PID_21E1") ||
-
-               // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
-               // COM ports from Broadcom 20702 Bluetooth adapter
-               serialPort.Contains(@"VID&00010057_PID&0023") ||
-
-               // reported in Discord channel
-               serialPort.Contains(@"VID&0001009e_PID&400a") ||
-
-               // this seems to cover virtual COM ports from Bluetooth devices
-               serialPort.Contains("BTHENUM") ||
-
-               // this seems to cover virtual COM ports by ELTIMA 
-               serialPort.Contains("EVSERIAL")
-               )
+            // check if this is a rogue device
+            RegistryKey portKeyInfo = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\COM Name Arbiter\Devices");
+            if (portKeyInfo != null)
             {
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingDeviceToExclude(serialPort));
+                var portInfo = (string)portKeyInfo.GetValue(serialPort);
 
-                // don't even bother with this one
-                return;
+                if (portInfo != null)
+                {
+                    Debug.WriteLine($"{nameof(OnDeviceAdded)}: port {serialPort}, portinfo: {portInfo}");
+                    
+                    if (
+                       portInfo.StartsWith(@"\\?\ACPI") ||
+
+                       // reported in https://github.com/nanoframework/Home/issues/332
+                       // COM ports from Broadcom 20702 Bluetooth adapter
+                       portInfo.Contains(@"VID_0A5C+PID_21E1") ||
+
+                       // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
+                       // COM ports from Broadcom 20702 Bluetooth adapter
+                       portInfo.Contains(@"VID&00010057_PID&0023") ||
+
+                       // reported in Discord channel
+                       portInfo.Contains(@"VID&0001009e_PID&400a") ||
+
+                       // this seems to cover virtual COM ports from Bluetooth devices
+                       portInfo.Contains("BTHENUM") ||
+
+                       // this seems to cover virtual COM ports by ELTIMA 
+                       portInfo.Contains("EVSERIAL")
+                       )
+                    {
+                        OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingDeviceToExclude(serialPort));
+
+                        // don't even bother with this one
+                        return;
+                    }
+                }
             }
 
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(serialPort));
