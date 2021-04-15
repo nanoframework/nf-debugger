@@ -924,10 +924,19 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             // disable button
             (sender as Button).IsEnabled = false;
 
-            (DataContext as MainViewModel).SerialDebugService.SerialDebugClient.ReScanDevices();
+            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
 
-            // enable button
-            (sender as Button).IsEnabled = true;
+                (DataContext as MainViewModel).SerialDebugService.SerialDebugClient.ReScanDevices();
+
+                // need to wait for devices enumeration to complete
+                while (!(DataContext as MainViewModel).SerialDebugService.SerialDebugClient.IsDevicesEnumerationComplete)
+                {
+                    Thread.Sleep(100);
+                }
+
+                // enable button
+                (sender as Button).IsEnabled = true;
+            }));
         }
 
         private void ReadTestButton_Click(object sender, RoutedEventArgs e)
