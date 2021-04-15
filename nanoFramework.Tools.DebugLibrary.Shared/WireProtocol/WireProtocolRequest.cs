@@ -27,7 +27,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             _callback = callback;
 
             // set TTL for the request
-            Expires = DateTime.Now.AddMilliseconds(millisecondsTimeout);
+            Expires = DateTime.UtcNow.AddMilliseconds(millisecondsTimeout);
 
             // https://blogs.msdn.microsoft.com/pfxteam/2009/06/02/the-nature-of-taskcompletionsourcetresult/
             TaskCompletionSource = new TaskCompletionSource<IncomingMessage>();
