@@ -471,7 +471,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     {
                         if (device.DebugEngine == null)
                         {
-                            device.CreateDebugEngine();
+                            device.CreateDebugEngine(NanoSerialDevice.SafeDefaultTimeout);
                         }
 
                         if (isKnownDevice)

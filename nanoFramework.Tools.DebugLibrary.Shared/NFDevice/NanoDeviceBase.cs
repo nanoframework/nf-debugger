@@ -28,9 +28,11 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Create a new debug engine for this nanoDevice.
         /// </summary>
-        public void CreateDebugEngine()
+        /// <param name="timeoutMilliseconds"></param>
+        public void CreateDebugEngine(int timeoutMilliseconds = 5000)
         {
             DebugEngine = new Engine(this);
+            DebugEngine.DefaultTimeout = timeoutMilliseconds;
         }
 
         /// <summary>
