@@ -70,31 +70,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             });
         }
 
-
-        #region Device watchers initialization
-
-        /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        Add a device watcher initialization method for each supported device that should be watched.
-        That initialization method must be called from the InitializeDeviceWatchers() method above so the watcher is actually started.
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-
-        //TODO
-        ///// <summary>
-        ///// Registers for Added, Removed, and Enumerated events on the provided deviceWatcher before adding it to an internal list.
-        ///// </summary>
-        ///// <param name="deviceWatcher">The device watcher to subscribe the events</param>
-        ///// <param name="deviceSelector">The AQS used to create the device watcher</param>
-        //private void AddDeviceWatcher(DeviceWatcher deviceWatcher, String deviceSelector)
-        //{
-        //    deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(OnDeviceAdded);
-        //    deviceWatcher.Removed += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(OnDeviceRemoved);
-        //    deviceWatcher.EnumerationCompleted += new TypedEventHandler<DeviceWatcher, object>(OnDeviceEnumerationComplete);
-
-        //    _mapDeviceWatchersToDeviceSelector.Add(deviceWatcher, deviceSelector);
-        //}
-
-        #endregion
-
         public override void ReScanDevices()
         {
             _newDevicesCount = 0;
