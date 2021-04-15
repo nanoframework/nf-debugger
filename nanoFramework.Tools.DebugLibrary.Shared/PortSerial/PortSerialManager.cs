@@ -472,6 +472,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             bool validDevice = false;
             bool isKnownDevice = false;
+            SerialPort serialDevice = null;
 
             // store device ID
             string deviceId = device.Device.DeviceInformation.InstanceId;
@@ -480,7 +481,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 // get access to System.IO.Ports.SerialPort object
                 // so we can set it's BaudRate property
-                var serialDevice = (SerialPort)device.DeviceBase;
+                serialDevice = (SerialPort)device.DeviceBase;
 
                 // sanity check for invalid or null device base
                 if (serialDevice != null)
@@ -644,9 +645,17 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 if (deviceId != null)
                 {
                     _devicesCache.TryRemove(deviceId, out var dummy);
-
-
                 }
+            }
+            finally
+            {
+                if(serialDevice != null)
+                {
+                    serialDevice.Close();
+                }
+
+                device.DebugEngine?.Stop();
+                device.DebugEngine = null;
             }
 
             return validDevice;
