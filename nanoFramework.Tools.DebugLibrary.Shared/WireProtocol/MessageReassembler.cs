@@ -16,13 +16,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     {
         public enum ReceiveState
         {
-            Idle = 0,
-            Initialize = 1,
-            WaitingForHeader = 2,
-            ReadingHeader = 3,
-            CompleteHeader = 4,
-            ReadingPayload = 5,
-            CompletePayload = 6,
+            Idle,
+            ExitingIdle,
+            Initialize,
+            WaitingForHeader,
+            ReadingHeader,
+            CompleteHeader,
+            ReadingPayload,
+            CompletePayload,
         }
 
         // constants to use in the inactivity back-off calculation
@@ -44,6 +45,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         private readonly Controller _parent;
         private ReceiveState _state;
+        private ReceiveState _previousState;
 
         private MessageRaw _messageRaw;
         private int _rawPos;
@@ -80,39 +82,45 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             int count;
             int bytesRead;
             int sleepTime = 0;
-            ReceiveState previousState = _state;
 
-            // activity check
             var inactivityTime = (DateTime.UtcNow - _lastActivityTimeStamp);
 
-            // progressive back-off 
-            if (inactivityTime.TotalMilliseconds >= MaxInactivityTime)
+            // activity check, if not exiting idle state
+            if (_state != ReceiveState.ExitingIdle)
             {
-                sleepTime = MaxBackoffTime;
-            }
-            else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep1)
-            {
-                sleepTime = BackoffTimeStep1;
-            }
-            else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep2)
-            {
-                sleepTime = BackoffTimeStep2;
-            }
-            else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep3)
-            {
-                sleepTime = BackoffTimeStep3;
-            }
-            else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep4)
-            {
-                sleepTime = BackoffTimeStep4;
-            }
+                // progressive back-off 
+                if (inactivityTime.TotalMilliseconds >= MaxInactivityTime)
+                {
+                    sleepTime = MaxBackoffTime;
+                }
+                else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep1)
+                {
+                    sleepTime = BackoffTimeStep1;
+                }
+                else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep2)
+                {
+                    sleepTime = BackoffTimeStep2;
+                }
+                else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep3)
+                {
+                    sleepTime = BackoffTimeStep3;
+                }
+                else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep4)
+                {
+                    sleepTime = BackoffTimeStep4;
+                }
 
-            if (sleepTime > 0)
-            {
-                _state = ReceiveState.Idle;
+                if (sleepTime > 0)
+                {
+                    _previousState = _state;
+                    _state = ReceiveState.Idle;
+                }
             }
-
-        state_machine_start:
+            else
+            {
+                // restore previous state
+                _state = _previousState;
+            }
 
             try
             {
@@ -125,10 +133,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         Thread.Sleep(sleepTime);
 
                         // restore previous state
-                        _state = previousState;
+                        _state = ReceiveState.ExitingIdle;
 
-                        // resume previous state
-                        goto state_machine_start;
+                        break;
 
                     case ReceiveState.Initialize:
 
@@ -268,6 +275,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                                         break;
                                     }
+
+                                    // setup buffer to read payload
                                     _messageRaw.Payload = new byte[_messageBase.Header.Size];
                                     
                                     //reuse m_rawPos for position in header to read.
@@ -309,12 +318,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         {
                             if (DateTime.UtcNow > _messageEventTimeout)
                             {
+                                Debug.WriteLine("*** TIMEOUT ERROR waiting for header. Initializing.");
+
                                 // quit receiving this packet, abort
                                 _state = ReceiveState.Initialize;
 
                                 DebuggerEventSource.Log.WireProtocolReceiveState(_state);
-                                
-                                Debug.WriteLine("*** TIMEOUT ERROR waiting for header. Initializing.");
 
                                 break;
                             }
