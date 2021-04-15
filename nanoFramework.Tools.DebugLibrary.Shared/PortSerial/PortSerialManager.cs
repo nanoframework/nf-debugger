@@ -506,6 +506,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             serialDevice.BaudRate = baudRate;
                         }
 
+                        // need to flush FIFOs
+                        serialDevice.DiscardInBuffer();
+                        serialDevice.DiscardOutBuffer();
+
                         OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {deviceId} @ { serialDevice.BaudRate }"));
 
                         // try to "just" connect to the device meaning...
