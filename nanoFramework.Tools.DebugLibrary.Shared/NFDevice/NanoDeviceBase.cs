@@ -6,16 +6,17 @@
 
 using nanoFramework.Tools.Debugger.WireProtocol;
 using Polly;
+using PropertyChanged;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
 {
+    [AddINotifyPropertyChangedInterface]
     public abstract class NanoDeviceBase
     {
         /// <summary>

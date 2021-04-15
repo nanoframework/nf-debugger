@@ -5,11 +5,12 @@
 //
 
 using nanoFramework.Tools.Debugger.WireProtocol;
+using PropertyChanged;
 using System;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
 {
+    [AddINotifyPropertyChangedInterface]
     public class NanoDevice<T> : NanoDeviceBase, IDisposable, INanoDevice where T : new()
     {
         public T Device { get; set; }
