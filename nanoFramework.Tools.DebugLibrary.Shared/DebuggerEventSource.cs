@@ -135,11 +135,12 @@ namespace nanoFramework.Tools.Debugger
             Debug.WriteLine($"TX: " +
                 $"{GetCommandName(cmd)} " +
                 $"flags=[{(PacketFlags)flags}] " +
-                $"hCRC: 0x{crcHeader.ToString("X08")} " +
-                $"pCRC: 0x{crcData.ToString("X08")} " +
-                $"seq: 0x{seq.ToString("X04")} " +
-                $"replySeq: 0x{seqReply.ToString("X04")} " +
-                $"len={length}");
+                $"hCRC: 0x{crcHeader:X08} " +
+                $"pCRC: 0x{crcData:X08} " +
+                $"seq: 0x{seq:X04} " +
+                $"replySeq: 0x{seqReply:X04} " +
+                $"len={length} " +
+                $"{DateTime.UtcNow:HH:mm:ss.fff}");
         }
 
         [Event(2, Opcode = EventOpcode.Receive)]
@@ -147,11 +148,12 @@ namespace nanoFramework.Tools.Debugger
         {
             Debug.WriteLine($"RX: {GetCommandName(cmd)} " +
                 $"flags=[{(PacketFlags)flags}] " +
-                $"hCRC: 0x{crcHeader.ToString("X08")} " +
-                $"pCRC: 0x{crcData.ToString("X08")} " +
-                $"seq: 0x{seq.ToString("X04")} " +
-                $"replySeq: 0x{seqReply.ToString("X04")} " +
-                $"len={length.ToString()}");
+                $"hCRC: 0x{crcHeader:X08} " +
+                $"pCRC: 0x{crcData:X08} " +
+                $"seq: 0x{seq:X04} " +
+                $"replySeq: 0x{seqReply:X04} " +
+                $"len={length} " +
+                $"{DateTime.UtcNow:HH:mm:ss.fff}");
         }
 
         [Event(3)]
