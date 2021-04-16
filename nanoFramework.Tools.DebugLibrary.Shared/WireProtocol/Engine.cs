@@ -464,7 +464,7 @@ namespace nanoFramework.Tools.Debugger
 
         public bool ThrowOnCommunicationFailure { get; set; } = false;
 
-        #region Events 
+#region Events 
 
         public event NoiseEventHandler OnNoise
         {
@@ -518,9 +518,9 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        #endregion
+#endregion
 
-        #region IDisposable Support
+#region IDisposable Support
 
         private bool disposedValue = false; // To detect redundant calls
 
@@ -1240,7 +1240,7 @@ namespace nanoFramework.Tools.Debugger
             return _controlller.GetUniqueEndpointId();
         }
 
-        #endregion
+#endregion
 
 
         internal async Task<WireProtocolRequest> RequestAsync(OutgoingMessage message, int timeout)
@@ -1296,7 +1296,7 @@ namespace nanoFramework.Tools.Debugger
         }
 
 
-        #region Commands implementation
+#region Commands implementation
 
         public List<Commands.Monitor_MemoryMap.Range> GetMemoryMap()
         {
@@ -3571,10 +3571,10 @@ namespace nanoFramework.Tools.Debugger
             return DiscoverTargetInfoProperties();
         }
 
-        #endregion
+#endregion
 
 
-        #region Device configuration methods
+#region Device configuration methods
 
         public DeviceConfiguration GetDeviceConfiguration(CancellationToken cancellationToken)
         {
@@ -4340,7 +4340,7 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-    #endregion
+#endregion
 
     }
 }
