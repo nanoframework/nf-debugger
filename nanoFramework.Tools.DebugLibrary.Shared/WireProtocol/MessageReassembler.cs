@@ -171,11 +171,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         _messageEventTimeout = DateTime.MinValue;
 
                         _state = ReceiveState.WaitingForHeader;
+
+                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+
                         goto case ReceiveState.WaitingForHeader;
 
                     case ReceiveState.WaitingForHeader:
-
-                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
 
                         // try to read marker
                         count = Packet.SIZE_OF_MARKER - _rawPos;
@@ -206,6 +207,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             if (flag_Debugger == 1 || flag_Packet == 1)
                             {
                                 _state = ReceiveState.ReadingHeader;
+                                
+                                DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+
                                 goto case ReceiveState.ReadingHeader;
                             }
 
@@ -222,8 +226,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         break;
 
                     case ReceiveState.ReadingHeader:
-                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
-
                         count = _messageRaw.Header.Length - _rawPos;
 
                         // check timeout
@@ -265,17 +267,20 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         _messageEventTimeout = DateTime.MinValue;
 
                         _state = ReceiveState.CompleteHeader;
+
+                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+
                         goto case ReceiveState.CompleteHeader;
 
                     case ReceiveState.CompleteHeader:
-                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
-
                         try
                         {
                             _parent.CreateConverter().Deserialize(_messageBase.Header, _messageRaw.Header);
 
                             if (VerifyHeader())
                             {
+                                bool fReply = (_messageBase.Header.Flags & Flags.c_Reply) != 0;
+
                                 DebuggerEventSource.Log.WireProtocolRxHeader(_messageBase.Header.CrcHeader, _messageBase.Header.CrcData, _messageBase.Header.Cmd, _messageBase.Header.Flags, _messageBase.Header.Seq, _messageBase.Header.SeqReply, _messageBase.Header.Size);
 
                                 if (_messageBase.Header.Size != 0)
@@ -287,21 +292,29 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                                         _state = ReceiveState.Initialize;
 
+                                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+
                                         break;
                                     }
 
                                     // setup buffer to read payload
                                     _messageRaw.Payload = new byte[_messageBase.Header.Size];
                                     
-                                    //reuse m_rawPos for position in header to read.
+                                    //reuse _rawPos for position in header for reading
                                     _rawPos = 0;
 
                                     _state = ReceiveState.ReadingPayload;
+
+                                    DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+
                                     goto case ReceiveState.ReadingPayload;
                                 }
                                 else
                                 {
                                     _state = ReceiveState.CompletePayload;
+
+                                    DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+
                                     goto case ReceiveState.CompletePayload;
                                 }
                             }
@@ -316,11 +329,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         }
 
                         _state = ReceiveState.Initialize;
+
+                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+
                         break;
 
                     case ReceiveState.ReadingPayload:
-                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
-
                         count = _messageRaw.Payload.Length - _rawPos;
 
                         // check timeout
@@ -332,7 +346,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         {
                             if (DateTime.UtcNow > _messageEventTimeout)
                             {
-                                Debug.WriteLine("*** TIMEOUT ERROR waiting for header. Initializing.");
+                                Debug.WriteLine($"*** TIMEOUT ERROR waiting for payload. Missing {count}/{_messageRaw.Payload.Length}. Initializing.");
 
                                 // quit receiving this packet, abort
                                 _state = ReceiveState.Initialize;
@@ -347,24 +361,24 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                         _rawPos += bytesRead;
 
-                        if (bytesRead != count)
-                        {
-                            break;
-                        }
-
                         // activity check
                         if (bytesRead > 0)
                         {
                             _lastActivityTimeStamp = DateTime.UtcNow;
                         }
 
+                        if (bytesRead != count)
+                        {
+                            break;
+                        }
+
                         _state = ReceiveState.CompletePayload;
+
+                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
 
                         goto case ReceiveState.CompletePayload;
 
                     case ReceiveState.CompletePayload:
-                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
-
                         if (VerifyPayload())
                         {
                             try
@@ -380,26 +394,34 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                                 // setup restart
                                 _state = ReceiveState.Initialize;
+
+                                DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+
                                 return;
                             }
                             catch (AggregateException)
                             {
                                 throw;
                             }
-                            catch (Exception e)
+                            catch (Exception ex)
                             {
-                                Debug.WriteLine("Fault at payload de-serialization:\n\n{0}", e.ToString());
+                                Debug.WriteLine($"Fault at payload de-serialization:\n\n{ex.Message}");
                             }
                         }
 
                         _state = ReceiveState.Initialize;
+
+                        DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+
                         break;
                 }
             }
             catch
             {
                 _state = ReceiveState.Initialize;
-                Debug.WriteLine("*** EXCEPTION IN STATE MACHINE***");
+                
+                DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+
                 throw;
             }
         }
