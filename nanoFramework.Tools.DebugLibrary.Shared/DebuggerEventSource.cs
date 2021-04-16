@@ -56,6 +56,7 @@ namespace nanoFramework.Tools.Debugger
             [Commands.c_Monitor_DeploymentMap] = "DeploymentMap",
             [Commands.c_Monitor_FlashSectorMap] = "FlashSectorMap",
             [Commands.c_Monitor_OemInfo] = "OemInfo",
+            [Commands.c_Monitor_TargetInfo] = "TargetInfo",
             [Commands.c_Debugging_Execution_BasePtr] = "Execution_BasePtr",
             [Commands.c_Debugging_Execution_ChangeConditions] = "Execution_ChangeConditions",
             [Commands.c_Debugging_Execution_SecurityKey] = "Execution_SecurityKey",
