@@ -79,7 +79,16 @@ namespace Serial_Test_App_WPF.ViewModel
                 BindingOperations.EnableCollectionSynchronization(AvailableDevices, _lockObj);
 
                 SerialDebugService.SerialDebugClient.NanoFrameworkDevices.CollectionChanged += NanoFrameworkDevices_CollectionChanged;
+
+                SerialDebugService.SerialDebugClient.LogMessageAvailable += SerialDebugClient_LogMessageAvailable1;
             }
+        }
+
+        private void SerialDebugClient_LogMessageAvailable1(object sender, StringEventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+                Debug.WriteLine(e.EventText);
+            }));
         }
 
         private void SerialDebugClient_LogMessageAvailable(object sender, StringEventArgs e)
