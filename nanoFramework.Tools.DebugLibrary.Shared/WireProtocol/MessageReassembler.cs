@@ -28,10 +28,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         // constants to use in the inactivity back-off calculation
         private const int MaxBackoffTime = 500;
-        private const int BackoffTimeStep1 = (int)(MaxBackoffTime * 0.75);
-        private const int BackoffTimeStep2 = (int)(MaxBackoffTime * 0.50);
-        private const int BackoffTimeStep3 = (int)(MaxBackoffTime * 0.25);
-        private const int BackoffTimeStep4 = (int)(MaxBackoffTime * 0.10);
+        private const int BackoffTimeStep1 = (int)(MaxBackoffTime * 0.80);
+        private const int BackoffTimeStep2 = (int)(MaxBackoffTime * 0.40);
+        private const int BackoffTimeStep3 = (int)(MaxBackoffTime * 0.10);
+        private const int BackoffTimeStep4 = (int)(MaxBackoffTime * 0.05);
 
         // constants to use the inactivity calculation
         private const int MaxInactivityTime = 5000;
@@ -60,6 +60,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         /// Time stamp of the last activity (data received).
         /// </summary>
         private DateTime _lastActivityTimeStamp;
+
+        private DateTime _lastInactivityReport;
 
         public MessageReassembler(Controller parent)
         {
@@ -114,6 +116,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 {
                     _previousState = _state;
                     _state = ReceiveState.Idle;
+
+                    if (_lastInactivityReport == DateTime.MinValue)
+                    {
+                        _lastInactivityReport = DateTime.UtcNow.AddSeconds(10);
+                    }
                 }
             }
             else
@@ -127,7 +134,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 switch (_state)
                 {
                     case ReceiveState.Idle:
-                        DebuggerEventSource.Log.WireProtocolReceiveState(_state, inactivityTime);
+
+                        if (DateTime.UtcNow > _lastInactivityReport)
+                        {
+                            DebuggerEventSource.Log.WireProtocolReceiveState(_state, inactivityTime);
+
+                            // reset 
+                            _lastInactivityReport = DateTime.MinValue;
+                        }
 
                         // sleep now
                         Thread.Sleep(sleepTime);
@@ -312,7 +326,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         // check timeout
                         if (_messageEventTimeout == DateTime.MinValue)
                         {
-                            _messageEventTimeout = DateTime.UtcNow.AddSeconds(5);
+                            _messageEventTimeout = DateTime.UtcNow.AddMilliseconds(500);
                         }
                         else
                         {
