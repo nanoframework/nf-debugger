@@ -679,20 +679,12 @@ namespace nanoFramework.Tools.Debugger
                 var connectionSource = reply.Payload as Commands.Monitor_Ping.Reply;
 
                 // update field
-                switch (connectionSource.Source)
+                _connectionSource = connectionSource.Source switch
                 {
-                    case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
-                        _connectionSource = ConnectionSource.nanoCLR;
-                        break;
-
-                    case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
-                        _connectionSource = ConnectionSource.nanoBooter;
-                        break;
-
-                    default:
-                        _connectionSource = ConnectionSource.Unknown;
-                        break;
-                }
+                    Commands.Monitor_Ping.c_Ping_Source_NanoCLR => ConnectionSource.nanoCLR,
+                    Commands.Monitor_Ping.c_Ping_Source_NanoBooter => ConnectionSource.nanoBooter,
+                    _ => ConnectionSource.Unknown,
+                };
 
                 return connectionSource;
             }

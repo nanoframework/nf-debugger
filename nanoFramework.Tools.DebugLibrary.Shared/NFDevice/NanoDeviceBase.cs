@@ -220,10 +220,7 @@ namespace nanoFramework.Tools.Debugger
                 return PingConnectionType.NoConnection;
             }
 
-            var pingPolicy = Policy.Handle<Exception>().OrResult<Commands.Monitor_Ping.Reply>(r => r == null)
-                           .WaitAndRetry(3, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
-
-            var reply = pingPolicy.Execute(() => DebugEngine.GetConnectionSource());
+            var reply = DebugEngine.GetConnectionSource();
 
             if (reply != null)
             {
