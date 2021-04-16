@@ -113,7 +113,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
             if(device.DebugEngine == null)
             {
-                device.CreateDebugEngine();
+                device.CreateDebugEngine(NanoSerialDevice.SafeDefaultTimeout);
             }
 
             bool connectResult = device.DebugEngine.Connect(5000, true);
