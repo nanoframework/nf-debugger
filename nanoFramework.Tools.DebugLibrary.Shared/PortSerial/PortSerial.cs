@@ -164,7 +164,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private void Device_ErrorReceived(object sender, SerialErrorReceivedEventArgs e)
         {
-            //throw new NotImplementedException();
+            Debug.WriteLine($">>>> Serial ERROR from {InstanceId}: {e.EventType}");
         }
 
         #endregion
