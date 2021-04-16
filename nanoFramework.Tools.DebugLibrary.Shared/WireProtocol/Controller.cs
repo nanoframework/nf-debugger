@@ -97,6 +97,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 App.ProcessExited();
             }
+            catch (InvalidOperationException)
+            {
+                App.ProcessExited();
+            }
             catch
             {
                 // catch everything else here, doesn't matter
