@@ -561,7 +561,7 @@ namespace nanoFramework.Tools.Debugger
             // GC.SuppressFinalize(this);
         }
 
-        #endregion
+#endregion
 
         private IncomingMessage PerformSyncRequest(uint command, uint flags, object payload, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
@@ -623,6 +623,7 @@ namespace nanoFramework.Tools.Debugger
             var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
 
             WireProtocolRequest request = new WireProtocolRequest(message, timeout);
+            _requestsStore.Add(request);
 
             try
             {
@@ -632,15 +633,7 @@ namespace nanoFramework.Tools.Debugger
                     if (!request.PerformRequest(_controlller))
                     {
                         // send failed...
-
-                        // remove it from store
-                        _requestsStore.Remove(request.OutgoingMessage.Header);
-
                         request.TaskCompletionSource.SetException(new InvalidOperationException());
-                    }
-                    else
-                    {
-                        _requestsStore.Add(request);
                     }
                 });
             }
@@ -873,7 +866,7 @@ namespace nanoFramework.Tools.Debugger
 
         public bool IsRunning => _state.IsRunning;
 
-        #region RPC Support
+#region RPC Support
 
         // comment from original code REVIEW: Can this be refactored out of here to a separate class dedicated to RPC?
         internal class EndPointRegistration
