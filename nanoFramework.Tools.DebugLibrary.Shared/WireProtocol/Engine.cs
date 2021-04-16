@@ -422,6 +422,8 @@ namespace nanoFramework.Tools.Debugger
 
         public void IncomingMessagesListener()
         {
+            Debug.WriteLine(">>>> START IncomingMessagesListener <<<<");
+
             var reassembler = new MessageReassembler(_controlller);
 
             while (!_backgroundProcessorCancellation.IsCancellationRequested && _state.IsRunning)
@@ -430,8 +432,14 @@ namespace nanoFramework.Tools.Debugger
                 {
                     reassembler.Process();
                 }
+#if DEBUG
                 catch (Exception ex)
                 {
+                    Debug.WriteLine($"IncomingMessagesListener >>>>>>> {ex.Message}");
+#else
+                catch (Exception)
+                {
+#endif
                     ProcessExited();
                     break;
                 }
@@ -439,7 +447,7 @@ namespace nanoFramework.Tools.Debugger
 
             _state.SetValue(EngineState.Value.Stopping, false);
 
-            Debug.WriteLine("**** EXIT IncomingMessagesListenerAsync ****");
+            Debug.WriteLine("<<<< EXIT IncomingMessagesListener >>>>");
         }
 
         public DateTime LastActivity
