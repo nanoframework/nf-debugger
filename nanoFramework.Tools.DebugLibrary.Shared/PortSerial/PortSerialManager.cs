@@ -484,7 +484,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             serialDevice.BaudRate = baudRate;
                         }
 
-                        // need to flush FIFOs
+                        if(serialDevice.IsOpen)
+                        {
+                            serialDevice.Close();
+                            serialDevice.Open();
+                        }
+
+                        // better flush the UART FIFOs
                         serialDevice.DiscardInBuffer();
                         serialDevice.DiscardOutBuffer();
 
