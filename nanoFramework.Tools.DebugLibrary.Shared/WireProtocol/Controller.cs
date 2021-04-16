@@ -5,6 +5,7 @@
 //
 
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -88,6 +89,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 throw;
             }
+            catch (IOException)
+            {
+                App.ProcessExited();
+            }
             catch (AggregateException)
             {
                 App.ProcessExited();
@@ -154,6 +159,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             catch (TimeoutException)
             {
                 // don't do anything here, as this is expected
+            }
+            catch (IOException)
+            {
+                App.ProcessExited();
             }
             catch (InvalidOperationException)
             {
