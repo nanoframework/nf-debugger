@@ -132,8 +132,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         internal int ReadBuffer(byte[] buffer, int offset, int bytesToRead)
         {
-            if (App.AvailableBytes < bytesToRead ||
-                bytesToRead == 0)
+            // check if there is anything to read
+            if (App.AvailableBytes == 0)
             {
                 return 0;
             }
