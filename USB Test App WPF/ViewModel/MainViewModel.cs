@@ -86,9 +86,17 @@ namespace Serial_Test_App_WPF.ViewModel
 
         private void SerialDebugClient_LogMessageAvailable1(object sender, StringEventArgs e)
         {
-            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
-                Debug.WriteLine(e.EventText);
-            }));
+            try
+            {
+                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    Debug.WriteLine(e.EventText);
+                }));
+            }
+            catch
+            {
+                // catch all as the dispatcher is ont always available and that's OK
+            }
         }
 
         private void SerialDebugClient_LogMessageAvailable(object sender, StringEventArgs e)
