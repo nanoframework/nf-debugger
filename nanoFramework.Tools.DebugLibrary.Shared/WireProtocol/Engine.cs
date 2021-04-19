@@ -299,24 +299,41 @@ namespace nanoFramework.Tools.Debugger
                 (force || Capabilities.IsUnknown))
             {
                 CancellationTokenSource cancellationTSource = new CancellationTokenSource();
+                CLRCapabilities tempCapabilities = new();
 
                 //default capabilities
                 Capabilities = new CLRCapabilities();
 
                 // fill flash sector map
-                FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
-
-                // get target info
-                TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
-
-                var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
-
-                if (tempCapabilities != null && !tempCapabilities.IsUnknown)
+                if (FlashSectorMap == null)
                 {
-                    Capabilities = tempCapabilities;
-                    _controlller.Capabilities = Capabilities;
+                    FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
                 }
-                else
+
+                if (FlashSectorMap != null)
+                {
+                    // get target info
+                    if (TargetInfo == null)
+                    {
+                        TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                    }
+
+                    if (TargetInfo != null)
+                    {
+                        tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
+
+                        if (tempCapabilities != null
+                            && !tempCapabilities.IsUnknown)
+                        {
+                            Capabilities = tempCapabilities;
+                            _controlller.Capabilities = Capabilities;
+                        }
+                    }
+                }
+
+                if(FlashSectorMap == null ||
+                    TargetInfo == null ||
+                    Capabilities.IsUnknown)
                 {
                     // update flag
                     IsConnected = false;
