@@ -51,33 +51,26 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 // TX header
                 var sendHeaderCount = SendRawBuffer(raw.Header);
 
-                if (raw.Payload != null)
+                if (sendHeaderCount == raw.Header.Length)
                 {
-                    // we have a payload to TX
-                    if (sendHeaderCount == raw.Header.Length)
+                    if (raw.Payload != null &&
+                        raw.Payload.Length > 0)
                     {
+                        // we have a payload to TX
+
+                        // give it some time for the target to process header
+                        Thread.Sleep(1);
+
                         var sendPayloadCount = SendRawBuffer(raw.Payload);
 
-                        if (sendPayloadCount == raw.Payload.Length)
-                        {
-                            // payload TX OK
-                            return true;
-                        }
-                        else
+                        if (sendPayloadCount != raw.Payload.Length)
                         {
                             // failed TX the payload
                             return false;
                         }
                     }
-                    else
-                    {
-                        // already failed to TX header so don't bother with the payload
-                        return false;
-                    }
-                }
-                else
-                {
-                    // no payload, header TX OK, we are good
+
+                    // all good
                     return true;
                 }
             }
