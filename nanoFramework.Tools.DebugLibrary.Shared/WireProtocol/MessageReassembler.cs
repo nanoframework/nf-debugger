@@ -185,13 +185,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                         _rawPos += bytesRead;
 
-                        // sanity check
-                        if (bytesRead != Packet.SIZE_OF_MARKER)
-                        {
-                            // couldn't read a marker, start over
-                            break;
-                        }
-
                         // activity check
                         if (bytesRead > 0)
                         {
