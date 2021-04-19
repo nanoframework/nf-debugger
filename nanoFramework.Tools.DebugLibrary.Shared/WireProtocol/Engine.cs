@@ -846,8 +846,15 @@ namespace nanoFramework.Tools.Debugger
 
             if (_backgroundProcessor != null)
             {
-                _backgroundProcessorCancellation.Cancel();
-                _cancellationTokenSource.Cancel();
+                try
+                {
+                    _backgroundProcessorCancellation.Cancel();
+                    _cancellationTokenSource.Cancel();
+                }
+                catch
+                {
+                    // there are random issues with the cancellation tokens
+                }
             }
         }
 
