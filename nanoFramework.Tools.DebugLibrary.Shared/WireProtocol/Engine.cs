@@ -3515,6 +3515,8 @@ namespace nanoFramework.Tools.Debugger
 
         private CLRCapabilities DiscoverCLRCapabilities(CancellationToken cancellationToken)
         {
+            int sleep = 2;
+
             var clrFlags = DiscoverCLRCapabilityFlags();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
@@ -3523,6 +3525,12 @@ namespace nanoFramework.Tools.Debugger
                 Debug.WriteLine("cancellation requested");
                 return null;
             }
+
+            if(clrFlags == 0)
+            {
+                return null;
+            }
+            Thread.Sleep(sleep);
 
             var softwareVersion = DiscoverSoftwareVersionProperties();
             // check for cancellation request
@@ -3533,6 +3541,12 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
+            if (softwareVersion.BuildDate == "")
+            {
+                return null;
+            }
+            Thread.Sleep(sleep);
+
             var halSysInfo = DiscoverHalSystemInfoProperties();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
@@ -3541,6 +3555,12 @@ namespace nanoFramework.Tools.Debugger
                 Debug.WriteLine("cancellation requested");
                 return null;
             }
+
+            if (halSysInfo.halVendorInfo == "")
+            {
+                return null;
+            }
+            Thread.Sleep(sleep);
 
             var clrInfo = DiscoverClrInfoProperties();
             // check for cancellation request
@@ -3551,6 +3571,12 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
+            if (clrInfo.clrVendorInfo == "")
+            {
+                return null;
+            }
+            Thread.Sleep(sleep);
+
             var solutionInfo = DiscoverTargetInfoProperties();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
@@ -3560,6 +3586,14 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
+            if (solutionInfo.TargetName == "")
+            {
+                return null;
+            }
+
+            Thread.Sleep(sleep);
+
+
             var nativeAssembliesInfo = DiscoveryInteropNativeAssemblies();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
@@ -3568,6 +3602,8 @@ namespace nanoFramework.Tools.Debugger
                 Debug.WriteLine("cancellation requested");
                 return null;
             }
+
+            Thread.Sleep(sleep);
 
             // sanity check for NULL native assemblies
             if (nativeAssembliesInfo == null)
