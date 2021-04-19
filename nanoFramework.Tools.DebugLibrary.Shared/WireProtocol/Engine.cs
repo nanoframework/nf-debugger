@@ -3272,6 +3272,7 @@ namespace nanoFramework.Tools.Debugger
 
         private CLRCapabilities.Capability DiscoverCLRCapabilityFlags()
         {
+            Debug.WriteLine("==============================");
             Debug.WriteLine("DiscoverCLRCapability");
 
             return (CLRCapabilities.Capability)DiscoverCLRCapabilityAsUint(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityFlags);
@@ -3279,6 +3280,7 @@ namespace nanoFramework.Tools.Debugger
 
         private CLRCapabilities.SoftwareVersionProperties DiscoverSoftwareVersionProperties()
         {
+            Debug.WriteLine("==============================");
             Debug.WriteLine("DiscoverSoftwareVersionProperties");
 
             IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilitySoftwareVersion);
@@ -3303,6 +3305,7 @@ namespace nanoFramework.Tools.Debugger
 
         private CLRCapabilities.HalSystemInfoProperties DiscoverHalSystemInfoProperties()
         {
+            Debug.WriteLine("==============================");
             Debug.WriteLine("DiscoverHalSystemInfoProperties");
 
             IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityHalSystemInfo);
@@ -3331,6 +3334,7 @@ namespace nanoFramework.Tools.Debugger
 
         private CLRCapabilities.ClrInfoProperties DiscoverClrInfoProperties()
         {
+            Debug.WriteLine("==============================");
             Debug.WriteLine("DiscoverClrInfoProperties");
 
             IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityClrInfo);
