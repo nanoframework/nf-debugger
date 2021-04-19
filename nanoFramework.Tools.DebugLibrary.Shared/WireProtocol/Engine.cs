@@ -672,7 +672,7 @@ namespace nanoFramework.Tools.Debugger
 
         public Commands.Monitor_Ping.Reply GetConnectionSource()
         {
-            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Ping, 0, null);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, new byte[0]);
 
             if (reply != null)
             {
