@@ -152,7 +152,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         public bool ConnectDevice()
         {
             // try to determine if we already have this device opened.
-            if (Device != null)
+            if (Device != null &&
+                Device.IsOpen)
             {
                 return true;
             }
