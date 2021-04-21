@@ -940,7 +940,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                     (sender as Button).IsEnabled = true;
                 }));
 
-            }).FireAndForget();
+            });
         }
 
         private void ReadTestButton_Click(object sender, RoutedEventArgs e)
