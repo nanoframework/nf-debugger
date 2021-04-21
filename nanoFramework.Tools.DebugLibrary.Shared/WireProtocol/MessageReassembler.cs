@@ -256,9 +256,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                             break;
                         }
 
-                        // reset timeout
-                        _messageEventTimeout = DateTime.MinValue;
-
                         _state = ReceiveState.CompleteHeader;
 
                         DebuggerEventSource.Log.WireProtocolReceiveState(_state);
@@ -292,7 +289,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                                     // setup buffer to read payload
                                     _messageRaw.Payload = new byte[_messageBase.Header.Size];
-                                    
+
+                                    // reset timeout
+                                    _messageEventTimeout = DateTime.MinValue;
+
                                     //reuse _rawPos for position in header for reading
                                     _rawPos = 0;
 
