@@ -683,21 +683,24 @@ namespace nanoFramework.Tools.Debugger
 
         public Commands.Monitor_Ping.Reply GetConnectionSource()
         {
-            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, new byte[0]);
-
-            if (reply != null)
+            if (IsConnected)
             {
-                var connectionSource = reply.Payload as Commands.Monitor_Ping.Reply;
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, new byte[0]);
 
-                // update field
-                _connectionSource = connectionSource.Source switch
+                if (reply != null)
                 {
-                    Commands.Monitor_Ping.c_Ping_Source_NanoCLR => ConnectionSource.nanoCLR,
-                    Commands.Monitor_Ping.c_Ping_Source_NanoBooter => ConnectionSource.nanoBooter,
-                    _ => ConnectionSource.Unknown,
-                };
+                    var connectionSource = reply.Payload as Commands.Monitor_Ping.Reply;
 
-                return connectionSource;
+                    // update field
+                    _connectionSource = connectionSource.Source switch
+                    {
+                        Commands.Monitor_Ping.c_Ping_Source_NanoCLR => ConnectionSource.nanoCLR,
+                        Commands.Monitor_Ping.c_Ping_Source_NanoBooter => ConnectionSource.nanoBooter,
+                        _ => ConnectionSource.Unknown,
+                    };
+
+                    return connectionSource;
+                }
             }
 
             return null;
@@ -3235,7 +3238,7 @@ namespace nanoFramework.Tools.Debugger
                 m_caps = capabilities
             };
 
-            return PerformSyncRequest(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd);
+            return PerformSyncRequest(Commands.c_Debugging_Execution_QueryCLRCapabilities, Flags.c_NoCaching, cmd);
         }
 
         private uint DiscoverCLRCapabilityAsUint(uint capabilities)
