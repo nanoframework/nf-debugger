@@ -27,6 +27,11 @@ namespace nanoFramework.Tools.Debugger
     public partial class Engine : IDisposable, IControllerHostLocal
     {
         private const int TIMEOUT_DEFAULT = 5000;
+        
+        /// <summary>
+        /// This constant is to be used to pause between requests, when doing batched requests to a target.
+        /// </summary>
+        private const int _InterRequestSleep = 2;
 
         internal IPort _portDefinition;
         internal Controller _controlller { get; set; }
@@ -3571,8 +3576,6 @@ namespace nanoFramework.Tools.Debugger
 
         private CLRCapabilities DiscoverCLRCapabilities(CancellationToken cancellationToken)
         {
-            int sleep = 2;
-
             var clrFlags = DiscoverCLRCapabilityFlags();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
@@ -3586,7 +3589,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 return null;
             }
-            Thread.Sleep(sleep);
+            Thread.Sleep(_InterRequestSleep);
 
             var softwareVersion = DiscoverSoftwareVersionProperties();
             // check for cancellation request
@@ -3601,7 +3604,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 return null;
             }
-            Thread.Sleep(sleep);
+            Thread.Sleep(_InterRequestSleep);
 
             var halSysInfo = DiscoverHalSystemInfoProperties();
             // check for cancellation request
@@ -3616,7 +3619,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 return null;
             }
-            Thread.Sleep(sleep);
+            Thread.Sleep(_InterRequestSleep);
 
             var clrInfo = DiscoverClrInfoProperties();
             // check for cancellation request
@@ -3631,7 +3634,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 return null;
             }
-            Thread.Sleep(sleep);
+            Thread.Sleep(_InterRequestSleep);
 
             var solutionInfo = DiscoverTargetInfoProperties();
             // check for cancellation request
@@ -3647,7 +3650,7 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            Thread.Sleep(sleep);
+            Thread.Sleep(_InterRequestSleep);
 
 
             var nativeAssembliesInfo = DiscoveryInteropNativeAssemblies();
@@ -3659,7 +3662,7 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            Thread.Sleep(sleep);
+            Thread.Sleep(_InterRequestSleep);
 
             // sanity check for NULL native assemblies
             if (nativeAssembliesInfo == null)
