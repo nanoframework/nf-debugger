@@ -47,15 +47,17 @@ namespace nanoFramework.Tools.Debugger
                         // release managed components
                         Disconnect();
 
+                        DebugEngine?.Stop();
                         DebugEngine?.Dispose();
+                        DebugEngine = null;
                     }
                     catch
                     {
                         // required to catch exceptions from Engine dispose calls
                     }
-                }
 
-                disposed = true;
+                    disposed = true;
+                }
             }
         }
 
@@ -65,8 +67,6 @@ namespace nanoFramework.Tools.Debugger
         public void Dispose()
         {
             Dispose(true);
-
-            GC.SuppressFinalize(this);
         }
 
         #endregion
