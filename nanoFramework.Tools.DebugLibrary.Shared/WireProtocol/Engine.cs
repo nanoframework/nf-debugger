@@ -222,13 +222,8 @@ namespace nanoFramework.Tools.Debugger
 
                     if (msg == null || msg?.Payload == null)
                     {
-                        // update flag
-                        IsConnected = false;
-
-                        // done here
-                        return false;
+                        goto connect_failed;
                     }
-
 
                     if (msg.Payload is Commands.Monitor_Ping.Reply reply)
                     {
@@ -340,11 +335,7 @@ namespace nanoFramework.Tools.Debugger
                     TargetInfo == null ||
                     Capabilities.IsUnknown)
                 {
-                    // update flag
-                    IsConnected = false;
-
-                    // done here
-                    return false;
+                    goto connect_failed;
                 }
             }
 
@@ -367,25 +358,28 @@ namespace nanoFramework.Tools.Debugger
 
             if (requestedConnectionSource != ConnectionSource.Unknown && requestedConnectionSource != _connectionSource)
             {
-                // update flag
-                IsConnected = false;
-
-                // done here
-                return false;
+                goto connect_failed;
             }
 
             if (requestCapabilities &&
                 (FlashSectorMap == null
                 || TargetInfo == null))
             {
-                // update flag
-                IsConnected = false;
-
-                // done here
-                return false;
+                goto connect_failed;
             }
 
             return IsConnected;
+
+        connect_failed:
+
+            Stop();
+
+            // update flag
+            IsConnected = false;
+
+            // done here
+            return false;
+
         }
 
         public bool UpdateDebugFlags()
