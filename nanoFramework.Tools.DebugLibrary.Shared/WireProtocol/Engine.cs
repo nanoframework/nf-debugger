@@ -3400,6 +3400,8 @@ namespace nanoFramework.Tools.Debugger
         /// <returns>A list of the native assemblies available in the target device</returns>
         private List<CLRCapabilities.NativeAssemblyProperties> DiscoveryInteropNativeAssemblies()
         {
+            const int maxRetryCount = 2;
+
             Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies nativeInteropAssemblies = new Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies();
             List<CLRCapabilities.NativeAssemblyProperties> nativeAssemblies = new List<CLRCapabilities.NativeAssemblyProperties>();
 
@@ -3413,6 +3415,8 @@ namespace nanoFramework.Tools.Debugger
                 if (reply.IsPositiveAcknowledge())
                 {
                     uint assemblyCount = 0;
+                    int retryCount = 0;
+                    bool batchSizeAdjusted = false;
 
                     if (reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply && cmdReply.m_data != null)
                     {
@@ -3428,12 +3432,15 @@ namespace nanoFramework.Tools.Debugger
                             assemblyCount = reader.ReadUInt32();
 
                             // compute the assembly batch size that fits on target WP packet size
-                            var batchSize = WireProtocolPacketSize / Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblyDetails.Size;
+                            uint batchSize = WireProtocolPacketSize / Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblyDetails.Size;
                             uint index = 0;
 
                             while (index < assemblyCount)
                             {
                                 // get next batch
+
+                                // need to pause between requests
+                                Thread.Sleep(_InterRequestSleep);
 
                                 // encode batch request
                                 uint encodedRequest = batchSize << 24;
@@ -3466,20 +3473,62 @@ namespace nanoFramework.Tools.Debugger
                                                    );
 
                                             index += batchSize;
+
+                                            // reset retry count
+                                            retryCount = 0;
                                         }
                                         else
                                         {
+                                            if (retryCount < maxRetryCount)
+                                            {
+                                                retryCount++;
+                                                continue;
+                                            }
+
                                             return null;
                                         }
                                     }
                                     else
                                     {
+                                        if (retryCount < maxRetryCount)
+                                        {
+                                            retryCount++;
+                                            continue;
+                                        }
+
                                         return null;
                                     }
                                 }
                                 else
                                 {
-                                    return null;
+                                    // check retry
+                                    if (retryCount < maxRetryCount)
+                                    {
+                                        retryCount++;
+                                    }
+                                    else
+                                    {
+                                        // check if batch size has been adjusted
+                                        if (!batchSizeAdjusted)
+                                        {
+                                            // adjust, if possible
+                                            if (batchSize > 1)
+                                            {
+                                                // set to half the current size
+                                                batchSize = (uint)Math.Floor(batchSize / 2.0);
+
+                                                batchSizeAdjusted = true;
+
+                                                // reset retry count
+                                                retryCount = 0;
+
+                                                continue;
+                                            }
+                                        }
+
+                                        // nothing else to try, just quit
+                                        return null;
+                                    }
                                 }
                             }
 
