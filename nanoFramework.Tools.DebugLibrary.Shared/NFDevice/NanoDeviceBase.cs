@@ -73,7 +73,7 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Unique ID of the NanoDevice.
         /// </summary>
-        public Guid DeviceId { get; internal set; }
+        public Guid DeviceUniqueId { get; internal set; }
 
         /// <summary>
         /// Version of nanoBooter.
@@ -161,7 +161,7 @@ namespace nanoFramework.Tools.Debugger
         {
             DeviceInfo = new NanoFrameworkDeviceInfo(this);
 
-            DeviceId = Guid.NewGuid();
+            DeviceUniqueId = Guid.NewGuid();
         }
 
         private bool IsCLRDebuggerEnabled
