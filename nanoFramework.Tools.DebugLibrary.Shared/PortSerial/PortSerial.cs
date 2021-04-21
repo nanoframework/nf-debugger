@@ -3,14 +3,12 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools.Debugger.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
@@ -18,7 +16,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
     {
         private readonly PortSerialManager _portManager;
 
-        public SerialPort Device { get; internal set; }
+        public SerialPort Device => (SerialPort)NanoDevice.DeviceBase;
 
         // valid baud rates
         public static readonly List<int> ValidBaudRates = new List<int>() { 921600, 460800, 115200 };
@@ -35,7 +33,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             get
             {
-                return NanoDevice.Device.DeviceInformation.InstanceId;
+                return NanoDevice.DeviceId;
             }
         }
 
@@ -79,7 +77,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // the communication to fail
                 /////////////////////////////////////////////////////////////
 
-                Device = new SerialPort(InstanceId, BaudRate, Parity.None, 8);
+                NanoDevice.DeviceBase = new SerialPort(InstanceId, BaudRate, Parity.None, 8);
 
                 // Device could have been blocked by user or the device has already been opened by another app.
                 if (Device != null)
@@ -137,28 +135,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         public void CloseDevice()
         {
-            if (IsDeviceConnected)
+            if (NanoDevice.DeviceBase != null)
             {
-                CloseCurrentlyConnectedDevice();
-            }
-        }
-
-        /// <summary>
-        /// Closes the device, stops the device watcher, stops listening for app events, and resets object state to before a device
-        /// was ever connected.
-        /// 
-        /// When the SerialDevice is closing, it will cancel all IO operations that are still pending (not complete).
-        /// The close will not wait for any IO completion callbacks to be called, so the close call may complete before any of
-        /// the IO completion callbacks are called.
-        /// The pending IO operations will still call their respective completion callbacks with either a task 
-        /// cancelled error or the operation completed.
-        /// </summary>
-        private void CloseCurrentlyConnectedDevice()
-        {
-            if (Device != null)
-            {
-                Device.Close();
-                Device = null;
+                ((SerialPort)NanoDevice.DeviceBase).Close();
+                ((SerialPort)NanoDevice.DeviceBase).Dispose();
             }
         }
 
@@ -170,18 +150,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         #endregion
 
         public bool ConnectDevice()
-        {
-            bool connectFlag = ConnectSerialDevice();
-
-            if (connectFlag && NanoDevice.DeviceBase == null)
-            {
-                NanoDevice.DeviceBase = Device;
-            }
-
-            return connectFlag;
-        }
-
-        private bool ConnectSerialDevice()
         {
             // try to determine if we already have this device opened.
             if (Device != null)
@@ -204,26 +172,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return openDeviceResult;
         }
 
-        public void DisconnectDevice()
+        public void DisconnectDevice(bool force = false)
         {
             // disconnecting the current device
 
-            //try
-            //{
             OnLogMessageAvailable(NanoDevicesEventSource.Log.CloseDevice(InstanceId));
 
             // close device
             CloseDevice();
 
-            // stop and dispose DebugEgine if instantiated
-            NanoDevice.DebugEngine?.Stop();
-            NanoDevice.DebugEngine?.Dispose();
-            NanoDevice.DebugEngine = null;
-            //}
-            //catch
-            //{
-            //    // catch all required to deal with possible Exceptions when disconnecting the device
-            //}
+            if (force)
+            {
+                _portManager.DisposeDevice(InstanceId);
+            }
         }
 
         #region Interface implementations
@@ -249,7 +210,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         public int SendBuffer(byte[] buffer)
         {
             // device must be connected
-            if (IsDeviceConnected)
+            if (IsDeviceConnected &&
+                Device.IsOpen)
             {
                 try
                 {
@@ -274,7 +236,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         public byte[] ReadBuffer(int bytesToRead)
         {
             // device must be connected
-            if (IsDeviceConnected)
+            if (IsDeviceConnected &&
+                Device.IsOpen)
             {
                 byte[] buffer = new byte[bytesToRead];
 
@@ -309,6 +272,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return new byte[0];
         }
 
-#endregion
+        #endregion
+
     }
 }
