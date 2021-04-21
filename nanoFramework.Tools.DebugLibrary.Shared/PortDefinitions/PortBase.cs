@@ -72,5 +72,11 @@ namespace nanoFramework.Tools.Debugger
         /// This operation resets the list of available devices and attempts to validate if a connected device it's a nanoDevice.
         /// </summary>
         public abstract void ReScanDevices();
+
+        /// <summary>
+        /// Disposes a device.
+        /// </summary>
+        /// <param name="instanceId">Id of the device to dispose.</param>
+        public abstract void DisposeDevice(string instanceId);
     }
 }
