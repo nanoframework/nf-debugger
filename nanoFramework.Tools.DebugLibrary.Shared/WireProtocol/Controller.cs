@@ -135,8 +135,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         internal int ReadBuffer(byte[] buffer, int offset, int bytesToRead)
         {
             // check if there is anything to read
-            if (App.AvailableBytes == 0)
+            var availableBytes = App.AvailableBytes;
+            if (availableBytes <= 0)
             {
+                if (availableBytes == -1)
+                {
+                    throw new DeviceNotConnectedException();
+                }
+
                 return 0;
             }
 

@@ -230,7 +230,21 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public DateTime LastActivity { get; set; }
 
-        public int AvailableBytes => Device.BytesToRead;
+        public int AvailableBytes
+        {
+            get
+            {
+                if (Device.IsOpen)
+                {
+                    return Device.BytesToRead;
+                }
+                else
+                {
+                    // return -1 to signal that the port is not open
+                    return -1;
+                }
+            }
+        }
 
         public int SendBuffer(byte[] buffer)
         {
