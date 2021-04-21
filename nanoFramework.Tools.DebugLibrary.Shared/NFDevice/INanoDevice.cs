@@ -9,6 +9,6 @@ namespace nanoFramework.Tools.Debugger
     {
         bool Connect();
 
-        void Disconnect();
+        void Disconnect(bool force = false);
     }
 }

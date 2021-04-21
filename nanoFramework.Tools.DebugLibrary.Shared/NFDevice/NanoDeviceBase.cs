@@ -186,7 +186,7 @@ namespace nanoFramework.Tools.Debugger
 
         public object DeviceBase { get; internal set; }
 
-        public abstract void Disconnect();
+        public abstract void Disconnect(bool force = false);
 
         /// <summary>
         /// Get <see cref="INanoFrameworkDeviceInfo"/> from device.

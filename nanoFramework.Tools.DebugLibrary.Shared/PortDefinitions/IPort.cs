@@ -17,6 +17,6 @@ namespace nanoFramework.Tools.Debugger
 
         bool ConnectDevice();
 
-        void DisconnectDevice();
+        void DisconnectDevice(bool force = false);
     }
 }
