@@ -57,25 +57,18 @@ namespace nanoFramework.Tools.Debugger
 
         readonly CancellationTokenSource _noiseHandlingCancellation = new CancellationTokenSource();
 
-        readonly CancellationTokenSource _backgroundProcessorCancellation = new CancellationTokenSource();
-
         AutoResetEvent _rpcEvent;
         //ArrayList m_rpcQueue;
         ArrayList _rpcEndPoints;
 
-        ManualResetEvent m_evtShutdown;
         ManualResetEvent _pingEvent;
         TypeSysLookup m_typeSysLookup;
         EngineState _state;
 
-        private Task _backgroundProcessor;
+        private Thread _backgroundProcessor;
 
         protected readonly WireProtocolRequestsStore _requestsStore = new WireProtocolRequestsStore();
         protected readonly Timer _pendingRequestsTimer;
-
-
-        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-        public CancellationToken CancellationToken => _cancellationTokenSource.Token;
 
         internal INanoDevice Device;
 
@@ -93,7 +86,6 @@ namespace nanoFramework.Tools.Debugger
         {
             m_notifyEvent = new AutoResetEvent(false);
             _rpcEvent = new AutoResetEvent(false);
-            m_evtShutdown = new ManualResetEvent(false);
             _pingEvent = new ManualResetEvent(false);
 
             //m_rpcQueue = ArrayList.Synchronized(new ArrayList());
@@ -195,13 +187,13 @@ namespace nanoFramework.Tools.Debugger
                 {
                     if (!IsRunning)
                     {
-                        if (_state.GetValue() == EngineState.Value.NotStarted)
+                        if (_state.GetValue() == EngineState.Value.NotStarted )
                         {
                             // background processor was never started
                             _state.SetValue(EngineState.Value.Starting, true);
 
                             // start task to process background messages
-                            _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListener(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                            _backgroundProcessor = CreateThreadHelper(new ThreadStart(this.IncomingMessagesListener));
 
                             _state.SetValue(EngineState.Value.Started, false);
                         }
@@ -372,6 +364,7 @@ namespace nanoFramework.Tools.Debugger
 
         connect_failed:
 
+            // stop the listener
             Stop();
 
             // update flag
@@ -439,14 +432,23 @@ namespace nanoFramework.Tools.Debugger
         public void IncomingMessagesListener()
         {
             Debug.WriteLine(">>>> START IncomingMessagesListener <<<<");
-
+            
             var reassembler = new MessageReassembler(_controlller);
 
-            while (!_backgroundProcessorCancellation.IsCancellationRequested && _state.IsRunning)
+            while (_state.IsRunning)
             {
                 try
                 {
                     reassembler.Process();
+                }
+                catch(DeviceNotConnectedException)
+                {
+                    Stop(true);
+                    break;
+                }
+                catch(ThreadAbortException)
+                {
+                    break;
                 }
 #if DEBUG
                 catch (Exception ex)
@@ -456,12 +458,10 @@ namespace nanoFramework.Tools.Debugger
                 catch (Exception)
                 {
 #endif
-                    ProcessExited();
+                    Stop();
                     break;
                 }
             }
-
-            _state.SetValue(EngineState.Value.Stopping, false);
 
             Debug.WriteLine("<<<< EXIT IncomingMessagesListener >>>>");
         }
@@ -544,27 +544,26 @@ namespace nanoFramework.Tools.Debugger
         {
             if (!disposedValue)
             {
-                if (disposing)
+                try
                 {
-                    // TODO: dispose managed state (managed objects).
+                    Stop();
 
-                    //noiseHandlingCancellation.Cancel();
-
-                    //backgroundProcessorCancellation.Cancel();
-
-                    try
+                    if (_state.SetValue(EngineState.Value.Disposing))
                     {
-                        _cancellationTokenSource.Cancel();
-                        _cancellationTokenSource.Dispose();
-                    }
-                    catch
-                    {
-                        // catch everything else, doesn't matter
+                        IDisposable disposable = _controlller as IDisposable;
+
+                        if (disposable != null)
+                        {
+                            disposable.Dispose();
+                        }
+
+                        _state.SetValue(EngineState.Value.Disposed);
                     }
                 }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
+                catch
+                {
+                    // intended use to let dispose happen even if exceptions occur
+                }
 
                 disposedValue = true;
             }
@@ -572,20 +571,18 @@ namespace nanoFramework.Tools.Debugger
 
         ~Engine()
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(false);
         }
 
-        // This code added to correctly implement the disposable pattern.
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            // GC.SuppressFinalize(this);
+            //GC.SuppressFinalize(this);
         }
 
 #endregion
+
+        internal object _syncReqLock = new object();
 
         private IncomingMessage PerformSyncRequest(uint command, uint flags, object payload, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
@@ -613,8 +610,6 @@ namespace nanoFramework.Tools.Debugger
 
             return request.Result;
         }
-
-        internal object _syncReqLock = new object();
 
         private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
@@ -786,24 +781,24 @@ namespace nanoFramework.Tools.Debugger
 
                     case Commands.c_Debugging_Messaging_Query:
                         Debug.Assert(message.Payload != null);
-                        Task.Factory.StartNew(() => RpcReceiveQuery(message, (Commands.Debugging_Messaging_Query)message.Payload), _backgroundProcessorCancellation.Token);
+                        Task.Factory.StartNew(() => RpcReceiveQuery(message, (Commands.Debugging_Messaging_Query)message.Payload));
                         break;
 
                     case Commands.c_Debugging_Messaging_Reply:
                         Debug.Assert(message.Payload != null);
-                        Task.Factory.StartNew(() => RpcReceiveReplyAsync(message, (Commands.Debugging_Messaging_Reply)message.Payload), _backgroundProcessorCancellation.Token);
+                        Task.Factory.StartNew(() => RpcReceiveReplyAsync(message, (Commands.Debugging_Messaging_Reply)message.Payload));
                         break;
 
                     case Commands.c_Debugging_Messaging_Send:
                         Debug.Assert(message.Payload != null);
-                        Task.Factory.StartNew(() => RpcReceiveSendAsync(message, (Commands.Debugging_Messaging_Send)message.Payload), _backgroundProcessorCancellation.Token);
+                        Task.Factory.StartNew(() => RpcReceiveSendAsync(message, (Commands.Debugging_Messaging_Send)message.Payload));
                         break;
                 }
             }
 
             if (_eventCommand != null)
             {
-                Task.Factory.StartNew(() => _eventCommand.Invoke(message, isReply), _backgroundProcessorCancellation.Token);
+                Task.Factory.StartNew(() => _eventCommand.Invoke(message, isReply));
 
                 return true;
             }
@@ -841,14 +836,13 @@ namespace nanoFramework.Tools.Debugger
         {
             _state.SetValue(EngineState.Value.Stopping, false);
 
-            m_evtShutdown.Set();
-
             if (_backgroundProcessor != null)
             {
                 try
                 {
-                    _backgroundProcessorCancellation.Cancel();
-                    _cancellationTokenSource.Cancel();
+                    _backgroundProcessor.Join(TimeSpan.FromSeconds(1));
+                    _backgroundProcessor.Abort();
+                    _backgroundProcessor = null;
                 }
                 catch
                 {
@@ -859,29 +853,21 @@ namespace nanoFramework.Tools.Debugger
 
         public void ResumeProcessing()
         {
-            m_evtShutdown.Reset();
-
             _state.SetValue(EngineState.Value.Resume, false);
 
-            if ((_backgroundProcessor != null && _backgroundProcessor.IsCompleted) ||
-                (_backgroundProcessor == null))
+            if (_backgroundProcessor == null)
             {
-                    _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListener(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                _backgroundProcessor = CreateThreadHelper(new ThreadStart( this.IncomingMessagesListener ));
             }
         }
 
-        public void Stop()
+        public void Stop(bool force = false)
         {
-            if (m_evtShutdown != null)
-            {
-                m_evtShutdown.Set();
-            }
-
             if (_state.SetValue(EngineState.Value.Stopping, false))
             {
                 StopProcessing();
 
-                //((IController)this).ClosePort();
+                Device.Disconnect(force);
 
                 _state.SetValue(EngineState.Value.Stopped, false);
             }
@@ -3473,7 +3459,7 @@ namespace nanoFramework.Tools.Debugger
 
                                             index += batchSize;
 
-                                            // reset retry count
+                                            // reset retry counter
                                             retryCount = 0;
                                         }
                                         else
@@ -3481,6 +3467,7 @@ namespace nanoFramework.Tools.Debugger
                                             if (retryCount < maxRetryCount)
                                             {
                                                 retryCount++;
+                                                // done here, try again
                                                 continue;
                                             }
 
@@ -3492,6 +3479,8 @@ namespace nanoFramework.Tools.Debugger
                                         if (retryCount < maxRetryCount)
                                         {
                                             retryCount++;
+
+                                            // done here, try again
                                             continue;
                                         }
 
@@ -3521,6 +3510,7 @@ namespace nanoFramework.Tools.Debugger
                                                 // reset retry count
                                                 retryCount = 0;
 
+                                                // done here, try again
                                                 continue;
                                             }
                                         }
@@ -4442,7 +4432,15 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-#endregion
+        #endregion
 
+        private Thread CreateThreadHelper(ThreadStart ts)
+        {
+            Thread th = new Thread(ts);
+            th.IsBackground = true;
+            th.Start();
+
+            return th;
+        }
     }
 }
