@@ -364,9 +364,6 @@ namespace nanoFramework.Tools.Debugger
 
         connect_failed:
 
-            // stop the listener
-            Stop();
-
             // update flag
             IsConnected = false;
 
