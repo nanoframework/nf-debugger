@@ -844,11 +844,15 @@ namespace nanoFramework.Tools.Debugger
                 {
                     _backgroundProcessor.Join(TimeSpan.FromSeconds(1));
                     _backgroundProcessor.Abort();
-                    _backgroundProcessor = null;
                 }
                 catch
                 {
                     // there are random issues with the cancellation tokens
+                }
+                finally
+                {
+                    Thread.Sleep(500);
+                    _backgroundProcessor = null;
                 }
             }
         }
