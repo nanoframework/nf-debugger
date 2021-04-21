@@ -15,6 +15,8 @@ namespace nanoFramework.Tools.Debugger
     {
         public T Device { get; set; }
 
+        public string DeviceId { get; set; }
+
         public NanoDevice()
         {
             Device = new T();
