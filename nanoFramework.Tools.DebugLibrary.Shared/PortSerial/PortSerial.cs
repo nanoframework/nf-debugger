@@ -99,9 +99,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                     successfullyOpenedDevice = true;
 
+                    // set conservative timeouts
                     Device.WriteTimeout = 500;
                     Device.ReadTimeout = 500;
                     Device.ErrorReceived += Device_ErrorReceived;
+
+                    // better make sure the RX FIFO it's cleared
+                    Device.DiscardInBuffer();
                 }
                 else
                 {
