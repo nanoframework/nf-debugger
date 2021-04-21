@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Ports;
@@ -38,7 +39,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     
                     while (_started)
                     {
-                        var ports = SerialPort.GetPortNames().Distinct();
+                        var ports = GetPortNames();
 
                         // process ports that have arrived
                         foreach (var port in ports)
@@ -83,6 +84,34 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
         }
 
+        private List<string> GetPortNames()
+        {
+            List<string> portNames = new List<string>();
+            RegistryKey activePorts = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\usbser\Enum");
+            if (activePorts != null)
+            {
+                var numberPorts = (int)activePorts.GetValue("Count");
+
+                for (int i = 0; i < numberPorts; i++)
+                {
+                    string portDescription = (string)activePorts.GetValue($"{i}");
+                    if (portDescription != null)
+                    {
+                        RegistryKey portKeyInfo = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{portDescription}\\Device Parameters");
+                        if (portKeyInfo != null)
+                        {
+                            string portName = (string)portKeyInfo.GetValue($"PortName");
+                            if (portName != null)
+                            {
+                                portNames.Add(portName);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return portNames;
+        }
         public void Stop()
         {
             _started = false;
