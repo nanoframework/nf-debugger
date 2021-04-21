@@ -45,7 +45,8 @@ namespace nanoFramework.Tools.Debugger
         {
             lock (SyncObject)
             {
-                if (_value == Value.Stopping && value == Value.Resume)
+                if ((_value == Value.Stopping || _value == Value.Stopped )
+                    && value == Value.Resume)
                 {
                     _value = Value.Started;
                     return true;
