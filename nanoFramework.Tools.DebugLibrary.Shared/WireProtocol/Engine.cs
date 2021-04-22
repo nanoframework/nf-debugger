@@ -175,11 +175,13 @@ namespace nanoFramework.Tools.Debugger
         public bool StopDebuggerOnConnect { get; set; }
 
         public bool Connect(
-            int timeout, 
+            int millisecondsTimeout = TIMEOUT_DEFAULT, 
             bool force = false,
             ConnectionSource requestedConnectionSource = ConnectionSource.Unknown, 
             bool requestCapabilities = true)
         {
+            var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
             if (force || !IsConnected)
             {
                 // connect to device 
