@@ -133,7 +133,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                         var devicePathDetail = Regex.Match(deviceFullPath.Replace("+", "&"), FindFullPathPattern);
                                         if ((devicePathDetail.Success) && (devicePathDetail.Groups.Count == 4))
                                         {
-                                            RegistryKey device = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{devicePathDetail.Groups[1]}\\{devicePathDetail.Groups[2]}\\{devicePathDetail.Groups[3]}");
+                                            string devicePath = deviceFullPath.Split('#')[1];
+
+                                            RegistryKey device = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{devicePathDetail.Groups[1]}\\{devicePath}\\{devicePathDetail.Groups[3]}");
                                             if (device != null)
                                             {
                                                 string service = (string)device.GetValue("Service");
