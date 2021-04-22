@@ -269,8 +269,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                             if (VerifyHeader())
                             {
-                                bool fReply = (_messageBase.Header.Flags & Flags.c_Reply) != 0;
-
                                 DebuggerEventSource.Log.WireProtocolRxHeader(_messageBase.Header.CrcHeader, _messageBase.Header.CrcData, _messageBase.Header.Cmd, _messageBase.Header.Flags, _messageBase.Header.Seq, _messageBase.Header.SeqReply, _messageBase.Header.Size);
 
                                 if (_messageBase.Header.Size != 0)
