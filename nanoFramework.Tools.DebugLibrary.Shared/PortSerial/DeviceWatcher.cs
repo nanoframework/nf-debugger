@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -86,32 +87,51 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private List<string> GetPortNames()
         {
+            const string RegExPattern = @"\\Device\\([a-zA-Z]*)(\d)";
             List<string> portNames = new List<string>();
-            RegistryKey activePorts = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\usbser\Enum");
-            if (activePorts != null)
+            try
             {
-                var numberPorts = (int)activePorts.GetValue("Count");
-
-                for (int i = 0; i < numberPorts; i++)
+                // Gets the list of supposed open ports
+                RegistryKey allPorts = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM");
+                if (allPorts != null)
                 {
-                    string portDescription = (string)activePorts.GetValue($"{i}");
-                    if (portDescription != null)
+                    // Then gets all the names, they are like \Device\BthModem0 \Device\Silabser0 etc,
+                    foreach (var port in allPorts.GetValueNames())
                     {
-                        RegistryKey portKeyInfo = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{portDescription}\\Device Parameters");
-                        if (portKeyInfo != null)
+                        var portNameDetails = Regex.Match(port, RegExPattern);
+                        if (portNameDetails.Success)
                         {
-                            string portName = (string)portKeyInfo.GetValue($"PortName");
-                            if (portName != null)
+                            RegistryKey activePorts = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Services\\{portNameDetails.Groups[1]}\\Enum");
+                            if (activePorts != null)
                             {
-                                portNames.Add(portName);
+                                // If the device is still plugged, it should appear as valid here, if not present, it means, the device has been disconnected
+                                string portDescription = (string)activePorts.GetValue($"{portNameDetails.Groups[2]}");
+                                if (portDescription != null)
+                                {
+                                    RegistryKey portKeyInfo = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{portDescription}\\Device Parameters");
+                                    if (portKeyInfo != null)
+                                    {
+                                        string portName = (string)allPorts.GetValue(port);
+                                        if (portName != null)
+                                        {
+                                            portNames.Add(portName);
+                                        }
+                                    }
+                                }
+
                             }
                         }
                     }
                 }
             }
+            catch
+            {
+                // Errors in enumeration can happen                
+            }
 
             return portNames;
         }
+
         public void Stop()
         {
             _started = false;

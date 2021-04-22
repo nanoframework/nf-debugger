@@ -59,7 +59,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 PortExclusionList = portExclusionList;
             }
 
-            Task.Factory.StartNew(() => {
+            Task.Factory.StartNew(() =>
+            {
 
                 InitializeDeviceWatchers();
 
@@ -87,7 +88,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public override void StartDeviceWatchers()
         {
-            if(!_watchersStarted)
+            if (!_watchersStarted)
             {
                 StartDeviceWatchersInternal();
             }
@@ -125,7 +126,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             _deviceWatcher.Start();
 
             _watchersStarted = true;
-            
+
             _deviceWatchersCompletedCount = 0;
             IsDevicesEnumerationComplete = false;
         }
@@ -283,7 +284,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             var deviceToDispose = NanoFrameworkDevices.FirstOrDefault(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).DeviceId == instanceId);
 
-            if(deviceToDispose != null)
+            if (deviceToDispose != null)
             {
                 Task.Run(() =>
                 {
@@ -373,11 +374,53 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingDeviceToExclude(serialPort));
                 return;
             }
-            
+
+            // discard known system and other rogue devices
+            RegistryKey portKeyInfo = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\COM Name Arbiter\Devices");
+            if (portKeyInfo != null)
+            {
+                var portInfo = (string)portKeyInfo.GetValue(serialPort);
+
+                if (portInfo != null)
+                {
+                    Debug.WriteLine($"{nameof(OnDeviceAdded)}: port {serialPort}, portinfo: {portInfo}");
+
+                    // make  it upper case for comparison
+                    portInfo = portInfo.ToUpperInvariant();
+
+                    if (
+                       portInfo.StartsWith(@"\\?\ACPI") ||
+
+                       // reported in https://github.com/nanoframework/Home/issues/332
+                       // COM ports from Broadcom 20702 Bluetooth adapter
+                       portInfo.Contains(@"VID_0A5C+PID_21E1") ||
+
+                       // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
+                       // COM ports from Broadcom 20702 Bluetooth adapter
+                       portInfo.Contains(@"VID&00010057_PID&0023") ||
+
+                       // reported in Discord channel
+                       portInfo.Contains(@"VID&0001009E_PID&400A") ||
+
+                       // this seems to cover virtual COM ports from Bluetooth devices
+                       portInfo.Contains("BTHENUM") ||
+
+                       // this seems to cover virtual COM ports by ELTIMA 
+                       portInfo.Contains("EVSERIAL")
+                       )
+                    {
+                        OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingDeviceToExclude(serialPort));
+
+                        // don't even bother with this one
+                        return;
+                    }
+                }
+            }
+
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(serialPort));
 
             _newDevicesCount++;
-            
+
             Task.Run(() =>
             {
                 AddDeviceToListAsync(serialPort);
@@ -434,7 +477,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             ((SerialPort)device.DeviceBase).BaudRate = baudRate;
                         }
 
-                        if(!((SerialPort)device.DeviceBase).IsOpen)
+                        if (!((SerialPort)device.DeviceBase).IsOpen)
                         {
                             ((SerialPort)device.DeviceBase).Open();
                         }
@@ -486,7 +529,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 {
                                     // try again with deprecated command
                                     var deviceInfo = targetReleaseInfoPolicy.Execute(() => device.DebugEngine.GetMonitorOemInfo());
-                                        
+
                                     if (deviceInfo != null)
                                     {
                                         device.TargetName = deviceInfo.TargetName;
@@ -496,14 +539,15 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             }
                             else
                             {
-                                var deviceInfo = targetInfoPropertiesPolicy.Execute(() => { 
-                                    if (device.DebugEngine != null) 
-                                    { 
-                                        return device.DebugEngine.GetTargetInfo(); 
+                                var deviceInfo = targetInfoPropertiesPolicy.Execute(() =>
+                                {
+                                    if (device.DebugEngine != null)
+                                    {
+                                        return device.DebugEngine.GetTargetInfo();
                                     }
-                                    else 
-                                    { 
-                                        return new CLRCapabilities.TargetInfoProperties(); 
+                                    else
+                                    {
+                                        return new CLRCapabilities.TargetInfoProperties();
                                     }
                                 });
 
