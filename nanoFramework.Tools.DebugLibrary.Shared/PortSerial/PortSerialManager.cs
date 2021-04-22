@@ -601,6 +601,18 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 {
                     // remove from cache
                     _devicesCache.TryRemove(deviceId, out var dummy);
+
+                    device.DebugEngine?.Stop();
+                    device.DebugEngine?.Dispose();
+                    device.DebugEngine = null;
+
+                    if (device.DeviceBase != null)
+                    {
+                        ((SerialPort)device.DeviceBase).Close();
+                        ((SerialPort)device.DeviceBase).Dispose();
+
+                        device.DeviceBase = null;
+                    }
                 }
             }
             catch
@@ -611,19 +623,24 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 {
                     _devicesCache.TryRemove(deviceId, out var dummy);
                 }
-            }
-            finally
-            {
-                device.DebugEngine?.Stop();
-                device.DebugEngine?.Dispose();
-                device.DebugEngine = null;
 
-                if (device.DeviceBase != null)
+                try
                 {
-                    ((SerialPort)device.DeviceBase).Close();
-                    ((SerialPort)device.DeviceBase).Dispose();
+                    device.DebugEngine?.Stop();
+                    device.DebugEngine?.Dispose();
+                    device.DebugEngine = null;
 
-                    device.DeviceBase = null;
+                    if (device.DeviceBase != null)
+                    {
+                        ((SerialPort)device.DeviceBase).Close();
+                        ((SerialPort)device.DeviceBase).Dispose();
+
+                        device.DeviceBase = null;
+                    }
+                }
+                catch
+                {
+                    // catch all trying to get rid of the device
                 }
             }
 
