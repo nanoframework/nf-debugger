@@ -87,12 +87,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private List<string> GetPortNames()
         {
+            const string FindFullPathPattern = @"\\\\\?\\([\w]*)#([\w&]*)#([\w&]*)";
             const string RegExPattern = @"\\Device\\([a-zA-Z]*)(\d)";
             List<string> portNames = new List<string>();
             try
             {
                 // Gets the list of supposed open ports
                 RegistryKey allPorts = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM");
+                RegistryKey deviceFullPaths = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\COM Name Arbiter\Devices");
                 if (allPorts != null)
                 {
                     // Then gets all the names, they are like \Device\BthModem0 \Device\Silabser0 etc,
@@ -118,7 +120,36 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                         }
                                     }
                                 }
-
+                            }
+                            else
+                            {
+                                string portName = (string)allPorts.GetValue(port);
+                                if (portName != null)
+                                {
+                                    // Get the full qualified name of the device
+                                    string deviceFullPath = (string)deviceFullPaths.GetValue(port);
+                                    if (deviceFullPath != null)
+                                    {
+                                        var devicePathDetail = Regex.Match(deviceFullPath, FindFullPathPattern);
+                                        if ((devicePathDetail.Success) && (devicePathDetail.Groups.Count == 4))
+                                        {
+                                            RegistryKey device = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{devicePathDetail.Groups[1]}\\{devicePathDetail.Groups[2]}\\{devicePathDetail.Groups[3]}");
+                                            if (device != null)
+                                            {
+                                                string service = (string)device.GetValue("Service");
+                                                if (service != null)
+                                                {
+                                                    activePorts = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Services\\{service}\\Enum");
+                                                    if (activePorts != null)
+                                                    {
+                                                        // If the device is still plugged, it should appear as valid here, if not present, it means, the device has been disconnected                                                        
+                                                        portNames.Add(portName);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
