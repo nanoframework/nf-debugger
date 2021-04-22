@@ -127,10 +127,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 if (portName != null)
                                 {
                                     // Get the full qualified name of the device
-                                    string deviceFullPath = (string)deviceFullPaths.GetValue(port);
+                                    string deviceFullPath = (string)deviceFullPaths.GetValue(portName);
                                     if (deviceFullPath != null)
                                     {
-                                        var devicePathDetail = Regex.Match(deviceFullPath, FindFullPathPattern);
+                                        var devicePathDetail = Regex.Match(deviceFullPath.Replace("+", "&"), FindFullPathPattern);
                                         if ((devicePathDetail.Success) && (devicePathDetail.Groups.Count == 4))
                                         {
                                             RegistryKey device = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{devicePathDetail.Groups[1]}\\{devicePathDetail.Groups[2]}\\{devicePathDetail.Groups[3]}");
