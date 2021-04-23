@@ -1702,7 +1702,7 @@ namespace nanoFramework.Tools.Debugger
                     // wait for ping after reboot
                     log?.Report($"Waiting for ping event...");
 
-                    if(_pingEvent.WaitOne(10000))
+                    if(_pingEvent.WaitOne(5000))
                     {
                         log?.Report($"Ping arrived!");
                     }
