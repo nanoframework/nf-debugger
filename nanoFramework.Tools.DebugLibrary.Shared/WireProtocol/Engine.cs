@@ -1763,7 +1763,9 @@ namespace nanoFramework.Tools.Debugger
                 FlagsToReset = 0
             };
 
-            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
+            // need to use a reasonably larger timeout because the device could be sending boot PINGs after a reboot
+            // and a timeout too short will miss the reply
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd, 6000);
             if (reply != null)
             {
                 // need this to get DebuggingExecutionChangeConditions.State enum from raw value
