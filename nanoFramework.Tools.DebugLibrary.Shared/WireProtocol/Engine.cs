@@ -583,61 +583,71 @@ namespace nanoFramework.Tools.Debugger
             Dispose(true);
         }
 
-#endregion
+        #endregion
 
+        /// <summary>
+        /// Global lock object for synchronizing message request. This ensures there is only one
+        /// outstanding request at any point of time. 
+        /// </summary>
         internal object _syncReqLock = new object();
 
         private IncomingMessage PerformSyncRequest(uint command, uint flags, object payload, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
-            OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
-
-            var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
-
-            var request = PerformRequestAsync(message, timeout);
-
-            try
+            lock (_syncReqLock)
             {
-                if (request != null)
+                OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
+
+                var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
+                var request = PerformRequestAsync(message, timeout);
+
+                try
                 {
-                    Task.WaitAll(request);
+                    if (request != null)
+                    {
+                        Task.WaitAll(request);
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
-                else
+                catch (AggregateException)
                 {
                     return null;
                 }
-            }
-            catch(AggregateException)
-            {
-                return null;
-            }
 
-            return request.Result;
+                return request.Result;
+            }
         }
 
         private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
-            var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
-
-            var request = PerformRequestAsync(message, timeout);
-
-            try
+            lock (_syncReqLock)
             {
-                if (request != null)
+                var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
+                var request = PerformRequestAsync(message, timeout);
+
+                try
                 {
-                    Task.WaitAll(request);
+                    if (request != null)
+                    {
+                        Task.WaitAll(request);
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
-                else
+                catch
                 {
+                    // catch everything, doesn't matter
                     return null;
                 }
-            }
-            catch
-            {
-                // catch everything, doesn't matter
-                return null;
-            }
 
-            return request.Result;
+                return request.Result;
+            }
         }
 
         internal Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, int millisecondsTimeout = TIMEOUT_DEFAULT)
