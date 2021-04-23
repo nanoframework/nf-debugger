@@ -1291,12 +1291,6 @@ namespace nanoFramework.Tools.Debugger
             return request;
         }
 
-        /// <summary>
-        /// Global lock object for synchronizing message request. This ensures there is only one
-        /// outstanding request at any point of time. 
-        /// </summary>
-        internal object m_ReqSyncLock = new object();
-
         private async Task<WireProtocolRequest> AsyncMessage(uint command, uint flags, object payload, int timeout)
         {
             OutgoingMessage msg = CreateMessage(command, flags, payload);
