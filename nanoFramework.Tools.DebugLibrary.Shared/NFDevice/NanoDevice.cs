@@ -46,10 +46,6 @@ namespace nanoFramework.Tools.Debugger
                     {
                         // release managed components
                         Disconnect();
-
-                        DebugEngine?.Stop();
-                        DebugEngine?.Dispose();
-                        DebugEngine = null;
                     }
                     catch
                     {
