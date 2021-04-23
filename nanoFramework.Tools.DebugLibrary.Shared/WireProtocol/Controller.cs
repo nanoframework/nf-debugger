@@ -6,7 +6,6 @@
 
 using System;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger.WireProtocol
@@ -57,9 +56,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         raw.Payload.Length > 0)
                     {
                         // we have a payload to TX
-
-                        // give it some time for the target to process header
-                        Thread.Sleep(1);
 
                         var sendPayloadCount = SendRawBuffer(raw.Payload);
 
