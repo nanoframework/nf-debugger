@@ -392,7 +392,7 @@ namespace nanoFramework.Tools.Debugger
                 requestBooter = true;
             }
 
-            if (DebugEngine.FlashSectorMap == null)
+            if (DebugEngine.FlashSectorMap.Count == 0)
             {
                 log?.Report("No flash map for device available. Aborting...");
 

@@ -298,12 +298,12 @@ namespace nanoFramework.Tools.Debugger
                 Capabilities = new CLRCapabilities();
 
                 // fill flash sector map
-                if (FlashSectorMap == null)
+                if (FlashSectorMap.Count == 0)
                 {
                     FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
                 }
 
-                if (FlashSectorMap != null)
+                if (FlashSectorMap.Count != 0)
                 {
                     // get target info
                     if (TargetInfo == null)
@@ -324,7 +324,7 @@ namespace nanoFramework.Tools.Debugger
                     }
                 }
 
-                if(FlashSectorMap == null ||
+                if(FlashSectorMap.Count == 0 ||
                     TargetInfo == null ||
                     Capabilities.IsUnknown)
                 {
@@ -342,7 +342,7 @@ namespace nanoFramework.Tools.Debugger
                 (force || TargetInfo == null))
             {
                 // fill flash sector map
-                if (FlashSectorMap == null)
+                if (FlashSectorMap.Count == 0)
                 {
                     FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
                 }
@@ -360,8 +360,8 @@ namespace nanoFramework.Tools.Debugger
             }
 
             if (requestCapabilities &&
-                (FlashSectorMap == null
-                || TargetInfo == null))
+                (FlashSectorMap.Count == 0 || 
+                 TargetInfo == null))
             {
                 goto connect_failed;
             }
@@ -1415,7 +1415,7 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            return null;
+            return new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
         }
 
         private (byte[] Buffer, uint ErrorCode, bool Success) ReadMemory(uint address, uint length, uint offset)
@@ -2936,18 +2936,15 @@ namespace nanoFramework.Tools.Debugger
             IProgress<MessageWithProgress> progress = null,
             IProgress<string> log = null)
         {
-            // get flash sector map from device
-            var flashSectorMap = GetFlashSectorMap();
-
             // check if we do have the map
-            if (flashSectorMap != null)
+            if (FlashSectorMap.Count != 0)
             {
                 // total size of assemblies to deploy 
                 int deployLength = assemblies.Sum(a => a.Length);
 
                 // build the deployment blob from the flash sector map
                 // apply a filter so that we take only the blocks flag for deployment 
-                var deploymentBlob = flashSectorMap.Where(s => (s.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
+                var deploymentBlob = FlashSectorMap.Where(s => (s.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
                     .Select(s => s.ToDeploymentSector())
                     .ToList();
 
