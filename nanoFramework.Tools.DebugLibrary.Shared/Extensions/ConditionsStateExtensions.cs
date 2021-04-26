@@ -95,5 +95,25 @@ namespace nanoFramework.Tools.Debugger.Extensions
 
             return (filteredResult == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.ResolutionFailed);
         }
+
+        /// <summary>
+        /// Check if device execution state is: stopped.
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        public static bool IsDeviceInStoppedState(this Commands.DebuggingExecutionChangeConditions.State state)
+        {
+            // check for unknown state
+            if (state == Commands.DebuggingExecutionChangeConditions.State.Unknown)
+            {
+                return false;
+            }
+
+            var filteredResult = state & WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Stopped;
+
+            Debug.WriteLine($"Device state is: {filteredResult.OutputDeviceExecutionState()}.");
+
+            return (filteredResult == WireProtocol.Commands.DebuggingExecutionChangeConditions.State.Stopped);
+        }
     }
 }
