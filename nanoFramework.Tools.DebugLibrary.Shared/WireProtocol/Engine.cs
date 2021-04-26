@@ -151,7 +151,6 @@ namespace nanoFramework.Tools.Debugger
 
         private ConnectionSource _connectionSource = ConnectionSource.Unknown;
 
-        [Obsolete("Please use IsConnectedTonanoCLR or IsConnectedTonanoBooter instead. This will be removed in a future version.")]
 #pragma warning disable S2292 // Need to keep this here to allow transition period before remove it for good.
         public ConnectionSource ConnectionSource { get => _connectionSource; set => _connectionSource = value; }
 #pragma warning restore S2292 // Trivial properties should be auto-implemented
@@ -694,29 +693,39 @@ namespace nanoFramework.Tools.Debugger
             return replies;
         }
 
-        public Commands.Monitor_Ping.Reply GetConnectionSource()
+        public ConnectionSource GetConnectionSource()
         {
-            if (IsConnected)
+
+            if (!IsConnected)
             {
-                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, new byte[0]);
-
-                if (reply != null)
+                if (Connect(TIMEOUT_DEFAULT, true))
                 {
-                    var connectionSource = reply.Payload as Commands.Monitor_Ping.Reply;
-
-                    // update field
-                    _connectionSource = connectionSource.Source switch
-                    {
-                        Commands.Monitor_Ping.c_Ping_Source_NanoCLR => ConnectionSource.nanoCLR,
-                        Commands.Monitor_Ping.c_Ping_Source_NanoBooter => ConnectionSource.nanoBooter,
-                        _ => ConnectionSource.Unknown,
-                    };
-
-                    return connectionSource;
+                    return ConnectionSource;
+                }
+                else
+                {
+                    return ConnectionSource.Unknown;
                 }
             }
 
-            return null;
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, new byte[0]);
+
+            if (reply != null)
+            {
+                var connectionSource = reply.Payload as Commands.Monitor_Ping.Reply;
+
+                // update field
+                _connectionSource = connectionSource.Source switch
+                {
+                    Commands.Monitor_Ping.c_Ping_Source_NanoCLR => ConnectionSource.nanoCLR,
+                    Commands.Monitor_Ping.c_Ping_Source_NanoBooter => ConnectionSource.nanoBooter,
+                    _ => ConnectionSource.Unknown,
+                };
+
+                return _connectionSource;
+            }
+
+            return ConnectionSource.Unknown;
         }
 
         internal Converter CreateConverter()

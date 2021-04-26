@@ -213,31 +213,14 @@ namespace nanoFramework.Tools.Debugger
         /// Attempts to communicate with the connected nanoFramework device
         /// </summary>
         /// <returns></returns>
-        public PingConnectionType Ping()
+        public ConnectionSource Ping()
         {
             if(DebugEngine == null)
             {
-                return PingConnectionType.NoConnection;
+                return ConnectionSource.Unknown;
             }
 
-            var reply = DebugEngine.GetConnectionSource();
-
-            if (reply != null)
-            {
-                // there is a reply, so the device _has_ to be connected
-                DebugEngine.IsConnected = true;
-
-                switch (reply.Source)
-                {
-                    case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
-                        return PingConnectionType.nanoCLR;
-
-                    case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
-                        return PingConnectionType.nanoBooter;
-                }
-            }
-
-            return PingConnectionType.NoConnection;
+            return DebugEngine.GetConnectionSource();
         }
 
         /// <summary>
@@ -336,9 +319,7 @@ namespace nanoFramework.Tools.Debugger
                             true,
                             ConnectionSource.Unknown))
                         {
-                            Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
-
-                            ret = (reply.Source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter);
+                            ret = (DebugEngine.GetConnectionSource() == ConnectionSource.nanoBooter);
 
                             break;
                         }
@@ -383,7 +364,7 @@ namespace nanoFramework.Tools.Debugger
             log?.Report("Check device presence...");
 
             // check if the device is responsive
-            if (Ping() == PingConnectionType.NoConnection)
+            if (Ping() == ConnectionSource.Unknown)
             {
                 log?.Report("Attempting to reconnect...");
 
@@ -789,20 +770,21 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            Commands.Monitor_Ping.Reply reply = DebugEngine.GetConnectionSource();
+            var connectionSource = DebugEngine.GetConnectionSource();
 
-            if (reply == null)
+            if (connectionSource == ConnectionSource.Unknown)
             {
                 return false;
             }
 
-            // only execute if we are talking to the nanoBooter, otherwise reboot
-            if (reply.Source == Commands.Monitor_Ping.c_Ping_Source_NanoBooter)
+            // only execute if connected to nanoBooter, otherwise reboot
+            if (connectionSource == ConnectionSource.nanoBooter)
             {
                 return DebugEngine.ExecuteMemory(entryPoint);
             }
-            else // if we are talking to the CLR then we simply did a deployment update, so reboot
+            else
             {
+                // if connected to CLR then this was just a deployment update, reboot
                 DebugEngine.RebootDevice(RebootOptions.ClrOnly);
             }
 
