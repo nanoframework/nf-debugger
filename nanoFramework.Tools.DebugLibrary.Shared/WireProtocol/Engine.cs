@@ -3174,9 +3174,21 @@ namespace nanoFramework.Tools.Debugger
         {
             bool deployedOK;
 
-            if (!PauseExecution())
+            var executionState = GetExecutionMode();
+
+            if(executionState == Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
+                log?.Report("Failed to get device execution state. Aborting deployment.");
                 return false;
+            }
+
+            if (!executionState.IsDeviceInStoppedState())
+            {
+                if (!PauseExecution())
+                {
+                    log?.Report("Failed to pause execution in device. Aborting deployment.");
+                    return false;
+                }
             }
 
             if (Capabilities.IncrementalDeployment)

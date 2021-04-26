@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using nanoFramework.Tools.Debugger.Extensions;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -410,9 +411,26 @@ namespace nanoFramework.Tools.Debugger
 
             if (DebugEngine.IsConnectedTonanoCLR)
             {
-                log?.Report("Connected to CLR. Pausing execution...");
+                var deviceState = DebugEngine.GetExecutionMode();
 
-                DebugEngine.PauseExecution();
+                if (deviceState == Commands.DebuggingExecutionChangeConditions.State.Unknown)
+                {
+                    log?.Report("Failed to retrieve device execution state...");
+
+                    return false;
+                }
+                
+                if(!deviceState.IsDeviceInStoppedState())
+                {
+                    log?.Report("Connected to CLR. Pausing execution...");
+
+                    if (!DebugEngine.PauseExecution())
+                    {
+                        log?.Report("Failed to stop execution...");
+
+                        return false;
+                    }
+                }
             }
 
             List<Commands.Monitor_FlashSectorMap.FlashSectorData> eraseSectors = new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
@@ -753,7 +771,7 @@ namespace nanoFramework.Tools.Debugger
                         }
                         catch
                         {
-                            // catch all, doesn't matter the return
+                            // catch all, doesn't care about the return
                             return false;
                         }
 
