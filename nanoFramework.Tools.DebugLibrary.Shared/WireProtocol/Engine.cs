@@ -1706,25 +1706,25 @@ namespace nanoFramework.Tools.Debugger
                     log?.Report($"Reboot command executed {result}");
                 }
 
-                // if reboot options ends on a hard reboot, force connection state to disconnected
+                // if reboot options ends up on a hard reboot, force connection state to disconnected
+                // a Connect request has to happen after this
                 if (((RebootOptions)cmd.flags == RebootOptions.EnterNanoBooter) ||
                     ((RebootOptions)cmd.flags == RebootOptions.NormalReboot))
                 {
                     IsConnected = false;
                 }
+
+                // wait for ping after reboot
+                log?.Report($"Waiting for ping event...");
+
+                // make it 3x the default timeout
+                if(_pingEvent.WaitOne(3 * DefaultTimeout))
+                {
+                    log?.Report($"!! Device reboot confirmed !!");
+                }
                 else
                 {
-                    // wait for ping after reboot
-                    log?.Report($"Waiting for ping event...");
-
-                    if(_pingEvent.WaitOne(5000))
-                    {
-                        log?.Report($"Ping arrived!");
-                    }
-                    else
-                    {
-                        log?.Report($"No presence from device");
-                    }
+                    log?.Report($"ERROR: No activity detected from device after reboot...");
                 }
             }
             finally
