@@ -658,7 +658,12 @@ namespace nanoFramework.Tools.Debugger
             var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
 
             WireProtocolRequest request = new WireProtocolRequest(message, timeout);
-            _requestsStore.Add(request);
+
+            // only add this to store if a reply is expected/required
+            if (request.NeedsReply)
+            {
+                _requestsStore.Add(request);
+            }
 
             try
             {

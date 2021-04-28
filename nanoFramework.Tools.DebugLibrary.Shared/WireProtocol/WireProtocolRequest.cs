@@ -21,6 +21,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public DateTimeOffset Expires { get; }
         public OutgoingMessage OutgoingMessage { get; }
 
+        public bool NeedsReply => OutgoingMessage.NeedsReply;
+
         public WireProtocolRequest(OutgoingMessage outgoingMessage, int millisecondsTimeout = 5000, CommandEventHandler callback = null)
         {
             OutgoingMessage = outgoingMessage;
@@ -47,6 +49,16 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                             );
 
             return controller.Send(OutgoingMessage.Raw);
+        }
+
+        internal void RequestAborted()
+        {
+            DebuggerEventSource.Log.WireProtocolTimeout(
+                OutgoingMessage.Base.Header.Cmd,
+                OutgoingMessage.Base.Header.Flags,
+                OutgoingMessage.Base.Header.Seq,
+                OutgoingMessage.Base.Header.SeqReply);
+
         }
     }
 }
