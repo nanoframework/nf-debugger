@@ -682,6 +682,9 @@ namespace nanoFramework.Tools.Debugger
                 // perform request failed, remove it from store
                 _requestsStore.Remove(request.OutgoingMessage.Header);
 
+                // report failure
+                request.RequestAborted();
+
                 request.TaskCompletionSource.SetException(ex);
 
                 return Task.FromResult<IncomingMessage>(null);

@@ -144,6 +144,17 @@ namespace nanoFramework.Tools.Debugger
                 $"{DateTime.UtcNow:HH:mm:ss.fff}");
         }
 
+        [Event(1, Opcode = EventOpcode.Info)]
+        public void WireProtocolTimeout(uint cmd, uint flags, ushort seq, ushort seqReply)
+        {
+            Debug.WriteLine($"TX: " +
+                $"{GetCommandName(cmd)} *** ABORTED ***" +
+                $"flags=[{(PacketFlags)flags}] " +
+                $"seq: 0x{seq:X04} " +
+                $"replySeq: 0x{seqReply:X04} " +
+                $"{DateTime.UtcNow:HH:mm:ss.fff}");
+        }
+
         [Event(2, Opcode = EventOpcode.Receive)]
         public void WireProtocolRxHeader(uint crcHeader, uint crcData, uint cmd, uint flags, ushort seq, ushort seqReply, uint length)
         {
