@@ -141,7 +141,7 @@ namespace nanoFramework.Tools.Debugger
                 $"seq: 0x{seq:X04} " +
                 $"replySeq: 0x{seqReply:X04} " +
                 $"len={length} " +
-                $"{DateTime.UtcNow:HH:mm:ss.fff}");
+                $"{DateTime.Now:HH:mm:ss.fff}");
         }
 
         [Event(1, Opcode = EventOpcode.Info)]
@@ -152,7 +152,7 @@ namespace nanoFramework.Tools.Debugger
                 $"flags=[{(PacketFlags)flags}] " +
                 $"seq: 0x{seq:X04} " +
                 $"replySeq: 0x{seqReply:X04} " +
-                $"{DateTime.UtcNow:HH:mm:ss.fff}");
+                $"{DateTime.Now:HH:mm:ss.fff}");
         }
 
         [Event(2, Opcode = EventOpcode.Receive)]
@@ -165,7 +165,7 @@ namespace nanoFramework.Tools.Debugger
                 $"seq: 0x{seq:X04} " +
                 $"replySeq: 0x{seqReply:X04} " +
                 $"len={length} " +
-                $"{DateTime.UtcNow:HH:mm:ss.fff}");
+                $"{DateTime.Now:HH:mm:ss.fff}");
         }
 
         [Event(3)]
