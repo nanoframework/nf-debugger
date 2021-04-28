@@ -35,7 +35,6 @@ namespace nanoFramework.Tools.Debugger
 
         internal IPort _portDefinition;
         internal Controller _controlller { get; set; }
-        bool m_silent;
 
         DateTime m_lastNoise = DateTime.Now;
 
@@ -173,6 +172,11 @@ namespace nanoFramework.Tools.Debugger
 
         public bool StopDebuggerOnConnect { get; set; }
 
+        /// <summary>
+        /// Setting for debugger output to be silent.
+        /// </summary>
+        public bool Silent { get; set; } = true;
+
         public bool Connect(
             int millisecondsTimeout = TIMEOUT_DEFAULT, 
             bool force = false,
@@ -274,7 +278,7 @@ namespace nanoFramework.Tools.Debugger
                                 break;
                         }
 
-                        if (m_silent)
+                        if (Silent)
                         {
                             SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
                         }
@@ -331,7 +335,7 @@ namespace nanoFramework.Tools.Debugger
                     goto connect_failed;
                 }
 
-                if (m_silent)
+                if (Silent)
                 {
                     SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
                 }
@@ -399,7 +403,7 @@ namespace nanoFramework.Tools.Debugger
                     return false;
                 }
 
-                if (m_silent)
+                if (Silent)
                 {
                     SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
                 }
