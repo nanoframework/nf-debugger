@@ -14,11 +14,15 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     public class WireProtocolRequest
     {
         private readonly CommandEventHandler _callback;
+        private readonly int _timeout;
 
         public CancellationToken CancellationToken { get; }
         public TaskCompletionSource<IncomingMessage> TaskCompletionSource { get; }
 
-        public DateTimeOffset Expires { get; }
+        public DateTimeOffset Expires { get; private set; }
+
+        public DateTime RequestTimestamp { get; private set; }
+
         public OutgoingMessage OutgoingMessage { get; }
 
         public bool NeedsReply => OutgoingMessage.NeedsReply;
@@ -28,8 +32,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             OutgoingMessage = outgoingMessage;
             _callback = callback;
 
-            // set TTL for the request
-            Expires = DateTime.UtcNow.AddMilliseconds(millisecondsTimeout);
+            _timeout = millisecondsTimeout;
 
             // https://blogs.msdn.microsoft.com/pfxteam/2009/06/02/the-nature-of-taskcompletionsourcetresult/
             TaskCompletionSource = new TaskCompletionSource<IncomingMessage>();
@@ -47,17 +50,27 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                             , OutgoingMessage.Base.Header.SeqReply
                                             , OutgoingMessage.Base.Header.Size
                                             );
+            // set TTL for the request
+            Expires = DateTime.UtcNow.AddMilliseconds(_timeout);
 
-            return controller.Send(OutgoingMessage.Raw);
+            if(controller.Send(OutgoingMessage.Raw))
+            {
+                // store start time
+                RequestTimestamp = DateTime.Now;
+
+                return true;
+            }
+
+            return false;
         }
 
         internal void RequestAborted()
         {
             DebuggerEventSource.Log.WireProtocolTimeout(
                 OutgoingMessage.Base.Header.Cmd,
-                OutgoingMessage.Base.Header.Flags,
                 OutgoingMessage.Base.Header.Seq,
-                OutgoingMessage.Base.Header.SeqReply);
+                OutgoingMessage.Base.Header.SeqReply,
+                RequestTimestamp);
 
         }
     }
