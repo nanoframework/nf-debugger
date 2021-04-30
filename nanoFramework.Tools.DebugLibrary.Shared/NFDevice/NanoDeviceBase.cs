@@ -436,11 +436,6 @@ namespace nanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in DebugEngine.FlashSectorMap)
             {
-                //if (cancellationToken.IsCancellationRequested)
-                //{
-                //    return false;
-                //}
-
                 switch (flashSectorData.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK)
                 {
                     case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT:

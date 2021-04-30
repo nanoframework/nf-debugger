@@ -397,7 +397,6 @@ namespace nanoFramework.Tools.Debugger
 
             // done here
             return false;
-
         }
 
         public bool UpdateDebugFlags()
@@ -4489,7 +4488,7 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        #endregion
+#endregion
 
         private Thread CreateThreadHelper(ThreadStart ts)
         {
