@@ -98,8 +98,9 @@ namespace nanoFramework.Tools.Debugger
             //default capabilities, used until clr can be queried.
             Capabilities = new CLRCapabilities();
 
-            // clear memory map
+            // clear maps
             FlashSectorMap = new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
+            MemoryMap = new List<Commands.Monitor_MemoryMap.Range>();
         }
 
         private void InitializeLocal(NanoDeviceBase device)
