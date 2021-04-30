@@ -267,10 +267,22 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         {
                             _parent.CreateConverter().Deserialize(_messageBase.Header, _messageRaw.Header);
 
+                            var request = ((Engine)(_parent.App)).FindRequest(_messageBase.Header);
+
+                            DebuggerEventSource.Log.WireProtocolRxHeader(
+                                _messageBase.Header.CrcHeader,
+                                _messageBase.Header.CrcData,
+                                _messageBase.Header.Cmd,
+                                _messageBase.Header.Flags,
+                                _messageBase.Header.Seq,
+                                _messageBase.Header.SeqReply,
+                                _messageBase.Header.Size,
+                                request != null ? request.RequestTimestamp : DateTime.MinValue);
+
+                            
+
                             if (VerifyHeader())
                             {
-                                DebuggerEventSource.Log.WireProtocolRxHeader(_messageBase.Header.CrcHeader, _messageBase.Header.CrcData, _messageBase.Header.Cmd, _messageBase.Header.Flags, _messageBase.Header.Seq, _messageBase.Header.SeqReply, _messageBase.Header.Size);
-
                                 if (_messageBase.Header.Size != 0)
                                 {
                                     // sanity check for wrong size (can happen with CRC32 turned off)

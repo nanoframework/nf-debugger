@@ -790,6 +790,11 @@ namespace nanoFramework.Tools.Debugger
             return _portDefinition.SendBuffer(buffer);
         }
 
+        internal WireProtocolRequest FindRequest(Packet packet)
+        {
+            return _requestsStore.GetByReplyHeader(packet);
+        }
+
         public bool ProcessMessage(IncomingMessage message, bool isReply)
         {
             message.Payload = Commands.ResolveCommandToPayload(message.Header.Cmd, isReply, _controlller.Capabilities);

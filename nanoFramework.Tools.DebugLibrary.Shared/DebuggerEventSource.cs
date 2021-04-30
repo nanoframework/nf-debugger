@@ -136,8 +136,8 @@ namespace nanoFramework.Tools.Debugger
             Debug.WriteLine($"TX: " +
                 $"{GetCommandName(cmd)} " +
                 $"flags=[{(PacketFlags)flags}] " +
-                $"hCRC: 0x{crcHeader:X08} " +
-                $"pCRC: 0x{crcData:X08} " +
+                //$"hCRC: 0x{crcHeader:X08} " +
+                //$"pCRC: 0x{crcData:X08} " +
                 $"seq: 0x{seq:X04} " +
                 $"replySeq: 0x{seqReply:X04} " +
                 $"len={length} " +
@@ -155,16 +155,23 @@ namespace nanoFramework.Tools.Debugger
         }
 
         [Event(2, Opcode = EventOpcode.Receive)]
-        public void WireProtocolRxHeader(uint crcHeader, uint crcData, uint cmd, uint flags, ushort seq, ushort seqReply, uint length)
+        public void WireProtocolRxHeader(uint crcHeader, uint crcData, uint cmd, uint flags, ushort seq, ushort seqReply, uint length, DateTime timestamp)
         {
+            TimeSpan roundTrip = TimeSpan.FromSeconds(0);
+
+            if (timestamp != DateTime.MinValue)
+            {
+                roundTrip = DateTime.Now - timestamp;
+            }
+
             Debug.WriteLine($"RX: {GetCommandName(cmd)} " +
                 $"flags=[{(PacketFlags)flags}] " +
-                $"hCRC: 0x{crcHeader:X08} " +
-                $"pCRC: 0x{crcData:X08} " +
+                //$"hCRC: 0x{crcHeader:X08} " +
+                //$"pCRC: 0x{crcData:X08} " +
                 $"seq: 0x{seq:X04} " +
                 $"replySeq: 0x{seqReply:X04} " +
                 $"len={length} " +
-                $"{DateTime.Now:HH:mm:ss.fff}");
+                $"round-trip: {roundTrip:ss\\.ffff}");
         }
 
         [Event(3)]
