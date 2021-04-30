@@ -145,14 +145,13 @@ namespace nanoFramework.Tools.Debugger
         }
 
         [Event(1, Opcode = EventOpcode.Info)]
-        public void WireProtocolTimeout(uint cmd, uint flags, ushort seq, ushort seqReply)
+        public void WireProtocolTimeout(uint cmd, ushort seq, ushort seqReply, DateTime timestamp)
         {
             Debug.WriteLine($"TX: " +
-                $"{GetCommandName(cmd)} *** ABORTED ***" +
-                $"flags=[{(PacketFlags)flags}] " +
+                $"{GetCommandName(cmd)} *** ABORTED *** " +
                 $"seq: 0x{seq:X04} " +
                 $"replySeq: 0x{seqReply:X04} " +
-                $"{DateTime.Now:HH:mm:ss.fff}");
+                $"timeout: {DateTime.Now - timestamp:ss\\.ffff}");
         }
 
         [Event(2, Opcode = EventOpcode.Receive)]
