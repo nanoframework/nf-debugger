@@ -114,7 +114,10 @@ namespace nanoFramework.Tools.Debugger
 
         public CLRCapabilities Capabilities { get; internal set; }
         public TargetInfo TargetInfo { get; private set; }
+        
         public List<Commands.Monitor_FlashSectorMap.FlashSectorData> FlashSectorMap { get; private set; }
+        
+        public List<Commands.Monitor_MemoryMap.Range> MemoryMap { get; private set; }
 
         /// <summary>
         /// Default timeout value for operations (in milliseconds).
@@ -1349,7 +1352,7 @@ namespace nanoFramework.Tools.Debugger
 
 #region Commands implementation
 
-        public List<Commands.Monitor_MemoryMap.Range> GetMemoryMap()
+        private List<Commands.Monitor_MemoryMap.Range> GetMemoryMap()
         {
             Commands.Monitor_MemoryMap cmd = new Commands.Monitor_MemoryMap();
 
@@ -1422,11 +1425,8 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public List<Commands.Monitor_FlashSectorMap.FlashSectorData> GetFlashSectorMap()
+        private List<Commands.Monitor_FlashSectorMap.FlashSectorData> GetFlashSectorMap()
         {
-            // TODO replace with token argument
-            CancellationTokenSource cancelTSource = new CancellationTokenSource();
-
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_FlashSectorMap, 0, null);
 
             if (reply != null)
