@@ -317,8 +317,7 @@ namespace nanoFramework.Tools.Debugger
 
                         if (fConnected = DebugEngine.Connect(
                             1000,
-                            true,
-                            ConnectionSource.Unknown))
+                            true))
                         {
                             ret = (DebugEngine.GetConnectionSource() == ConnectionSource.nanoBooter);
 
@@ -362,16 +361,16 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            log?.Report("Check device presence...");
-
             // check if the device is responsive
             if (Ping() == ConnectionSource.Unknown)
             {
-                log?.Report("Attempting to reconnect...");
+                log?.Report("Device not responding, attempting to reconnect...");
 
                 // it's not, try reconnect
-                if (!DebugEngine.Connect(5000, true))
+                if (!DebugEngine.Connect())
                 {
+                    log?.Report("Failed to reconnect to device!");
+
                     return false;
                 }
             }

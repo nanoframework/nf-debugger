@@ -491,11 +491,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         // try to "just" connect to the device meaning...
                         // ... don't request capabilities or force anything except the absolute minimum required, plus...
                         // ... it's OK to use a very short timeout as we'll be exchanging really short packets with the device
-                        if (device.DebugEngine.Connect(
-                            500,
-                            false,
-                            ConnectionSource.Unknown,
-                            false))
+                        if (device.DebugEngine.Connect(500))
                         {
                             if (isKnownDevice)
                             {

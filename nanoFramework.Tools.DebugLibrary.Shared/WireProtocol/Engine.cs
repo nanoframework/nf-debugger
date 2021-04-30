@@ -180,10 +180,11 @@ namespace nanoFramework.Tools.Debugger
         public bool Connect(
             int millisecondsTimeout = TIMEOUT_DEFAULT, 
             bool force = false,
-            ConnectionSource requestedConnectionSource = ConnectionSource.Unknown, 
-            bool requestCapabilities = true)
+            bool requestCapabilities = false)
         {
             var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
+            bool capabilitesRetrieved = false;
 
             if (force || !IsConnected)
             {
@@ -288,12 +289,13 @@ namespace nanoFramework.Tools.Debugger
 
             var flashMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_FlashSectorMap.FlashSectorData>>(r => r == null)
                                         .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
+            var memoryMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_MemoryMap.Range>>(r => r == null)
+                                        .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
             var targetInfoPolicy = Policy.Handle<Exception>().OrResult<TargetInfo>(r => r == null)
                                             .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
 
             if (IsConnectedTonanoCLR &&
-                requestCapabilities &&
-                (force || Capabilities.IsUnknown))
+                requestCapabilities)
             {
                 CancellationTokenSource cancellationTSource = new CancellationTokenSource();
                 CLRCapabilities tempCapabilities = new();
@@ -309,28 +311,38 @@ namespace nanoFramework.Tools.Debugger
 
                 if (FlashSectorMap.Count != 0)
                 {
-                    // get target info
-                    if (TargetInfo == null)
+                    if(MemoryMap.Count == 0)
                     {
-                        TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                        MemoryMap = memoryMapPolicy.Execute(() => GetMemoryMap());
                     }
 
-                    if (TargetInfo != null)
+                    if (MemoryMap.Count != 0)
                     {
-                        tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
-
-                        if (tempCapabilities != null
-                            && !tempCapabilities.IsUnknown)
+                        // get target info
+                        if (TargetInfo == null)
                         {
-                            Capabilities = tempCapabilities;
-                            _controlller.Capabilities = Capabilities;
+                            TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                        }
+
+                        if (TargetInfo != null)
+                        {
+                            tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
+
+                            if (tempCapabilities != null
+                                && !tempCapabilities.IsUnknown)
+                            {
+                                Capabilities = tempCapabilities;
+                                _controlller.Capabilities = Capabilities;
+
+                                // we have everything that we need
+                                capabilitesRetrieved = true;
+                            }
                         }
                     }
                 }
 
-                if(FlashSectorMap.Count == 0 ||
-                    TargetInfo == null ||
-                    Capabilities.IsUnknown)
+                if (requestCapabilities
+                    && !capabilitesRetrieved)
                 {
                     goto connect_failed;
                 }
@@ -342,8 +354,7 @@ namespace nanoFramework.Tools.Debugger
             }
 
             if (IsConnectedTonanoBooter &&
-                requestCapabilities &&
-                (force || TargetInfo == null))
+                requestCapabilities)
             {
                 // fill flash sector map
                 if (FlashSectorMap.Count == 0)
@@ -351,21 +362,25 @@ namespace nanoFramework.Tools.Debugger
                     FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
                 }
 
-                // get target info
-                if (TargetInfo == null)
+                if (FlashSectorMap.Count > 0)
                 {
-                    TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                    // flash map available
+                    // get target info
+                    if (TargetInfo == null)
+                    {
+                        TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                    }
+
+                    if(TargetInfo != null)
+                    {
+                        // we have everything that we need
+                        capabilitesRetrieved = true;
+                    }
                 }
             }
 
-            if (requestedConnectionSource != ConnectionSource.Unknown && requestedConnectionSource != _connectionSource)
-            {
-                goto connect_failed;
-            }
-
             if (requestCapabilities &&
-                (FlashSectorMap.Count == 0 || 
-                 TargetInfo == null))
+                !capabilitesRetrieved)
             {
                 goto connect_failed;
             }
@@ -1739,8 +1754,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (!Connect(
                 timeout,
-                true,
-                ConnectionSource.Unknown))
+                true))
             {
                 if (ThrowOnCommunicationFailure)
                 {
