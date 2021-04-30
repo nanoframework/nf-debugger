@@ -181,8 +181,26 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public bool Silent { get; set; } = true;
 
+        public bool Connect()
+        {
+            return Connect(
+                TIMEOUT_DEFAULT,
+                false,
+                false);
+        }
+
         public bool Connect(
-            int millisecondsTimeout = TIMEOUT_DEFAULT, 
+            bool force,
+            bool requestCapabilities = false)
+        {
+            return Connect(
+                TIMEOUT_DEFAULT,
+                force,
+                requestCapabilities);
+        }
+
+        public bool Connect(
+            int millisecondsTimeout, 
             bool force = false,
             bool requestCapabilities = false)
         {
