@@ -322,9 +322,6 @@ namespace nanoFramework.Tools.Debugger
                 CancellationTokenSource cancellationTSource = new CancellationTokenSource();
                 CLRCapabilities tempCapabilities = new();
 
-                //default capabilities
-                Capabilities = new CLRCapabilities();
-
                 // fill flash sector map
                 if (FlashSectorMap.Count == 0)
                 {
@@ -348,17 +345,24 @@ namespace nanoFramework.Tools.Debugger
 
                         if (TargetInfo != null)
                         {
-                            tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
-
-                            if (tempCapabilities != null
-                                && !tempCapabilities.IsUnknown)
+                            if (Capabilities.IsUnknown)
                             {
-                                Capabilities = tempCapabilities;
-                                _controlller.Capabilities = Capabilities;
+                                tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
 
+                                if (tempCapabilities != null
+                                    && !tempCapabilities.IsUnknown)
+                                {
+                                    Capabilities = tempCapabilities;
+                                    _controlller.Capabilities = Capabilities;
+                                }
+                            }
+
+                            if (!Capabilities.IsUnknown)
+                            {
                                 // we have everything that we need
                                 capabilitesRetrieved = true;
                             }
+
                         }
                     }
                 }
