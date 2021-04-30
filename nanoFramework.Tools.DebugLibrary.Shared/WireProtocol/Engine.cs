@@ -1734,12 +1734,13 @@ namespace nanoFramework.Tools.Debugger
 
             try
             {
+                log?.Report($"Rebooting ({(RebootOptions)cmd.flags})");
+                
+                // reset event
                 _pingEvent.Reset();
 
-                log?.Report($"Rebooting ({(RebootOptions)cmd.flags})");
-
-                // don't keep hopes too high on a reply from reboot request, so make it with a very short timeout
-                var reqResult = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 500);
+                // don't keep hopes too high on a reply from reboot request
+                var reqResult = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
 
                 if(reqResult != null)
                 {
@@ -1756,11 +1757,13 @@ namespace nanoFramework.Tools.Debugger
                     IsConnected = false;
                 }
 
+                var rebootTimeout = 3 * DefaultTimeout;
+
                 // wait for ping after reboot
-                log?.Report($"Waiting for ping event...");
+                log?.Report($"Waiting {rebootTimeout}ms for reboot...");
 
                 // make it 3x the default timeout
-                if(_pingEvent.WaitOne(3 * DefaultTimeout))
+                if(_pingEvent.WaitOne(rebootTimeout))
                 {
                     log?.Report($"!! Device reboot confirmed !!");
                 }
@@ -1769,6 +1772,12 @@ namespace nanoFramework.Tools.Debugger
                     log?.Report($"ERROR: No activity detected from device after reboot...");
                 }
             }
+#if DEBUG
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"*** ERROR when waiting for reboot operation to complete {ex.Message}");
+            }
+#endif
             finally
             {
                 ThrowOnCommunicationFailure = fThrowOnCommunicationFailureSav;
