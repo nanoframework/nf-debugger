@@ -19,7 +19,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public CancellationToken CancellationToken { get; }
         public TaskCompletionSource<IncomingMessage> TaskCompletionSource { get; }
 
-        public DateTimeOffset Expires { get; private set; }
+        public DateTimeOffset Expires { get; private set; } = DateTime.MaxValue;
 
         public DateTime RequestTimestamp { get; private set; }
 
@@ -48,13 +48,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                             , OutgoingMessage.Base.Header.Flags
                                             , OutgoingMessage.Base.Header.Seq
                                             , OutgoingMessage.Base.Header.SeqReply
-                                            , OutgoingMessage.Base.Header.Size
-                                            );
-            // set TTL for the request
-            Expires = DateTime.UtcNow.AddMilliseconds(_timeout);
+                                            , OutgoingMessage.Base.Header.Size);
 
             if(controller.Send(OutgoingMessage.Raw))
             {
+                // set TTL for the request
+                Expires = DateTime.UtcNow.AddMilliseconds(_timeout);
+
                 // store start time
                 RequestTimestamp = DateTime.Now;
 

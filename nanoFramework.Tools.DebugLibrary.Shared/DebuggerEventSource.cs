@@ -171,6 +171,7 @@ namespace nanoFramework.Tools.Debugger
                 $"seq: 0x{seq:X04} " +
                 $"replySeq: 0x{seqReply:X04} " +
                 $"len={length} " +
+                $"{DateTime.Now:HH:mm:ss.fff} " +
                 $"round-trip: {roundTrip:ss\\.ffff}");
         }
 
