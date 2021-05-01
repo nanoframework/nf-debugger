@@ -443,10 +443,15 @@ namespace nanoFramework.Tools.Debugger
                     return false;
                 }
 
+                // get state flags to set
+                var stateFlagsToSet = Commands.DebuggingExecutionChangeConditions.State.SourceLevelDebugging;
+
                 if (Silent)
                 {
-                    SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
+                    stateFlagsToSet |= Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet;
                 }
+
+                SetExecutionMode(stateFlagsToSet, 0);
 
                 // done here
                 return true;
