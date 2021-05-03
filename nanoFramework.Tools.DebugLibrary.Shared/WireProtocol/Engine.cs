@@ -60,7 +60,7 @@ namespace nanoFramework.Tools.Debugger
         //ArrayList m_rpcQueue;
         ArrayList _rpcEndPoints;
 
-        ManualResetEvent _pingEvent;
+        static ManualResetEvent _pingEvent;
         TypeSysLookup m_typeSysLookup;
         EngineState _state;
 
