@@ -1532,12 +1532,13 @@ namespace nanoFramework.Tools.Debugger
             int offset,
             int length,
             int programAligment = 0,
-            IProgress<string> progress = null)
+            int startLenght = 0,
+            int totalLenght = 0,
+            IProgress<MessageWithProgress> progress = null,
+            IProgress<string> log = null)
         {
             int count = length;
             int position = offset;
-
-            progress?.Report($"Deploying {length} bytes to device...");
 
             while (count > 0)
             {
@@ -1564,7 +1565,8 @@ namespace nanoFramework.Tools.Debugger
                     if (!reply.IsPositiveAcknowledge() ||
                         (AccessMemoryErrorCodes)cmdReply.ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
-                        progress?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Error code: {cmdReply.ErrorCode}.");
+                        progress?.Report(new MessageWithProgress(""));
+                        log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Error code: {cmdReply.ErrorCode}.");
 
                         return ((AccessMemoryErrorCodes)cmdReply.ErrorCode, false);
                     }
@@ -1575,10 +1577,14 @@ namespace nanoFramework.Tools.Debugger
                 }
                 else
                 {
-                    progress?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Unknown error.");
+                    progress?.Report(new MessageWithProgress(""));
+                    log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Unknown error.");
 
                     return (AccessMemoryErrorCodes.Unknown, false);
                 }
+
+                progress?.Report(new MessageWithProgress($"Deployed { startLenght + position }/{totalLenght} bytes...", (uint)(startLenght + position), (uint)totalLenght));
+                log?.Report($"Deployed { startLenght + position }/{ totalLenght } bytes.");
             }
 
             return (AccessMemoryErrorCodes.NoError, true);
@@ -1588,7 +1594,10 @@ namespace nanoFramework.Tools.Debugger
             uint address, 
             byte[] buf,
             int programAligment = 0,
-            IProgress<string> progress = null)
+            int startLenght = 0,
+            int totalLenght = 0,
+            IProgress<MessageWithProgress> progress = null,
+            IProgress<string> log = null)
         {
             return WriteMemory(
                 address,
@@ -1596,6 +1605,8 @@ namespace nanoFramework.Tools.Debugger
                 0,
                 buf.Length,
                 programAligment,
+                startLenght,
+                totalLenght,
                 progress);
         }
 
@@ -1627,7 +1638,9 @@ namespace nanoFramework.Tools.Debugger
             return CheckMemory(address, buf, 0, buf.Length);
         }
 
-        public (AccessMemoryErrorCodes ErrorCode, bool Success) EraseMemory(uint address, uint length)
+        public (AccessMemoryErrorCodes ErrorCode, bool Success) EraseMemory(
+            uint address, 
+            uint length)
         {
             DebuggerEventSource.Log.EngineEraseMemory(address, length);
 
@@ -3090,6 +3103,7 @@ namespace nanoFramework.Tools.Debugger
 
                 // get the block list to deploy (not empty)
                 var blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
+                var deploymentSize = blocksToDeploy.Sum(b => b.DeploymentData.Length);
                 var deployedBytes = 0;
 
                 foreach (DeploymentBlock block in blocksToDeploy)
@@ -3097,10 +3111,14 @@ namespace nanoFramework.Tools.Debugger
                     // check if skip erase step was requested
                     if(!skipErase)
                     {
+                        progress?.Report(new MessageWithProgress($"Erasing block @ 0x{block.StartAddress:X8}...", (uint)deployedBytes, (uint)deploymentSize));
                         log?.Report($"Erasing block @ 0x{block.StartAddress:X8}...");
 
                         // erase memory sector
-                        (AccessMemoryErrorCodes ErrorCode, bool Success) eraseMemoryResult = EraseMemory((uint)block.StartAddress, (uint)block.Size);
+                        (AccessMemoryErrorCodes ErrorCode, bool Success) eraseMemoryResult = EraseMemory(
+                            (uint)block.StartAddress,
+                            (uint)block.Size);
+
                         if (!eraseMemoryResult.Success)
                         {
                             log?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}.");
@@ -3117,7 +3135,15 @@ namespace nanoFramework.Tools.Debugger
                     }
 
                     // block erased, write buffer
-                    (AccessMemoryErrorCodes ErrorCode, bool Success) writeMemoryResult = WriteMemory((uint)block.StartAddress, block.DeploymentData, block.ProgramAligment);
+                    (AccessMemoryErrorCodes ErrorCode, bool Success) writeMemoryResult = WriteMemory(
+                        (uint)block.StartAddress,
+                        block.DeploymentData,
+                        block.ProgramAligment,
+                        deployedBytes,
+                        deploymentSize,
+                        progress,
+                        log);
+
                     if (!writeMemoryResult.Success)
                     {
                         log?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes).");
@@ -3142,15 +3168,10 @@ namespace nanoFramework.Tools.Debugger
 #endif
 
                     deployedBytes += block.DeploymentData.Length;
-
-                    // report progress
-                    progress?.Report(new MessageWithProgress($"Deployed { deployedBytes }/{ blocksToDeploy.Sum(b => b.DeploymentData.Length) } bytes...", (uint)deployedBytes, (uint)blocksToDeploy.Sum(b => b.DeploymentData.Length)));
-                    log?.Report($"Deployed { deployedBytes }/{ blocksToDeploy.Sum(b => b.DeploymentData.Length) } bytes.");
                 }
 
                 // report progress
                 progress?.Report(new MessageWithProgress(""));
-                log?.Report($"Deployed assemblies with a total size of {blocksToDeploy.Sum(b => b.DeploymentData.Length)} bytes.");
 
                 // deployment successful
                 return true;

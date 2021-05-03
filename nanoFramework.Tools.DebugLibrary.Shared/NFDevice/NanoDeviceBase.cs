@@ -706,8 +706,7 @@ namespace nanoFramework.Tools.Debugger
             (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.WriteMemory(
                 address,
                 buffer,
-                programAligment,
-                progress);
+                programAligment);
 
             if (!Success)
             {
