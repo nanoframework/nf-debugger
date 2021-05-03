@@ -369,7 +369,7 @@ namespace nanoFramework.Tools.Debugger
                 // it's not, try reconnect
                 if (!DebugEngine.Connect())
                 {
-                    log?.Report("Failed to reconnect to device!");
+                    log?.Report("*** ERROR: failed to reconnect to device ***");
 
                     return false;
                 }
@@ -383,7 +383,7 @@ namespace nanoFramework.Tools.Debugger
 
                 if (!ConnectToNanoBooter())
                 {
-                    log?.Report("Request to connect to nanoBooter failed!");
+                    log?.Report("*** ERROR: request to connect to nanoBooter failed ***");
 
                     return false;
                 }
@@ -394,7 +394,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (DebugEngine.FlashSectorMap.Count == 0)
             {
-                log?.Report("No flash map for device available. Aborting...");
+                log?.Report("*** ERROR: device flash map not available, aborting ***");
 
                 return false;
             }
@@ -414,7 +414,7 @@ namespace nanoFramework.Tools.Debugger
 
                 if (deviceState == Commands.DebuggingExecutionChangeConditions.State.Unknown)
                 {
-                    log?.Report("Failed to retrieve device execution state...");
+                    log?.Report("*** ERROR: failed to retrieve device execution state ***");
 
                     return false;
                 }
@@ -425,7 +425,7 @@ namespace nanoFramework.Tools.Debugger
 
                     if (!DebugEngine.PauseExecution())
                     {
-                        log?.Report("Failed to stop execution...");
+                        log?.Report("*** ERROR: failed to stop execution ***");
 
                         return false;
                     }

@@ -3158,7 +3158,7 @@ namespace nanoFramework.Tools.Debugger
 
             // invalid flash map
             progress?.Report(new MessageWithProgress(""));
-            log?.Report("Error retrieving device flash map.");
+            log?.Report("*** ERROR retrieving device flash map ***");
 
             return false;
         }
@@ -3249,7 +3249,7 @@ namespace nanoFramework.Tools.Debugger
 
             if(executionState == Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
-                log?.Report("Failed to get device execution state. Aborting deployment.");
+                log?.Report("*** ERROR: failed to get device execution state, aborting deployment ***");
                 return false;
             }
 
@@ -3257,7 +3257,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 if (!PauseExecution())
                 {
-                    log?.Report("Failed to pause execution in device. Aborting deployment.");
+                    log?.Report("*** ERROR: failed to pause execution in device, aborting deployment ***");
                     return false;
                 }
             }
@@ -3282,11 +3282,11 @@ namespace nanoFramework.Tools.Debugger
 
             if (!deployedOK)
             {
-                log?.Report("Error deploying assemblies to the device.");
+                log?.Report("*** ERROR deploying assemblies to the device ***");
             }
             else
             {
-                log?.Report("Assemblies successfully deployed to the device.");
+                log?.Report("Assemblies successfully deployed to the device");
 
                 if (rebootAfterDeploy)
                 {
