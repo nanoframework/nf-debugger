@@ -467,6 +467,8 @@ namespace nanoFramework.Tools.Debugger
                     ? wireProtocolRequest.TaskCompletionSource.TrySetCanceled(wireProtocolRequest.CancellationToken)
                     : wireProtocolRequest.TaskCompletionSource.TrySetCanceled();
 
+                wireProtocolRequest.RequestAborted();
+
                 // remove the request from the store
                 if (_requestsStore.Remove(wireProtocolRequest.OutgoingMessage.Header) && requestCanceled)
                 {
@@ -1330,7 +1332,7 @@ namespace nanoFramework.Tools.Debugger
 #endregion
 
 
-        internal async Task<WireProtocolRequest> RequestAsync(OutgoingMessage message, int timeout)
+        internal WireProtocolRequest AsyncRequest(OutgoingMessage message, int timeout)
         {
             WireProtocolRequest request = new WireProtocolRequest(message);
 
@@ -1340,41 +1342,48 @@ namespace nanoFramework.Tools.Debugger
 
             if (!IsRunning)
             {
+                request.TaskCompletionSource.SetException(new InvalidOperationException());
                 return request;
             }
 
-            _requestsStore.Add(request);
-
             try
             {
-                request.PerformRequest(_controlller);
+                if (request.PerformRequest(_controlller))
+                {
+                    _requestsStore.Add(request);
+                }
+                else
+                { 
+                    // send failed...
+                    request.TaskCompletionSource.SetException(new InvalidOperationException());
+                }
             }
             catch
             {
-                _requestsStore.Remove(message.Header);
+                throw;
             }
 
             return request;
         }
 
-        private async Task<WireProtocolRequest> AsyncMessage(uint command, uint flags, object payload, int timeout)
-        {
-            OutgoingMessage msg = CreateMessage(command, flags, payload);
+        //private WireProtocolRequest AsyncMessage(uint command, uint flags, object payload, int timeout)
+        //{
+        //    OutgoingMessage msg = CreateMessage(command, flags, payload);
 
-            return await RequestAsync(msg, timeout);
-        }
+        //    return AsyncRequest(msg, timeout);
+        //}
 
-        private async Task<IncomingMessage> MessageAsync(uint command, uint flags, object payload, int timeout)
-        {
-            _ = await AsyncMessage(command, flags, payload, timeout);
+        //private IncomingMessage MessageAsync(uint command, uint flags, object payload, int timeout)
+        //{
+        //    _ = await AsyncMessage(command, flags, payload, timeout);
 
-            return null;
-        }
+        //    return null;
+        //}
 
-        private async Task<IncomingMessage> SyncMessageAsync(uint command, uint flags, object payload)
-        {
-            return await MessageAsync(command, flags, payload, DefaultTimeout);
-        }
+        //private async Task<IncomingMessage> SyncMessageAsync(uint command, uint flags, object payload)
+        //{
+        //    return await MessageAsync(command, flags, payload, DefaultTimeout);
+        //}
 
 
 #region Commands implementation
