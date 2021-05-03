@@ -372,11 +372,6 @@ namespace nanoFramework.Tools.Debugger
                 {
                     goto connect_failed;
                 }
-
-                if (Silent)
-                {
-                    SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
-                }
             }
 
             if (IsConnectedTonanoBooter &&
