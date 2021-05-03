@@ -179,7 +179,7 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Setting for debugger output to be silent.
         /// </summary>
-        public bool Silent { get; set; } = true;
+        public bool Silent { get; set; }
 
         public bool Connect()
         {
