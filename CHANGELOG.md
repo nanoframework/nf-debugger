@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.29.0-preview.1...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.30.0-preview.1...HEAD)
+
+**Implemented enhancements:**
+
+- Rework Wire Protocol [\#300](https://github.com/nanoframework/nf-debugger/pull/300)
+
+## [v1.30.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.30.0-preview.1) (2021-03-19)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.29.0-preview.1...v1.30.0-preview.1)
 
 **Implemented enhancements:**
 
@@ -778,13 +786,6 @@
 **Implemented enhancements:**
 
 - Fix to address ESP32 Memory Erase timeout [\#169](https://github.com/nanoframework/nf-debugger/pull/169)
-
-## [v1.0.0](https://github.com/nanoframework/nf-debugger/tree/v1.0.0) (2018-10-15)
-
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview026...v1.0.0)
-
-**Implemented enhancements:**
-
 - Add PropertyChangedInterface to device configuration classes [\#165](https://github.com/nanoframework/nf-debugger/pull/165)
 - Add Display.Description atrribute to network enums [\#164](https://github.com/nanoframework/nf-debugger/pull/164)
 - Add new device ID to black list [\#161](https://github.com/nanoframework/nf-debugger/pull/161)
@@ -892,6 +893,10 @@
 - Fix several issue with connect/disconnect workflow [\#71](https://github.com/nanoframework/nf-debugger/pull/71)
 - Fix declaration of Monitor\_Message [\#65](https://github.com/nanoframework/nf-debugger/pull/65)
 - Correct WriteMemoryAsync [\#56](https://github.com/nanoframework/nf-debugger/pull/56)
+
+## [v1.0.0](https://github.com/nanoframework/nf-debugger/tree/v1.0.0) (2018-10-15)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview026...v1.0.0)
 
 ## [0.4.0-preview026](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview026) (2017-09-28)
 
