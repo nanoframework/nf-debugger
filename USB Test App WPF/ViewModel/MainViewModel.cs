@@ -14,6 +14,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Threading;
 
 namespace Serial_Test_App_WPF.ViewModel
@@ -32,8 +33,11 @@ namespace Serial_Test_App_WPF.ViewModel
     /// </summary>
     [AddINotifyPropertyChangedInterface]
     public class MainViewModel : ViewModelBase
-
     {
+        private readonly object _lockObj = new object();
+
+        INFSerialDebugClientService _serialDebugService;
+
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
         /// </summary>
@@ -49,15 +53,49 @@ namespace Serial_Test_App_WPF.ViewModel
             ////}
         }
 
-        public INFSerialDebugClientService SerialDebugService { get; set; }
-
-        public void OnSerialDebugServiceChanged()
-        {
-            if (SerialDebugService != null)
+        public INFSerialDebugClientService SerialDebugService 
+        { 
+            get
             {
-                SerialDebugService.SerialDebugClient.DeviceEnumerationCompleted += SerialDebugClient_DeviceEnumerationCompleted;
+                return _serialDebugService;
+            }
 
-                SerialDebugService.SerialDebugClient.LogMessageAvailable += SerialDebugClient_LogMessageAvailable;
+            set
+            {
+                if (_serialDebugService == value)
+                {
+                    return;
+                }
+
+                _serialDebugService = value;
+
+                RaisePropertyChanged("SerialDebugService");
+
+                SelectedTransportType = TransportType.Serial;
+
+                AvailableDevices = _serialDebugService.SerialDebugClient.NanoFrameworkDevices;
+
+                // need to do this in order to allow sync from another thread
+                BindingOperations.EnableCollectionSynchronization(AvailableDevices, _lockObj);
+
+                SerialDebugService.SerialDebugClient.NanoFrameworkDevices.CollectionChanged += NanoFrameworkDevices_CollectionChanged;
+
+                SerialDebugService.SerialDebugClient.LogMessageAvailable += SerialDebugClient_LogMessageAvailable1;
+            }
+        }
+
+        private void SerialDebugClient_LogMessageAvailable1(object sender, StringEventArgs e)
+        {
+            try
+            {
+                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    Debug.WriteLine(e.EventText);
+                }));
+            }
+            catch
+            {
+                // catch all as the dispatcher is ont always available and that's OK
             }
         }
 
@@ -68,63 +106,7 @@ namespace Serial_Test_App_WPF.ViewModel
             }));
         }
 
-        private void SerialDebugClient_DeviceEnumerationCompleted(object sender, EventArgs e)
-        {
-            SerialDebugService.SerialDebugClient.DeviceEnumerationCompleted -= SerialDebugClient_DeviceEnumerationCompleted;
-            //WindowWrapper.Current().Dispatcher.Dispatch(() =>
-            //{
-            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
-                SelectedTransportType = TransportType.Serial;
-                UpdateAvailableDevices();
-            }));
-            //});
-        }
-
         public ObservableCollection<NanoDeviceBase> AvailableDevices { get; set; }
-
-        private void UpdateAvailableDevices()
-        {
-            switch (SelectedTransportType)
-            {
-                case TransportType.Serial:
-
-                    Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
-                        //BusySrv.ShowBusy(Res.GetString("HC_Searching"));
-                        AvailableDevices = new ObservableCollection<NanoDeviceBase>(SerialDebugService.SerialDebugClient.NanoFrameworkDevices);
-                                SerialDebugService.SerialDebugClient.NanoFrameworkDevices.CollectionChanged += NanoFrameworkDevices_CollectionChanged;
-                                // if there's just one, select it
-                                SelectedDevice = (AvailableDevices.Count == 1) ? AvailableDevices.First() : null;
-                            //BusySrv.HideBusy();
-                    }));
-                    break;
-
-                case TransportType.Usb:
-
-                    //WindowWrapper.Current().Dispatcher.Dispatch(() =>
-                    //{
-                        //BusySrv.ShowBusy(Res.GetString("HC_Searching"));
-                        //AvailableDevices = new ObservableCollection<NanoDeviceBase>(UsbDebugService.UsbDebugClient.NanoFrameworkDevices);
-                        //UsbDebugService.UsbDebugClient.NanoFrameworkDevices.CollectionChanged += NanoFrameworkDevices_CollectionChanged;
-                        // if there's just one, select it
-                        //SelectedDevice = (AvailableDevices.Count == 1) ? AvailableDevices.First() : null;
-                        //BusySrv.HideBusy();
-                    //});
-
-                    break;
-
-                case TransportType.TcpIp:
-                    // TODO
-                    //BusySrv.ShowBusy("Not implemented yet! Why not give it a try??");
-                    //await Task.Delay(2500);
-                    //await WindowWrapper.Current().Dispatcher.DispatchAsync(() =>
-                    //{
-                    //    AvailableDevices = new ObservableCollection<NanoDeviceBase>();
-                    //    SelectedDevice = null;
-                    //});
-                    //BusySrv.HideBusy();
-                    break;
-            }
-        }
 
         private void NanoFrameworkDevices_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
@@ -137,7 +119,7 @@ namespace Serial_Test_App_WPF.ViewModel
                     //    break;
 
                     case TransportType.Serial:
-                        AvailableDevices = new ObservableCollection<NanoDeviceBase>(SerialDebugService.SerialDebugClient.NanoFrameworkDevices);
+
                         break;
 
                     default:
@@ -153,16 +135,11 @@ namespace Serial_Test_App_WPF.ViewModel
 
         public NanoDeviceBase SelectedDevice { get; set; }
 
-
         #region Transport
         public List<TransportType> AvailableTransportTypes { get; set; }
 
         public TransportType SelectedTransportType { get; set; }
 
-        public void OnSelectedTransportTypeChanged()
-        {
-            UpdateAvailableDevices();
-        }
         #endregion
     }
 }

@@ -23,6 +23,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         Converter CreateConverter();
 
-        Task<bool> SendAsync(MessageRaw raw, CancellationToken cancellationToken);
+        bool Send(MessageRaw raw);
     }
 }

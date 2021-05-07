@@ -27,10 +27,14 @@ namespace nanoFramework.Tools.Debugger
     public partial class Engine : IDisposable, IControllerHostLocal
     {
         private const int TIMEOUT_DEFAULT = 5000;
+        
+        /// <summary>
+        /// This constant is to be used to pause between requests, when doing batched requests to a target.
+        /// </summary>
+        private const int _InterRequestSleep = 2;
 
         internal IPort _portDefinition;
         internal Controller _controlller { get; set; }
-        bool m_silent;
 
         DateTime m_lastNoise = DateTime.Now;
 
@@ -52,25 +56,18 @@ namespace nanoFramework.Tools.Debugger
 
         readonly CancellationTokenSource _noiseHandlingCancellation = new CancellationTokenSource();
 
-        readonly CancellationTokenSource _backgroundProcessorCancellation = new CancellationTokenSource();
-
         AutoResetEvent _rpcEvent;
         //ArrayList m_rpcQueue;
         ArrayList _rpcEndPoints;
 
-        ManualResetEvent m_evtShutdown;
-        ManualResetEvent _pingEvent;
+        static ManualResetEvent _pingEvent;
         TypeSysLookup m_typeSysLookup;
         EngineState _state;
 
-        private Task _backgroundProcessor;
+        private Thread _backgroundProcessor;
 
         protected readonly WireProtocolRequestsStore _requestsStore = new WireProtocolRequestsStore();
         protected readonly Timer _pendingRequestsTimer;
-
-
-        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-        public CancellationToken CancellationToken => _cancellationTokenSource.Token;
 
         internal INanoDevice Device;
 
@@ -81,14 +78,13 @@ namespace nanoFramework.Tools.Debugger
             // default to false
             IsCRC32EnabledForWireProtocol = false;
 
-            _pendingRequestsTimer = new Timer(ClearPendingRequests, null, 1000, 1000);
+            _pendingRequestsTimer = new Timer(ClearPendingRequests, null, 0, 100);
         }
 
         private void Initialize()
         {
             m_notifyEvent = new AutoResetEvent(false);
             _rpcEvent = new AutoResetEvent(false);
-            m_evtShutdown = new ManualResetEvent(false);
             _pingEvent = new ManualResetEvent(false);
 
             //m_rpcQueue = ArrayList.Synchronized(new ArrayList());
@@ -102,8 +98,9 @@ namespace nanoFramework.Tools.Debugger
             //default capabilities, used until clr can be queried.
             Capabilities = new CLRCapabilities();
 
-            // clear memory map
+            // clear maps
             FlashSectorMap = new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
+            MemoryMap = new List<Commands.Monitor_MemoryMap.Range>();
         }
 
         private void InitializeLocal(NanoDeviceBase device)
@@ -118,7 +115,15 @@ namespace nanoFramework.Tools.Debugger
 
         public CLRCapabilities Capabilities { get; internal set; }
         public TargetInfo TargetInfo { get; private set; }
+        
         public List<Commands.Monitor_FlashSectorMap.FlashSectorData> FlashSectorMap { get; private set; }
+        
+        public List<Commands.Monitor_MemoryMap.Range> MemoryMap { get; private set; }
+
+        /// <summary>
+        /// Default timeout value for operations (in milliseconds).
+        /// </summary>
+        public int DefaultTimeout { get; set; } = TIMEOUT_DEFAULT;
 
         public BinaryFormatter CreateBinaryFormatter()
         {
@@ -149,7 +154,6 @@ namespace nanoFramework.Tools.Debugger
 
         private ConnectionSource _connectionSource = ConnectionSource.Unknown;
 
-        [Obsolete("Please use IsConnectedTonanoCLR or IsConnectedTonanoBooter instead. This will be removed in a future version.")]
 #pragma warning disable S2292 // Need to keep this here to allow transition period before remove it for good.
         public ConnectionSource ConnectionSource { get => _connectionSource; set => _connectionSource = value; }
 #pragma warning restore S2292 // Trivial properties should be auto-implemented
@@ -172,199 +176,245 @@ namespace nanoFramework.Tools.Debugger
 
         public bool StopDebuggerOnConnect { get; set; }
 
-        public async Task<bool> ConnectAsync(
-            int timeout, 
-            bool force = false,
-            int attempts = 1,
-            ConnectionSource requestedConnectionSource = ConnectionSource.Unknown, 
-            bool requestCapabilities = true)
+        /// <summary>
+        /// Setting for debugger output to be silent.
+        /// </summary>
+        public bool Silent { get; set; }
+
+        public bool Connect()
         {
-            // setup linear back-off based on the parameters
-            var delay = Backoff.LinearBackoff(TimeSpan.FromMilliseconds(timeout), retryCount: attempts, fastFirst: true);
+            return Connect(
+                TIMEOUT_DEFAULT,
+                false,
+                false);
+        }
 
-            // setup policy
-            var operatioRetryPolicy = Policy.HandleResult<bool>(r => !r)
-                .WaitAndRetryAsync(delay);
+        public bool Connect(
+            bool force,
+            bool requestCapabilities = false)
+        {
+            return Connect(
+                TIMEOUT_DEFAULT,
+                force,
+                requestCapabilities);
+        }
 
-            // perform connect operation with policy
-            return await operatioRetryPolicy.ExecuteAsync(async () =>
+        public bool Connect(
+            int millisecondsTimeout, 
+            bool force = false,
+            bool requestCapabilities = false)
+        {
+            var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
+            bool capabilitesRetrieved = false;
+
+            if (force || !IsConnected)
             {
-                if (force || !IsConnected)
+                // connect to device 
+                if (Device.Connect())
                 {
-                    // connect to device 
-                    if (await Device.ConnectAsync())
+                    if (!IsRunning)
                     {
-                        if (!IsRunning)
+                        if (_state.GetValue() == EngineState.Value.NotStarted )
                         {
-                            if (_state.GetValue() == EngineState.Value.NotStarted)
-                            {
-                                // background processor was never started
-                                _state.SetValue(EngineState.Value.Starting, true);
+                            // background processor was never started
+                            _state.SetValue(EngineState.Value.Starting, true);
 
-                                // start task to process background messages
-                                _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListener(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                            // start task to process background messages
+                            _backgroundProcessor = CreateThreadHelper(new ThreadStart(this.IncomingMessagesListener));
 
-                                _state.SetValue(EngineState.Value.Started, false);
-                            }
-                            else
-                            {
-                                // background processor is not running, start it
-                                ResumeProcessing();
-                            }
+                            _state.SetValue(EngineState.Value.Started, false);
                         }
-
-                        Commands.Monitor_Ping cmd = new Commands.Monitor_Ping
+                        else
                         {
-                            Source = Commands.Monitor_Ping.c_Ping_Source_Host,
-                            Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
-                        };
-
-                        IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
-
-                        if (msg == null || msg?.Payload == null)
-                        {
-                            // update flag
-                            IsConnected = false;
-
-                            // done here
-                            return false;
-                        }
-
-
-                        if (msg.Payload is Commands.Monitor_Ping.Reply reply)
-                        {
-                            IsTargetBigEndian = (reply.Flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
-
-                            IsCRC32EnabledForWireProtocol = (reply.Flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
-
-                            // get Wire Protocol packet size
-                            switch (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_Position)
-                            {
-                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0128:
-                                    WireProtocolPacketSize = 128;
-                                    break;
-                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0256:
-                                    WireProtocolPacketSize = 256;
-                                    break;
-                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0512:
-                                    WireProtocolPacketSize = 512;
-                                    break;
-                                case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_1024:
-                                    WireProtocolPacketSize = 1024;
-                                    break;
-
-                                default:
-                                    // unsupported packet size
-                                    throw new NotSupportedException("Wire Protocol packet size reported by target device is not supported.");
-                            }
-
-                            // get other device capabilities
-                            ConfigBlockRequiresErase = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase).Equals(Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase);
-
-                            HasProprietaryBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter);
-
-                            HasNanoBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter);
-
-                            IsIFUCapable = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable).Equals(Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable);
-
-
-                            // update flag
-                            IsConnected = true;
-
-                            // update field
-                            switch (reply.Source)
-                            {
-                                case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
-                                    _connectionSource = ConnectionSource.nanoCLR;
-                                    break;
-
-                                case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
-                                    _connectionSource = ConnectionSource.nanoBooter;
-                                    break;
-
-                                default:
-                                    _connectionSource = ConnectionSource.Unknown;
-                                    break;
-                            }
-
-                            if (m_silent)
-                            {
-                                SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
-                            }
+                            // background processor is not running, start it
+                            ResumeProcessing();
                         }
                     }
-                }
 
-                var flashMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_FlashSectorMap.FlashSectorData>>(r => r == null)
-                                           .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * timeout));
-                var targetInfoPolicy = Policy.Handle<Exception>().OrResult<TargetInfo>(r => r == null)
-                                             .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * timeout));
-
-                if (IsConnectedTonanoCLR &&
-                    requestCapabilities &&
-                    (force || Capabilities.IsUnknown))
-                {
-                    CancellationTokenSource cancellationTSource = new CancellationTokenSource();
-
-                    //default capabilities
-                    Capabilities = new CLRCapabilities();
-
-                    // fill flash sector map
-                    FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
-
-                    // get target info
-                    TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
-
-                    var tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
-
-                    if (tempCapabilities != null && !tempCapabilities.IsUnknown)
+                    Commands.Monitor_Ping cmd = new Commands.Monitor_Ping
                     {
-                        Capabilities = tempCapabilities;
-                        _controlller.Capabilities = Capabilities;
+                        Source = Commands.Monitor_Ping.c_Ping_Source_Host,
+                        Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
+                    };
+
+                    IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd, timeout);
+
+                    if (msg == null || msg?.Payload == null)
+                    {
+                        goto connect_failed;
                     }
-                    else
+
+                    if (msg.Payload is Commands.Monitor_Ping.Reply reply)
                     {
+                        IsTargetBigEndian = (reply.Flags & Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian).Equals(Commands.Monitor_Ping.c_Ping_DbgFlag_BigEndian);
+
+                        IsCRC32EnabledForWireProtocol = (reply.Flags & Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32).Equals(Commands.Monitor_Ping.c_Ping_WPFlag_SupportsCRC32);
+
+                        // get Wire Protocol packet size
+                        switch (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_Position)
+                        {
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0128:
+                                WireProtocolPacketSize = 128;
+                                break;
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0256:
+                                WireProtocolPacketSize = 256;
+                                break;
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_0512:
+                                WireProtocolPacketSize = 512;
+                                break;
+                            case Commands.Monitor_Ping.Monitor_Ping_c_PacketSize_1024:
+                                WireProtocolPacketSize = 1024;
+                                break;
+
+                            default:
+                                // unsupported packet size
+                                throw new NotSupportedException("Wire Protocol packet size reported by target device is not supported.");
+                        }
+
+                        // get other device capabilities
+                        ConfigBlockRequiresErase = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase).Equals(Commands.Monitor_Ping.Monitor_Ping_c_ConfigBlockRequiresErase);
+
+                        HasProprietaryBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasProprietaryBooter);
+
+                        HasNanoBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter);
+
+                        IsIFUCapable = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable).Equals(Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable);
+
+
                         // update flag
-                        IsConnected = false;
+                        IsConnected = true;
 
-                        // done here
-                        return false;
+                        // update field
+                        switch (reply.Source)
+                        {
+                            case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
+                                _connectionSource = ConnectionSource.nanoCLR;
+                                break;
+
+                            case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
+                                _connectionSource = ConnectionSource.nanoBooter;
+                                break;
+
+                            default:
+                                _connectionSource = ConnectionSource.Unknown;
+                                break;
+                        }
+
+                        if (Silent)
+                        {
+                            SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
+                        }
+                    }
+                }
+            }
+
+            var flashMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_FlashSectorMap.FlashSectorData>>(r => r == null)
+                                        .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
+            var memoryMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_MemoryMap.Range>>(r => r == null)
+                                        .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
+            var targetInfoPolicy = Policy.Handle<Exception>().OrResult<TargetInfo>(r => r == null)
+                                            .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
+
+            if (IsConnectedTonanoCLR &&
+                requestCapabilities)
+            {
+                CancellationTokenSource cancellationTSource = new CancellationTokenSource();
+                CLRCapabilities tempCapabilities = new();
+
+                // fill flash sector map
+                if (FlashSectorMap.Count == 0)
+                {
+                    FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
+                }
+
+                if (FlashSectorMap.Count != 0)
+                {
+                    if(MemoryMap.Count == 0)
+                    {
+                        MemoryMap = memoryMapPolicy.Execute(() => GetMemoryMap());
+                    }
+
+                    if (MemoryMap.Count != 0)
+                    {
+                        // get target info
+                        if (TargetInfo == null)
+                        {
+                            TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                        }
+
+                        if (TargetInfo != null)
+                        {
+                            if (Capabilities.IsUnknown)
+                            {
+                                tempCapabilities = DiscoverCLRCapabilities(cancellationTSource.Token);
+
+                                if (tempCapabilities != null
+                                    && !tempCapabilities.IsUnknown)
+                                {
+                                    Capabilities = tempCapabilities;
+                                    _controlller.Capabilities = Capabilities;
+                                }
+                            }
+
+                            if (!Capabilities.IsUnknown)
+                            {
+                                // we have everything that we need
+                                capabilitesRetrieved = true;
+                            }
+
+                        }
                     }
                 }
 
-                if (IsConnectedTonanoBooter &&
-                    requestCapabilities &&
-                    (force || TargetInfo == null))
+                if (requestCapabilities
+                    && !capabilitesRetrieved)
                 {
-                    // fill flash sector map
+                    goto connect_failed;
+                }
+            }
+
+            if (IsConnectedTonanoBooter &&
+                requestCapabilities)
+            {
+                // fill flash sector map
+                if (FlashSectorMap.Count == 0)
+                {
                     FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
+                }
 
+                if (FlashSectorMap.Count > 0)
+                {
+                    // flash map available
                     // get target info
-                    TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                    if (TargetInfo == null)
+                    {
+                        TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                    }
+
+                    if(TargetInfo != null)
+                    {
+                        // we have everything that we need
+                        capabilitesRetrieved = true;
+                    }
                 }
+            }
 
-                if (requestedConnectionSource != ConnectionSource.Unknown && requestedConnectionSource != _connectionSource)
-                {
-                    // update flag
-                    IsConnected = false;
+            if (requestCapabilities &&
+                !capabilitesRetrieved)
+            {
+                goto connect_failed;
+            }
 
-                    // done here
-                    return false;
-                }
+            return IsConnected;
 
-                if (requestCapabilities &&
-                    (FlashSectorMap == null
-                    || TargetInfo == null))
-                {
-                    // update flag
-                    IsConnected = false;
+        connect_failed:
 
-                    // done here
-                    return false;
-                }
+            // update flag
+            IsConnected = false;
 
-                return IsConnected;
-            });
+            // done here
+            return false;
         }
 
         public bool UpdateDebugFlags()
@@ -388,10 +438,15 @@ namespace nanoFramework.Tools.Debugger
                     return false;
                 }
 
-                if (m_silent)
+                // get state flags to set
+                var stateFlagsToSet = Commands.DebuggingExecutionChangeConditions.State.SourceLevelDebugging;
+
+                if (Silent)
                 {
-                    SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
+                    stateFlagsToSet |= Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet;
                 }
+
+                SetExecutionMode(stateFlagsToSet, 0);
 
                 // done here
                 return true;
@@ -412,6 +467,8 @@ namespace nanoFramework.Tools.Debugger
                     ? wireProtocolRequest.TaskCompletionSource.TrySetCanceled(wireProtocolRequest.CancellationToken)
                     : wireProtocolRequest.TaskCompletionSource.TrySetCanceled();
 
+                wireProtocolRequest.RequestAborted();
+
                 // remove the request from the store
                 if (_requestsStore.Remove(wireProtocolRequest.OutgoingMessage.Header) && requestCanceled)
                 {
@@ -423,47 +480,39 @@ namespace nanoFramework.Tools.Debugger
 
         public void IncomingMessagesListener()
         {
+            Debug.WriteLine(">>>> START IncomingMessagesListener <<<<");
+            
             var reassembler = new MessageReassembler(_controlller);
 
-            while (!_backgroundProcessorCancellation.IsCancellationRequested && _state.IsRunning)
+            while (_state.IsRunning)
             {
                 try
                 {
-                    reassembler.ProcessAsync(_backgroundProcessorCancellation.Token).Wait();
+                    reassembler.Process();
                 }
-                catch (AggregateException)
+                catch(DeviceNotConnectedException)
                 {
-                    ProcessExited();
+                    Stop(true);
                     break;
                 }
-                catch (DeviceNotConnectedException)
+                catch(ThreadAbortException)
                 {
-                    ProcessExited();
                     break;
                 }
+#if DEBUG
                 catch (Exception ex)
                 {
-                    // look for exceptions that are an indication that this is doomed
-                    // 0x800703E3
-                    // 0x80070006
-                    // 0x80070079
-                    // 0x8007001F
-                    // 0x800701B1
-                    if (ex.HResult == -2147023901
-                        || ex.HResult == -2147024890
-                        || ex.HResult == -2147024775
-                        || ex.HResult == -2147024865
-                        || ex.HResult == -2147024463)
-                    {
-                        ProcessExited();
-                        break;
-                    }
+                    Debug.WriteLine($"IncomingMessagesListener >>>>>>> {ex.Message}");
+#else
+                catch (Exception)
+                {
+#endif
+                    Stop();
+                    break;
                 }
             }
 
-            _state.SetValue(EngineState.Value.Stopping, false);
-
-            Debug.WriteLine("**** EXIT IncomingMessagesListenerAsync ****");
+            Debug.WriteLine("<<<< EXIT IncomingMessagesListener >>>>");
         }
 
         public DateTime LastActivity
@@ -480,7 +529,7 @@ namespace nanoFramework.Tools.Debugger
 
         public bool ThrowOnCommunicationFailure { get; set; } = false;
 
-        #region Events 
+#region Events 
 
         public event NoiseEventHandler OnNoise
         {
@@ -534,9 +583,9 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-        #endregion
+#endregion
 
-        #region IDisposable Support
+#region IDisposable Support
 
         private bool disposedValue = false; // To detect redundant calls
 
@@ -544,27 +593,26 @@ namespace nanoFramework.Tools.Debugger
         {
             if (!disposedValue)
             {
-                if (disposing)
+                try
                 {
-                    // TODO: dispose managed state (managed objects).
+                    Stop();
 
-                    //noiseHandlingCancellation.Cancel();
-
-                    //backgroundProcessorCancellation.Cancel();
-
-                    try
+                    if (_state.SetValue(EngineState.Value.Disposing))
                     {
-                        _cancellationTokenSource.Cancel();
-                        _cancellationTokenSource.Dispose();
-                    }
-                    catch
-                    {
-                        // catch everything else, doesn't matter
+                        IDisposable disposable = _controlller as IDisposable;
+
+                        if (disposable != null)
+                        {
+                            disposable.Dispose();
+                        }
+
+                        _state.SetValue(EngineState.Value.Disposed);
                     }
                 }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
+                catch
+                {
+                    // intended use to let dispose happen even if exceptions occur
+                }
 
                 disposedValue = true;
             }
@@ -572,87 +620,112 @@ namespace nanoFramework.Tools.Debugger
 
         ~Engine()
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(false);
         }
 
-        // This code added to correctly implement the disposable pattern.
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            // GC.SuppressFinalize(this);
         }
 
         #endregion
 
-        private IncomingMessage PerformSyncRequest(uint command, uint flags, object payload, int millisecondsTimeout = 5000)
+        /// <summary>
+        /// Global lock object for synchronizing message request. This ensures there is only one
+        /// outstanding request at any point of time. 
+        /// </summary>
+        internal object _syncReqLock = new object();
+
+        private IncomingMessage PerformSyncRequest(uint command, uint flags, object payload, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
-            OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
-
-            var request = PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
-
-            try
+            lock (_syncReqLock)
             {
-                if (request != null)
+                OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
+
+                var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
+                var request = PerformRequestAsync(message, timeout);
+
+                try
                 {
-                    Task.WaitAll(request);
+                    if (request != null)
+                    {
+                        Task.WaitAll(request);
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
-                else
+                catch (AggregateException)
                 {
                     return null;
                 }
-            }
-            catch(AggregateException)
-            {
-                return null;
-            }
 
-            return request.Result;
+                return request.Result;
+            }
         }
 
-        private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = 5000)
+        private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
-            var request = PerformRequestAsync(message, _cancellationTokenSource.Token, millisecondsTimeout);
-
-            try
+            lock (_syncReqLock)
             {
-                if (request != null)
+                var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
+                var request = PerformRequestAsync(message, timeout);
+
+                try
                 {
-                    Task.WaitAll(request);
+                    if (request != null)
+                    {
+                        Task.WaitAll(request);
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
-                else
+                catch
                 {
+                    // catch everything, doesn't matter
                     return null;
                 }
-            }
-            catch
-            {
-                // catch everything, doesn't matter
-                return null;
-            }
 
-            return request.Result;
+                return request.Result;
+            }
         }
 
-        public Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, CancellationToken cancellationToken, int millisecondsTimeout = 5000)
+        internal Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
-            WireProtocolRequest request = new WireProtocolRequest(message, cancellationToken, millisecondsTimeout);
-            _requestsStore.Add(request);
+            var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
+            WireProtocolRequest request = new WireProtocolRequest(message, timeout);
+
+            // only add this to store if a reply is expected/required
+            if (request.NeedsReply)
+            {
+                _requestsStore.Add(request);
+            }
 
             try
             {
                 // Start a background task that will complete tcs1.Task
                 Task.Factory.StartNew(() =>
                 {
-                    request.PerformRequestAsync(_controlller).Wait(millisecondsTimeout, cancellationToken);
+                    if (!request.PerformRequest(_controlller))
+                    {
+                        // send failed...
+                        request.TaskCompletionSource.SetException(new InvalidOperationException());
+                    }
                 });
             }
             catch (Exception ex)
             {
                 // perform request failed, remove it from store
                 _requestsStore.Remove(request.OutgoingMessage.Header);
+
+                // report failure
+                request.RequestAborted();
 
                 request.TaskCompletionSource.SetException(ex);
 
@@ -674,34 +747,39 @@ namespace nanoFramework.Tools.Debugger
             return replies;
         }
 
-        public Commands.Monitor_Ping.Reply GetConnectionSource()
+        public ConnectionSource GetConnectionSource()
         {
-            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Ping, 0, null);
+
+            if (!IsConnected)
+            {
+                if (Connect(TIMEOUT_DEFAULT, true))
+                {
+                    return ConnectionSource;
+                }
+                else
+                {
+                    return ConnectionSource.Unknown;
+                }
+            }
+
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, new byte[0]);
 
             if (reply != null)
             {
                 var connectionSource = reply.Payload as Commands.Monitor_Ping.Reply;
 
                 // update field
-                switch (connectionSource.Source)
+                _connectionSource = connectionSource.Source switch
                 {
-                    case Commands.Monitor_Ping.c_Ping_Source_NanoCLR:
-                        _connectionSource = ConnectionSource.nanoCLR;
-                        break;
+                    Commands.Monitor_Ping.c_Ping_Source_NanoCLR => ConnectionSource.nanoCLR,
+                    Commands.Monitor_Ping.c_Ping_Source_NanoBooter => ConnectionSource.nanoBooter,
+                    _ => ConnectionSource.Unknown,
+                };
 
-                    case Commands.Monitor_Ping.c_Ping_Source_NanoBooter:
-                        _connectionSource = ConnectionSource.nanoBooter;
-                        break;
-
-                    default:
-                        _connectionSource = ConnectionSource.Unknown;
-                        break;
-                }
-
-                return connectionSource;
+                return _connectionSource;
             }
 
-            return null;
+            return ConnectionSource.Unknown;
         }
 
         internal Converter CreateConverter()
@@ -709,12 +787,14 @@ namespace nanoFramework.Tools.Debugger
             return new Converter(Capabilities);
         }
 
-        public Task<uint> SendBufferAsync(byte[] buffer, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public int SendBuffer(byte[] buffer)
         {
-            return Task.Run(() =>
-            {
-                return _portDefinition.SendBufferAsync(buffer, waitTimeout, cancellationToken);
-            }, cancellationToken);
+            return _portDefinition.SendBuffer(buffer);
+        }
+
+        internal WireProtocolRequest FindRequest(Packet packet)
+        {
+            return _requestsStore.GetByReplyHeader(packet);
         }
 
         public bool ProcessMessage(IncomingMessage message, bool isReply)
@@ -754,7 +834,14 @@ namespace nanoFramework.Tools.Debugger
                                 Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
                             };
 
-                            PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, _controlller.CreateConverter(), Flags.c_NonCritical, cmdReply), _backgroundProcessorCancellation.Token);
+                            PerformRequestAsync(
+                                new OutgoingMessage(
+                                    _controlller.GetNextSequenceId(),
+                                    message,
+                                    _controlller.CreateConverter(),
+                                    Flags.c_NonCritical,
+                                    cmdReply)
+                                );
 
                             // signal that a monitor ping was received
                             _pingEvent.Set();
@@ -778,24 +865,24 @@ namespace nanoFramework.Tools.Debugger
 
                     case Commands.c_Debugging_Messaging_Query:
                         Debug.Assert(message.Payload != null);
-                        Task.Factory.StartNew(() => RpcReceiveQuery(message, (Commands.Debugging_Messaging_Query)message.Payload), _backgroundProcessorCancellation.Token);
+                        Task.Factory.StartNew(() => RpcReceiveQuery(message, (Commands.Debugging_Messaging_Query)message.Payload));
                         break;
 
                     case Commands.c_Debugging_Messaging_Reply:
                         Debug.Assert(message.Payload != null);
-                        Task.Factory.StartNew(() => RpcReceiveReplyAsync(message, (Commands.Debugging_Messaging_Reply)message.Payload), _backgroundProcessorCancellation.Token);
+                        Task.Factory.StartNew(() => RpcReceiveReplyAsync(message, (Commands.Debugging_Messaging_Reply)message.Payload));
                         break;
 
                     case Commands.c_Debugging_Messaging_Send:
                         Debug.Assert(message.Payload != null);
-                        Task.Factory.StartNew(() => RpcReceiveSendAsync(message, (Commands.Debugging_Messaging_Send)message.Payload), _backgroundProcessorCancellation.Token);
+                        Task.Factory.StartNew(() => RpcReceiveSendAsync(message, (Commands.Debugging_Messaging_Send)message.Payload));
                         break;
                 }
             }
 
             if (_eventCommand != null)
             {
-                Task.Factory.StartNew(() => _eventCommand.Invoke(message, isReply), _backgroundProcessorCancellation.Token);
+                Task.Factory.StartNew(() => _eventCommand.Invoke(message, isReply));
 
                 return true;
             }
@@ -817,13 +904,12 @@ namespace nanoFramework.Tools.Debugger
             _eventProcessExit?.Invoke(this, EventArgs.Empty);
         }
 
-        public Task<byte[]> ReadBufferAsync(uint bytesToRead, TimeSpan waitTimeout, CancellationToken cancellationToken)
+        public byte[] ReadBuffer(int bytesToRead)
         {
-            return Task.Run(() =>
-            {
-               return _portDefinition.ReadBufferAsync(bytesToRead, waitTimeout, cancellationToken);
-            }, cancellationToken);
+            return _portDefinition.ReadBuffer(bytesToRead);
         }
+
+        public int AvailableBytes => _portDefinition.AvailableBytes;
 
         private OutgoingMessage CreateMessage(uint cmd, uint flags, object payload)
         {
@@ -834,40 +920,42 @@ namespace nanoFramework.Tools.Debugger
         {
             _state.SetValue(EngineState.Value.Stopping, false);
 
-            m_evtShutdown.Set();
-
             if (_backgroundProcessor != null)
             {
-                _backgroundProcessorCancellation.Cancel();
-                _cancellationTokenSource.Cancel();
+                try
+                {
+                    _backgroundProcessor.Join(TimeSpan.FromSeconds(1));
+                    _backgroundProcessor.Abort();
+                }
+                catch
+                {
+                    // there are random issues with the cancellation tokens
+                }
+                finally
+                {
+                    Thread.Sleep(500);
+                    _backgroundProcessor = null;
+                }
             }
         }
 
         public void ResumeProcessing()
         {
-            m_evtShutdown.Reset();
-
             _state.SetValue(EngineState.Value.Resume, false);
 
-            if ((_backgroundProcessor != null && _backgroundProcessor.IsCompleted) ||
-                (_backgroundProcessor == null))
+            if (_backgroundProcessor == null)
             {
-                    _backgroundProcessor = Task.Factory.StartNew(() => IncomingMessagesListener(), _backgroundProcessorCancellation.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                _backgroundProcessor = CreateThreadHelper(new ThreadStart( this.IncomingMessagesListener ));
             }
         }
 
-        public void Stop()
+        public void Stop(bool force = false)
         {
-            if (m_evtShutdown != null)
-            {
-                m_evtShutdown.Set();
-            }
-
             if (_state.SetValue(EngineState.Value.Stopping, false))
             {
                 StopProcessing();
 
-                //((IController)this).ClosePort();
+                Device.Disconnect(force);
 
                 _state.SetValue(EngineState.Value.Stopped, false);
             }
@@ -875,7 +963,7 @@ namespace nanoFramework.Tools.Debugger
 
         public bool IsRunning => _state.IsRunning;
 
-        #region RPC Support
+#region RPC Support
 
         // comment from original code REVIEW: Can this be refactored out of here to a separate class dedicated to RPC?
         internal class EndPointRegistration
@@ -1040,7 +1128,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        private async Task RpcReceiveQuery(IncomingMessage message, Commands.Debugging_Messaging_Query query)
+        private void RpcReceiveQuery(IncomingMessage message, Commands.Debugging_Messaging_Query query)
         {
             Commands.Debugging_Messaging_Address addr = query.m_addr;
             EndPointRegistration eep = RpcFind(addr.m_to_Type, addr.m_to_Id, true);
@@ -1051,7 +1139,7 @@ namespace nanoFramework.Tools.Debugger
                 m_addr = addr
             };
 
-            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, reply), _cancellationTokenSource.Token);
+            PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, reply));
         }
 
         internal bool RpcCheck(Commands.Debugging_Messaging_Address addr)
@@ -1159,7 +1247,7 @@ namespace nanoFramework.Tools.Debugger
                 m_addr = addr
             };
 
-            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), msg, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
+            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), msg, CreateConverter(), Flags.c_NonCritical, res));
 
             if (eep != null)
             {
@@ -1217,7 +1305,7 @@ namespace nanoFramework.Tools.Debugger
                 m_addr = addr
             };
 
-            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, res), _cancellationTokenSource.Token);
+            await PerformRequestAsync(new OutgoingMessage(_controlller.GetNextSequenceId(), message, CreateConverter(), Flags.c_NonCritical, res));
 
             if (eep != null)
             {
@@ -1241,68 +1329,66 @@ namespace nanoFramework.Tools.Debugger
             return _controlller.GetUniqueEndpointId();
         }
 
-        #endregion
+#endregion
 
 
-        internal async Task<WireProtocolRequest> RequestAsync(OutgoingMessage message, int timeout)
+        internal WireProtocolRequest AsyncRequest(OutgoingMessage message, int timeout)
         {
-            using (CancellationTokenSource cts = new CancellationTokenSource())
+            WireProtocolRequest request = new WireProtocolRequest(message);
+
+            //Checking whether IsRunning and adding the request to m_requests
+            //needs to be atomic to avoid adding a request after the Engine
+            //has been stopped.
+
+            if (!IsRunning)
             {
-                WireProtocolRequest request = new WireProtocolRequest(message, cts.Token);
-
-                //Checking whether IsRunning and adding the request to m_requests
-                //needs to be atomic to avoid adding a request after the Engine
-                //has been stopped.
-
-                if (!IsRunning)
-                {
-                    return request;
-                }
-
-                _requestsStore.Add(request);
-
-                try
-                {
-                    await request.PerformRequestAsync(_controlller);
-                }
-                catch
-                {
-                    _requestsStore.Remove(message.Header);
-                }
-
+                request.TaskCompletionSource.SetException(new InvalidOperationException());
                 return request;
             }
+
+            try
+            {
+                if (request.PerformRequest(_controlller))
+                {
+                    _requestsStore.Add(request);
+                }
+                else
+                { 
+                    // send failed...
+                    request.TaskCompletionSource.SetException(new InvalidOperationException());
+                }
+            }
+            catch
+            {
+                throw;
+            }
+
+            return request;
         }
 
-        /// <summary>
-        /// Global lock object for synchronizing message request. This ensures there is only one
-        /// outstanding request at any point of time. 
-        /// </summary>
-        internal object m_ReqSyncLock = new object();
+        //private WireProtocolRequest AsyncMessage(uint command, uint flags, object payload, int timeout)
+        //{
+        //    OutgoingMessage msg = CreateMessage(command, flags, payload);
 
-        private async Task<WireProtocolRequest> AsyncMessage(uint command, uint flags, object payload, int timeout)
-        {
-            OutgoingMessage msg = CreateMessage(command, flags, payload);
+        //    return AsyncRequest(msg, timeout);
+        //}
 
-            return await RequestAsync(msg, timeout);
-        }
+        //private IncomingMessage MessageAsync(uint command, uint flags, object payload, int timeout)
+        //{
+        //    _ = await AsyncMessage(command, flags, payload, timeout);
 
-        private async Task<IncomingMessage> MessageAsync(uint command, uint flags, object payload, int timeout)
-        {
-            _ = await AsyncMessage(command, flags, payload, timeout);
+        //    return null;
+        //}
 
-            return null;
-        }
-
-        private async Task<IncomingMessage> SyncMessageAsync(uint command, uint flags, object payload)
-        {
-            return await MessageAsync(command, flags, payload, TIMEOUT_DEFAULT);
-        }
+        //private async Task<IncomingMessage> SyncMessageAsync(uint command, uint flags, object payload)
+        //{
+        //    return await MessageAsync(command, flags, payload, DefaultTimeout);
+        //}
 
 
-        #region Commands implementation
+#region Commands implementation
 
-        public List<Commands.Monitor_MemoryMap.Range> GetMemoryMap()
+        private List<Commands.Monitor_MemoryMap.Range> GetMemoryMap()
         {
             Commands.Monitor_MemoryMap cmd = new Commands.Monitor_MemoryMap();
 
@@ -1375,11 +1461,8 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        public List<Commands.Monitor_FlashSectorMap.FlashSectorData> GetFlashSectorMap()
+        private List<Commands.Monitor_FlashSectorMap.FlashSectorData> GetFlashSectorMap()
         {
-            // TODO replace with token argument
-            CancellationTokenSource cancelTSource = new CancellationTokenSource();
-
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_FlashSectorMap, 0, null);
 
             if (reply != null)
@@ -1395,7 +1478,7 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            return null;
+            return new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
         }
 
         private (byte[] Buffer, uint ErrorCode, bool Success) ReadMemory(uint address, uint length, uint offset)
@@ -1449,12 +1532,13 @@ namespace nanoFramework.Tools.Debugger
             int offset,
             int length,
             int programAligment = 0,
-            IProgress<string> progress = null)
+            int startLenght = 0,
+            int totalLenght = 0,
+            IProgress<MessageWithProgress> progress = null,
+            IProgress<string> log = null)
         {
             int count = length;
             int position = offset;
-
-            progress?.Report($"Deploying {length} bytes to device...");
 
             while (count > 0)
             {
@@ -1481,7 +1565,8 @@ namespace nanoFramework.Tools.Debugger
                     if (!reply.IsPositiveAcknowledge() ||
                         (AccessMemoryErrorCodes)cmdReply.ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
-                        progress?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Error code: {cmdReply.ErrorCode}.");
+                        progress?.Report(new MessageWithProgress(""));
+                        log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Error code: {cmdReply.ErrorCode}.");
 
                         return ((AccessMemoryErrorCodes)cmdReply.ErrorCode, false);
                     }
@@ -1492,10 +1577,14 @@ namespace nanoFramework.Tools.Debugger
                 }
                 else
                 {
-                    progress?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Unknown error.");
+                    progress?.Report(new MessageWithProgress(""));
+                    log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Unknown error.");
 
                     return (AccessMemoryErrorCodes.Unknown, false);
                 }
+
+                progress?.Report(new MessageWithProgress($"Deployed { startLenght + position }/{totalLenght} bytes...", (uint)(startLenght + position), (uint)totalLenght));
+                log?.Report($"Deployed { startLenght + position }/{ totalLenght } bytes.");
             }
 
             return (AccessMemoryErrorCodes.NoError, true);
@@ -1505,7 +1594,10 @@ namespace nanoFramework.Tools.Debugger
             uint address, 
             byte[] buf,
             int programAligment = 0,
-            IProgress<string> progress = null)
+            int startLenght = 0,
+            int totalLenght = 0,
+            IProgress<MessageWithProgress> progress = null,
+            IProgress<string> log = null)
         {
             return WriteMemory(
                 address,
@@ -1513,6 +1605,8 @@ namespace nanoFramework.Tools.Debugger
                 0,
                 buf.Length,
                 programAligment,
+                startLenght,
+                totalLenght,
                 progress);
         }
 
@@ -1544,7 +1638,9 @@ namespace nanoFramework.Tools.Debugger
             return CheckMemory(address, buf, 0, buf.Length);
         }
 
-        public (AccessMemoryErrorCodes ErrorCode, bool Success) EraseMemory(uint address, uint length)
+        public (AccessMemoryErrorCodes ErrorCode, bool Success) EraseMemory(
+            uint address, 
+            uint length)
         {
             DebuggerEventSource.Log.EngineEraseMemory(address, length);
 
@@ -1660,12 +1756,13 @@ namespace nanoFramework.Tools.Debugger
 
             try
             {
+                log?.Report($"Rebooting ({(RebootOptions)cmd.flags})");
+                
+                // reset event
                 _pingEvent.Reset();
 
-                log?.Report($"Rebooting ({(RebootOptions)cmd.flags})");
-
-                // don't keep hopes too high on a reply from reboot request, so make it with a very short timeout
-                var reqResult = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd, 500);
+                // don't keep hopes too high on a reply from reboot request
+                var reqResult = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
 
                 if(reqResult != null)
                 {
@@ -1674,40 +1771,48 @@ namespace nanoFramework.Tools.Debugger
                     log?.Report($"Reboot command executed {result}");
                 }
 
-                // if reboot options ends on a hard reboot, force connection state to disconnected
+                // if reboot options ends up on a hard reboot, force connection state to disconnected
+                // a Connect request has to happen after this
                 if (((RebootOptions)cmd.flags == RebootOptions.EnterNanoBooter) ||
                     ((RebootOptions)cmd.flags == RebootOptions.NormalReboot))
                 {
                     IsConnected = false;
                 }
+
+                var rebootTimeout = 3 * DefaultTimeout;
+
+                // wait for ping after reboot
+                log?.Report($"Waiting {rebootTimeout}ms for reboot...");
+
+                // make it 3x the default timeout
+                if(_pingEvent.WaitOne(rebootTimeout))
+                {
+                    log?.Report($"!! Device reboot confirmed !!");
+                }
                 else
                 {
-                    // wait for ping after reboot
-                    log?.Report($"Waiting for ping event...");
-
-                    if(_pingEvent.WaitOne(10000))
-                    {
-                        log?.Report($"Ping arrived!");
-                    }
-                    else
-                    {
-                        log?.Report($"No presence from device");
-                    }
+                    log?.Report($"ERROR: No activity detected from device after reboot...");
                 }
             }
+#if DEBUG
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"*** ERROR when waiting for reboot operation to complete {ex.Message}");
+            }
+#endif
             finally
             {
                 ThrowOnCommunicationFailure = fThrowOnCommunicationFailureSav;
             }
         }
 
-        public async Task<bool> ReconnectAsync(bool fSoftReboot, int timeout = 5000)
+        public bool Reconnect(bool fSoftReboot, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
-            if (!await ConnectAsync(
+            var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+
+            if (!Connect(
                 timeout,
-                true,
-                3,
-                ConnectionSource.Unknown))
+                true))
             {
                 if (ThrowOnCommunicationFailure)
                 {
@@ -1745,7 +1850,9 @@ namespace nanoFramework.Tools.Debugger
                 FlagsToReset = 0
             };
 
-            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
+            // need to use a reasonably larger timeout because the device could be sending boot PINGs after a reboot
+            // and a timeout too short will miss the reply
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd, 6000);
             if (reply != null)
             {
                 // need this to get DebuggingExecutionChangeConditions.State enum from raw value
@@ -1889,7 +1996,7 @@ namespace nanoFramework.Tools.Debugger
         //    return iar;
         //}
 
-        //public async Task<bool> UpgradeConnectionToSSL_End(IAsyncResult iar)
+        //public bool UpgradeConnectionToSSL_End(IAsyncResult iar)
         //{
         //    AsyncNetworkStream ans = ((IControllerLocal)m_ctrl).OpenPort() as AsyncNetworkStream;
 
@@ -2913,18 +3020,15 @@ namespace nanoFramework.Tools.Debugger
             IProgress<MessageWithProgress> progress = null,
             IProgress<string> log = null)
         {
-            // get flash sector map from device
-            var flashSectorMap = GetFlashSectorMap();
-
             // check if we do have the map
-            if (flashSectorMap != null)
+            if (FlashSectorMap.Count != 0)
             {
                 // total size of assemblies to deploy 
                 int deployLength = assemblies.Sum(a => a.Length);
 
                 // build the deployment blob from the flash sector map
                 // apply a filter so that we take only the blocks flag for deployment 
-                var deploymentBlob = flashSectorMap.Where(s => (s.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
+                var deploymentBlob = FlashSectorMap.Where(s => (s.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
                     .Select(s => s.ToDeploymentSector())
                     .ToList();
 
@@ -2999,6 +3103,7 @@ namespace nanoFramework.Tools.Debugger
 
                 // get the block list to deploy (not empty)
                 var blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
+                var deploymentSize = blocksToDeploy.Sum(b => b.DeploymentData.Length);
                 var deployedBytes = 0;
 
                 foreach (DeploymentBlock block in blocksToDeploy)
@@ -3006,10 +3111,14 @@ namespace nanoFramework.Tools.Debugger
                     // check if skip erase step was requested
                     if(!skipErase)
                     {
+                        progress?.Report(new MessageWithProgress($"Erasing block @ 0x{block.StartAddress:X8}...", (uint)deployedBytes, (uint)deploymentSize));
                         log?.Report($"Erasing block @ 0x{block.StartAddress:X8}...");
 
                         // erase memory sector
-                        (AccessMemoryErrorCodes ErrorCode, bool Success) eraseMemoryResult = EraseMemory((uint)block.StartAddress, (uint)block.Size);
+                        (AccessMemoryErrorCodes ErrorCode, bool Success) eraseMemoryResult = EraseMemory(
+                            (uint)block.StartAddress,
+                            (uint)block.Size);
+
                         if (!eraseMemoryResult.Success)
                         {
                             log?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}.");
@@ -3026,7 +3135,15 @@ namespace nanoFramework.Tools.Debugger
                     }
 
                     // block erased, write buffer
-                    (AccessMemoryErrorCodes ErrorCode, bool Success) writeMemoryResult = WriteMemory((uint)block.StartAddress, block.DeploymentData, block.ProgramAligment);
+                    (AccessMemoryErrorCodes ErrorCode, bool Success) writeMemoryResult = WriteMemory(
+                        (uint)block.StartAddress,
+                        block.DeploymentData,
+                        block.ProgramAligment,
+                        deployedBytes,
+                        deploymentSize,
+                        progress,
+                        log);
+
                     if (!writeMemoryResult.Success)
                     {
                         log?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes).");
@@ -3044,25 +3161,17 @@ namespace nanoFramework.Tools.Debugger
 #if DEBUG
                     if (System.Diagnostics.Debugger.IsAttached)
                     {
-                        // read back
-                        var memCopy = ReadMemory((uint)block.StartAddress, (uint)block.DeploymentData.Length, 0);
-                        Debug.Assert(memCopy.Success, "Failed reading data from device.");
-                        Debug.Assert(memCopy.Buffer.Length == block.DeploymentData.Length, "Comparison of data flashed to device and read back failed.");
-                        var comparer = new ArrayEqualityComparer<byte>();
-                        Debug.Assert(comparer.Equals(memCopy.Buffer, block.DeploymentData), "Comparison of data flashed to device and read back failed.");
+                        // check memory
+                        var memCheck = CheckMemory((uint)block.StartAddress, block.DeploymentData);
+                        Debug.Assert(memCheck, "Memory check Failed.");
                     }
 #endif
 
                     deployedBytes += block.DeploymentData.Length;
-
-                    // report progress
-                    progress?.Report(new MessageWithProgress($"Deployed { deployedBytes }/{ blocksToDeploy.Sum(b => b.DeploymentData.Length) } bytes...", (uint)deployedBytes, (uint)blocksToDeploy.Sum(b => b.DeploymentData.Length)));
-                    log?.Report($"Deployed { deployedBytes }/{ blocksToDeploy.Sum(b => b.DeploymentData.Length) } bytes.");
                 }
 
                 // report progress
                 progress?.Report(new MessageWithProgress(""));
-                log?.Report($"Deployed assemblies with a total size of {blocksToDeploy.Sum(b => b.DeploymentData.Length)} bytes.");
 
                 // deployment successful
                 return true;
@@ -3070,7 +3179,7 @@ namespace nanoFramework.Tools.Debugger
 
             // invalid flash map
             progress?.Report(new MessageWithProgress(""));
-            log?.Report("Error retrieving device flash map.");
+            log?.Report("*** ERROR retrieving device flash map ***");
 
             return false;
         }
@@ -3157,9 +3266,21 @@ namespace nanoFramework.Tools.Debugger
         {
             bool deployedOK;
 
-            if (!PauseExecution())
+            var executionState = GetExecutionMode();
+
+            if(executionState == Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
+                log?.Report("*** ERROR: failed to get device execution state, aborting deployment ***");
                 return false;
+            }
+
+            if (!executionState.IsDeviceInStoppedState())
+            {
+                if (!PauseExecution())
+                {
+                    log?.Report("*** ERROR: failed to pause execution in device, aborting deployment ***");
+                    return false;
+                }
             }
 
             if (Capabilities.IncrementalDeployment)
@@ -3182,11 +3303,11 @@ namespace nanoFramework.Tools.Debugger
 
             if (!deployedOK)
             {
-                log?.Report("Error deploying assemblies to the device.");
+                log?.Report("*** ERROR deploying assemblies to the device ***");
             }
             else
             {
-                log?.Report("Assemblies successfully deployed to the device.");
+                log?.Report("Assemblies successfully deployed to the device");
 
                 if (rebootAfterDeploy)
                 {
@@ -3237,7 +3358,7 @@ namespace nanoFramework.Tools.Debugger
                 m_caps = capabilities
             };
 
-            return PerformSyncRequest(Commands.c_Debugging_Execution_QueryCLRCapabilities, 0, cmd);
+            return PerformSyncRequest(Commands.c_Debugging_Execution_QueryCLRCapabilities, Flags.c_NoCaching, cmd);
         }
 
         private uint DiscoverCLRCapabilityAsUint(uint capabilities)
@@ -3266,6 +3387,7 @@ namespace nanoFramework.Tools.Debugger
 
         private CLRCapabilities.Capability DiscoverCLRCapabilityFlags()
         {
+            Debug.WriteLine("==============================");
             Debug.WriteLine("DiscoverCLRCapability");
 
             return (CLRCapabilities.Capability)DiscoverCLRCapabilityAsUint(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityFlags);
@@ -3273,6 +3395,7 @@ namespace nanoFramework.Tools.Debugger
 
         private CLRCapabilities.SoftwareVersionProperties DiscoverSoftwareVersionProperties()
         {
+            Debug.WriteLine("==============================");
             Debug.WriteLine("DiscoverSoftwareVersionProperties");
 
             IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilitySoftwareVersion);
@@ -3297,6 +3420,7 @@ namespace nanoFramework.Tools.Debugger
 
         private CLRCapabilities.HalSystemInfoProperties DiscoverHalSystemInfoProperties()
         {
+            Debug.WriteLine("==============================");
             Debug.WriteLine("DiscoverHalSystemInfoProperties");
 
             IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityHalSystemInfo);
@@ -3325,6 +3449,7 @@ namespace nanoFramework.Tools.Debugger
 
         private CLRCapabilities.ClrInfoProperties DiscoverClrInfoProperties()
         {
+            Debug.WriteLine("==============================");
             Debug.WriteLine("DiscoverClrInfoProperties");
 
             IncomingMessage reply = DiscoverCLRCapability(Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityClrInfo);
@@ -3383,6 +3508,8 @@ namespace nanoFramework.Tools.Debugger
         /// <returns>A list of the native assemblies available in the target device</returns>
         private List<CLRCapabilities.NativeAssemblyProperties> DiscoveryInteropNativeAssemblies()
         {
+            const int maxRetryCount = 2;
+
             Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies nativeInteropAssemblies = new Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies();
             List<CLRCapabilities.NativeAssemblyProperties> nativeAssemblies = new List<CLRCapabilities.NativeAssemblyProperties>();
 
@@ -3396,6 +3523,8 @@ namespace nanoFramework.Tools.Debugger
                 if (reply.IsPositiveAcknowledge())
                 {
                     uint assemblyCount = 0;
+                    int retryCount = 0;
+                    bool batchSizeAdjusted = false;
 
                     if (reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply cmdReply && cmdReply.m_data != null)
                     {
@@ -3411,12 +3540,15 @@ namespace nanoFramework.Tools.Debugger
                             assemblyCount = reader.ReadUInt32();
 
                             // compute the assembly batch size that fits on target WP packet size
-                            var batchSize = WireProtocolPacketSize / Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblyDetails.Size;
+                            uint batchSize = WireProtocolPacketSize / Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblyDetails.Size;
                             uint index = 0;
 
                             while (index < assemblyCount)
                             {
                                 // get next batch
+
+                                // need to pause between requests
+                                Thread.Sleep(_InterRequestSleep);
 
                                 // encode batch request
                                 uint encodedRequest = batchSize << 24;
@@ -3449,20 +3581,66 @@ namespace nanoFramework.Tools.Debugger
                                                    );
 
                                             index += batchSize;
+
+                                            // reset retry counter
+                                            retryCount = 0;
                                         }
                                         else
                                         {
+                                            if (retryCount < maxRetryCount)
+                                            {
+                                                retryCount++;
+                                                // done here, try again
+                                                continue;
+                                            }
+
                                             return null;
                                         }
                                     }
                                     else
                                     {
+                                        if (retryCount < maxRetryCount)
+                                        {
+                                            retryCount++;
+
+                                            // done here, try again
+                                            continue;
+                                        }
+
                                         return null;
                                     }
                                 }
                                 else
                                 {
-                                    return null;
+                                    // check retry
+                                    if (retryCount < maxRetryCount)
+                                    {
+                                        retryCount++;
+                                    }
+                                    else
+                                    {
+                                        // check if batch size has been adjusted
+                                        if (!batchSizeAdjusted)
+                                        {
+                                            // adjust, if possible
+                                            if (batchSize > 1)
+                                            {
+                                                // set to half the current size
+                                                batchSize = (uint)Math.Floor(batchSize / 2.0);
+
+                                                batchSizeAdjusted = true;
+
+                                                // reset retry count
+                                                retryCount = 0;
+
+                                                // done here, try again
+                                                continue;
+                                            }
+                                        }
+
+                                        // nothing else to try, just quit
+                                        return null;
+                                    }
                                 }
                             }
 
@@ -3514,6 +3692,12 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
+            if(clrFlags == 0)
+            {
+                return null;
+            }
+            Thread.Sleep(_InterRequestSleep);
+
             var softwareVersion = DiscoverSoftwareVersionProperties();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
@@ -3522,6 +3706,12 @@ namespace nanoFramework.Tools.Debugger
                 Debug.WriteLine("cancellation requested");
                 return null;
             }
+
+            if (softwareVersion.BuildDate == "")
+            {
+                return null;
+            }
+            Thread.Sleep(_InterRequestSleep);
 
             var halSysInfo = DiscoverHalSystemInfoProperties();
             // check for cancellation request
@@ -3532,6 +3722,12 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
+            if (halSysInfo.halVendorInfo == "")
+            {
+                return null;
+            }
+            Thread.Sleep(_InterRequestSleep);
+
             var clrInfo = DiscoverClrInfoProperties();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
@@ -3540,6 +3736,12 @@ namespace nanoFramework.Tools.Debugger
                 Debug.WriteLine("cancellation requested");
                 return null;
             }
+
+            if (clrInfo.clrVendorInfo == "")
+            {
+                return null;
+            }
+            Thread.Sleep(_InterRequestSleep);
 
             var solutionInfo = DiscoverTargetInfoProperties();
             // check for cancellation request
@@ -3550,6 +3752,14 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
+            if (solutionInfo.TargetName == "")
+            {
+                return null;
+            }
+
+            Thread.Sleep(_InterRequestSleep);
+
+
             var nativeAssembliesInfo = DiscoveryInteropNativeAssemblies();
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
@@ -3558,6 +3768,8 @@ namespace nanoFramework.Tools.Debugger
                 Debug.WriteLine("cancellation requested");
                 return null;
             }
+
+            Thread.Sleep(_InterRequestSleep);
 
             // sanity check for NULL native assemblies
             if (nativeAssembliesInfo == null)
@@ -3574,10 +3786,10 @@ namespace nanoFramework.Tools.Debugger
             return DiscoverTargetInfoProperties();
         }
 
-        #endregion
+#endregion
 
 
-        #region Device configuration methods
+#region Device configuration methods
 
         public DeviceConfiguration GetDeviceConfiguration(CancellationToken cancellationToken)
         {
@@ -4343,7 +4555,15 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-    #endregion
+#endregion
 
+        private Thread CreateThreadHelper(ThreadStart ts)
+        {
+            Thread th = new Thread(ts);
+            th.IsBackground = true;
+            th.Start();
+
+            return th;
+        }
     }
 }

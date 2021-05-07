@@ -17,6 +17,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public object Payload => Base.Payload;
 
+        public bool NeedsReply =>
+                    !(((Header.Flags & Flags.c_NonCritical) == Flags.c_NonCritical) ||
+                    ((Header.Flags & Flags.c_Reply) == Flags.c_Reply));
+
         public OutgoingMessage(ushort sequenceId, Converter converter, uint command, uint flags, object payload)
         {
             _sequenceId = sequenceId;

@@ -14,27 +14,31 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     public class WireProtocolRequest
     {
         private readonly CommandEventHandler _callback;
+        private readonly int _timeout;
 
         public CancellationToken CancellationToken { get; }
         public TaskCompletionSource<IncomingMessage> TaskCompletionSource { get; }
 
-        public DateTimeOffset Expires { get; }
+        public DateTimeOffset Expires { get; private set; } = DateTime.MaxValue;
+
+        public DateTime RequestTimestamp { get; private set; }
+
         public OutgoingMessage OutgoingMessage { get; }
 
-        public WireProtocolRequest(OutgoingMessage outgoingMessage, CancellationToken cancellationToken, int millisecondsTimeout = 5000, CommandEventHandler callback = null)
+        public bool NeedsReply => OutgoingMessage.NeedsReply;
+
+        public WireProtocolRequest(OutgoingMessage outgoingMessage, int millisecondsTimeout = 5000, CommandEventHandler callback = null)
         {
             OutgoingMessage = outgoingMessage;
             _callback = callback;
 
-            // set TTL for the request
-            Expires = DateTime.Now.AddMilliseconds(millisecondsTimeout);
+            _timeout = millisecondsTimeout;
 
             // https://blogs.msdn.microsoft.com/pfxteam/2009/06/02/the-nature-of-taskcompletionsourcetresult/
             TaskCompletionSource = new TaskCompletionSource<IncomingMessage>();
-            CancellationToken = cancellationToken;
         }
 
-        internal async Task<bool> PerformRequestAsync(IController controller)
+        internal bool PerformRequest(IController controller)
         {
             Debug.WriteLine($"Performing request");
 
@@ -44,10 +48,30 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                             , OutgoingMessage.Base.Header.Flags
                                             , OutgoingMessage.Base.Header.Seq
                                             , OutgoingMessage.Base.Header.SeqReply
-                                            , OutgoingMessage.Base.Header.Size
-                                            );
+                                            , OutgoingMessage.Base.Header.Size);
 
-            return await controller.SendAsync(OutgoingMessage.Raw, CancellationToken);
+            if(controller.Send(OutgoingMessage.Raw))
+            {
+                // set TTL for the request
+                Expires = DateTime.UtcNow.AddMilliseconds(_timeout);
+
+                // store start time
+                RequestTimestamp = DateTime.Now;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        internal void RequestAborted()
+        {
+            DebuggerEventSource.Log.WireProtocolTimeout(
+                OutgoingMessage.Base.Header.Cmd,
+                OutgoingMessage.Base.Header.Seq,
+                OutgoingMessage.Base.Header.SeqReply,
+                RequestTimestamp);
+
         }
     }
 }

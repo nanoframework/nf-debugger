@@ -8,6 +8,7 @@ using nanoFramework.ANT.Services.NanoFrameworkService;
 using nanoFramework.Tools.Debugger;
 using Serial_Test_App_WPF.ViewModel;
 using System;
+using System.Collections.Generic;
 
 namespace Serial_Test_App_WPF
 {
@@ -41,13 +42,12 @@ namespace Serial_Test_App_WPF
 
         private INFSerialDebugClientService CreateSerialDebugClient()
         {
-            //virtualApp = Windows.UI.Xaml.Application.Current;
+            // add here any COM ports to exclude from the search
+            var devicesToExclude = new List<string>() { "COM15" };
 
-            // TODO: check app lifecycle
-            var serialDebugClient = PortBase.CreateInstanceForSerial("", new System.Collections.Generic.List<string>() { "COM16" } );
+            var serialDebugClient = PortBase.CreateInstanceForSerial(devicesToExclude);
 
             return new NFSerialDebugClientService(serialDebugClient);
         }
     }
-
 }

@@ -104,58 +104,54 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             InitializeComponent();
         }
 
-        private async void ConnectDeviceButton_ClickAsync(object sender, RoutedEventArgs e)
+        private void ConnectDeviceButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
+            var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
+
+            if(device.DebugEngine == null)
             {
-                var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
+                device.CreateDebugEngine(NanoSerialDevice.SafeDefaultTimeout);
+            }
 
-                if(device.DebugEngine == null)
+            bool connectResult = device.DebugEngine.Connect(5000, true);
+
+            if(connectResult)
+            {
+                device.DebugEngine.OnProcessExit += DebugEngine_OnProcessExit;
+
+                var di = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo();
+
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine(di.ToString());
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+
+                Debug.WriteLine("Device capabilities:");
+
+                Debug.Write("IFU capable: ");
+                if (device.IsIFUCapable)
                 {
-                    device.CreateDebugEngine();
+                    Debug.WriteLine("YES");
+                }
+                else
+                {
+                    Debug.WriteLine("NO");
                 }
 
-                bool connectResult = await device.DebugEngine.ConnectAsync(5000, true);
-
-                if(connectResult)
+                Debug.Write("Has proprietary bootloader: ");
+                if (device.HasProprietaryBooter)
                 {
-                    device.DebugEngine.OnProcessExit += DebugEngine_OnProcessExit;
-
-                    var di = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo();
-
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-                    Debug.WriteLine(di.ToString());
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-
-                    Debug.WriteLine("Device capabilities:");
-
-                    Debug.Write("IFU capable: ");
-                    if (device.IsIFUCapable)
-                    {
-                        Debug.WriteLine("YES");
-                    }
-                    else
-                    {
-                        Debug.WriteLine("NO");
-                    }
-
-                    Debug.Write("Has proprietary bootloader: ");
-                    if (device.HasProprietaryBooter)
-                    {
-                        Debug.WriteLine("YES");
-                    }
-                    else
-                    {
-                        Debug.WriteLine("NO");
-                    }
+                    Debug.WriteLine("YES");
                 }
-
-            }));
+                else
+                {
+                    Debug.WriteLine("NO");
+                }
+            }
 
             // enable button
             (sender as Button).IsEnabled = true;
@@ -734,27 +730,20 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             (sender as Button).IsEnabled = true;
         }
 
-        private async void EraseDeploymentButton_Click(object sender, RoutedEventArgs e)
+        private void EraseDeploymentButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
             try
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(async () =>
-                {
-                    // enable button
-                    (sender as Button).IsEnabled = true;
+                (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].Erase(EraseOptions.Deployment);
 
-                    await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].EraseAsync(EraseOptions.Deployment, CancellationToken.None);
-
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-                    Debug.WriteLine($"Erased deployment area SUCCESFULL.");
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-
-                }));
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine($"Erased deployment area SUCCESFULL.");
+                Debug.WriteLine("");
+                Debug.WriteLine("");
             }
             catch
             { 
@@ -765,27 +754,20 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             (sender as Button).IsEnabled = true;
         }
 
-        private async void IsInitStateButton_Click(object sender, RoutedEventArgs e)
+        private void IsInitStateButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
             try
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-                {
-                    // enable button
-                    (sender as Button).IsEnabled = true;
+                var isInitState = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.IsDeviceInInitializeState();
 
-                    var isInitState = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.IsDeviceInInitializeState();
-
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-                    Debug.WriteLine($"device is in init state: {isInitState}");
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-
-                }));
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine($"device is in init state: {isInitState}");
+                Debug.WriteLine("");
+                Debug.WriteLine("");
             }
             catch
             {
@@ -796,65 +778,60 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             (sender as Button).IsEnabled = true;
         }
 
-        private async void GetDeviceConfigButton_Click(object sender, RoutedEventArgs e)
+        private void GetDeviceConfigButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-             {
+            try
+            {
+                // Create cancellation token source
+                CancellationTokenSource cts = new CancellationTokenSource();
 
-                 try
-                 {
-                     // Create cancellation token source
-                     CancellationTokenSource cts = new CancellationTokenSource();
+                var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
 
-                     var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
+                // get device info
+                var deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
 
-                     // get device info
-                     var deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
+                if (deviceConfig.NetworkConfigurations.Count > 0)
+                {
+                    Debug.WriteLine(deviceConfig.NetworkConfigurations[0].ToStringForOutput());
+                }
 
-                     if (deviceConfig.NetworkConfigurations.Count > 0)
-                     {
-                         Debug.WriteLine(deviceConfig.NetworkConfigurations[0].ToStringForOutput());
-                     }
+                if (deviceConfig.Wireless80211Configurations.Count > 0)
+                {
+                    Debug.WriteLine(deviceConfig.Wireless80211Configurations[0].ToStringForOutput());
+                }
 
-                     if (deviceConfig.Wireless80211Configurations.Count > 0)
-                     {
-                         Debug.WriteLine(deviceConfig.Wireless80211Configurations[0].ToStringForOutput());
-                     }
+                if (deviceConfig.WirelessAPConfigurations.Count > 0)
+                {
+                    Debug.WriteLine(deviceConfig.WirelessAPConfigurations[0].ToStringForOutput());
+                }
 
-                     if (deviceConfig.WirelessAPConfigurations.Count > 0)
-                     {
-                         Debug.WriteLine(deviceConfig.WirelessAPConfigurations[0].ToStringForOutput());
-                     }
+                if (deviceConfig.X509Certificates.Count > 0)
+                {
+                    X509Certificate2 cert = new X509Certificate2(deviceConfig.X509Certificates[0].Certificate);
+                    Debug.WriteLine(cert.ToString());
+                }
 
-                     if (deviceConfig.X509Certificates.Count > 0)
-                     {
-                         X509Certificate2 cert = new X509Certificate2(deviceConfig.X509Certificates[0].Certificate);
-                         Debug.WriteLine(cert.ToString());
-                     }
+                if (deviceConfig.X509DeviceCertificates.Count > 0)
+                {
+                    X509Certificate2 deviceCert = new X509Certificate2(deviceConfig.X509Certificates[0].Certificate);
+                    Debug.WriteLine(deviceCert.ToString());
+                }
 
-                     if (deviceConfig.X509DeviceCertificates.Count > 0)
-                     {
-                         X509Certificate2 deviceCert = new X509Certificate2(deviceConfig.X509Certificates[0].Certificate);
-                         Debug.WriteLine(deviceCert.ToString());
-                     }
-
-                     //Debug.WriteLine(string.Empty);
-                     //Debug.WriteLine(string.Empty);
-                     //Debug.WriteLine("--------------------------------");
-                     //Debug.WriteLine("::        Memory Map          ::");
-                     //Debug.WriteLine("--------------------------------");
+                //Debug.WriteLine(string.Empty);
+                //Debug.WriteLine(string.Empty);
+                //Debug.WriteLine("--------------------------------");
+                //Debug.WriteLine("::        Memory Map          ::");
+                //Debug.WriteLine("--------------------------------");
 
 
-                 }
-                 catch(Exception ex)
-                 {
+            }
+            catch(Exception ex)
+            {
 
-                 }
-
-             }));
+            }
 
             // enable button
             (sender as Button).IsEnabled = true;
@@ -868,101 +845,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
         /// <param name="e"></param>
         /// <remarks>
         /// </remarks>
-        private async void SetDeviceConfigButton_Click(object sender, RoutedEventArgs e)
-        {
-            // disable button
-            (sender as Button).IsEnabled = false;
-
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-             {
-
-                 try
-                 {
-                     // Create cancellation token source
-                     CancellationTokenSource cts = new CancellationTokenSource();
-
-                     var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
-
-                     // get device info
-                     var deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
-
-                     // update new network configuration
-                     DeviceConfiguration.NetworkConfigurationProperties newDeviceNetworkConfiguration = new DeviceConfiguration.NetworkConfigurationProperties
-                     {
-                         MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 },
-                         InterfaceType = NetworkInterfaceType.Ethernet,
-                         StartupAddressMode = AddressMode.DHCP,
-
-                         IPv4DNSAddress1 = IPAddress.Parse("192.168.1.254"),
-                     };
-
-                     // write device configuration to device
-                     var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newDeviceNetworkConfiguration, 0);
-
-                     //// add new wireless 802.11 configuration
-                     //DeviceConfiguration.Wireless80211ConfigurationProperties newWireless80211Configuration = new DeviceConfiguration.Wireless80211ConfigurationProperties()
-                     //{
-                     //    Id = 44,
-                     //    Ssid = "Nice_Ssid",
-                     //    Password = "1234",
-                     //};
-
-                     //// write wireless configuration to device
-                     //returnValue = device.DebugEngine.UpdateDeviceConfiguration(newWireless80211Configuration, 0);
-
-                     // build a CA certificate bundle
-                     DeviceConfiguration.X509CaRootBundleProperties newX509CertificateBundle = new DeviceConfiguration.X509CaRootBundleProperties();
-
-                     // add CA root certificates
-
-                     /////////////////////////////////////////////////////////
-                     // BECAUSE WE ARE PARSING FROM A BASE64 encoded format //
-                     // NEED TO ADD A TERMINATOR TO THE STRING              //
-                     /////////////////////////////////////////////////////////
-
-                     string caRootBundle = baltimoreCACertificate + letsEncryptCACertificate + "\0";
-
-                     byte[] certificateRaw = Encoding.UTF8.GetBytes(caRootBundle);
-
-                     newX509CertificateBundle.Certificate = certificateRaw;
-
-                     // write CA certificate to device
-                     returnValue = device.DebugEngine.UpdateDeviceConfiguration(newX509CertificateBundle, 0);
-
-                     Debug.WriteLine("");
-                     Debug.WriteLine("");
-                     Debug.WriteLine($"device config update result: {returnValue}");
-                     Debug.WriteLine("");
-                     Debug.WriteLine("");
-
-                 }
-                 catch (Exception ex)
-                 {
-
-                 }
-
-             }));
-
-            // enable button
-            (sender as Button).IsEnabled = true;
-        }
-
-        private async void ReScanDevices_Click(object sender, RoutedEventArgs e)
-        {
-            // disable button
-            (sender as Button).IsEnabled = false;
-
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
-
-                (DataContext as MainViewModel).SerialDebugService.SerialDebugClient.ReScanDevices();
-
-            }));
-
-            // enable button
-            (sender as Button).IsEnabled = true;
-        }
-
-        private async void ReadTestButton_Click(object sender, RoutedEventArgs e)
+        private void SetDeviceConfigButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
@@ -972,6 +855,101 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                 // Create cancellation token source
                 CancellationTokenSource cts = new CancellationTokenSource();
 
+                var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
+
+                // get device info
+                var deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
+
+                // update new network configuration
+                DeviceConfiguration.NetworkConfigurationProperties newDeviceNetworkConfiguration = new DeviceConfiguration.NetworkConfigurationProperties
+                {
+                    MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 },
+                    InterfaceType = NetworkInterfaceType.Ethernet,
+                    StartupAddressMode = AddressMode.DHCP,
+
+                    IPv4DNSAddress1 = IPAddress.Parse("192.168.1.254"),
+                };
+
+                // write device configuration to device
+                var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newDeviceNetworkConfiguration, 0);
+
+                //// add new wireless 802.11 configuration
+                //DeviceConfiguration.Wireless80211ConfigurationProperties newWireless80211Configuration = new DeviceConfiguration.Wireless80211ConfigurationProperties()
+                //{
+                //    Id = 44,
+                //    Ssid = "Nice_Ssid",
+                //    Password = "1234",
+                //};
+
+                //// write wireless configuration to device
+                //returnValue = device.DebugEngine.UpdateDeviceConfiguration(newWireless80211Configuration, 0);
+
+                // build a CA certificate bundle
+                DeviceConfiguration.X509CaRootBundleProperties newX509CertificateBundle = new DeviceConfiguration.X509CaRootBundleProperties();
+
+                // add CA root certificates
+
+                /////////////////////////////////////////////////////////
+                // BECAUSE WE ARE PARSING FROM A BASE64 encoded format //
+                // NEED TO ADD A TERMINATOR TO THE STRING              //
+                /////////////////////////////////////////////////////////
+
+                string caRootBundle = baltimoreCACertificate + letsEncryptCACertificate + "\0";
+
+                byte[] certificateRaw = Encoding.UTF8.GetBytes(caRootBundle);
+
+                newX509CertificateBundle.Certificate = certificateRaw;
+
+                // write CA certificate to device
+                returnValue = device.DebugEngine.UpdateDeviceConfiguration(newX509CertificateBundle, 0);
+
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine($"device config update result: {returnValue}");
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private void ReScanDevices_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            Task.Run(delegate
+            {
+                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    (DataContext as MainViewModel).SerialDebugService.SerialDebugClient.ReScanDevices();
+
+                    // need to wait for devices enumeration to complete
+                    while (!(DataContext as MainViewModel).SerialDebugService.SerialDebugClient.IsDevicesEnumerationComplete)
+                    {
+                        Thread.Sleep(100);
+                    }
+
+                    // enable button
+                    (sender as Button).IsEnabled = true;
+                }));
+
+            });
+        }
+
+        private void ReadTestButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
                 var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
 
                 // get memory map
@@ -1022,19 +1000,6 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                         // check error code
                     }
                 }
-
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-                {
-                    Debug.WriteLine($">>> read flash memory completed <<<<");
-
-
-                    //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.ClrOnly);
-
-                    //Task.Delay(1000).Wait();
-
-                    //(DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].GetDeviceInfo(true);
-
-                }));
             }
             catch
             {
@@ -1045,62 +1010,49 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             (sender as Button).IsEnabled = true;
         }
 
-        private async void TargetInfoButton_Click(object sender, RoutedEventArgs e)
+        private void TargetInfoButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
-
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
-
-                var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
+            var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
 
 
-                var targetInfo = device.DebugEngine.GetMonitorTargetInfo();
+            var targetInfo = device.DebugEngine.GetMonitorTargetInfo();
 
-                if (targetInfo != null)
-                {
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-                    Debug.WriteLine($"{targetInfo.ToString()}");
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-                }
-                else
-                {
-                    Debug.WriteLine("");
-                    Debug.WriteLine("no OEM info available");
-                    Debug.WriteLine("");
-                }
-
-            }));
+            if (targetInfo != null)
+            {
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine($"{targetInfo.ToString()}");
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+            }
+            else
+            {
+                Debug.WriteLine("");
+                Debug.WriteLine("no OEM info available");
+                Debug.WriteLine("");
+            }
 
             // enable button
             (sender as Button).IsEnabled = true;
-
         }
 
-        private async void RebootToNanoBooterButton_Click(object sender, RoutedEventArgs e)
+        private void RebootToNanoBooterButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
 
             try
             {
-                await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-                {
-                    // enable button
-                    (sender as Button).IsEnabled = true;
+                (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.EnterNanoBooter);
 
-                    (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RebootDevice(RebootOptions.EnterNanoBooter);
-
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-                    Debug.WriteLine($"Reboot & launch nanoBooter");
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
-
-                }));
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine($"Reboot & launch nanoBooter");
+                Debug.WriteLine("");
+                Debug.WriteLine("");
             }
             catch
             {
@@ -1108,10 +1060,10 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             }
 
             // enable button
-
+            (sender as Button).IsEnabled = true;
         }
 
-        private async void DeployFileTestButton_Click(object sender, RoutedEventArgs e)
+        private void DeployFileTestButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button
             (sender as Button).IsEnabled = false;
@@ -1135,7 +1087,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             uint flashAddress = 0x08004000;
             ////////////////////////////////////////////////////////////////////////////////
 
-            var reply1 = await (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DeployBinaryFileAsync(binFile, flashAddress, CancellationToken.None, null);
+            var reply1 = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DeployBinaryFile(binFile, flashAddress, null);
 
             // enable button
             (sender as Button).IsEnabled = true;

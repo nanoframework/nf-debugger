@@ -55,7 +55,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public Version BooterVersion => _booterVersion.Version;
 
-        public Version ClrVersion => _clrVersion.Version;
+        public Version CLRVersion => _clrVersion.Version;
 
         public string Info
         {
@@ -111,7 +111,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 output.AppendLine($"  Target:     {TargetName?.ToString()}");
                 output.AppendLine($"  Platform:   {PlatformName?.ToString()}");
                 output.AppendLine($"  nanoBooter: v{BooterVersion}");
-                output.AppendLine($"  nanoCLR:    v{ClrVersion}");
+                output.AppendLine($"  nanoCLR:    v{CLRVersion}");
                 output.AppendLine($"  Type:       {PlatformInfo}");
                 output.AppendLine();
 

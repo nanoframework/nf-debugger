@@ -56,6 +56,7 @@ namespace nanoFramework.Tools.Debugger
             [Commands.c_Monitor_DeploymentMap] = "DeploymentMap",
             [Commands.c_Monitor_FlashSectorMap] = "FlashSectorMap",
             [Commands.c_Monitor_OemInfo] = "OemInfo",
+            [Commands.c_Monitor_TargetInfo] = "TargetInfo",
             [Commands.c_Debugging_Execution_BasePtr] = "Execution_BasePtr",
             [Commands.c_Debugging_Execution_ChangeConditions] = "Execution_ChangeConditions",
             [Commands.c_Debugging_Execution_SecurityKey] = "Execution_SecurityKey",
@@ -135,29 +136,55 @@ namespace nanoFramework.Tools.Debugger
             Debug.WriteLine($"TX: " +
                 $"{GetCommandName(cmd)} " +
                 $"flags=[{(PacketFlags)flags}] " +
-                $"hCRC: 0x{crcHeader.ToString("X08")} " +
-                $"pCRC: 0x{crcData.ToString("X08")} " +
-                $"seq: 0x{seq.ToString("X04")} " +
-                $"replySeq: 0x{seqReply.ToString("X04")} " +
-                $"len={length}");
+                //$"hCRC: 0x{crcHeader:X08} " +
+                //$"pCRC: 0x{crcData:X08} " +
+                $"seq: 0x{seq:X04} " +
+                $"replySeq: 0x{seqReply:X04} " +
+                $"len={length} " +
+                $"{DateTime.Now:HH:mm:ss.fff}");
+        }
+
+        [Event(1, Opcode = EventOpcode.Info)]
+        public void WireProtocolTimeout(uint cmd, ushort seq, ushort seqReply, DateTime timestamp)
+        {
+            Debug.WriteLine($"TX: " +
+                $"{GetCommandName(cmd)} *** ABORTED *** " +
+                $"seq: 0x{seq:X04} " +
+                $"replySeq: 0x{seqReply:X04} " +
+                $"timeout: {DateTime.Now - timestamp:ss\\.ffff}");
         }
 
         [Event(2, Opcode = EventOpcode.Receive)]
-        public void WireProtocolRxHeader(uint crcHeader, uint crcData, uint cmd, uint flags, ushort seq, ushort seqReply, uint length)
+        public void WireProtocolRxHeader(uint crcHeader, uint crcData, uint cmd, uint flags, ushort seq, ushort seqReply, uint length, DateTime timestamp)
         {
+            TimeSpan roundTrip = TimeSpan.FromSeconds(0);
+
+            if (timestamp != DateTime.MinValue)
+            {
+                roundTrip = DateTime.Now - timestamp;
+            }
+
             Debug.WriteLine($"RX: {GetCommandName(cmd)} " +
                 $"flags=[{(PacketFlags)flags}] " +
-                $"hCRC: 0x{crcHeader.ToString("X08")} " +
-                $"pCRC: 0x{crcData.ToString("X08")} " +
-                $"seq: 0x{seq.ToString("X04")} " +
-                $"replySeq: 0x{seqReply.ToString("X04")} " +
-                $"len={length.ToString()}");
+                //$"hCRC: 0x{crcHeader:X08} " +
+                //$"pCRC: 0x{crcData:X08} " +
+                $"seq: 0x{seq:X04} " +
+                $"replySeq: 0x{seqReply:X04} " +
+                $"len={length} " +
+                $"{DateTime.Now:HH:mm:ss.fff} " +
+                $"round-trip: {roundTrip:ss\\.ffff}");
         }
 
         [Event(3)]
         public void WireProtocolReceiveState(MessageReassembler.ReceiveState state)
         {
             Debug.WriteLine($"State machine: {state.ToString()}");
+        }
+
+        [Event(3)]
+        public void WireProtocolReceiveState(MessageReassembler.ReceiveState state, TimeSpan idleTime)
+        {
+            Debug.WriteLine($"State machine: {state} for {idleTime:s\\.ffff}s");
         }
 
         [Event(4)]

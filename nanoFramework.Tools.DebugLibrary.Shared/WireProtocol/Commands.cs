@@ -139,7 +139,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint c_Ping_WPFlag_SupportsCRC32 =             0x00000010;
 
             // Wire Protocol packet size (3rd position)
-            public const uint Monitor_Ping_c_PacketSize_Position =      0x00000F00;
+            public const uint Monitor_Ping_c_PacketSize_Position =      0x00000700;
             // default packet size is 1024
             public const uint Monitor_Ping_c_PacketSize_1024 =          0x00000100;
             public const uint Monitor_Ping_c_PacketSize_0512 =          0x00000200;

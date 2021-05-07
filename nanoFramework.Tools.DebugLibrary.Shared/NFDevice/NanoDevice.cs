@@ -5,24 +5,23 @@
 //
 
 using nanoFramework.Tools.Debugger.WireProtocol;
+using PropertyChanged;
 using System;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger
 {
+    [AddINotifyPropertyChangedInterface]
     public class NanoDevice<T> : NanoDeviceBase, IDisposable, INanoDevice where T : new()
     {
         public T Device { get; set; }
+
+        public string DeviceId { get; set; }
 
         public NanoDevice()
         {
             Device = new T();
 
-            if (Device is NanoUsbDevice)
-            {
-                Transport = TransportType.Usb;
-            }
-            else if (Device is NanoSerialDevice)
+            if (Device is NanoSerialDevice)
             {
                 Transport = TransportType.Serial;
             }
@@ -47,16 +46,14 @@ namespace nanoFramework.Tools.Debugger
                     {
                         // release managed components
                         Disconnect();
-
-                        DebugEngine?.Dispose();
                     }
                     catch
                     {
                         // required to catch exceptions from Engine dispose calls
                     }
-                }
 
-                disposed = true;
+                    disposed = true;
+                }
             }
         }
 
@@ -66,8 +63,6 @@ namespace nanoFramework.Tools.Debugger
         public void Dispose()
         {
             Dispose(true);
-
-            GC.SuppressFinalize(this);
         }
 
         #endregion
@@ -76,15 +71,11 @@ namespace nanoFramework.Tools.Debugger
         /// Connect to nanoFramework device
         /// </summary>
         /// <returns>True if operation is successful</returns>
-        public async Task<bool> ConnectAsync()
+        public bool Connect()
         {
-            if (Device is NanoUsbDevice)
+            if (Device is NanoSerialDevice)
             {
-                return await ConnectionPort.ConnectDeviceAsync();
-            }
-            else if (Device is NanoSerialDevice)
-            {
-                return await ConnectionPort.ConnectDeviceAsync();
+                return ConnectionPort.ConnectDevice();
             }
 
             return false;
@@ -93,11 +84,9 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Disconnect nanoFramework device
         /// </summary>
-        public override void Disconnect()
+        public override void Disconnect(bool force = false)
         {
-            ConnectionPort.DisconnectDevice();
-
-            DeviceBase = null;
+            ConnectionPort.DisconnectDevice(force);
         }
     }
 }

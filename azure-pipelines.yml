@@ -187,14 +187,6 @@ steps:
     arguments: 'pack nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.nuspec -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
     # arguments: 'pack nanoFramework.Tools.DebugLibrary.Net\nanoFramework.Tools.DebugLibrary.Net.nuspec -Symbols -SymbolPackageFormat snupkg -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
 
-- task: NuGetCommand@2
-  condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
-  displayName: Pack UWP NuGet package
-  inputs:
-    command: 'custom' 
-    arguments: 'pack nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.nuspec -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
-    # arguments: 'pack nanoFramework.Tools.DebugLibrary.UWP\nanoFramework.Tools.DebugLibrary.UWP.nuspec -Symbols -SymbolPackageFormat snupkg -Version $(MY_NUGET_VERSION) -properties commit="$(Build.SourceVersion)"'
-
 # we don't have tests (yet)
 # - task: VSTest@2
 #   inputs:
@@ -222,7 +214,7 @@ steps:
     gem install github_changelog_generator --quiet --no-document
     # need to call it passing both cache options with full path otherwise it won't work
     github_changelog_generator --token $(GitHubToken) --cache-log  $env:AGENT_TEMPDIRECTORY\github-changelog-logger.log --cache-file $env:AGENT_TEMPDIRECTORY\github-changelog-http-cache
-  condition: and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), not( startsWith(variables['Build.SourceBranchName'], 'master') ), not( contains(variables['Build.SourceBranchName'], 'update-dependencies') ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
+  condition: and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), not( startsWith(variables['Build.SourceBranchName'], 'main') ), not( contains(variables['Build.SourceBranchName'], 'update-dependencies') ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Generate change log
 
 # generate change log including future version
@@ -230,7 +222,7 @@ steps:
     gem install github_changelog_generator --quiet --no-document
     # need to call it passing both cache options with full path otherwise it won't work
     github_changelog_generator --token $(GitHubToken) --cache-log  $env:AGENT_TEMPDIRECTORY\github-changelog-logger.log --cache-file $env:AGENT_TEMPDIRECTORY\github-changelog-http-cache --future-release v$env:MY_NUGET_VERSION
-  condition: and( succeeded(), and ( ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), startsWith(variables['Build.SourceBranchName'], 'master'), not( contains(variables['Build.SourceBranchName'], 'update-dependencies') ) ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
+  condition: and( succeeded(), and ( ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), startsWith(variables['Build.SourceBranchName'], 'main'), not( contains(variables['Build.SourceBranchName'], 'update-dependencies') ) ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Generate change log
 
 # copy change log to artifacts directory
@@ -269,8 +261,6 @@ steps:
     Contents: |
       **\nanoFramework.Tools.Debugger.Net.$(MY_NUGET_VERSION).nupkg
       **\nanoFramework.Tools.Debugger.Net.$(MY_NUGET_VERSION).snupkg
-      **\nanoFramework.Tools.Debugger.UWP.$(MY_NUGET_VERSION).nupkg
-      **\nanoFramework.Tools.Debugger.UWP.$(MY_NUGET_VERSION).snupkg
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
     flattenFolders: true
 
@@ -339,7 +329,7 @@ steps:
   env:
     MY_GITHUB_TOKEN: $(GitHubToken)
 
-# create or update GitHub release ON tags from release or master branches
+# create or update GitHub release ON tags from release or main branches
 - task: GitHubReleasePublish@1
   condition: and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Create/Update GitHub PREVIEW release 
@@ -349,7 +339,7 @@ steps:
     githubRepositoryName: 'nf-debugger'
     githubTag: v$(MY_NUGET_VERSION)
     githubReleaseTitle: 'nanoFramework Debugger Library v$(MY_NUGET_VERSION)'
-    githubReleaseNotes: 'Check the [changelog]($(Build.Repository.Uri)/blob/$(Build.SourceBranchName)/CHANGELOG.md).<br><br><h4>Install from NuGet</h4><br>The following NuGet packages are available for download from this release:<br>:package: [.NET](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/$(MY_NUGET_VERSION)) v$(MY_NUGET_VERSION) v$(MY_NUGET_VERSION)<br>:package: [UWP](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.UWP/$(MY_NUGET_VERSION)) v$(MY_NUGET_VERSION)'
+    githubReleaseNotes: 'Check the [changelog]($(Build.Repository.Uri)/blob/$(Build.SourceBranchName)/CHANGELOG.md).<br><br><h4>Install from NuGet</h4><br>The following NuGet packages are available for download from this release:<br>:package: [.NET](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/$(MY_NUGET_VERSION)) v$(MY_NUGET_VERSION) v$(MY_NUGET_VERSION)'
     githubTargetCommitsh: $(Build.SourceVersion)
     githubReleaseDraft: false
     githubReleasePrerelease: true
@@ -359,7 +349,7 @@ steps:
     githubDeleteEmptyTag: true
     githubReleaseAsset: '$(Build.ArtifactStagingDirectory)/*.nupkg'
 
-# create or update GitHub release ON tags from release or master branches
+# create or update GitHub release ON tags from release or main branches
 - task: GitHubReleasePublish@1
   condition: and( succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'), not(contains(variables['Build.SourceBranch'], 'preview') ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Create/Update GitHub release
@@ -369,7 +359,7 @@ steps:
     githubRepositoryName: 'nf-debugger'
     githubTag: v$(MY_NUGET_VERSION)
     githubReleaseTitle: 'nanoFramework Debugger Library v$(MY_NUGET_VERSION)'
-    githubReleaseNotes: 'Check the [changelog]($(Build.Repository.Uri)/blob/$(Build.SourceBranchName)/CHANGELOG.md).<br><br><h4>Install from NuGet</h4><br>The following NuGet packages are available for download from this release:<br>:package: [.NET](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/$(MY_NUGET_VERSION)) v$(MY_NUGET_VERSION) v$(MY_NUGET_VERSION)<br>:package: [UWP](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.UWP/$(MY_NUGET_VERSION)) v$(MY_NUGET_VERSION)'
+    githubReleaseNotes: 'Check the [changelog]($(Build.Repository.Uri)/blob/$(Build.SourceBranchName)/CHANGELOG.md).<br><br><h4>Install from NuGet</h4><br>The following NuGet packages are available for download from this release:<br>:package: [.NET](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/$(MY_NUGET_VERSION)) v$(MY_NUGET_VERSION) v$(MY_NUGET_VERSION)'
     githubTargetCommitsh: $(Build.SourceVersion)
     githubReleaseDraft: false
     githubReleasePrerelease: false

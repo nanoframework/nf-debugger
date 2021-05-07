@@ -23,7 +23,7 @@
                 <DataGridTextColumn Binding="{Binding Description}"/>
             </DataGrid.Columns>
         </DataGrid>
-        <Button Content="Connect" HorizontalAlignment="Left" Margin="250,77,0,0" VerticalAlignment="Top" Width="98" Click="ConnectDeviceButton_ClickAsync"/>
+        <Button Content="Connect" HorizontalAlignment="Left" Margin="250,77,0,0" VerticalAlignment="Top" Width="98" Click="ConnectDeviceButton_Click"/>
         <Button Content="Disconnect" HorizontalAlignment="Left" Margin="250,102,0,0" VerticalAlignment="Top" Width="98" Click="DisconnectDeviceButton_Click"/>
         <Button Content="Ping" HorizontalAlignment="Left" Margin="250,129,0,0" VerticalAlignment="Top" Width="98" Click="PingButton_Click" />
 
