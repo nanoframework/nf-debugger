@@ -115,7 +115,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 #if DEBUG
             catch (Exception ex)
 #else
-            catch()
+            catch
 #endif
             {
                 // catch all because the device open might fail for a number of reasons
