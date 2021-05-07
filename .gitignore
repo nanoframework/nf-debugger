@@ -256,3 +256,5 @@ paket-files/
 
 #VS Code
 .vscode
+# VS Code
+.vscode/
