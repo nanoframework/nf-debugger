@@ -214,7 +214,7 @@ steps:
     gem install github_changelog_generator --quiet --no-document
     # need to call it passing both cache options with full path otherwise it won't work
     github_changelog_generator --token $(GitHubToken) --cache-log  $env:AGENT_TEMPDIRECTORY\github-changelog-logger.log --cache-file $env:AGENT_TEMPDIRECTORY\github-changelog-http-cache
-  condition: and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), not( startsWith(variables['Build.SourceBranchName'], 'master') ), not( contains(variables['Build.SourceBranchName'], 'update-dependencies') ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
+  condition: and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), not( startsWith(variables['Build.SourceBranchName'], 'main') ), not( contains(variables['Build.SourceBranchName'], 'update-dependencies') ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Generate change log
 
 # generate change log including future version
@@ -222,7 +222,7 @@ steps:
     gem install github_changelog_generator --quiet --no-document
     # need to call it passing both cache options with full path otherwise it won't work
     github_changelog_generator --token $(GitHubToken) --cache-log  $env:AGENT_TEMPDIRECTORY\github-changelog-logger.log --cache-file $env:AGENT_TEMPDIRECTORY\github-changelog-http-cache --future-release v$env:MY_NUGET_VERSION
-  condition: and( succeeded(), and ( ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), startsWith(variables['Build.SourceBranchName'], 'master'), not( contains(variables['Build.SourceBranchName'], 'update-dependencies') ) ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
+  condition: and( succeeded(), and ( ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), startsWith(variables['Build.SourceBranchName'], 'main'), not( contains(variables['Build.SourceBranchName'], 'update-dependencies') ) ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Generate change log
 
 # copy change log to artifacts directory
@@ -329,7 +329,7 @@ steps:
   env:
     MY_GITHUB_TOKEN: $(GitHubToken)
 
-# create or update GitHub release ON tags from release or master branches
+# create or update GitHub release ON tags from release or main branches
 - task: GitHubReleasePublish@1
   condition: and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), not( startsWith(variables['Build.SourceBranch'], 'refs/tags/v') ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Create/Update GitHub PREVIEW release 
@@ -349,7 +349,7 @@ steps:
     githubDeleteEmptyTag: true
     githubReleaseAsset: '$(Build.ArtifactStagingDirectory)/*.nupkg'
 
-# create or update GitHub release ON tags from release or master branches
+# create or update GitHub release ON tags from release or main branches
 - task: GitHubReleasePublish@1
   condition: and( succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'), not(contains(variables['Build.SourceBranch'], 'preview') ), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: Create/Update GitHub release
