@@ -3158,14 +3158,12 @@ namespace nanoFramework.Tools.Debugger
                         return false;
                     }
 
-#if DEBUG
                     if (System.Diagnostics.Debugger.IsAttached)
                     {
                         // check memory
                         var memCheck = CheckMemory((uint)block.StartAddress, block.DeploymentData);
                         Debug.Assert(memCheck, "Memory check Failed.");
                     }
-#endif
 
                     deployedBytes += block.DeploymentData.Length;
                 }
