@@ -2,7 +2,19 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.30.0-preview.1...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.3...HEAD)
+
+**Implemented enhancements:**
+
+- Enable write check on deployment [\#301](https://github.com/nanoframework/nf-debugger/pull/301)
+
+**Fixed bugs:**
+
+- Fix initialization of Expires in WP Request [\#302](https://github.com/nanoframework/nf-debugger/pull/302)
+
+## [v2.0.0-preview.3](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.3) (2021-05-07)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.30.0-preview.1...v2.0.0-preview.3)
 
 **Implemented enhancements:**
 
