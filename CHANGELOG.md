@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.3...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.6...HEAD)
+
+**Fixed bugs:**
+
+- Improving device watcher [\#303](https://github.com/nanoframework/nf-debugger/pull/303)
+
+## [v2.0.0-preview.6](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.6) (2021-05-08)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.3...v2.0.0-preview.6)
 
 **Implemented enhancements:**
 
