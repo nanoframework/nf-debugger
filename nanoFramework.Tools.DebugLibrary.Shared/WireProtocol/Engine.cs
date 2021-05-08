@@ -1388,7 +1388,7 @@ namespace nanoFramework.Tools.Debugger
 
 #region Commands implementation
 
-        private List<Commands.Monitor_MemoryMap.Range> GetMemoryMap()
+        public List<Commands.Monitor_MemoryMap.Range> GetMemoryMap()
         {
             Commands.Monitor_MemoryMap cmd = new Commands.Monitor_MemoryMap();
 
@@ -1461,7 +1461,7 @@ namespace nanoFramework.Tools.Debugger
             return null;
         }
 
-        private List<Commands.Monitor_FlashSectorMap.FlashSectorData> GetFlashSectorMap()
+        public List<Commands.Monitor_FlashSectorMap.FlashSectorData> GetFlashSectorMap()
         {
             IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_FlashSectorMap, 0, null);
 
