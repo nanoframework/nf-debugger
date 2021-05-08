@@ -108,6 +108,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             {
                                 // If the device is still plugged, it should appear as valid here, if not present, it means, the device has been disconnected
                                 string portDescription = (string)activePorts.GetValue($"{portNameDetails.Groups[2]}");
+                                int numPorts = (int)activePorts.GetValue("Count");
+                                if((portDescription == null) && (numPorts > 0))
+                                {
+                                    portDescription = (string)activePorts.GetValue($"{numPorts - 1}"); 
+                                }
+
                                 if (portDescription != null)
                                 {
                                     RegistryKey portKeyInfo = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{portDescription}\\Device Parameters");
