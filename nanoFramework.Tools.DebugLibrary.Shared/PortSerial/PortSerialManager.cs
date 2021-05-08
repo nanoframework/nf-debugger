@@ -611,7 +611,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     }
                 }
             }
-            catch
+            catch (Exception /* ex */)   // we could eat simple programming errors here - like a bad cast or other problem when changing code
             {
                 // "catch all" required because the device open & check calls might fail for a number of reasons
                 // if there is a deviceID, remove it from cache, just in case

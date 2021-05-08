@@ -19,7 +19,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public CancellationToken CancellationToken { get; }
         public TaskCompletionSource<IncomingMessage> TaskCompletionSource { get; }
 
-        public DateTimeOffset Expires { get; private set; } = DateTime.MaxValue;
+        public DateTimeOffset Expires { get; private set; } = DateTimeOffset.MaxValue;
 
         public DateTime RequestTimestamp { get; private set; }
 
