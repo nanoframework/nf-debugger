@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.8...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.11...HEAD)
+
+**Implemented enhancements:**
+
+- Work on serial device detection [\#305](https://github.com/nanoframework/nf-debugger/pull/305)
+
+## [v2.0.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.11) (2021-05-10)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.8...v2.0.0-preview.11)
 
 **Implemented enhancements:**
 
