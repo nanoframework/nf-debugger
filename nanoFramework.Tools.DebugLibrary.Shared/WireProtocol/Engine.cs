@@ -955,6 +955,8 @@ namespace nanoFramework.Tools.Debugger
             {
                 StopProcessing();
 
+                IsConnected = false;
+
                 Device.Disconnect(force);
 
                 _state.SetValue(EngineState.Value.Stopped, false);
