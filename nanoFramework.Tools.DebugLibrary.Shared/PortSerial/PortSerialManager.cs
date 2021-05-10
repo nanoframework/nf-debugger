@@ -491,7 +491,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         // try to "just" connect to the device meaning...
                         // ... don't request capabilities or force anything except the absolute minimum required, plus...
                         // ... it's OK to use a very short timeout as we'll be exchanging really short packets with the device
-                        if (device.DebugEngine.Connect(500))
+                        if (device.DebugEngine.Connect(NanoSerialDevice.SafeDefaultTimeout))
                         {
                             if (isKnownDevice)
                             {
@@ -592,6 +592,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     _devicesCache.TryAdd(
                         deviceId,
                         cachedDevice);
+
+                    // disconnect device
+                    device.DebugEngine.Stop(true);
                 }
                 else
                 {
