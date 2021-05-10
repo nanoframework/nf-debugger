@@ -11,10 +11,11 @@ using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
-    public class DeviceWatcher
+    public class DeviceWatcher : IDisposable
     {
         private bool _started = false;
         private List<string> _ports;
+        private Thread _threadWatch = null;
 
         public delegate void EventDeviceAdded(object sender, string port);
 
@@ -30,14 +31,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             if (!_started)
             {
-                var threadWatch = new Thread(() =>
+                _threadWatch = new Thread(() =>
                 {
                     _ports = new List<string>();
 
                     _started = true;
 
                     Status = DeviceWatcherStatus.Started;
-                    
+
                     while (_started)
                     {
                         var ports = GetPortNames();
@@ -81,7 +82,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 {
                     Priority = ThreadPriority.Lowest
                 };
-                threadWatch.Start();
+                _threadWatch.Start();
             }
         }
 
@@ -109,9 +110,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 // If the device is still plugged, it should appear as valid here, if not present, it means, the device has been disconnected
                                 string portDescription = (string)activePorts.GetValue($"{portNameDetails.Groups[2]}");
                                 int numPorts = (int)activePorts.GetValue("Count");
-                                if((portDescription == null) && (numPorts > 0))
+                                if ((portDescription == null) && (numPorts > 0))
                                 {
-                                    portDescription = (string)activePorts.GetValue($"{numPorts - 1}"); 
+                                    portDescription = (string)activePorts.GetValue($"{numPorts - 1}");
                                 }
 
                                 if (portDescription != null)
@@ -175,6 +176,18 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             _started = false;
             Status = DeviceWatcherStatus.Stopping;
+        }
+
+        public void Dispose()
+        {
+            Stop();
+
+            while (Status != DeviceWatcherStatus.Started)
+            {
+                Thread.Sleep(50);
+            }
+
+            _threadWatch = null;
         }
     }
 }
