@@ -23,11 +23,17 @@ namespace Serial_Test_App_WPF
         {
             Activated += App_Activated;
             Deactivated += App_Deactivated;
-
+            Exit += App_Exit;
             vml = new ViewModelLocator();
 
             var serialClient = CreateSerialDebugClient();
             ServiceLocator.Current.GetInstance<MainViewModel>().SerialDebugService = serialClient;
+        }
+
+        private void App_Exit(object sender, System.Windows.ExitEventArgs e)
+        {
+            var serialClient = ServiceLocator.Current.GetInstance<MainViewModel>().SerialDebugService;
+            serialClient.SerialDebugClient.StopDeviceWatchers();
         }
 
         private void App_Deactivated(object sender, EventArgs e)

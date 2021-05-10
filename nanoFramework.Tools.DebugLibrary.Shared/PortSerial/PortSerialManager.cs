@@ -161,12 +161,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 NanoFrameworkDevices.Remove(device);
 
                 device?.DebugEngine?.StopProcessing();
-                device?.DebugEngine?.Dispose();
-
-                device?.Disconnect();
-
-                // This closes the handle to the device
-                ((NanoDevice<NanoSerialDevice>)device)?.Dispose();
+                device?.DebugEngine?.Stop(true);
             }
 
             _watchersStarted = false;
