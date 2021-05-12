@@ -159,6 +159,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             if (Device != null &&
                 Device.IsOpen)
             {
+                // better make sure the RX FIFO it's cleared
+                Device.DiscardInBuffer();
+
                 return true;
             }
 
