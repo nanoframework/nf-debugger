@@ -672,6 +672,8 @@ namespace nanoFramework.Tools.Debugger
             {
                 var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
 
+                Thread.Yield();
+
                 var request = PerformRequestAsync(message, timeout);
 
                 try
@@ -1878,13 +1880,15 @@ namespace nanoFramework.Tools.Debugger
             };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
+            
             if (reply != null)
             {
-
                 if (reply.Payload is Commands.DebuggingExecutionChangeConditions.Reply cmdReply)
                 {
                     if (cmdReply.CurrentState != (uint)Commands.DebuggingExecutionChangeConditions.State.Unknown)
+                    {
                         return true;
+                    }
                 }
             }
 
