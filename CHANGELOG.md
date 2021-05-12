@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.11...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.13...HEAD)
+
+**Implemented enhancements:**
+
+- Improvements in serial comms [\#306](https://github.com/nanoframework/nf-debugger/pull/306)
+
+## [v2.0.0-preview.13](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.13) (2021-05-10)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.11...v2.0.0-preview.13)
 
 **Implemented enhancements:**
 
