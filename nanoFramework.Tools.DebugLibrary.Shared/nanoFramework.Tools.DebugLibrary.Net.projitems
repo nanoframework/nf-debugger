@@ -100,6 +100,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)SupportedUSBDevices\STM_Discovery4.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Commands.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\ConnectionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\ConnectPortResult.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Controller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\ControllerBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WireProtocol\Converter.cs" />

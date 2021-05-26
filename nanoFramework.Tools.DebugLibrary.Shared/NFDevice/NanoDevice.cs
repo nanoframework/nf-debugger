@@ -70,15 +70,15 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Connect to nanoFramework device
         /// </summary>
-        /// <returns>True if operation is successful</returns>
-        public bool Connect()
+        /// <returns><see cref="ConnectPortResult"/> result after attempting to connect to the device.</returns>
+        public ConnectPortResult Connect()
         {
             if (Device is NanoSerialDevice)
             {
                 return ConnectionPort.ConnectDevice();
             }
 
-            return false;
+            return ConnectPortResult.NotConnected;
         }
 
         /// <summary>

@@ -211,7 +211,7 @@ namespace nanoFramework.Tools.Debugger
             if (force || !IsConnected)
             {
                 // connect to device 
-                if (Device.Connect())
+                if (Device.Connect() == ConnectPortResult.Connected)
                 {
                     if (!IsRunning)
                     {
@@ -306,6 +306,13 @@ namespace nanoFramework.Tools.Debugger
                             SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
                         }
                     }
+                }
+                else
+                {
+                    // need to reset connection source
+                    _connectionSource = ConnectionSource.Unknown;
+
+                    goto connect_failed;
                 }
             }
 
@@ -830,6 +837,9 @@ namespace nanoFramework.Tools.Debugger
                 {
                     case Commands.c_Monitor_Ping:
                         {
+                            // signal that a monitor ping was received
+                            _pingEvent.Set();
+
                             Commands.Monitor_Ping.Reply cmdReply = new Commands.Monitor_Ping.Reply
                             {
                                 Source = Commands.Monitor_Ping.c_Ping_Source_Host,
@@ -845,9 +855,6 @@ namespace nanoFramework.Tools.Debugger
                                     cmdReply)
                                 );
 
-                            // signal that a monitor ping was received
-                            _pingEvent.Set();
-
                             return true;
                         }
 
@@ -859,7 +866,7 @@ namespace nanoFramework.Tools.Debugger
 
                             if (payload != null)
                             {
-                                _eventMessage?.Invoke(message, payload.ToString());
+                                Task.Factory.StartNew(() => _eventMessage?.Invoke(message, payload.ToString()));  
                             }
 
                             return true;
@@ -1783,7 +1790,7 @@ namespace nanoFramework.Tools.Debugger
                     IsConnected = false;
                 }
 
-                var rebootTimeout = 3 * DefaultTimeout;
+                var rebootTimeout = 5 * DefaultTimeout;
 
                 // wait for ping after reboot
                 log?.Report($"Waiting {rebootTimeout}ms for reboot...");

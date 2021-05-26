@@ -200,7 +200,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     newNanoFrameworkDevice.ConnectionPort = new PortSerial(this, newNanoFrameworkDevice);
                     newNanoFrameworkDevice.Transport = TransportType.Serial;
 
-                    if (newNanoFrameworkDevice.ConnectionPort.ConnectDevice())
+                    var connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
+
+                    if(connectResult == ConnectPortResult.Unauthorized)
+                    {
+                        OnLogMessageAvailable(NanoDevicesEventSource.Log.UnauthorizedAccessToDevice(deviceId));
+                    }
+                    else if (connectResult == ConnectPortResult.Connected)
                     {
                         if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice))
                         {
@@ -209,7 +215,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                             _serialDevices.Add(serialDevice);
 
-                            OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.DeviceId}"));
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
                         }
                         else
                         {
@@ -236,7 +242,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                             OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {newNanoFrameworkDevice.DeviceId} *** 2nd attempt ***"));
 
-                            if (newNanoFrameworkDevice.ConnectionPort.ConnectDevice())
+                            connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
+
+                            if (connectResult == ConnectPortResult.Unauthorized)
+                            {
+                                OnLogMessageAvailable(NanoDevicesEventSource.Log.UnauthorizedAccessToDevice(deviceId));
+                            }
+                            else if (connectResult == ConnectPortResult.Connected)
                             {
                                 if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice))
                                 {
@@ -245,7 +257,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                                     _serialDevices.Add(serialDevice);
 
-                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description} {newNanoFrameworkDevice.DeviceId}"));
+                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
                                 }
                                 else
                                 {
