@@ -2,7 +2,16 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.13...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.15...HEAD)
+
+**Implemented enhancements:**
+
+- Improve WP request send [\#308](https://github.com/nanoframework/nf-debugger/pull/308)
+- Improvements in port connection [\#307](https://github.com/nanoframework/nf-debugger/pull/307)
+
+## [v2.0.0-preview.15](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.15) (2021-05-12)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.13...v2.0.0-preview.15)
 
 **Implemented enhancements:**
 
