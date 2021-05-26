@@ -13,6 +13,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     public class Controller : IControllerLocal
     {
         private ushort lastOutboundMessage;
+        private DateTime _lastActivity;
         private readonly int nextEndpointId;
         private readonly object incrementLock = new object();
 
@@ -41,6 +42,24 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         private void ProcessExit()
         {
             App.ProcessExited();
+        }
+
+        public DateTime LastActivity
+        {
+            get
+            {
+                return _lastActivity;
+            }
+
+            internal set
+            {
+                _lastActivity = value;
+            }
+        }
+
+        public bool IsIdle()
+        {
+            return (DateTime.UtcNow - _lastActivity).TotalMilliseconds > 100;
         }
 
         public bool Send(MessageRaw raw)

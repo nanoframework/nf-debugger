@@ -526,12 +526,8 @@ namespace nanoFramework.Tools.Debugger
         {
             get
             {
-                //return m_portDefinition.LastActivity;
-                throw new NotImplementedException();
-
+                return _controlller.LastActivity;
             }
-
-            set { }
         }
 
         public bool ThrowOnCommunicationFailure { get; set; } = false;
