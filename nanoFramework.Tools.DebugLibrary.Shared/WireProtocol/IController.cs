@@ -27,5 +27,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         Converter CreateConverter();
 
         bool Send(MessageRaw raw);
+
+        bool IsIdle();
     }
 }

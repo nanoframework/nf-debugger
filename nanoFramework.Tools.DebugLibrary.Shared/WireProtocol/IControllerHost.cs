@@ -10,8 +10,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public interface IControllerHost
     {
-        DateTime LastActivity { get; set; }
-
         bool IsConnected { get; }
 
         bool IsCRC32EnabledForWireProtocol { get; }

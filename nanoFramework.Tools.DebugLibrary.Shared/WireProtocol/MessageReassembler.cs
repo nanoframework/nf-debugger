@@ -56,18 +56,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         /// </summary>
         private DateTime _messageEventTimeout;
 
-        /// <summary>
-        /// Time stamp of the last activity (data received).
-        /// </summary>
-        private DateTime _lastActivityTimeStamp;
-
         private DateTime _lastInactivityReport;
+        private TimeSpan _inactivityTime;
 
         public MessageReassembler(Controller parent)
         {
             _parent = parent;
             _state = ReceiveState.Initialize;
-            _lastActivityTimeStamp = DateTime.UtcNow;
+            _parent.LastActivity = DateTime.UtcNow;
         }
 
         public IncomingMessage GetCompleteMessage()
@@ -85,29 +81,29 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             int bytesRead;
             int sleepTime = 0;
 
-            var inactivityTime = (DateTime.UtcNow - _lastActivityTimeStamp);
+            _inactivityTime = (DateTime.UtcNow - _parent.LastActivity);
 
             // activity check, if not exiting idle state
             if (_state != ReceiveState.ExitingIdle)
             {
                 // progressive back-off 
-                if (inactivityTime.TotalMilliseconds >= MaxInactivityTime)
+                if (_inactivityTime.TotalMilliseconds >= MaxInactivityTime)
                 {
                     sleepTime = MaxBackoffTime;
                 }
-                else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep1)
+                else if (_inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep1)
                 {
                     sleepTime = BackoffTimeStep1;
                 }
-                else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep2)
+                else if (_inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep2)
                 {
                     sleepTime = BackoffTimeStep2;
                 }
-                else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep3)
+                else if (_inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep3)
                 {
                     sleepTime = BackoffTimeStep3;
                 }
-                else if (inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep4)
+                else if (_inactivityTime.TotalMilliseconds >= MaxInactivityTimeStep4)
                 {
                     sleepTime = BackoffTimeStep4;
                 }
@@ -137,7 +133,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                         if (DateTime.UtcNow > _lastInactivityReport)
                         {
-                            DebuggerEventSource.Log.WireProtocolReceiveState(_state, inactivityTime);
+                            DebuggerEventSource.Log.WireProtocolReceiveState(_state, _inactivityTime);
 
                             // reset 
                             _lastInactivityReport = DateTime.MinValue;
@@ -188,7 +184,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         // activity check
                         if (bytesRead > 0)
                         {
-                            _lastActivityTimeStamp = DateTime.UtcNow;
+                            _parent.LastActivity = DateTime.UtcNow;
                         }
 
                         // loop trying to find the markers in the stream
@@ -248,7 +244,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         // activity check
                         if (bytesRead > 0)
                         {
-                            _lastActivityTimeStamp = DateTime.UtcNow;
+                            _parent.LastActivity = DateTime.UtcNow;
                         }
 
                         if (bytesRead != count)
@@ -367,7 +363,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         // activity check
                         if (bytesRead > 0)
                         {
-                            _lastActivityTimeStamp = DateTime.UtcNow;
+                            _parent.LastActivity = DateTime.UtcNow;
                         }
 
                         if (bytesRead != count)

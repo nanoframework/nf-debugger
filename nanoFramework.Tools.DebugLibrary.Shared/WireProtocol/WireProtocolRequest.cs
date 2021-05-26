@@ -40,6 +40,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         internal bool PerformRequest(IController controller)
         {
+            // wait for controller to be idle
+            while(!controller.IsIdle())
+            {
+                Thread.Sleep(10);
+            }
+
             Debug.WriteLine($"Performing request");
 
             DebuggerEventSource.Log.WireProtocolTxHeader(OutgoingMessage.Base.Header.CrcHeader
