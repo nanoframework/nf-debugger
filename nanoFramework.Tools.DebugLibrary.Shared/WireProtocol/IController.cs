@@ -4,6 +4,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,6 +12,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public interface IController
     {
+        DateTime LastActivity { get; }
+
         ushort GetNextSequenceId();
 
         void StopProcessing();

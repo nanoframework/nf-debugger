@@ -64,7 +64,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         /// <returns>True if the device was successfully opened, false if the device could not be opened for well known reasons.
         /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
-        public bool OpenDevice()
+        public ConnectPortResult OpenDevice()
         {
             bool successfullyOpenedDevice = false;
             bool retry = false;
@@ -100,7 +100,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     successfullyOpenedDevice = true;
 
                     // set conservative timeouts
-                    Device.WriteTimeout = 500;
+                    Device.WriteTimeout = 5000;
                     Device.ReadTimeout = 500;
                     Device.ErrorReceived += Device_ErrorReceived;
 
@@ -112,6 +112,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     successfullyOpenedDevice = false;
                 }
             }
+            catch(UnauthorizedAccessException)
+            {
+                return ConnectPortResult.Unauthorized;
+            }
 #if DEBUG
             catch (Exception ex)
 #else
@@ -119,9 +123,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 #endif
             {
                 // catch all because the device open might fail for a number of reasons
+                return ConnectPortResult.ExceptionOccurred;
             }
 
-            return successfullyOpenedDevice;
+            return successfullyOpenedDevice ? ConnectPortResult.Connected : ConnectPortResult.NotConnected;
         }
 
 
@@ -153,7 +158,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         #endregion
 
-        public bool ConnectDevice()
+        public ConnectPortResult ConnectDevice()
         {
             // try to determine if we already have this device opened.
             if (Device != null &&
@@ -162,19 +167,24 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // better make sure the RX FIFO it's cleared
                 Device.DiscardInBuffer();
 
-                return true;
+                return ConnectPortResult.Connected;
             }
 
-            bool openDeviceResult = OpenDevice();
+            ConnectPortResult openDeviceResult = OpenDevice();
 
-            if (openDeviceResult)
+            if (openDeviceResult == ConnectPortResult.Connected)
             {
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.OpenDevice(InstanceId));
             }
-            else
+            else if (openDeviceResult == ConnectPortResult.Unauthorized)
             {
                 // Most likely the device is opened by another app, but cannot be sure
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Unknown error opening {InstanceId}, possibly opened by another app"));
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Can't open {InstanceId}, possibly opened by another app"));
+            }
+            else if (openDeviceResult == ConnectPortResult.ExceptionOccurred)
+            {
+                // Most likely the device is opened by another app, but cannot be sure
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Unknown error opening {InstanceId}"));
             }
 
             return openDeviceResult;

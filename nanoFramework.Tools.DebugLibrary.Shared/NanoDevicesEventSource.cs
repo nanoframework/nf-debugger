@@ -31,7 +31,7 @@ namespace nanoFramework.Tools.Debugger
         [Event(2, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string DeviceArrival(string deviceId)
         {
-            string logMessage = $"NanoDevices: new device arrival {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")} ";
+            string logMessage = $"NanoDevices: new device arrival {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")}";
 
             WriteEvent(2, logMessage);
 
@@ -87,6 +87,16 @@ namespace nanoFramework.Tools.Debugger
 
             return logMessage;
         }
+        
+        [Event(8, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
+        public string UnauthorizedAccessToDevice(string deviceId)
+        {
+            string logMessage = $"NanoDevices: can't open device {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")} possibly opened by another application";
+
+            WriteEvent(8, logMessage);
+
+            return logMessage;
+        }
 
         [Event(8, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string QuitDevice(string deviceId)
@@ -131,7 +141,7 @@ namespace nanoFramework.Tools.Debugger
         [Event(11, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string DeviceDeparture(string deviceId)
         {
-            string logMessage = $"NanoDevices: device departure {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")} ";
+            string logMessage = $"NanoDevices: device departure {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")}";
 
             WriteEvent(11, logMessage);
 

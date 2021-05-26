@@ -15,7 +15,7 @@ namespace nanoFramework.Tools.Debugger
 
         byte[] ReadBuffer(int bytesToRead);
 
-        bool ConnectDevice();
+        ConnectPortResult ConnectDevice();
 
         void DisconnectDevice(bool force = false);
     }
