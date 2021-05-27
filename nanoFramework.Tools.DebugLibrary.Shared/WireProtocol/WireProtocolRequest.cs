@@ -40,10 +40,23 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         internal bool PerformRequest(IController controller)
         {
+            const int sleepTimeMs = 10;
+            int attemptsCount = 10000 / sleepTimeMs;
+
             // wait for controller to be idle
-            while(!controller.IsIdle())
+            while (
+                !controller.IsIdle() &&
+                attemptsCount > 0)
             {
                 Thread.Sleep(10);
+
+                attemptsCount--;
+            }
+
+            if(attemptsCount == 0)
+            {
+                // timeout waiting for idle controller
+                return false;
             }
 
             Debug.WriteLine($"Performing request");
@@ -66,6 +79,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                 return true;
             }
+
+            // store start time
+            RequestTimestamp = DateTime.Now;
 
             return false;
         }

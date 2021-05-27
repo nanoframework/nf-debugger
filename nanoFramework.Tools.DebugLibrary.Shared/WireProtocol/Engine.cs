@@ -453,10 +453,7 @@ namespace nanoFramework.Tools.Debugger
                     stateFlagsToSet |= Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet;
                 }
 
-                SetExecutionMode(stateFlagsToSet, 0);
-
-                // done here
-                return true;
+                return SetExecutionMode(stateFlagsToSet, 0);
             }
 
             // device isn't connected

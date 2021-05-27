@@ -59,7 +59,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public bool IsIdle()
         {
-            return (DateTime.UtcNow - _lastActivity).TotalMilliseconds > 100;
+            return (DateTime.UtcNow - _lastActivity).TotalMilliseconds > 50;
         }
 
         public bool Send(MessageRaw raw)
