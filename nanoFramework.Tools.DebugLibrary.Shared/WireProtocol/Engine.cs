@@ -716,6 +716,9 @@ namespace nanoFramework.Tools.Debugger
                 {
                     if (!request.PerformRequest(_controlller))
                     {
+                        // report failure
+                        request.RequestAborted();
+
                         // send failed...
                         request.TaskCompletionSource.SetException(new InvalidOperationException());
                     }
