@@ -1739,13 +1739,14 @@ namespace nanoFramework.Tools.Debugger
             return reply != null && reply.IsPositiveAcknowledge();
         }
 
-        public void RebootDevice(
+        public bool RebootDevice(
             RebootOptions options = RebootOptions.NormalReboot,
             IProgress<string> log = null)
         {
             Commands.MonitorReboot cmd = new Commands.MonitorReboot();
 
             bool fThrowOnCommunicationFailureSav = ThrowOnCommunicationFailure;
+            bool rebootSuccessful = false;
 
             ThrowOnCommunicationFailure = false;
 
@@ -1795,10 +1796,14 @@ namespace nanoFramework.Tools.Debugger
                 if(_pingEvent.WaitOne(rebootTimeout))
                 {
                     log?.Report($"!! Device reboot confirmed !!");
+
+                    rebootSuccessful = true;
                 }
                 else
                 {
                     log?.Report($"ERROR: No activity detected from device after reboot...");
+
+                    rebootSuccessful = false;
                 }
             }
 #if DEBUG
@@ -1811,6 +1816,8 @@ namespace nanoFramework.Tools.Debugger
             {
                 ThrowOnCommunicationFailure = fThrowOnCommunicationFailureSav;
             }
+
+            return rebootSuccessful;
         }
 
         public bool Reconnect(bool fSoftReboot, int millisecondsTimeout = TIMEOUT_DEFAULT)
