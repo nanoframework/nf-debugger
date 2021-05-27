@@ -27,13 +27,30 @@ namespace nanoFramework.Tools.Debugger
         public Engine DebugEngine { get; set; }
 
         /// <summary>
-        /// Create a new debug engine for this nanoDevice.
+        /// Creates a new debug engine for this nanoDevice.
         /// </summary>
-        /// <param name="timeoutMilliseconds"></param>
-        public void CreateDebugEngine(int timeoutMilliseconds = 5000)
+        public void CreateDebugEngine()
         {
             DebugEngine = new Engine(this);
-            DebugEngine.DefaultTimeout = timeoutMilliseconds;
+
+            if (Transport == TransportType.Serial)
+            {
+                DebugEngine.DefaultTimeout = NanoSerialDevice.SafeDefaultTimeout;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Creates a new debug engine for this nanoDevice.
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        public void CreateDebugEngine(int timeoutMilliseconds)
+        {
+            DebugEngine = new Engine(this);
+            DebugEngine.DefaultTimeout = NanoSerialDevice.SafeDefaultTimeout;
         }
 
         /// <summary>
@@ -316,7 +333,6 @@ namespace nanoFramework.Tools.Debugger
                         }
 
                         if (fConnected = DebugEngine.Connect(
-                            1000,
                             true))
                         {
                             ret = (DebugEngine.GetConnectionSource() == ConnectionSource.nanoBooter);

@@ -250,7 +250,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             }
                             else if (connectResult == ConnectPortResult.Connected)
                             {
-                                if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice))
+                                if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice, true))
                                 {
                                     //add device to the collection
                                     NanoFrameworkDevices.Add(newNanoFrameworkDevice);
@@ -450,7 +450,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             OnDeviceEnumerationCompleted();
         }
 
-        private bool CheckValidNanoFrameworkSerialDevice(NanoDevice<NanoSerialDevice> device)
+        private bool CheckValidNanoFrameworkSerialDevice(
+            NanoDevice<NanoSerialDevice> device, 
+            bool longDelay = false)
         {
             bool validDevice = false;
             bool isKnownDevice = false;
@@ -471,7 +473,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     {
                         if (device.DebugEngine == null)
                         {
-                            device.CreateDebugEngine(NanoSerialDevice.SafeDefaultTimeout);
+                            device.CreateDebugEngine();
                         }
 
                         if (isKnownDevice)
@@ -484,21 +486,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             ((SerialPort)device.DeviceBase).BaudRate = baudRate;
                         }
 
-                        if (!((SerialPort)device.DeviceBase).IsOpen)
-                        {
-                            ((SerialPort)device.DeviceBase).Open();
-                        }
-
-                        // better flush the UART FIFOs
-                        ((SerialPort)device.DeviceBase).DiscardInBuffer();
-                        ((SerialPort)device.DeviceBase).DiscardOutBuffer();
-
                         OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {deviceId} @ { baudRate }"));
 
                         // try to "just" connect to the device meaning...
                         // ... don't request capabilities or force anything except the absolute minimum required, plus...
                         // ... it's OK to use a very short timeout as we'll be exchanging really short packets with the device
-                        if (device.DebugEngine.Connect(NanoSerialDevice.SafeDefaultTimeout))
+                        if (device.DebugEngine.Connect(
+                            longDelay ? 2 * NanoSerialDevice.SafeDefaultTimeout : NanoSerialDevice.SafeDefaultTimeout,
+                            true))
                         {
                             if (isKnownDevice)
                             {
