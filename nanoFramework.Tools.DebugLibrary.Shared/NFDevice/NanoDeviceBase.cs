@@ -377,20 +377,6 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            // check if the device is responsive
-            if (Ping() == ConnectionSource.Unknown)
-            {
-                log?.Report("Device not responding, attempting to reconnect...");
-
-                // it's not, try reconnect
-                if (!DebugEngine.Connect())
-                {
-                    log?.Report("*** ERROR: failed to reconnect to device ***");
-
-                    return false;
-                }
-            }
-
             if (!IsCLRDebuggerEnabled || 0 != (options & EraseOptions.Firmware))
             {
                 log?.Report("Connecting to nanoBooter...");

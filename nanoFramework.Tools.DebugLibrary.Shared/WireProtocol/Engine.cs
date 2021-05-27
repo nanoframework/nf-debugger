@@ -431,7 +431,7 @@ namespace nanoFramework.Tools.Debugger
                 Commands.Monitor_Ping cmd = new Commands.Monitor_Ping
                 {
                     Source = Commands.Monitor_Ping.c_Ping_Source_Host,
-                    Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
+                    Flags = StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0
                 };
 
                 IncomingMessage msg = PerformSyncRequest(Commands.c_Monitor_Ping, Flags.c_NoCaching, cmd);
@@ -446,7 +446,7 @@ namespace nanoFramework.Tools.Debugger
                 }
 
                 // get state flags to set
-                var stateFlagsToSet = Commands.DebuggingExecutionChangeConditions.State.SourceLevelDebugging;
+                Commands.DebuggingExecutionChangeConditions.State stateFlagsToSet = Commands.DebuggingExecutionChangeConditions.State.SourceLevelDebugging;
 
                 if (Silent)
                 {
@@ -1897,6 +1897,9 @@ namespace nanoFramework.Tools.Debugger
                 {
                     if (cmdReply.CurrentState != (uint)Commands.DebuggingExecutionChangeConditions.State.Unknown)
                     {
+                        // need to let the device settle after the command is executed
+                        Thread.Sleep(500);
+
                         return true;
                     }
                 }

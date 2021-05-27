@@ -486,14 +486,17 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             ((SerialPort)device.DeviceBase).BaudRate = baudRate;
                         }
 
+                        // better flush the UART FIFOs
+                        ((SerialPort)device.DeviceBase).DiscardInBuffer();
+                        ((SerialPort)device.DeviceBase).DiscardOutBuffer();
+
                         OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {deviceId} @ { baudRate }"));
 
                         // try to "just" connect to the device meaning...
                         // ... don't request capabilities or force anything except the absolute minimum required, plus...
                         // ... it's OK to use a very short timeout as we'll be exchanging really short packets with the device
                         if (device.DebugEngine.Connect(
-                            longDelay ? 2 * NanoSerialDevice.SafeDefaultTimeout : NanoSerialDevice.SafeDefaultTimeout,
-                            true))
+                            longDelay ? 2 * NanoSerialDevice.SafeDefaultTimeout : NanoSerialDevice.SafeDefaultTimeout))
                         {
                             if (isKnownDevice)
                             {
