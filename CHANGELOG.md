@@ -2,7 +2,21 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.15...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.18...HEAD)
+
+**Implemented enhancements:**
+
+- Reboot now returns operation result [\#312](https://github.com/nanoframework/nf-debugger/pull/312)
+- Improvements in device detection [\#309](https://github.com/nanoframework/nf-debugger/pull/309)
+
+**Fixed bugs:**
+
+- Fix set execution [\#311](https://github.com/nanoframework/nf-debugger/pull/311)
+- Improve handling of WP request execution [\#310](https://github.com/nanoframework/nf-debugger/pull/310)
+
+## [v2.0.0-preview.18](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.18) (2021-05-26)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.15...v2.0.0-preview.18)
 
 **Implemented enhancements:**
 
