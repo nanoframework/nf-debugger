@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.18...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.23...HEAD)
+
+**Implemented enhancements:**
+
+- General improvements [\#313](https://github.com/nanoframework/nf-debugger/pull/313)
+
+## [v2.0.0-preview.23](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.23) (2021-05-27)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.18...v2.0.0-preview.23)
 
 **Implemented enhancements:**
 
