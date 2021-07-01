@@ -158,9 +158,9 @@ namespace nanoFramework.Tools.Debugger
         public ConnectionSource ConnectionSource { get => _connectionSource; set => _connectionSource = value; }
 #pragma warning restore S2292 // Trivial properties should be auto-implemented
 
-        public bool IsConnectedTonanoCLR => _connectionSource == ConnectionSource.nanoCLR;
+        public bool IsConnectedTonanoCLR => IsConnected && _connectionSource == ConnectionSource.nanoCLR;
 
-        public bool IsConnectedTonanoBooter => _connectionSource == ConnectionSource.nanoBooter;
+        public bool IsConnectedTonanoBooter => IsConnected && _connectionSource == ConnectionSource.nanoBooter;
 
         public bool IsTargetBigEndian { get; internal set; }
 
@@ -444,6 +444,8 @@ namespace nanoFramework.Tools.Debugger
                     // done here
                     return false;
                 }
+
+                Thread.Sleep(10);
 
                 // get state flags to set
                 Commands.DebuggingExecutionChangeConditions.State stateFlagsToSet = Commands.DebuggingExecutionChangeConditions.State.SourceLevelDebugging;
@@ -959,6 +961,9 @@ namespace nanoFramework.Tools.Debugger
             if (_state.SetValue(EngineState.Value.Stopping, false))
             {
                 StopProcessing();
+
+                // need to reset flag
+                _connectionSource = ConnectionSource.Unknown;
 
                 IsConnected = false;
 
@@ -1804,6 +1809,8 @@ namespace nanoFramework.Tools.Debugger
                     log?.Report($"ERROR: No activity detected from device after reboot...");
 
                     rebootSuccessful = false;
+
+                    ConnectionSource = ConnectionSource.Unknown;
                 }
             }
 #if DEBUG
