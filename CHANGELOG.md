@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.23...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.25...HEAD)
+
+**Implemented enhancements:**
+
+- Improvements related with connection [\#314](https://github.com/nanoframework/nf-debugger/pull/314)
+
+## [v2.0.0-preview.25](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.25) (2021-05-27)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.23...v2.0.0-preview.25)
 
 **Implemented enhancements:**
 
