@@ -41,7 +41,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             ulong key = KeyFromTypeToken(type, token);
 
-            return m_lookup[key];
+            // need to use a try method because the key may not exist
+            m_lookup.TryGetValue(key, out object typeValue);
+
+            return typeValue;
         }
 
         public void Add(Type type, uint token, object val)
