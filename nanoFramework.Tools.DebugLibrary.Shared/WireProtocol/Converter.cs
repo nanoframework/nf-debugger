@@ -84,7 +84,15 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             while (t != null)
             {
-                foreach (FieldInfo f in t.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+#pragma warning disable S3011 // OK to use BindingFlags.NonPublic otherwise we couldn't access all the required fields
+                FieldInfo[] fieldTypes = t.GetFields(BindingFlags.DeclaredOnly
+                                                     | BindingFlags.Instance
+                                                     | BindingFlags.Public
+                                                     | BindingFlags.NonPublic);
+#pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
+
+                // filter out the PropertyChanged field
+                foreach (FieldInfo f in fieldTypes.Where(f => f.Name != "PropertyChanged"))
                 {
                     // only process fields that are not marked with IgnoreDataMember attribute
                     if (f.GetCustomAttribute<IgnoreDataMemberAttribute>(false) == null)

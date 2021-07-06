@@ -4435,12 +4435,13 @@ namespace nanoFramework.Tools.Debugger
                 // no need to erase configuration block, just update what's required
 
                 // serialize the configuration block
-                var configurationSerialized = GetDeviceConfigurationSerialized(configuration);
+                byte[] configurationSerialized = GetDeviceConfigurationSerialized(configuration);
 
                 // counters to manage the chunked update process
                 int count = configurationSerialized.Length;
                 int position = 0;
                 int attemptCount = 1;
+
 
                 // flag to signal the update operation success/failure
                 bool updateFailed = true;
@@ -4522,28 +4523,28 @@ namespace nanoFramework.Tools.Debugger
         {   
             if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
             {
-                var configBase = configuration as DeviceConfiguration.NetworkConfigurationProperties;
+                DeviceConfiguration.NetworkConfigurationProperties configBase = configuration as DeviceConfiguration.NetworkConfigurationProperties;
                 return CreateConverter().Serialize((NetworkConfigurationBase)configBase);
             }
             else if (configuration.GetType().Equals(typeof(DeviceConfiguration.Wireless80211ConfigurationProperties)))
             {
-                var configBase = configuration as DeviceConfiguration.Wireless80211ConfigurationProperties;
+                DeviceConfiguration.Wireless80211ConfigurationProperties configBase = configuration as DeviceConfiguration.Wireless80211ConfigurationProperties;
                 return CreateConverter().Serialize((Wireless80211ConfigurationBase)configBase);
             }
             else if (configuration.GetType().Equals(typeof(DeviceConfiguration.WirelessAPConfigurationProperties)))
             {
-                var configBase = configuration as DeviceConfiguration.WirelessAPConfigurationProperties;
+                DeviceConfiguration.WirelessAPConfigurationProperties configBase = configuration as DeviceConfiguration.WirelessAPConfigurationProperties;
                 return CreateConverter().Serialize((WirelessAPConfigurationBase)configBase);
             }
             else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
             {
-                var configBase = configuration as DeviceConfiguration.X509CaRootBundleProperties;
-                return CreateConverter().Serialize(configBase);
+                DeviceConfiguration.X509CaRootBundleProperties configBase = configuration as DeviceConfiguration.X509CaRootBundleProperties;
+                return CreateConverter().Serialize((X509CaRootBundleBase)configBase);
             }
             else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509DeviceCertificatesProperties)))
             {
-                var configBase = configuration as DeviceConfiguration.X509DeviceCertificatesProperties;
-                return CreateConverter().Serialize(configBase);
+                DeviceConfiguration.X509DeviceCertificatesProperties configBase = configuration as DeviceConfiguration.X509DeviceCertificatesProperties;
+                return CreateConverter().Serialize((X509DeviceCertificatesBase)configBase);
             }
             else
             {
