@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.28...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.30...HEAD)
+
+**Implemented enhancements:**
+
+- Certificate update to device are now more robust [\#316](https://github.com/nanoframework/nf-debugger/pull/316)
+
+## [v2.0.0-preview.30](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.30) (2021-07-02)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.28...v2.0.0-preview.30)
 
 **Fixed bugs:**
 
