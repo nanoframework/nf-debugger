@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.30...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.32...HEAD)
+
+**Fixed bugs:**
+
+- Fix packet size for targets requiring program alignment [\#317](https://github.com/nanoframework/nf-debugger/pull/317)
+
+## [v2.0.0-preview.32](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.32) (2021-07-06)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.30...v2.0.0-preview.32)
 
 **Implemented enhancements:**
 
