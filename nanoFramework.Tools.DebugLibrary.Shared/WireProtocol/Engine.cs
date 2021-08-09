@@ -1559,7 +1559,7 @@ namespace nanoFramework.Tools.Debugger
                 // get packet length, either the maximum allowed size or whatever is still available to TX
                 int packetLength = Math.Min(GetPacketMaxLength(cmd), count);
 
-                if(programAligment != 0 && packetLength % programAligment != 0)
+                if(programAligment != 0 && packetLength % programAligment != 0 && packetLength > programAligment)
                 {
                     packetLength -= packetLength % programAligment;
                 }
@@ -1568,7 +1568,7 @@ namespace nanoFramework.Tools.Debugger
 
                 DebuggerEventSource.Log.EngineWriteMemory(address, packetLength);
 
-                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_WriteMemory, 0, cmd);
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_WriteMemory, 0, cmd, 2 * DefaultTimeout);
 
                 if (reply != null)
                 {
