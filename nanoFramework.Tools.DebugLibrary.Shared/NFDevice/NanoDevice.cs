@@ -7,6 +7,7 @@
 using nanoFramework.Tools.Debugger.WireProtocol;
 using PropertyChanged;
 using System;
+using nanoFramework.Tools.Debugger.PortTcpIp;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -73,11 +74,11 @@ namespace nanoFramework.Tools.Debugger
         /// <returns><see cref="ConnectPortResult"/> result after attempting to connect to the device.</returns>
         public ConnectPortResult Connect()
         {
-            if (Device is NanoSerialDevice)
+            if (Device is NanoSerialDevice || Device is NanoNetworkDevice)
             {
                 return ConnectionPort.ConnectDevice();
             }
-
+            
             return ConnectPortResult.NotConnected;
         }
 

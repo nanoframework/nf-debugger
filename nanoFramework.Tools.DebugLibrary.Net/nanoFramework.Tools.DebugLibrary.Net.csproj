@@ -67,6 +67,7 @@
     <Compile Include="BinaryFormatter.cs" />
     <Compile Include="PortDefinitions\PortBase.cs" />
     <Compile Include="PortSerial\SerialPort.cs" />
+    <Compile Include="PortTcpIp\PortTcpIp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
