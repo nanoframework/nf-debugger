@@ -94,7 +94,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux()
                 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX()
                 : RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? GetPortNames_FreeBSD()
-                : GetPortNamesWindows();
+                : GetPortNames_Windows();
         }
 
         private List<string> GetPortNames_Linux()
@@ -206,7 +206,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return ports;
         }
 
-        private List<string> GetPortNamesWindows()
+        private List<string> GetPortNames_Windows()
         {
             const string FindFullPathPattern = @"\\\\\?\\([\w]*)#([\w&]*)#([\w&]*)";
             const string RegExPattern = @"\\Device\\([a-zA-Z]*)(\d)";
