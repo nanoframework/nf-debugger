@@ -2,7 +2,16 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.32...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.34...HEAD)
+
+**Implemented enhancements:**
+
+- Improved Linux SerialPort lookup [\#320](https://github.com/nanoframework/nf-debugger/pull/320)
+- Add UNIX support for PortSerial [\#319](https://github.com/nanoframework/nf-debugger/pull/319)
+
+## [v2.0.0-preview.34](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.34) (2021-08-09)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.32...v2.0.0-preview.34)
 
 **Fixed bugs:**
 
