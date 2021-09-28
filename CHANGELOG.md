@@ -2,7 +2,16 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.34...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.38...HEAD)
+
+**Implemented enhancements:**
+
+- Add timeout to PerformSyncRequest [\#321](https://github.com/nanoframework/nf-debugger/pull/321)
+- TCP/IP debugger port implementation [\#318](https://github.com/nanoframework/nf-debugger/pull/318)
+
+## [v2.0.0-preview.38](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.38) (2021-09-27)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.34...v2.0.0-preview.38)
 
 **Implemented enhancements:**
 
