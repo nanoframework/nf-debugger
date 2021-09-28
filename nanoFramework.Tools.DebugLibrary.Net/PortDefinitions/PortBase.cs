@@ -5,6 +5,8 @@
 
 using nanoFramework.Tools.Debugger.PortSerial;
 using System.Collections.Generic;
+using nanoFramework.Tools.Debugger.PortComposite;
+using nanoFramework.Tools.Debugger.PortTcpIp;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -28,6 +30,21 @@ namespace nanoFramework.Tools.Debugger
         public static PortBase CreateInstanceForSerial(bool startDeviceWatchers, List<string> portExclusionList = null, int bootTime = 1000)
         {
             return new PortSerialManager(startDeviceWatchers, portExclusionList, bootTime);
+        }
+        
+        public static PortBase CreateInstanceForNetwork()
+        {
+            return new PortTcpIpDeviceManager();
+        }
+        
+        public static PortBase CreateInstanceForNetwork(int discoveryPort)
+        {
+            return new PortTcpIpDeviceManager(true, discoveryPort);
+        }
+        
+        public static PortBase CreateInstanceForComposite(IEnumerable<PortBase> ports)
+        {
+            return new PortCompositeDeviceManager(ports);
         }
     }
 }

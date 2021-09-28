@@ -14,6 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using nanoFramework.Tools.Debugger.Extensions;
+using nanoFramework.Tools.Debugger.PortTcpIp;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -33,14 +34,12 @@ namespace nanoFramework.Tools.Debugger
         {
             DebugEngine = new Engine(this);
 
-            if (Transport == TransportType.Serial)
+            DebugEngine.DefaultTimeout = Transport switch
             {
-                DebugEngine.DefaultTimeout = NanoSerialDevice.SafeDefaultTimeout;
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
+                TransportType.Serial => NanoSerialDevice.SafeDefaultTimeout,
+                TransportType.TcpIp => NanoNetworkDevice.SafeDefaultTimeout,
+                _ => throw new NotImplementedException()
+            };
         }
 
         /// <summary>
