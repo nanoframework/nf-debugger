@@ -652,7 +652,11 @@ namespace nanoFramework.Tools.Debugger
                 {
                     if (request != null)
                     {
-                        Task.WaitAll(request);
+                        if(!Task.WaitAll(new Task[] { request }, timeout))
+                        {
+                            // wait timed out
+                            return null;
+                        }
                     }
                     else
                     {
