@@ -20,7 +20,9 @@ namespace nanoFramework.Tools.Debugger.PortComposite
         public PortCompositeDeviceManager(IEnumerable<PortBase> ports)
         {
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
+
             _ports.AddRange(ports);
+
             SubscribeToPortEvents();
         }
 
@@ -40,9 +42,11 @@ namespace nanoFramework.Tools.Debugger.PortComposite
                 case NotifyCollectionChangedAction.Reset:
                     NanoFrameworkDevices.Clear();
                     break;
+
                 case NotifyCollectionChangedAction.Add:
                     e.NewItems.Cast<NanoDeviceBase>().ToList().ForEach(d => NanoFrameworkDevices.Add(d));
                     break;
+
                 case NotifyCollectionChangedAction.Remove:
                     e.OldItems.Cast<NanoDeviceBase>().ToList().ForEach(d => NanoFrameworkDevices.Remove(d));
                     break;
@@ -61,7 +65,7 @@ namespace nanoFramework.Tools.Debugger.PortComposite
 
         public override void StopDeviceWatchers()
         {
-            _ports.ForEach(p => p.StartDeviceWatchers());
+            _ports.ForEach(p => p.StopDeviceWatchers());
         }
 
         public override void ReScanDevices()
