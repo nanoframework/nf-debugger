@@ -2,7 +2,20 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.38...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.41...HEAD)
+
+**Implemented enhancements:**
+
+- Fixes in composite and tcp ports [\#324](https://github.com/nanoframework/nf-debugger/pull/324)
+- Add method to log WP payload content [\#323](https://github.com/nanoframework/nf-debugger/pull/323)
+
+**Documentation and other chores:**
+
+- Update NuGets [\#322](https://github.com/nanoframework/nf-debugger/pull/322)
+
+## [v2.0.0-preview.41](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.41) (2021-09-28)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.38...v2.0.0-preview.41)
 
 **Implemented enhancements:**
 
