@@ -8,7 +8,6 @@ using System;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace nanoFramework.Tools.Debugger.WireProtocol
 {
@@ -388,6 +387,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                 {
                                     _messageRaw.Payload = null;
                                 }
+
+                                DebuggerEventSource.Log.OutputPayload(_messageRaw.Payload);
 
                                 _parent.App.ProcessMessage(GetCompleteMessage(), fReply);
 
