@@ -23,6 +23,8 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         private Thread _threadWatch = null;
         private UdpClient _udpClient;
 
+        private readonly AutoResetEvent _watcherStopped = new(false);
+
         public delegate void EventDeviceAdded(object sender, NetworkNanoDeviceInformation deviceInfo);
 
         public event EventDeviceAdded Added;
@@ -38,61 +40,85 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             _discoveryPort = discoveryPort;
         }
 
+        public NetworkWatcher()
+        {
+        }
+
         public void Stop()
         {
-            _udpClient.Close();
-            _started = false;
-            Status = DeviceWatcherStatus.Stopping;
+            // can stop only if it was started
+            if (_udpClient != null)
+            {
+                _udpClient.Close();
+
+                _started = false;
+
+                Status = DeviceWatcherStatus.Stopping;
+            }
         }
 
         public void Start()
         {
-            _udpClient = new UdpClient();
-            _udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, _discoveryPort));
-            if (_started) return;
-
-            _threadWatch = new Thread(() =>
+            if (!_started)
             {
-                _started = true;
+                _udpClient = new UdpClient(_discoveryPort);
 
-                Status = DeviceWatcherStatus.Started;
+                IPEndPoint listeningPort = new IPEndPoint(IPAddress.Any, _discoveryPort);
 
-                var from = new IPEndPoint(0, 0);
-
-                while (_started)
+                _threadWatch = new Thread(() =>
                 {
-                    var message = Encoding.ASCII.GetString(_udpClient.Receive(ref from));
-                    ProcessDiscoveryMessage(message);
-                }
+                    _started = true;
 
-                Status = DeviceWatcherStatus.Stopped;
-            })
-            {
-                Priority = ThreadPriority.Lowest
-            };
-            _threadWatch.Start();
+                    Status = DeviceWatcherStatus.Started;
+
+                    while (_started)
+                    {
+                        var message = Encoding.ASCII.GetString(_udpClient.Receive(ref listeningPort));
+                        ProcessDiscoveryMessage(message);
+                    }
+
+                    Status = DeviceWatcherStatus.Stopped;
+
+                // signal watcher stopped
+                _watcherStopped.Set();
+
+                })
+                {
+                    Priority = ThreadPriority.Lowest
+                };
+
+                _threadWatch.Start();
+            }
         }
 
         private void ProcessDiscoveryMessage(string message)
         {
             if (string.IsNullOrEmpty(message))
+            {
                 return;
+            }
 
             var tokens = message.Split(new[] {TokenSeparator});
+
             if (tokens.Length < 3)
+            {
                 return;
+            }
 
             var command = tokens[0];
             var host = tokens[1];
 
             if (!int.TryParse(tokens[2], out var port))
+            {
                 return;
+            }
             
             switch (command)
             {
                 case CommandDeviceStart:
                     Added?.Invoke(this, new NetworkNanoDeviceInformation(host, port));
                     break;
+
                 case CommandDeviceStop:
                     Removed?.Invoke(this, new NetworkNanoDeviceInformation(host, port));
                     break;
@@ -101,14 +127,15 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         public void Dispose()
         {
+            // try stop the watcher
             Stop();
 
-            while (Status != DeviceWatcherStatus.Started)
-            {
-                Thread.Sleep(50);
-            }
 
-            _udpClient.Dispose();
+            // wait 3 seconds for the watcher to be stopped
+            _watcherStopped.WaitOne(TimeSpan.FromSeconds(3));
+
+            _udpClient?.Dispose();
+
             _threadWatch = null;
         }
     }
