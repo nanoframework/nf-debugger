@@ -9,9 +9,10 @@ using System.Diagnostics;
 namespace nanoFramework.Tools.Debugger
 {
     using System;
-    using System.Diagnostics.Tracing;
-    using WireProtocol;
     using System.Collections.Generic;
+    using System.Diagnostics.Tracing;
+    using System.Linq;
+    using WireProtocol;
 
     [EventSource(Name = "nanoFramework-Debugger")]
     internal class DebuggerEventSource : EventSource
@@ -197,6 +198,26 @@ namespace nanoFramework.Tools.Debugger
         public void EngineWriteMemory(uint address, int length)
         {
             Debug.WriteLine($"WriteMemory: @0x{address.ToString("X08")}; LEN=0x{length.ToString("X08")}");
+        }
+
+        [Event(6)]
+        public void OutputPayload(byte[] payload, int maxBytes = 32)
+        {
+            if (payload == null)
+            {
+                Debug.WriteLine($"Payload:----");
+            }
+            else
+            {
+                // get max bytes to handle
+                var count = Math.Min(maxBytes, payload.Length);
+
+                // copy buffer to output
+                byte[] tempBuffer = new byte[count];
+                Array.Copy(payload, tempBuffer, count);
+
+                Debug.WriteLine($"Payload: {string.Join("-", tempBuffer.Select(b => $"{b:X2}"))}");
+            }
         }
 
         private DebuggerEventSource()
