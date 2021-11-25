@@ -5,17 +5,17 @@
     <version>$version$</version>
     <title>.NET nanoFramework debug library (.NET)</title>
     <authors>nanoFramework project contributors</authors>
-    <owners>nanoFramework project contributors,dotnetfoundation</owners>
+    <owners>nanoframework,dotnetfoundation</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="file">LICENSE.md</license>
+    <releaseNotes>
+    </releaseNotes>
+    <readme>docs\README.md</readme>
     <projectUrl>https://github.com/nanoframework/nf-debugger</projectUrl>
     <icon>images\nf-logo.png</icon>
-    <iconUrl>https://secure.gravatar.com/avatar/97d0e092247f0716db6d4b47b7d1d1ad</iconUrl>
     <repository type="git" url="https://github.com/nanoframework/nf-debugger" commit="$commit$" />
     <copyright>Copyright (c) .NET Foundation and Contributors</copyright>
     <description>This .NET library provides a debug client for .NET nanoFramework devices using USB or Serial connection to a board.</description>
-    <releaseNotes>This package provides the .NET version of the debug library.
-    </releaseNotes>
     <tags>nanoFramework C# csharp netmf netnf</tags>
     <dependencies>
       <dependency id="Polly" version="7.2.1" />
@@ -30,5 +30,6 @@
       <file src="bin\Release\nanoFramework.Tools.Debugger.Net.pdb" target="lib/net472" />
       <file src="..\assets\nf-logo.png" target="images" />
       <file src="..\LICENSE.md" target="" />
+      <file src="..\README.md" target="docs\" />
   </files>
 </package>

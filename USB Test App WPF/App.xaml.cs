@@ -49,12 +49,12 @@ namespace Serial_Test_App_WPF
         private INFSerialDebugClientService CreateSerialDebugClient()
         {
             // add here any COM ports to exclude from the search
-            var devicesToExclude = new List<string>() { "COM15" };
+            var devicesToExclude = new List<string>() { "COM3", "COM4", "COM14" };
 
             var composite = PortBase.CreateInstanceForComposite(new[]
             {
                 PortBase.CreateInstanceForSerial(devicesToExclude), 
-                PortBase.CreateInstanceForNetwork() 
+                //PortBase.CreateInstanceForNetwork() 
             });
 
             return new NFSerialDebugClientService(composite);

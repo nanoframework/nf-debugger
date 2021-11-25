@@ -1,11 +1,11 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_nf-debugger&metric=alert_status)](https://sonarcloud.io/dashboard?id=nanoframework_nf-debugger) [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_nf-debugger&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=nanoframework_nf-debugger) [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/nanoframework/Home/blob/main/LICENSE) [![#yourfirstpr](https://img.shields.io/badge/first--timers--only-friendly-blue.svg)](https://github.com/nanoframework/Home/blob/main/CONTRIBUTING.md) [![Discord](https://img.shields.io/discord/478725473862549535.svg)](https://discord.gg/gCyBu8T)
 
 
-![nanoFramework logo](https://github.com/nanoframework/Home/blob/main/resources/logo/nanoFramework-repo-logo.png)
+![nanoFramework logo](https://raw.githubusercontent.com/nanoframework/Home/main/resources/logo/nanoFramework-repo-logo.png)
 
 -----
 
-### Welcome to the **nanoFramework** debugger libraries repository!
+### Welcome to the .NET **nanoFramework** debugger libraries repository
 
 The debugger library provides debugging and communication capabilities to .NET applications and allows debugging and communicate with .NET **nanoFramework** devices.
 It's provided as source code and as a NuGet package that can be integrated on any application.
@@ -37,7 +37,7 @@ The nanoFramework debugger library is licensed under the [MIT license](LICENSE.m
 
 ## Code of Conduct
 
-This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behavior in our community.
+This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behaviour in our community.
 For more information see the [.NET Foundation Code of Conduct](https://dotnetfoundation.org/code-of-conduct).
 
 ### .NET Foundation

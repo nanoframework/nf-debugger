@@ -379,31 +379,38 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             // Blinky v1.0.0.0 (752 bytes)
             // assemblies to device...total size in bytes is 47032.
 
-            var p1Size = 38448;
-            var p2Size = 2568;
-            var p3Size = 3800;
-            var p4Size = 752;
+            var p1Size = 644;
+            var p2Size = 2116;
+            var p3Size = 3412;
+            var p4Size = 5684;
 
             assemblies.Add(new byte[p1Size]);
-            assemblies[0][0] = 0xDE;
-            assemblies[0][1] = 0xAD;
-            assemblies[0][2] = 0xBE;
-            assemblies[0][3] = 0xEF;
+
+            for (int i = 0; i < p1Size; i++)
+            {
+                assemblies[0][i] = (byte)i;
+            }
+
             assemblies.Add(new byte[p2Size]);
-            assemblies[1][0] = 0xDE;
-            assemblies[1][1] = 0xAD;
-            assemblies[1][2] = 0xBE;
-            assemblies[1][3] = 0xEF;
+
+            for (int i = 0; i < p2Size; i++)
+            {
+                assemblies[1][i] = (byte)i;
+            }
+
             assemblies.Add(new byte[p3Size]);
-            assemblies[2][0] = 0xDE;
-            assemblies[2][1] = 0xAD;
-            assemblies[2][2] = 0xBE;
-            assemblies[2][3] = 0xEF;
+
+            for (int i = 0; i < p3Size; i++)
+            {
+                assemblies[2][i] = (byte)i;
+            }
+
             assemblies.Add(new byte[p4Size]);
-            assemblies[3][0] = 0xDE;
-            assemblies[3][1] = 0xAD; 
-            assemblies[3][0] = 0xBE;
-            assemblies[3][1] = 0xEF;
+
+            for (int i = 0; i < p4Size; i++)
+            {
+                assemblies[3][i] = (byte)i;
+            }
 
             var totalSize = p1Size + p2Size + p3Size + p4Size;
 
@@ -871,7 +878,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                 };
 
                 // write device configuration to device
-                var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newDeviceNetworkConfiguration, 0);
+                //var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newDeviceNetworkConfiguration, 0);
 
                 //// add new wireless 802.11 configuration
                 //DeviceConfiguration.Wireless80211ConfigurationProperties newWireless80211Configuration = new DeviceConfiguration.Wireless80211ConfigurationProperties()
@@ -894,14 +901,21 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                 // NEED TO ADD A TERMINATOR TO THE STRING              //
                 /////////////////////////////////////////////////////////
 
-                string caRootBundle = baltimoreCACertificate + letsEncryptCACertificate + "\0";
+                //string caRootBundle = baltimoreCACertificate + letsEncryptCACertificate + "\0";
 
-                byte[] certificateRaw = Encoding.UTF8.GetBytes(caRootBundle);
+                //byte[] certificateRaw = Encoding.UTF8.GetBytes(caRootBundle);
 
-                newX509CertificateBundle.Certificate = certificateRaw;
+                using (FileStream binFile = new FileStream(@"C:\Users\JoséSimões\Downloads\DigiCertGlobalRootCA.crt", FileMode.Open))
+                {
+                    newX509CertificateBundle.Certificate = new byte[binFile.Length];
+                    binFile.Read(newX509CertificateBundle.Certificate, 0, (int)binFile.Length);
+                    newX509CertificateBundle.CertificateSize = (uint)binFile.Length;
+                }
+
+                //newX509CertificateBundle.Certificate = certificateRaw;
 
                 // write CA certificate to device
-                returnValue = device.DebugEngine.UpdateDeviceConfiguration(newX509CertificateBundle, 0);
+                var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newX509CertificateBundle, 0);
 
                 Debug.WriteLine("");
                 Debug.WriteLine("");
