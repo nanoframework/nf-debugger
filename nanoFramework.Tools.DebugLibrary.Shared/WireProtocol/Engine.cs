@@ -901,6 +901,18 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
+        public void ReplyBadPacket(uint flags)
+        {
+            PerformRequestAsync(
+                new OutgoingMessage(
+                    _controlller.GetNextSequenceId(),
+                    _controlller.CreateConverter(),
+                    Commands.c_Monitor_Ping,
+                    flags | Flags.c_NonCritical | Flags.c_NACK,
+                    null)
+                );
+        }
+
         public void SpuriousCharacters(byte[] buf, int offset, int count)
         {
             m_lastNoise = DateTime.Now;

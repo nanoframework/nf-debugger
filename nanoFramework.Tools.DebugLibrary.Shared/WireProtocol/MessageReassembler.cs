@@ -330,6 +330,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
                         DebuggerEventSource.Log.WireProtocolReceiveState(_state);
 
+                        if ((_messageBase.Header.Flags & Flags.c_NonCritical) == 0)
+                        {
+                            _parent.App.ReplyBadPacket(Flags.c_BadHeader);
+                        }
+
                         break;
 
                     case ReceiveState.ReadingPayload:
@@ -412,6 +417,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         _state = ReceiveState.Initialize;
 
                         DebuggerEventSource.Log.WireProtocolReceiveState(_state);
+
+                        if ((_messageBase.Header.Flags & Flags.c_NonCritical) == 0)
+                        {
+                            _parent.App.ReplyBadPacket(Flags.c_BadPayload);
+                        }
 
                         break;
                 }

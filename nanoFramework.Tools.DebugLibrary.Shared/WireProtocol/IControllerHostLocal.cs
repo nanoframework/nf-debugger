@@ -17,6 +17,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         byte[] ReadBuffer(int bytesToRead);
 
         int AvailableBytes { get; }
+
+        void ReplyBadPacket(uint flags);
     }
 }
 
