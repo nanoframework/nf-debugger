@@ -12,11 +12,8 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Event that is raised when a log message is available.
         /// </summary>
-        public event EventHandler<StringEventArgs> LogMessageAvailable;
+        public abstract event EventHandler<StringEventArgs> LogMessageAvailable;
 
-        protected virtual void OnLogMessageAvailable(string message)
-        {
-            LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
-        }
+        //public abstract void OnLogMessageAvailable(string text);
     }
 }

@@ -16,7 +16,7 @@ namespace nanoFramework.Tools.Debugger.PortComposite
     {
         private readonly List<PortBase> _ports = new List<PortBase>();
         public override event EventHandler DeviceEnumerationCompleted;
-        public new event EventHandler<StringEventArgs> LogMessageAvailable;
+        public override event EventHandler<StringEventArgs> LogMessageAvailable;
 
         public PortCompositeDeviceManager(IEnumerable<PortBase> ports)
         {

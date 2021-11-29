@@ -9,7 +9,7 @@ using System.Net.Sockets;
 
 namespace nanoFramework.Tools.Debugger.PortTcpIp
 {
-    public partial class PortTcpIp : PortMessageBase, IPort
+    public class PortTcpIp : PortMessageBase, IPort
     {
         private readonly PortTcpIpDeviceManager _portManager;
 
@@ -20,6 +20,8 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         private NanoNetworkDevice NanoNetworkDevice => NanoDevice.Device;
 
         private string InstanceId => NanoDevice.DeviceId;
+
+        public override event EventHandler<StringEventArgs> LogMessageAvailable;
 
         public PortTcpIp(PortTcpIpDeviceManager portManager, NanoDevice<NanoNetworkDevice> networkDevice, NetworkNanoDeviceInformation deviceInformation)
         {
@@ -131,6 +133,11 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         {
             NanoNetworkDevice.Close();
             NanoNetworkDevice.Dispose();
+        }
+
+        private void OnLogMessageAvailable(string message)
+        {
+            LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
         }
     }
 }

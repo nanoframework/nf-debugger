@@ -12,9 +12,10 @@ using System.Threading;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
-    public partial class PortSerial : PortMessageBase, IPort
+    public class PortSerial : PortMessageBase, IPort
     {
         private readonly PortSerialManager _portManager;
+        public override event EventHandler<StringEventArgs> LogMessageAvailable;
 
         public SerialPort Device => (SerialPort)NanoDevice.DeviceBase;
 
@@ -203,6 +204,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 _portManager.DisposeDevice(InstanceId);
             }
+        }
+        private void OnLogMessageAvailable(string message)
+        {
+            LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
         }
 
         #region Interface implementations
