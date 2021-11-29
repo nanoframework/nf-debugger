@@ -37,10 +37,10 @@ git checkout --quiet develop | Out-Null
 
 Write-Host "Updating nanoFramework.Tools.Debugger.Net package in VS2019 & VS2022 solution..."
 
-dotnet remove VisualStudio.Extension-2019\VisualStudio.Extension.csproj package nanoFramework.Tools.Debugger.Net
-dotnet add VisualStudio.Extension-2019\VisualStudio.Extension.csproj package nanoFramework.Tools.Debugger.Net --prerelease
-dotnet remove VisualStudio.Extension-2022\VisualStudio.Extension.csproj package nanoFramework.Tools.Debugger.Net
-dotnet add VisualStudio.Extension-2022\VisualStudio.Extension.csproj package nanoFramework.Tools.Debugger.Net --prerelease
+dotnet remove VisualStudio.Extension-2019/VisualStudio.Extension-vs2019.csproj package nanoFramework.Tools.Debugger.Net
+dotnet add VisualStudio.Extension-2019/VisualStudio.Extension-vs2019.csproj package nanoFramework.Tools.Debugger.Net --prerelease
+dotnet remove VisualStudio.Extension-2022/VisualStudio.Extension-vs2022.csproj package nanoFramework.Tools.Debugger.Net
+dotnet add VisualStudio.Extension-2022/VisualStudio.Extension-vs2022.csproj package nanoFramework.Tools.Debugger.Net --prerelease
 
 #####################
 
