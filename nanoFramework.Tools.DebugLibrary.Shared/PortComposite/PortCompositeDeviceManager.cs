@@ -16,6 +16,7 @@ namespace nanoFramework.Tools.Debugger.PortComposite
     {
         private readonly List<PortBase> _ports = new List<PortBase>();
         public override event EventHandler DeviceEnumerationCompleted;
+        public new event EventHandler<StringEventArgs> LogMessageAvailable;
 
         public PortCompositeDeviceManager(IEnumerable<PortBase> ports)
         {
@@ -32,7 +33,13 @@ namespace nanoFramework.Tools.Debugger.PortComposite
             {
                 p.DeviceEnumerationCompleted += OnPortDeviceEnumerationCompleted;
                 p.NanoFrameworkDevices.CollectionChanged += OnPortNanoFrameworkDevicesOnCollectionChanged;
+                p.LogMessageAvailable += OnLogMessageAvailable;
             });
+        }
+
+        private void OnLogMessageAvailable(object sender, StringEventArgs e)
+        {
+            LogMessageAvailable?.Invoke(this, new StringEventArgs(e.EventText));
         }
 
         private void OnPortNanoFrameworkDevicesOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
