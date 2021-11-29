@@ -660,6 +660,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Event that is raised when enumeration of all watched devices is complete.
         /// </summary>
         public override event EventHandler DeviceEnumerationCompleted;
+        public override event EventHandler<StringEventArgs> LogMessageAvailable;
 
         #endregion
 
@@ -679,6 +680,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             var deviceIDCollection = value.Substring(startIndex, endIndex - startIndex).Split('#');
 
             return deviceIDCollection?.GetValue(2) as string;
+        }
+
+        private void OnLogMessageAvailable(string message)
+        {
+            LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
         }
     }
 }

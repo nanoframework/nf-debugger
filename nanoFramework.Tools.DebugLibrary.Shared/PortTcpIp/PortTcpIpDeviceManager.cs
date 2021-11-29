@@ -487,10 +487,16 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             DeviceEnumerationCompleted?.Invoke(this, new EventArgs());
         }
 
+        private void OnLogMessageAvailable(string message)
+        {
+            LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
+        }
+
         /// <summary>
         /// Event that is raised when enumeration of all watched devices is complete.
         /// </summary>
         public override event EventHandler DeviceEnumerationCompleted;
+        public override event EventHandler<StringEventArgs> LogMessageAvailable;
 
         #endregion
     }
