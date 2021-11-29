@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.41...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.45...HEAD)
+
+**Implemented enhancements:**
+
+- Add LogMessageAvailable event to PortComposite [\#325](https://github.com/nanoframework/nf-debugger/pull/325)
+
+## [v2.0.0-preview.45](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.45) (2021-11-09)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.41...v2.0.0-preview.45)
 
 **Implemented enhancements:**
 
