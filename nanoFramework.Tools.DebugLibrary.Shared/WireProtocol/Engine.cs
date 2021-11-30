@@ -1570,6 +1570,9 @@ namespace nanoFramework.Tools.Debugger
 
             while (count > 0)
             {
+                progress?.Report(new MessageWithProgress($"Deploying { startLenght + position }/{totalLenght} bytes...", (uint)(startLenght + position), (uint)totalLenght));
+                log?.Report($"Deploying { startLenght + position }/{ totalLenght } bytes.");
+
                 Commands.Monitor_WriteMemory cmd = new Commands.Monitor_WriteMemory();
 
                 // get packet length, either the maximum allowed size or whatever is still available to TX
@@ -1610,9 +1613,6 @@ namespace nanoFramework.Tools.Debugger
 
                     return (AccessMemoryErrorCodes.Unknown, false);
                 }
-
-                progress?.Report(new MessageWithProgress($"Deployed { startLenght + position }/{totalLenght} bytes...", (uint)(startLenght + position), (uint)totalLenght));
-                log?.Report($"Deployed { startLenght + position }/{ totalLenght } bytes.");
             }
 
             return (AccessMemoryErrorCodes.NoError, true);
@@ -1635,7 +1635,8 @@ namespace nanoFramework.Tools.Debugger
                 programAligment,
                 startLenght,
                 totalLenght,
-                progress);
+                progress,
+                log);
         }
 
         public bool CheckMemory(uint address, byte[] buf, int offset, int length)
