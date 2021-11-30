@@ -18,13 +18,24 @@ namespace nanoFramework.Tools.Debugger.PortComposite
         public override event EventHandler DeviceEnumerationCompleted;
         public override event EventHandler<StringEventArgs> LogMessageAvailable;
 
-        public PortCompositeDeviceManager(IEnumerable<PortBase> ports)
+        public PortCompositeDeviceManager(
+            IEnumerable<PortBase> ports,
+            bool startDeviceWatchers = true)
         {
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
 
             _ports.AddRange(ports);
 
             SubscribeToPortEvents();
+
+
+            Task.Factory.StartNew(() =>
+            {
+                if (startDeviceWatchers)
+                {
+                    _ports.ForEach(p => p.StartDeviceWatchers());
+                }
+            });
         }
 
         private void SubscribeToPortEvents()

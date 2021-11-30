@@ -32,19 +32,19 @@ namespace nanoFramework.Tools.Debugger
             return new PortSerialManager(startDeviceWatchers, portExclusionList, bootTime);
         }
         
-        public static PortBase CreateInstanceForNetwork()
+        public static PortBase CreateInstanceForNetwork(bool startDeviceWatchers)
         {
-            return new PortTcpIpDeviceManager();
+            return new PortTcpIpDeviceManager(startDeviceWatchers);
         }
         
-        public static PortBase CreateInstanceForNetwork(int discoveryPort)
+        public static PortBase CreateInstanceForNetwork(bool startDeviceWatchers, int discoveryPort)
         {
-            return new PortTcpIpDeviceManager(true, discoveryPort);
+            return new PortTcpIpDeviceManager(startDeviceWatchers, discoveryPort);
         }
         
-        public static PortBase CreateInstanceForComposite(IEnumerable<PortBase> ports)
+        public static PortBase CreateInstanceForComposite(IEnumerable<PortBase> ports, bool startDeviceWatchers)
         {
-            return new PortCompositeDeviceManager(ports);
+            return new PortCompositeDeviceManager(ports, startDeviceWatchers);
         }
     }
 }
