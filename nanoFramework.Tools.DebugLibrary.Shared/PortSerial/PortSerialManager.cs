@@ -4,7 +4,6 @@
 //
 
 using Microsoft.Win32;
-using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.Serial;
 using nanoFramework.Tools.Debugger.WireProtocol;
 using Polly;
@@ -22,7 +21,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 {
     public partial class PortSerialManager : PortBase
     {
-        private readonly DeviceWatcher _deviceWatcher = new();
+        private readonly DeviceWatcher _deviceWatcher;
 
         // Serial device watchers started flag
         private bool _watchersStarted = false;
@@ -51,6 +50,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
             _serialDevices = new List<SerialDeviceInformation>();
+
+            _deviceWatcher = new(this);
 
             BootTime = bootTime;
 
@@ -202,7 +203,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                     var connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
 
-                    if(connectResult == ConnectPortResult.Unauthorized)
+                    if (connectResult == ConnectPortResult.Unauthorized)
                     {
                         OnLogMessageAvailable(NanoDevicesEventSource.Log.UnauthorizedAccessToDevice(deviceId));
                     }
@@ -451,7 +452,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         }
 
         private bool CheckValidNanoFrameworkSerialDevice(
-            NanoDevice<NanoSerialDevice> device, 
+            NanoDevice<NanoSerialDevice> device,
             bool longDelay = false)
         {
             bool validDevice = false;
@@ -682,7 +683,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return deviceIDCollection?.GetValue(2) as string;
         }
 
-        private void OnLogMessageAvailable(string message)
+        internal void OnLogMessageAvailable(string message)
         {
             LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
         }

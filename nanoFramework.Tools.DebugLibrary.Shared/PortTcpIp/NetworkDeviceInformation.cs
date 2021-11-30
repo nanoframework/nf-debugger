@@ -5,14 +5,14 @@
 
 namespace nanoFramework.Tools.Debugger.PortTcpIp
 {
-    public class NetworkNanoDeviceInformation
+    public class NetworkDeviceInformation
     {
         public string Host { get; set; }
         public int Port { get; set; }
-        
+
         public string DeviceId => $"tcpip://{Host}:{Port}";
 
-        public NetworkNanoDeviceInformation(string host, int port)
+        public NetworkDeviceInformation(string host, int port)
         {
             Host = host;
             Port = port;

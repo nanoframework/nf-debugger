@@ -11,7 +11,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 {
     public class PortTcpIp : PortMessageBase, IPort
     {
-        private readonly PortTcpIpDeviceManager _portManager;
+        private readonly PortTcpIpManager _portManager;
 
         private NetworkStream _stream;
 
@@ -23,7 +23,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         public override event EventHandler<StringEventArgs> LogMessageAvailable;
 
-        public PortTcpIp(PortTcpIpDeviceManager portManager, NanoDevice<NanoNetworkDevice> networkDevice, NetworkNanoDeviceInformation deviceInformation)
+        public PortTcpIp(PortTcpIpManager portManager, NanoDevice<NanoNetworkDevice> networkDevice, NetworkDeviceInformation deviceInformation)
         {
             _portManager = portManager ?? throw new ArgumentNullException(nameof(portManager));
             NanoDevice = networkDevice ?? throw new ArgumentNullException(nameof(networkDevice));
