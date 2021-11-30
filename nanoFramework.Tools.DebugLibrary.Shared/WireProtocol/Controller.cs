@@ -17,6 +17,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         private readonly int nextEndpointId;
         private readonly object incrementLock = new object();
 
+        /// <summary>
+        /// Threshold for considering the communication channel idle.
+        /// </summary>
+        /// <remarks>
+        /// The default idle time is 100ms.
+        /// </remarks>
+        public TimeSpan IdleThreshold { get; set; } = TimeSpan.FromMilliseconds(100);
+
         public IControllerHostLocal App { get; internal set; }
 
         public CLRCapabilities Capabilities { get; set; }
@@ -59,7 +67,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public bool IsIdle()
         {
-            return (DateTime.UtcNow - _lastActivity).TotalMilliseconds > 50;
+            return (DateTime.UtcNow - _lastActivity).TotalMilliseconds > IdleThreshold.TotalMilliseconds;
         }
 
         public bool Send(MessageRaw raw)
