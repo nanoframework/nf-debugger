@@ -189,10 +189,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                         // loop trying to find the markers in the stream
                         while (_rawPos > 0)
                         {
-                            int flag_Debugger = ValidMarker(_markerDebugger);
-                            int flag_Packet = ValidMarker(_markerPacket);
+                            var debuggerMarkerPresence = ValidMarker(_markerDebugger);
+                            var packetMarkerPresence = ValidMarker(_markerPacket);
 
-                            if (flag_Debugger == 1 || flag_Packet == 1)
+                            if (debuggerMarkerPresence == MarkerPresence.Present
+                                || packetMarkerPresence == MarkerPresence.Present)
                             {
                                 _state = ReceiveState.ReadingHeader;
                                 
@@ -201,7 +202,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                                 goto case ReceiveState.ReadingHeader;
                             }
 
-                            if (flag_Debugger == 0 || flag_Packet == 0)
+                            if (debuggerMarkerPresence == MarkerPresence.PresentButOutOfSync
+                                || packetMarkerPresence == MarkerPresence.PresentButOutOfSync)
                             {
                                 break; 
                             }
@@ -436,20 +438,32 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
-        private int ValidMarker(byte[] marker)
+        private MarkerPresence ValidMarker(byte[] marker)
         {
-            Debug.Assert(marker != null && marker.Length == Packet.SIZE_OF_MARKER);
+            if (marker is null)
+            {
+                throw new ArgumentNullException(nameof(marker));
+            }
+
+            Debug.Assert(marker.Length == Packet.SIZE_OF_MARKER);
+            
             int markerSize = Packet.SIZE_OF_MARKER;
             int iMax = Math.Min(_rawPos, markerSize);
 
             for (int i = 0; i < iMax; i++)
             {
-                if (_messageRaw.Header[i] != marker[i]) return -1;
+                if (_messageRaw.Header[i] != marker[i])
+                {
+                    return MarkerPresence.NotPresent;
+                }
             }
 
-            if (_rawPos < markerSize) return 0;
+            if (_rawPos < markerSize)
+            {
+                return MarkerPresence.PresentButOutOfSync;
+            }
 
-            return 1;
+            return MarkerPresence.Present;
         }
 
         private bool VerifyHeader()
@@ -496,6 +510,24 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     return true;
                 }
             }
+        }
+
+        private enum MarkerPresence
+        {
+            /// <summary>
+            /// Marker is not present.
+            /// </summary>
+            NotPresent = -1,
+
+            /// <summary>
+            /// Marker is present but not at the expected position.
+            /// </summary>
+            PresentButOutOfSync = 0,
+
+            /// <summary>
+            /// Marker is present at the expected position.
+            /// </summary>
+            Present = 1
         }
     }
 }
