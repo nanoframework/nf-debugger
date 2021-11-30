@@ -17,7 +17,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         private const char TokenSeparator = ':';
         private const string CommandDeviceStart = "+";
         private const string CommandDeviceStop = "-";
-        
+
         private readonly int _discoveryPort;
         private bool _started = false;
         private Thread _threadWatch = null;
@@ -61,30 +61,53 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         {
             if (!_started)
             {
-                _udpClient = new UdpClient(_discoveryPort);
-
-                IPEndPoint listeningPort = new IPEndPoint(IPAddress.Any, _discoveryPort);
-
-                _threadWatch = new Thread(() =>
+                _threadWatch = new Thread(async () =>
                 {
+                    _udpClient = new UdpClient();
+                    _udpClient.ExclusiveAddressUse = false;
+                    _udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+                    IPEndPoint listeningPort = new IPEndPoint(IPAddress.Any, _discoveryPort);
+
+                    _udpClient.Client.Bind(listeningPort);
+
                     _started = true;
 
                     Status = DeviceWatcherStatus.Started;
 
                     while (_started)
                     {
-                        var message = Encoding.ASCII.GetString(_udpClient.Receive(ref listeningPort));
-                        ProcessDiscoveryMessage(message);
+                        try
+                        {
+                            var discoveryPacket = await _udpClient.ReceiveAsync();
+
+                            // get address from device
+                            // TODO
+                            // discoveryPacket.RemoteEndPoint;
+
+                            var message = Encoding.ASCII.GetString(discoveryPacket.Buffer);
+
+                            ProcessDiscoveryMessage(message);
+                        }
+#if DEBUG
+                        catch (Exception ex)
+#else
+                        catch
+#endif
+                        {
+                            // catch all so the listener can be always listening
+                            // on exception caused by the socket being closed, the thread will exit on the while loop condition
+                        }
                     }
 
                     Status = DeviceWatcherStatus.Stopped;
 
-                // signal watcher stopped
-                _watcherStopped.Set();
+                    // signal watcher stopped
+                    _watcherStopped.Set();
 
                 })
                 {
-                    Priority = ThreadPriority.Lowest
+                    IsBackground = true
                 };
 
                 _threadWatch.Start();
@@ -98,7 +121,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 return;
             }
 
-            var tokens = message.Split(new[] {TokenSeparator});
+            var tokens = message.Split(new[] { TokenSeparator });
 
             if (tokens.Length < 3)
             {
@@ -112,7 +135,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             {
                 return;
             }
-            
+
             switch (command)
             {
                 case CommandDeviceStart:
@@ -129,7 +152,6 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         {
             // try stop the watcher
             Stop();
-
 
             // wait 3 seconds for the watcher to be stopped
             _watcherStopped.WaitOne(TimeSpan.FromSeconds(3));
