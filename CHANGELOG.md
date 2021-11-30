@@ -6,7 +6,18 @@
 
 **Implemented enhancements:**
 
+- Remove idle check from WP requests [\#333](https://github.com/nanoframework/nf-debugger/pull/333)
+- Rework valid marker detection [\#331](https://github.com/nanoframework/nf-debugger/pull/331)
+- Work Ports and PortManagers [\#330](https://github.com/nanoframework/nf-debugger/pull/330)
+- Fix network watcher [\#329](https://github.com/nanoframework/nf-debugger/pull/329)
+- Add parameter to network port managers to control watchers [\#328](https://github.com/nanoframework/nf-debugger/pull/328)
+- Add processing for bad WP packets [\#327](https://github.com/nanoframework/nf-debugger/pull/327)
+- Work on PortBase class [\#326](https://github.com/nanoframework/nf-debugger/pull/326)
 - Add LogMessageAvailable event to PortComposite [\#325](https://github.com/nanoframework/nf-debugger/pull/325)
+
+**Fixed bugs:**
+
+- Fix output of progress when deploying [\#332](https://github.com/nanoframework/nf-debugger/pull/332)
 
 ## [v2.0.0-preview.45](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.45) (2021-11-09)
 
