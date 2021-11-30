@@ -34,12 +34,12 @@ namespace nanoFramework.Tools.Debugger
         
         public static PortBase CreateInstanceForNetwork(bool startDeviceWatchers)
         {
-            return new PortTcpIpDeviceManager(startDeviceWatchers);
+            return new PortTcpIpManager(startDeviceWatchers);
         }
         
         public static PortBase CreateInstanceForNetwork(bool startDeviceWatchers, int discoveryPort)
         {
-            return new PortTcpIpDeviceManager(startDeviceWatchers, discoveryPort);
+            return new PortTcpIpManager(startDeviceWatchers, discoveryPort);
         }
         
         public static PortBase CreateInstanceForComposite(IEnumerable<PortBase> ports, bool startDeviceWatchers)

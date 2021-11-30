@@ -20,7 +20,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         
         public int AvailableBytes => _networkClient?.Connected == true ? _networkClient.Available : -1; 
         
-        public NetworkNanoDeviceInformation NetworkDeviceInformation { get; set; }
+        public NetworkDeviceInformation NetworkDeviceInformation { get; set; }
 
         public NetworkStream Connect()
         {

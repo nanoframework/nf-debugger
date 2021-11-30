@@ -1,4 +1,4 @@
-﻿namespace nanoFramework.Tools.Debugger.PortSerial
+﻿namespace nanoFramework.Tools.Debugger
 {
     public enum DeviceWatcherStatus
     {
