@@ -717,18 +717,14 @@ namespace nanoFramework.Tools.Debugger
 
             try
             {
-                // Start a background task that will complete tcs1.Task
-                Task.Factory.StartNew(() =>
+                if (!request.PerformRequest(_controlller))
                 {
-                    if (!request.PerformRequest(_controlller))
-                    {
-                        // report failure
-                        request.RequestAborted();
+                    // report failure
+                    request.RequestAborted();
 
-                        // send failed...
-                        request.TaskCompletionSource.SetException(new InvalidOperationException());
-                    }
-                });
+                    // send failed...
+                    request.TaskCompletionSource.SetException(new InvalidOperationException());
+                }
             }
             catch (Exception ex)
             {
@@ -1587,14 +1583,36 @@ namespace nanoFramework.Tools.Debugger
 
                 DebuggerEventSource.Log.EngineWriteMemory(address, packetLength);
 
-                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_WriteMemory, 0, cmd, 2 * DefaultTimeout);
+                IncomingMessage reply = PerformSyncRequest(
+                    Commands.c_Monitor_WriteMemory,
+                    Flags.c_NoFlags,
+                    cmd,
+                    3 * DefaultTimeout);
 
                 if (reply != null)
                 {
                     Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
 
-                    if (!reply.IsPositiveAcknowledge() ||
-                        (AccessMemoryErrorCodes)cmdReply.ErrorCode != AccessMemoryErrorCodes.NoError)
+                    // check for no reply
+                    if (reply is null)
+                    {
+                        progress?.Report(new MessageWithProgress(""));
+                        log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). No reply from nanoDevice.");
+
+                        return (AccessMemoryErrorCodes.NoError, false);
+                    }
+                    
+                    // check for negative reply
+                    if (!reply.IsPositiveAcknowledge())
+                    {
+                        progress?.Report(new MessageWithProgress(""));
+                        log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Write operation failed.");
+
+                        return (AccessMemoryErrorCodes.NoError, false);
+                    }
+
+                    // check for error code in memory access
+                    if ((AccessMemoryErrorCodes)cmdReply.ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
                         progress?.Report(new MessageWithProgress(""));
                         log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Error code: {cmdReply.ErrorCode}.");
@@ -1613,6 +1631,8 @@ namespace nanoFramework.Tools.Debugger
 
                     return (AccessMemoryErrorCodes.Unknown, false);
                 }
+
+                Thread.Sleep(1);
             }
 
             return (AccessMemoryErrorCodes.NoError, true);
@@ -1662,7 +1682,7 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        public bool CheckMemory(uint address, byte[] buf)
+        public bool PerformWriteMemoryCheck(uint address, byte[] buf)
         {
             return CheckMemory(address, buf, 0, buf.Length);
         }
@@ -3201,12 +3221,9 @@ namespace nanoFramework.Tools.Debugger
                         return false;
                     }
 
-                    if (System.Diagnostics.Debugger.IsAttached)
-                    {
-                        // check memory
-                        var memCheck = CheckMemory((uint)block.StartAddress, block.DeploymentData);
-                        Debug.Assert(memCheck, "Memory check Failed.");
-                    }
+                    // check memory
+                    var memCheck = PerformWriteMemoryCheck((uint)block.StartAddress, block.DeploymentData);
+                    Debug.Assert(memCheck, "Memory check Failed.");
 
                     deployedBytes += block.DeploymentData.Length;
                 }

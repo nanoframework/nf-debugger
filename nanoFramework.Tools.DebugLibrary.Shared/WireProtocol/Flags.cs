@@ -8,6 +8,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 {
     public class Flags
     {
+        /// <summary>
+        /// Constant for empty flags.
+        /// </summary>
+        public const ushort c_NoFlags = 0;
+
         public const ushort c_NonCritical = 0x0001; // This doesn't need an acknowledge.
         public const ushort c_Reply = 0x0002; // This is the result of a command.
         public const ushort c_BadHeader = 0x0004;
