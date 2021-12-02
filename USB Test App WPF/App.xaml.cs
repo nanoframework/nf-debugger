@@ -53,9 +53,9 @@ namespace Serial_Test_App_WPF
 
             var composite = PortBase.CreateInstanceForComposite(new[]
             {
-                PortBase.CreateInstanceForSerial(devicesToExclude), 
+                PortBase.CreateInstanceForSerial(false, devicesToExclude), 
                 //PortBase.CreateInstanceForNetwork() 
-            });
+            }, true);
 
             return new NFSerialDebugClientService(composite);
         }

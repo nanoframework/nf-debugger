@@ -724,7 +724,7 @@ namespace nanoFramework.Tools.Debugger
             uint address,
             IProgress<string> progress = null)
         {
-            if (!DebugEngine.CheckMemory(address, buffer))
+            if (!DebugEngine.PerformWriteMemoryCheck(address, buffer))
             {
                 progress?.Report($"Verification failed.");
 
