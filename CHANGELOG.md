@@ -2,7 +2,15 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.45...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.60...HEAD)
+
+**Implemented enhancements:**
+
+- Improve write memory operation [\#334](https://github.com/nanoframework/nf-debugger/pull/334)
+
+## [v2.0.0-preview.60](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.60) (2021-11-30)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.45...v2.0.0-preview.60)
 
 **Implemented enhancements:**
 
