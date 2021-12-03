@@ -118,7 +118,12 @@ steps:
   displayName: NBGV prepare release
 
 - task: SonarCloudPrepare@1
-  condition: and( ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true'))
+  condition: >-
+    and(
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    )
   displayName: 'Prepare analysis on SonarCloud'
   inputs:
     SonarCloud: 'sonarcloud-debugger'
@@ -126,24 +131,27 @@ steps:
     scannerMode: 'MSBuild'
     projectKey: 'nanoframework_nf-debugger'
 
-- task: NuGetToolInstaller@1
+- template: azure-pipelines-templates/install-nuget.yml@templates
+
+- task: NuGetCommand@2
   condition: >-
     and(
       succeeded(),
-      eq(variables['StartReleaseCandidate'], false)
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
     )
-  displayName: 'Install specific version of NuGet'
-  inputs:
-    versionSpec: '>=5.10.0'
-
-- task: NuGetCommand@2
-  condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
   displayName: NuGet restore
   inputs:
     restoreSolution: '$(solution)'
 
 - task: VSBuild@1
-  condition: and( ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true'))
+  condition: >-
+    and(
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    )
   inputs:
     solution: '$(solution)'
     platform: '$(buildPlatform)'
@@ -190,7 +198,13 @@ steps:
       Write-Host "Build version is $env:NBGV_AssemblyVersion"  
 
 - task: NuGetCommand@2
-  condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    )
   displayName: Pack .NET NuGet package
   inputs:
     command: 'custom'
@@ -204,11 +218,23 @@ steps:
 #     configuration: '$(buildConfiguration)'
 
 - task: SonarCloudAnalyze@1
-  condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    )
   displayName: 'Run Code Analysis'
 
 - task: SonarCloudPublish@1
-  condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    )
   inputs:
     pollingTimeoutSec: '300'
 
@@ -218,7 +244,8 @@ steps:
       succeeded(),
       eq(variables['System.PullRequest.PullRequestId'], ''),
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true')
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
     )
   displayName: Setup Ruby
   inputs:
@@ -304,7 +331,13 @@ steps:
       git -c http.extraheader="AUTHORIZATION: $auth" push origin "HEAD:$(Build.SourceBranchName)"
 
 - task: CopyFiles@1
-  condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    )
   displayName: Collecting deployable artifacts
   inputs:
     sourceFolder: $(Build.SourcesDirectory)
@@ -321,7 +354,8 @@ steps:
       succeeded(),
       eq(variables['StartReleaseCandidate'], false),
       eq(variables['System.PullRequest.PullRequestId'], ''),
-      eq(variables['UPDATE_DEPENDENTS'], 'false')
+      eq(variables['UPDATE_DEPENDENTS'], 'false'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
     )
   inputs:
     command: custom
@@ -346,7 +380,8 @@ steps:
       succeeded(),
       eq(variables['StartReleaseCandidate'], false),
       eq(variables['System.PullRequest.PullRequestId'], ''),
-      eq(variables['UPDATE_DEPENDENTS'], 'false')
+      eq(variables['UPDATE_DEPENDENTS'], 'false'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
     )
 
 # publish artifacts (only possible if this is not a PR originated on a fork)
@@ -356,7 +391,8 @@ steps:
       succeeded(),
       ne(variables['system.pullrequest.isfork'], true),
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true')
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
     )
   displayName: Publish deployables artifacts
   inputs:
@@ -370,7 +406,8 @@ steps:
     and(
       succeeded(),
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true')
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
     )
   displayName: Push NuGet packages to Azure Artifacts
   inputs:
@@ -387,7 +424,8 @@ steps:
       succeeded(),
       eq(variables['System.PullRequest.PullRequestId'], ''),
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true')
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
     )
   continueOnError: true
   displayName: Push NuGet packages to NuGet
@@ -451,6 +489,7 @@ steps:
     )
   displayName:  Create/Update GitHub stable release
   inputs:
+    action: edit
     gitHubConnection: 'github.com_nano-$(System.TeamProject)'
     tagSource: userSpecifiedTag
     tag: v$(MY_NUGET_VERSION)
