@@ -704,14 +704,14 @@ namespace nanoFramework.Tools.Debugger
             int programAligment = 0,
             IProgress<string> progress = null)
         {
-            (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.WriteMemory(
+            AccessMemoryErrorCodes errorCode = DebugEngine.WriteMemory(
                 address,
                 buffer,
                 programAligment);
 
-            if (!Success)
+            if (errorCode != AccessMemoryErrorCodes.NoError)
             {
-                progress?.Report($"Error writing to device memory @ 0x{address:X8}, error {ErrorCode}.");
+                progress?.Report($"Error writing to device memory @ 0x{address:X8}, error {errorCode}.");
 
                 return false;
             }

@@ -7,7 +7,6 @@
 using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.WireProtocol;
 using Polly;
-using Polly.Contrib.WaitAndRetry;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -643,7 +642,7 @@ namespace nanoFramework.Tools.Debugger
                 int timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
 
                 // pausing here to artificially allow some slack in the channel
-                Thread.Sleep(2);
+                Thread.Sleep(1);
 
                 Task<IncomingMessage> request = PerformRequestAsync(message, timeout);
 
@@ -1528,7 +1527,7 @@ namespace nanoFramework.Tools.Debugger
             return ReadMemory(address, length, 0);
         }
 
-        public (AccessMemoryErrorCodes ErrorCode, bool Success) WriteMemory(
+        public AccessMemoryErrorCodes WriteMemory(
             uint address,
             byte[] buf,
             int offset,
@@ -1565,20 +1564,11 @@ namespace nanoFramework.Tools.Debugger
                     Commands.c_Monitor_WriteMemory,
                     Flags.c_NoFlags,
                     cmd,
-                    3 * DefaultTimeout);
+                    4 * DefaultTimeout);
 
                 if (reply != null)
                 {
                     Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
-
-                    // check for no reply
-                    if (reply is null)
-                    {
-                        progress?.Report(new MessageWithProgress(""));
-                        log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). No reply from nanoDevice.");
-
-                        return (AccessMemoryErrorCodes.NoError, false);
-                    }
                     
                     // check for negative reply
                     if (!reply.IsPositiveAcknowledge())
@@ -1586,7 +1576,7 @@ namespace nanoFramework.Tools.Debugger
                         progress?.Report(new MessageWithProgress(""));
                         log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Write operation failed.");
 
-                        return (AccessMemoryErrorCodes.NoError, false);
+                        return AccessMemoryErrorCodes.Unknown;
                     }
 
                     // check for error code in memory access
@@ -1595,7 +1585,7 @@ namespace nanoFramework.Tools.Debugger
                         progress?.Report(new MessageWithProgress(""));
                         log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Error code: {cmdReply.ErrorCode}.");
 
-                        return ((AccessMemoryErrorCodes)cmdReply.ErrorCode, false);
+                        return (AccessMemoryErrorCodes)cmdReply.ErrorCode;
                     }
 
                     address += (uint)packetLength;
@@ -1605,18 +1595,19 @@ namespace nanoFramework.Tools.Debugger
                 else
                 {
                     progress?.Report(new MessageWithProgress(""));
-                    log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Unknown error.");
+                    log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). No reply from nanoDevice.");
 
-                    return (AccessMemoryErrorCodes.Unknown, false);
+                    return AccessMemoryErrorCodes.Unknown;
                 }
 
-                Thread.Sleep(1);
+                // pausing here to artificially allow some slack in the channel
+                Thread.Sleep(3);
             }
 
-            return (AccessMemoryErrorCodes.NoError, true);
+            return AccessMemoryErrorCodes.NoError;
         }
 
-        public (AccessMemoryErrorCodes ErrorCode, bool Success) WriteMemory(
+        public AccessMemoryErrorCodes WriteMemory(
             uint address, 
             byte[] buf,
             int programAligment = 0,
@@ -1637,9 +1628,14 @@ namespace nanoFramework.Tools.Debugger
                 log);
         }
 
-        public bool CheckMemory(uint address, byte[] buf, int offset, int length)
+        public bool PerformWriteMemoryCheck(uint address, byte[] buf)
         {
-            Commands.Monitor_CheckMemory cmd = new Commands.Monitor_CheckMemory();
+            return PerformWriteMemoryCheck(address, buf, 0, buf.Length);
+        }
+
+        public bool PerformWriteMemoryCheck(uint address, byte[] buf, int offset, int length)
+        {
+            Commands.Monitor_CheckMemory cmd = new();
 
             cmd.m_address = address;
             cmd.m_length = (uint)length;
@@ -1658,11 +1654,6 @@ namespace nanoFramework.Tools.Debugger
             }
 
             return false;
-        }
-
-        public bool PerformWriteMemoryCheck(uint address, byte[] buf)
-        {
-            return CheckMemory(address, buf, 0, buf.Length);
         }
 
         public (AccessMemoryErrorCodes ErrorCode, bool Success) EraseMemory(
@@ -3069,12 +3060,12 @@ namespace nanoFramework.Tools.Debugger
 
                 // build the deployment blob from the flash sector map
                 // apply a filter so that we take only the blocks flag for deployment 
-                var deploymentBlob = FlashSectorMap.Where(s => (s.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
+                List<DeploymentSector> deploymentBlob = FlashSectorMap.Where(s => (s.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
                     .Select(s => s.ToDeploymentSector())
                     .ToList();
 
                 // rough check if there is enough room to deploy
-                if(deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size) < deployLength)
+                if (deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size) < deployLength)
                 {
                     // compose error message
                     string errorMessage = $"Deployment storage (available size: {deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size)} bytes) is not large enough for assemblies to deploy (total size: {deployLength} bytes).";
@@ -3143,14 +3134,14 @@ namespace nanoFramework.Tools.Debugger
                 }
 
                 // get the block list to deploy (not empty)
-                var blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
-                var deploymentSize = blocksToDeploy.Sum(b => b.DeploymentData.Length);
-                var deployedBytes = 0;
+                List<DeploymentBlock> blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
+                int deploymentSize = blocksToDeploy.Sum(b => b.DeploymentData.Length);
+                int deployedBytes = 0;
 
                 foreach (DeploymentBlock block in blocksToDeploy)
                 {
                     // check if skip erase step was requested
-                    if(!skipErase)
+                    if (!skipErase)
                     {
                         progress?.Report(new MessageWithProgress($"Erasing block @ 0x{block.StartAddress:X8}...", (uint)deployedBytes, (uint)deploymentSize));
                         log?.Report($"Erasing block @ 0x{block.StartAddress:X8}...");
@@ -3176,7 +3167,7 @@ namespace nanoFramework.Tools.Debugger
                     }
 
                     // block erased, write buffer
-                    (AccessMemoryErrorCodes ErrorCode, bool Success) writeMemoryResult = WriteMemory(
+                    AccessMemoryErrorCodes errorCode = WriteMemory(
                         (uint)block.StartAddress,
                         block.DeploymentData,
                         block.ProgramAligment,
@@ -3185,22 +3176,23 @@ namespace nanoFramework.Tools.Debugger
                         progress,
                         log);
 
-                    if (!writeMemoryResult.Success)
+                    if (errorCode == AccessMemoryErrorCodes.Unknown)
                     {
-                        log?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes).");
+                        log?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes). Unknown error.");
                         progress?.Report(new MessageWithProgress(""));
                         return false;
                     }
+
                     // check the error code returned
-                    if (writeMemoryResult.ErrorCode != AccessMemoryErrorCodes.NoError)
+                    if (errorCode != AccessMemoryErrorCodes.NoError)
                     {
-                        log?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes). Error code: {writeMemoryResult.ErrorCode}.");
+                        log?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes). Error code: {errorCode}.");
                         progress?.Report(new MessageWithProgress(""));
                         return false;
                     }
 
                     // check memory
-                    var memCheck = PerformWriteMemoryCheck((uint)block.StartAddress, block.DeploymentData);
+                    bool memCheck = PerformWriteMemoryCheck((uint)block.StartAddress, block.DeploymentData);
                     Debug.Assert(memCheck, "Memory check Failed.");
 
                     deployedBytes += block.DeploymentData.Length;
@@ -3274,9 +3266,9 @@ namespace nanoFramework.Tools.Debugger
                     return false;
                 }
 
-                var writeResult1 = WriteMemory(storageStart, assembly);
+                AccessMemoryErrorCodes writeResult1 = WriteMemory(storageStart, assembly);
 
-                if (!writeResult1.Success)
+                if (writeResult1 != AccessMemoryErrorCodes.NoError)
                 {
                     return false;
                 }
@@ -3284,8 +3276,9 @@ namespace nanoFramework.Tools.Debugger
                 storageStart += (uint)assembly.Length;
             }
 
-            var writeResult2 = WriteMemory(storageStart, closeHeader);
-            return !!writeResult2.Success;
+            AccessMemoryErrorCodes writeResult2 = WriteMemory(storageStart, closeHeader);
+
+            return writeResult2 == AccessMemoryErrorCodes.NoError;
         }
 
         //public bool Deployment_Execute(ArrayList assemblies)

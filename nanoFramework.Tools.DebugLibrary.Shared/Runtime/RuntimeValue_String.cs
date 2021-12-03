@@ -65,8 +65,9 @@ namespace nanoFramework.Tools.Debugger
                 throw new ArgumentException("String must have same length");
             }
 
-            var (ErrorCode, Success) = m_eng.WriteMemory(m_handle.m_charsInString, buf);
-            if (!Success)
+            WireProtocol.AccessMemoryErrorCodes errorCode = m_eng.WriteMemory(m_handle.m_charsInString, buf);
+            
+            if (errorCode != WireProtocol.AccessMemoryErrorCodes.NoError)
             {
                 throw new ArgumentException("Cannot write string");
             }
