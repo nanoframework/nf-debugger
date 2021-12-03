@@ -77,8 +77,6 @@ namespace nanoFramework.Tools.Debugger
 
             // default to false
             IsCRC32EnabledForWireProtocol = false;
-
-            _pendingRequestsTimer = new Timer(ClearPendingRequests, null, 0, 100);
         }
 
         private void Initialize()
@@ -462,28 +460,6 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
-        private void ClearPendingRequests(object state)
-        {
-            var requestsToCancel = _requestsStore.FindAllToCancel();
-
-            foreach (var wireProtocolRequest in requestsToCancel)
-            {
-                // cancel the task using the cancellation token if available or not requested
-                var requestCanceled = wireProtocolRequest.CancellationToken.IsCancellationRequested
-                    ? wireProtocolRequest.TaskCompletionSource.TrySetCanceled(wireProtocolRequest.CancellationToken)
-                    : wireProtocolRequest.TaskCompletionSource.TrySetCanceled();
-
-                wireProtocolRequest.RequestAborted();
-
-                // remove the request from the store
-                if (_requestsStore.Remove(wireProtocolRequest.OutgoingMessage.Header) && requestCanceled)
-                {
-                    // TODO 
-                    // invoke the event hook
-                }
-            }
-        }
-
         public void IncomingMessagesListener()
         {
             Debug.WriteLine(">>>> START IncomingMessagesListener <<<<");
@@ -636,57 +612,55 @@ namespace nanoFramework.Tools.Debugger
         /// Global lock object for synchronizing message request. This ensures there is only one
         /// outstanding request at any point of time. 
         /// </summary>
-        internal object _syncReqLock = new object();
+        private static readonly SemaphoreSlim _syncReqLock = new SemaphoreSlim(1, 1);
 
-        private IncomingMessage PerformSyncRequest(uint command, uint flags, object payload, int millisecondsTimeout = TIMEOUT_DEFAULT)
+        private IncomingMessage PerformSyncRequest(
+            uint command,
+            uint flags,
+            object payload,
+            int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
-            lock (_syncReqLock)
-            {
-                OutgoingMessage message = new OutgoingMessage(_controlller.GetNextSequenceId(), CreateConverter(), command, flags, payload);
+            OutgoingMessage message = new(
+                _controlller.GetNextSequenceId(),
+                CreateConverter(),
+                command,
+                flags,
+                payload);
 
-                var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
-
-                var request = PerformRequestAsync(message, timeout);
-
-                try
-                {
-                    if (request != null)
-                    {
-                        if(!Task.WaitAll(new Task[] { request }, timeout))
-                        {
-                            // wait timed out
-                            return null;
-                        }
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
-                catch (AggregateException)
-                {
-                    return null;
-                }
-
-                return request.Result;
-            }
+            return PerformSyncRequest(
+                message,
+                millisecondsTimeout);
         }
 
-        private IncomingMessage PerformSyncRequest(OutgoingMessage message, int millisecondsTimeout = TIMEOUT_DEFAULT)
+        private IncomingMessage PerformSyncRequest(
+            OutgoingMessage message,
+            int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
-            lock (_syncReqLock)
+            try
             {
-                var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
+                _syncReqLock.Wait();
 
-                Thread.Yield();
+                int timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
 
-                var request = PerformRequestAsync(message, timeout);
+                // pausing here to artificially allow some slack in the channel
+                Thread.Sleep(2);
+
+                Task<IncomingMessage> request = PerformRequestAsync(message, timeout);
 
                 try
                 {
                     if (request != null)
                     {
-                        Task.WaitAll(request);
+                        if (!Task.WaitAll(new Task[] { request }, timeout))
+                        {
+                            // *** wait timed out ***
+
+                            // remove request from store
+                            _ = _requestsStore.Remove(request.AsyncState as WireProtocolRequest);
+
+                            // return null
+                            return null;
+                        }
                     }
                     else
                     {
@@ -700,6 +674,10 @@ namespace nanoFramework.Tools.Debugger
                 }
 
                 return request.Result;
+            }
+            finally
+            {
+                _ = _syncReqLock.Release();
             }
         }
 

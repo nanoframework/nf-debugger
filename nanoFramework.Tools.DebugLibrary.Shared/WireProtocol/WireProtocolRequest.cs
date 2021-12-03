@@ -35,7 +35,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             _timeout = millisecondsTimeout;
 
             // https://blogs.msdn.microsoft.com/pfxteam/2009/06/02/the-nature-of-taskcompletionsourcetresult/
-            TaskCompletionSource = new TaskCompletionSource<IncomingMessage>();
+            TaskCompletionSource = new TaskCompletionSource<IncomingMessage>(this);
         }
 
         internal bool PerformRequest(IController controller)
