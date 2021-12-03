@@ -2,7 +2,16 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.60...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.1.0-preview.1...HEAD)
+
+**Implemented enhancements:**
+
+- Improve WriteMemory [\#336](https://github.com/nanoframework/nf-debugger/pull/336)
+- Rework PerformSyncRequest [\#335](https://github.com/nanoframework/nf-debugger/pull/335)
+
+## [v2.1.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v2.1.0-preview.1) (2021-12-02)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.60...v2.1.0-preview.1)
 
 **Implemented enhancements:**
 
