@@ -126,7 +126,15 @@ steps:
     scannerMode: 'MSBuild'
     projectKey: 'nanoframework_nf-debugger'
 
-- template: azure-pipelines-templates/install-nuget.yml@templates
+- task: NuGetToolInstaller@1
+  condition: >-
+    and(
+      succeeded(),
+      eq(variables['StartReleaseCandidate'], false)
+    )
+  displayName: 'Install specific version of NuGet'
+  inputs:
+    versionSpec: '>=5.10.0'
 
 - task: NuGetCommand@2
   condition: and( succeeded(), ne( variables['StartReleaseCandidate'], true ), ne(variables['UPDATE_DEPENDENTS'], 'true') )
