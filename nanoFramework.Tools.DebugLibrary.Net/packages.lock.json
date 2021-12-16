@@ -24,6 +24,12 @@
         "resolved": "3.4.244",
         "contentHash": "L+xHZiYgIvMEbHo1X49HxgfUhfh52/TWLOuUDsOP3OAY0QAn+W6SRNA5bvIRBQ4291SlTZUXPbCRPX8bn7H86Q=="
       },
+      "NuGet.Build.Tasks.Pack": {
+        "type": "Direct",
+        "requested": "[6.0.0, )",
+        "resolved": "6.0.0",
+        "contentHash": "Tdm+f9vIoM6lpDaog7nU/8VAdx2NnNRDMbELeA6bTbYZdYCbDYMshp4ZkEF34B3XgW63jdgY+ikvZzjNHbfNSQ=="
+      },
       "Polly": {
         "type": "Direct",
         "requested": "[7.2.2, )",

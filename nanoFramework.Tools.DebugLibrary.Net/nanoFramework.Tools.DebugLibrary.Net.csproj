@@ -26,6 +26,22 @@
     <!-- need this here to rebuild the packages.lock.json file in case the hashes fail to validate -->
     <!-- <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder> -->
   </PropertyGroup>
+  <PropertyGroup>
+    <PackageId>nanoFramework.Tools.Debugger.Net</PackageId>
+    <Authors>.NET nanoFramework project contributors</Authors>
+    <Product>.NET nanoFramework debug library (.NET)</Product>
+    <Copyright>Copyright (c) .NET Foundation and Contributors</Copyright>
+    <Company>.NET nanoFramework</Company>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/nanoframework/nf-debugger</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/nanoframework/nf-debugger</PackageProjectUrl>
+    <PackageIconUrl></PackageIconUrl>
+    <Description>This .NET library provides a debug client for .NET nanoFramework devices using USB or Serial connection to a board.</Description>
+    <PackageTags>nanoFramework C# csharp netmf netnf</PackageTags>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageIcon>images\nf-logo.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -38,6 +54,20 @@
     <LangVersion>default</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\assets\nf-logo.png">
+      <Pack>True</Pack>
+      <PackagePath>images</PackagePath>
+    </None>
+    <None Include="..\LICENSE.md">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
@@ -87,6 +117,11 @@
     <PackageReference Include="Nerdbank.GitVersioning">
       <Version>3.4.244</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="NuGet.Build.Tasks.Pack">
+      <Version>6.0.0</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Polly">
