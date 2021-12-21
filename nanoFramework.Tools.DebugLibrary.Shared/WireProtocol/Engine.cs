@@ -642,7 +642,7 @@ namespace nanoFramework.Tools.Debugger
                 int timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
 
                 // pausing here to artificially allow some slack in the channel
-                Thread.Sleep(1);
+                Thread.Sleep(5);
 
                 Task<IncomingMessage> request = PerformRequestAsync(message, timeout);
 
