@@ -80,7 +80,7 @@ steps:
     arguments: install -g nbgv
 
 # only required when updating dependents
-- script: nbgv cloud
+- script: nbgv cloud -a -c
   condition: eq(variables['UPDATE_DEPENDENTS'], 'true')
   displayName: Set Could Version
 
