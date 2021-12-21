@@ -1,5 +1,17 @@
 # Changelog
 
+## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.0-preview.4...HEAD)
+
+**Implemented enhancements:**
+
+- Increase pause between requests [\#338](https://github.com/nanoframework/nf-debugger/pull/338)
+
+## [v2.2.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v2.2.0-preview.4) (2021-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.0-preview.2...v2.2.0-preview.4)
+
 ## [v2.2.0-preview.2](https://github.com/nanoframework/nf-debugger/tree/v2.2.0-preview.2) (2021-12-03)
 
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.1.0-preview.1...v2.2.0-preview.2)
