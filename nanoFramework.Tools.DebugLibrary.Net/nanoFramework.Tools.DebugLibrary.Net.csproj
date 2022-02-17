@@ -28,7 +28,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <PackageId>nanoFramework.Tools.Debugger.Net</PackageId>
-    <Authors>.NET nanoFramework project contributors</Authors>
+    <Authors>nanoframework</Authors>
     <Product>.NET nanoFramework debug library (.NET)</Product>
     <Copyright>Copyright (c) .NET Foundation and Contributors</Copyright>
     <Company>.NET nanoFramework</Company>
