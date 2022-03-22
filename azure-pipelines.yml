@@ -372,6 +372,7 @@ steps:
     nuGetFeedType: external
     packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
     publishFeedCredentials: 'AzureArtifacts-debugger'
+    includeSymbols: true
     allowPackageConflicts: true
 
 # push NuGet class lib package to NuGet (always happens except on PR builds)
@@ -392,6 +393,7 @@ steps:
     allowPackageConflicts: true
     packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
     publishFeedCredentials: 'NuGet-debugger'
+    includeSymbols: true
 
 # update dependencies
 - task: PowerShell@2
