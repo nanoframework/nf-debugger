@@ -2,7 +2,20 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.0-preview.4...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.1-preview.2...HEAD)
+
+**Implemented enhancements:**
+
+- Add CanChangeMacAddress to CLR capabilites [\#341](https://github.com/nanoframework/nf-debugger/pull/341)
+- Remove unused flags of QueryCLRCapabilities [\#340](https://github.com/nanoframework/nf-debugger/pull/340)
+
+**Documentation and other chores:**
+
+- Update dependencies [\#339](https://github.com/nanoframework/nf-debugger/pull/339)
+
+## [v2.2.1-preview.2](https://github.com/nanoframework/nf-debugger/tree/v2.2.1-preview.2) (2021-12-21)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.0-preview.4...v2.2.1-preview.2)
 
 **Implemented enhancements:**
 
