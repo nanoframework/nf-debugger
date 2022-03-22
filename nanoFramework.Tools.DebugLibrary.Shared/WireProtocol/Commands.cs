@@ -971,6 +971,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint c_CapabilityFlags_ThreadCreateEx =            0x00000400;
             public const uint c_CapabilityFlags_ConfigBlockRequiresErase =  0x00000800;
             public const uint c_CapabilityFlags_HasNanoBooter =             0x00001000;
+            public const uint c_CapabilityFlags_CanChangeMacAddress =       0x00002000;
 
             public const uint c_CapabilityFlags_PlatformCapabiliy_0 =       0x01000000;
             public const uint c_CapabilityFlags_PlatformCapabiliy_1 =       0x02000000;

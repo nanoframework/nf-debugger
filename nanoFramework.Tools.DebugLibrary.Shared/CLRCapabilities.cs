@@ -55,6 +55,11 @@ namespace nanoFramework.Tools.Debugger
             HasNanoBooter =             0x00001000,
 
             /// <summary>
+            /// This flag indicates that the MAC address of the target can be changed.
+            /// </summary>
+            CanChangeMacAddress =       0x00002000,
+
+            /// <summary>
             /// These bits are generic and are meant to be used to store platform specific capabilities.
             /// They should be parsed at the above layer to extract the real meaning out of them.
             /// </summary>
@@ -383,6 +388,15 @@ namespace nanoFramework.Tools.Debugger
             {
                 Debug.Assert(!m_fUnknown);
                 return (m_capabilities & Capability.HasNanoBooter) != 0;
+            }
+        }
+
+        public bool CanChangeMacAddress
+        {
+            get
+            {
+                Debug.Assert(!m_fUnknown);
+                return (m_capabilities & Capability.CanChangeMacAddress) != 0;
             }
         }
 
