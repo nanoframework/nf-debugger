@@ -35,7 +35,8 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/nanoframework/nf-debugger</RepositoryUrl>
     <PackageProjectUrl>https://github.com/nanoframework/nf-debugger</PackageProjectUrl>
-    <PackageIconUrl></PackageIconUrl>
+    <PackageIconUrl>
+    </PackageIconUrl>
     <Description>This .NET library provides a debug client for .NET nanoFramework devices using USB or Serial connection to a board.</Description>
     <PackageTags>nanoFramework C# csharp netmf netnf</PackageTags>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
@@ -65,7 +66,8 @@
     </None>
     <None Include="..\LICENSE.md">
       <Pack>True</Pack>
-      <PackagePath></PackagePath>
+      <PackagePath>
+      </PackagePath>
     </None>
   </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -110,22 +112,22 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.SourceLink.GitHub">
-      <Version>1.1.0</Version>
+      <Version>1.1.1</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Nerdbank.GitVersioning">
-      <Version>3.4.244</Version>
+      <Version>3.4.255</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="NuGet.Build.Tasks.Pack">
-      <Version>6.0.0</Version>
+      <Version>6.1.0</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Polly">
-      <Version>7.2.2</Version>
+      <Version>7.2.3</Version>
     </PackageReference>
     <PackageReference Include="Polly.Contrib.WaitAndRetry">
       <Version>1.1.1</Version>
