@@ -131,9 +131,9 @@ namespace nanoFramework.Tools.Debugger
             {
                 var addressAsArray = address.GetAddressBytes();
 
-                return (((uint)addressAsArray[3] << 24) | 
-                        ((uint)addressAsArray[2] << 16) | 
-                        ((uint)addressAsArray[1] << 8) | 
+                return (((uint)addressAsArray[3] << 24) |
+                        ((uint)addressAsArray[2] << 16) |
+                        ((uint)addressAsArray[1] << 8) |
                         (addressAsArray[0]));
             }
             catch { };
@@ -193,11 +193,11 @@ namespace nanoFramework.Tools.Debugger
 
                 if (value.SpecificConfigId == EmptySpecificConfigValue)
                 {
-                    SpecificConfigId =  null;
+                    SpecificConfigId = null;
                 }
                 else
                 {
-                    SpecificConfigId =  value.SpecificConfigId;
+                    SpecificConfigId = value.SpecificConfigId;
                 }
 
                 // reset unknown flag
