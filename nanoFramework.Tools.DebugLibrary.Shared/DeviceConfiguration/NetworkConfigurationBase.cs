@@ -93,6 +93,12 @@ namespace nanoFramework.Tools.Debugger
         {
             // need to init this here to match the expected size on the struct to be sent to the device
             Marker = new byte[4];
+
+            IPv6Address = new uint[] { 0, 0, 0, 0 };
+            IPv6NetMask = new uint[] { 0, 0, 0, 0 };
+            IPv6GatewayAddress = new uint[] { 0, 0, 0, 0 };
+            IPv6DNSAddress1 = new uint[] { 0, 0, 0, 0 };
+            IPv6DNSAddress2 = new uint[] { 0, 0, 0, 0 };
         }
     }
 }

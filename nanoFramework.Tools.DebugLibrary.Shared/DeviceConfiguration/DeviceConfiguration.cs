@@ -145,12 +145,12 @@ namespace nanoFramework.Tools.Debugger
         {
             try
             {
-                var addressAsArray = address.ToString().Split(new string[] { ":", "::" }, StringSplitOptions.RemoveEmptyEntries);
+                var addressBytesReversed = address.GetAddressBytes().Reverse().ToArray();
 
-                return new uint[] { uint.Parse(addressAsArray[3], NumberStyles.HexNumber),
-                                    uint.Parse(addressAsArray[2], NumberStyles.HexNumber),
-                                    uint.Parse(addressAsArray[1], NumberStyles.HexNumber),
-                                    uint.Parse(addressAsArray[0], NumberStyles.HexNumber) };
+                return new uint[] { BitConverter.ToUInt32(addressBytesReversed, 0),
+                                    BitConverter.ToUInt32(addressBytesReversed, 4),
+                                    BitConverter.ToUInt32(addressBytesReversed, 8),
+                                    BitConverter.ToUInt32(addressBytesReversed, 12) };
             }
             catch { };
 
