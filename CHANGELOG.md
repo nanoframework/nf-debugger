@@ -2,7 +2,19 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.1-preview.2...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.1-preview.10...HEAD)
+
+**Implemented enhancements:**
+
+- Improve UpdateDeviceConfiguration [\#343](https://github.com/nanoframework/nf-debugger/pull/343)
+
+**Fixed bugs:**
+
+- Fix network configuration serialization [\#342](https://github.com/nanoframework/nf-debugger/pull/342)
+
+## [v2.2.1-preview.10](https://github.com/nanoframework/nf-debugger/tree/v2.2.1-preview.10) (2022-03-22)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.1-preview.2...v2.2.1-preview.10)
 
 **Implemented enhancements:**
 
