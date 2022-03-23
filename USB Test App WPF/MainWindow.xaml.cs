@@ -864,58 +864,82 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
                 var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
 
-                // get device info
-                var deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
+                //DeviceConfiguration deviceConfig;
 
-                // update new network configuration
-                DeviceConfiguration.NetworkConfigurationProperties newDeviceNetworkConfiguration = new DeviceConfiguration.NetworkConfigurationProperties
-                {
-                    MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 },
-                    InterfaceType = NetworkInterfaceType.Ethernet,
-                    StartupAddressMode = AddressMode.DHCP,
-
-                    IPv4DNSAddress1 = IPAddress.Parse("192.168.1.254"),
-                };
-
-                // write device configuration to device
-                //var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newDeviceNetworkConfiguration, 0);
-
-                //// add new wireless 802.11 configuration
-                //DeviceConfiguration.Wireless80211ConfigurationProperties newWireless80211Configuration = new DeviceConfiguration.Wireless80211ConfigurationProperties()
+                //// get device info, if needed
+                //if (device.DebugEngine.ConfigBlockRequiresErase)
                 //{
-                //    Id = 44,
-                //    Ssid = "Nice_Ssid",
-                //    Password = "1234",
+                //    deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
+                //}
+
+                //// update new network configuration
+                //DeviceConfiguration.NetworkConfigurationProperties newDeviceNetworkConfiguration = new DeviceConfiguration.NetworkConfigurationProperties
+                //{
+                //    MacAddress = new byte[] { 0, 0x80, 0xe1, 0x01, 0x35, 0x56 },
+                //    InterfaceType = NetworkInterfaceType.Ethernet,
+                //    StartupAddressMode = AddressMode.DHCP,
+
+                //    IPv4DNSAddress1 = IPAddress.Parse("192.168.1.254"),
                 //};
 
-                //// write wireless configuration to device
-                //returnValue = device.DebugEngine.UpdateDeviceConfiguration(newWireless80211Configuration, 0);
+                //// write device configuration to device
+                //var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newDeviceNetworkConfiguration, 0);
+
+                // add new wireless 802.11 configuration
+                DeviceConfiguration.Wireless80211ConfigurationProperties newWireless80211Configuration = new DeviceConfiguration.Wireless80211ConfigurationProperties()
+                {
+                    Id = 0,
+                    Ssid = "Nice_Ssid",
+                    Password = "1234",
+                    Authentication = AuthenticationType.WPA2,
+                    Encryption = EncryptionType.WPA2,
+                    Options = Wireless80211_ConfigurationOptions.AutoConnect
+                };
+
+                // write wireless configuration to device
+                var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newWireless80211Configuration, 0);
 
                 // build a CA certificate bundle
                 DeviceConfiguration.X509CaRootBundleProperties newX509CertificateBundle = new DeviceConfiguration.X509CaRootBundleProperties();
 
-                // add CA root certificates
+                //// add CA root certificates
 
-                /////////////////////////////////////////////////////////
-                // BECAUSE WE ARE PARSING FROM A BASE64 encoded format //
-                // NEED TO ADD A TERMINATOR TO THE STRING              //
-                /////////////////////////////////////////////////////////
+                ///////////////////////////////////////////////////////////
+                //// BECAUSE WE ARE PARSING FROM A BASE64 encoded format //
+                //// NEED TO ADD A TERMINATOR TO THE STRING              //
+                ///////////////////////////////////////////////////////////
 
-                //string caRootBundle = baltimoreCACertificate + letsEncryptCACertificate + "\0";
+                ////string caRootBundle = baltimoreCACertificate + letsEncryptCACertificate + "\0";
 
-                //byte[] certificateRaw = Encoding.UTF8.GetBytes(caRootBundle);
+                ////byte[] certificateRaw = Encoding.UTF8.GetBytes(caRootBundle);
 
-                using (FileStream binFile = new FileStream(@"C:\Users\JoséSimões\Downloads\DigiCertGlobalRootCA.crt", FileMode.Open))
-                {
-                    newX509CertificateBundle.Certificate = new byte[binFile.Length];
-                    binFile.Read(newX509CertificateBundle.Certificate, 0, (int)binFile.Length);
-                    newX509CertificateBundle.CertificateSize = (uint)binFile.Length;
-                }
+                //using (FileStream binFile = new FileStream(@"C:\Users\JoséSimões\Downloads\DigiCertGlobalRootCA.crt", FileMode.Open))
+                //{
+                //    newX509CertificateBundle.Certificate = new byte[binFile.Length];
+                //    binFile.Read(newX509CertificateBundle.Certificate, 0, (int)binFile.Length);
+                //    newX509CertificateBundle.CertificateSize = (uint)binFile.Length;
+                //}
 
                 //newX509CertificateBundle.Certificate = certificateRaw;
 
                 // write CA certificate to device
-                var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newX509CertificateBundle, 0);
+                //var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newX509CertificateBundle, 0);
+
+
+                //// build a device certificate 
+                //DeviceConfiguration.X509DeviceCertificatesProperties newX509DeviceCertificate = new DeviceConfiguration.X509DeviceCertificatesProperties();
+
+                //using (FileStream binFile = new FileStream(@"C:\Users\JoséSimões\Downloads\OilLevelCert.pfx", FileMode.Open))
+                //{
+                //    newX509DeviceCertificate.Certificate = new byte[binFile.Length];
+                //    binFile.Read(newX509DeviceCertificate.Certificate, 0, (int)binFile.Length);
+                //    newX509DeviceCertificate.CertificateSize = (uint)binFile.Length;
+                //}
+
+                //// write certificate to device
+                //var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newX509DeviceCertificate, 0);
+
+
 
                 Debug.WriteLine("");
                 Debug.WriteLine("");
