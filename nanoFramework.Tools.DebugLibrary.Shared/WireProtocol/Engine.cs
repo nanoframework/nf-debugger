@@ -3883,9 +3883,9 @@ namespace nanoFramework.Tools.Debugger
         public List<DeviceConfiguration.NetworkConfigurationProperties> GetAllNetworkConfigurations()
         {
             List<DeviceConfiguration.NetworkConfigurationProperties> networkConfigurations = new List<DeviceConfiguration.NetworkConfigurationProperties>();
-
-            DeviceConfiguration.NetworkConfigurationProperties networkConfig = null;
+            
             uint index = 0;
+            DeviceConfiguration.NetworkConfigurationProperties networkConfig;
 
             do
             {
@@ -4065,6 +4065,12 @@ namespace nanoFramework.Tools.Debugger
                             networkConfiguration.StartupAddressMode = (byte)AddressMode.Invalid;
                         }
 
+                        if(networkConfiguration.InterfaceType > (byte)NetworkInterfaceType.Wireless80211)
+                        {
+                            // fix this to invalid
+                            networkConfiguration.InterfaceType = (byte)NetworkInterfaceType.Unknown;
+                        }
+
                         networkConfigProperties = new DeviceConfiguration.NetworkConfigurationProperties(networkConfiguration);
                     }
                 }
@@ -4194,9 +4200,10 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         /// <param name="configuration">The device configuration</param>
         /// <returns></returns>
-        public bool UpdateDeviceConfiguration(DeviceConfiguration configuration)
+        public UpdateDeviceResult UpdateDeviceConfiguration(DeviceConfiguration configuration)
         {
             bool okToUploadConfig = false;
+            byte[] configSectorBackup;
             Commands.Monitor_FlashSectorMap.FlashSectorData configSector = new Commands.Monitor_FlashSectorMap.FlashSectorData();
 
             // the requirement to erase flash before storing is dependent on CLR capabilities which is only available if the device is running nanoCLR
@@ -4214,7 +4221,7 @@ namespace nanoFramework.Tools.Debugger
                     // flash sector map is still empty, go get it
                     if (GetFlashSectorMap() == null)
                     {
-                        return false;
+                        return UpdateDeviceResult.FailedToRetrieveExistingConfig;
                     }
                 }
 
@@ -4229,8 +4236,12 @@ namespace nanoFramework.Tools.Debugger
 
                     if (readConfigSector.Success)
                     {
+                        // copy over to backup array
+                        configSectorBackup = readConfigSector.Buffer;
+
                         // start erasing the sector that holds the configuration block
-                        var (ErrorCode, Success) = EraseMemory(configSector.StartAddress, 1);
+                        var (ErrorCode, Success) = EraseMemory(configSector.StartAddress, configSector.NumBlocks * configSector.BytesPerBlock);
+                        
                         if (Success)
                         {
                             okToUploadConfig = true;
@@ -4238,7 +4249,7 @@ namespace nanoFramework.Tools.Debugger
                     }
                     else
                     {
-                        return false;
+                        return UpdateDeviceResult.FailedToRetrieveExistingConfig;
                     }
                 }
             }
@@ -4250,8 +4261,10 @@ namespace nanoFramework.Tools.Debugger
 
             if (okToUploadConfig)
             {
+                Thread.Sleep(250);
+
                 // serialize the configuration block
-                var configurationSerialized = CreateConverter().Serialize(((DeviceConfigurationBase)configuration));
+                var configurationSerialized = CreateConverter().Serialize((DeviceConfigurationBase)configuration);
 
                 // counters to manage the chunked update process
                 int count = configurationSerialized.Length;
@@ -4312,6 +4325,7 @@ namespace nanoFramework.Tools.Debugger
                     else
                     {
                         attemptCount--;
+                        Thread.Sleep(100);
                     }
                 }
 
@@ -4321,15 +4335,16 @@ namespace nanoFramework.Tools.Debugger
                     // revert back old one
 
                     // TODO
+                    return UpdateDeviceResult.UpdateFailed;
                 }
                 else
                 {
-                    return true;
+                    return UpdateDeviceResult.Sucess;
                 }
             }
 
             // default to false
-            return false;
+            return UpdateDeviceResult.UpdateFailed;
         }
 
         public int GetPacketMaxLength(Commands.OverheadBase cmd)
@@ -4344,7 +4359,7 @@ namespace nanoFramework.Tools.Debugger
         /// <param name="configuration">The configuration block</param>
         /// <param name="blockIndex">The index of this configuration block</param>
         /// <returns></returns>
-        public bool UpdateDeviceConfiguration<T>(T configuration, uint blockIndex)
+        public UpdateDeviceResult UpdateDeviceConfiguration<T>(T configuration, uint blockIndex)
         {
             // Create cancellation token source
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -4358,6 +4373,15 @@ namespace nanoFramework.Tools.Debugger
 
                 if (currentConfiguration != null)
                 {
+                    // perform sanity of data read by looking at the interface type
+                    if (currentConfiguration.NetworkConfigurations.Count == 0 || currentConfiguration.NetworkConfigurations[0].InterfaceType == NetworkInterfaceType.Unknown)
+                    {
+                        // something wrong, can't use this configuration
+                        Debug.WriteLine("*** INVALID configuration read from the device ***");
+
+                        return UpdateDeviceResult.ExistingConfigurationInvalid;
+                    }
+
                     // now update the specific configuration block
                     if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
                     {
@@ -4424,15 +4448,11 @@ namespace nanoFramework.Tools.Debugger
                         }
                     }
 
-                    if (UpdateDeviceConfiguration(currentConfiguration))
-                    {
-                        // done here
-                        return true;
-                    }
-                    else
-                    {
-                        // write failed, the old configuration it's supposed to have been reverted by now
-                    }
+                    return UpdateDeviceConfiguration(currentConfiguration);
+                }
+                else
+                {
+                    return UpdateDeviceResult.FailedToRetrieveExistingConfig;
                 }
             }
             else
@@ -4508,20 +4528,13 @@ namespace nanoFramework.Tools.Debugger
                 if (updateFailed)
                 {
                     // failed to upload new configuration
-                    // revert back old one
-
-                    // TODO
+                    return UpdateDeviceResult.UpdateFailed;
                 }
                 else
                 {
-                    return true;
+                    return UpdateDeviceResult.Sucess;
                 }
-
             }
-
-            // default to false
-            return false;
-
         }
 
         private byte[] GetDeviceConfigurationSerialized<T>(T configuration)
@@ -4594,6 +4607,47 @@ namespace nanoFramework.Tools.Debugger
             th.Start();
 
             return th;
+        }
+
+        /// <summary>
+        /// Enumerable with result of the call to <see cref="UpdateDeviceConfiguration"/>.
+        /// </summary>
+        public enum UpdateDeviceResult
+        {
+            /// <summary>
+            /// No result reported.
+            /// </summary>
+            None = 0,
+
+            /// <summary>
+            /// Successfully updated configuration to device.
+            /// </summary>
+            Sucess,
+
+            /// <summary>
+            /// Failed to retrieve existing configuration from the device
+            /// </summary>
+            FailedToRetrieveExistingConfig,
+
+            /// <summary>
+            /// The current configuration retrieved from the connected device is not valid.
+            /// </summary>
+            ExistingConfigurationInvalid,
+
+            /// <summary>
+            /// Failed to upload the new configuration to the device.
+            /// </summary>
+            UpdateFailed,
+
+            /// <summary>
+            /// Failed to upload the new configuration to the device and the previous configuration was restored.
+            /// </summary>
+            UpdateFailedOldConfigRestored,
+
+            /// <summary>
+            /// Failed to upload the new configuration to the device and failed to restore the previous configuration.
+            /// </summary>
+            UpdateFailedAndFailredToRestoreOldConfig
         }
     }
 }
