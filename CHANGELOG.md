@@ -2,7 +2,16 @@
 
 ## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
 
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.1-preview.10...HEAD)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.1-preview.14...HEAD)
+
+**Fixed bugs:**
+
+- Fix ESP32 board unintentional reset on Linux [\#345](https://github.com/nanoframework/nf-debugger/pull/345)
+- Fix race condition in PortSerialManager [\#344](https://github.com/nanoframework/nf-debugger/pull/344)
+
+## [v2.2.1-preview.14](https://github.com/nanoframework/nf-debugger/tree/v2.2.1-preview.14) (2022-03-23)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.1-preview.10...v2.2.1-preview.14)
 
 **Implemented enhancements:**
 
