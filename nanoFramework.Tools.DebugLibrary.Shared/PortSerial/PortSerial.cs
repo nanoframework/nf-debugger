@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
@@ -79,6 +80,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 /////////////////////////////////////////////////////////////
 
                 NanoDevice.DeviceBase = new SerialPort(InstanceId, BaudRate, Parity.None, 8);
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    Device.DtrEnable = true;
+                    Device.RtsEnable = true;
+                }
 
                 // Device could have been blocked by user or the device has already been opened by another app.
                 if (Device != null)
