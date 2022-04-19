@@ -2,7 +2,7 @@
 
 # compute authorization header in format "AUTHORIZATION: basic 'encoded token'"
 # 'encoded token' is the Base64 of the string "nfbot:personal-token"
-$auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$env:MY_GITHUB_TOKEN"))))"
+$auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$env:GH_TOKEN"))))"
 
 # because it can take sometime for the package to become available on the NuGet providers
 # need to hang here for 1 minutes (1 * 60)
@@ -12,7 +12,7 @@ Start-Sleep -Seconds 60
 # init/reset these
 $prTitle = ""
 $newBranchName = "develop-nfbot/update-dependencies/" + [guid]::NewGuid().ToString()
-$packageTargetVersion = $env:NBGV_NuGetPackageVersion
+$packageTargetVersion = gh release view --json tagName --jq .tagName
 
 # working directory is agent temp directory
 Write-Debug "Changing working directory to $env:Agent_TempDirectory"
@@ -38,9 +38,9 @@ Write-Host "Checkout develop branch..."
 git checkout --quiet develop | Out-Null
 
 dotnet remove VisualStudio.Extension-2019/VisualStudio.Extension-vs2019.csproj package nanoFramework.Tools.Debugger.Net
-dotnet add VisualStudio.Extension-2019/VisualStudio.Extension-vs2019.csproj package nanoFramework.Tools.Debugger.Net --prerelease
+dotnet add VisualStudio.Extension-2019/VisualStudio.Extension-vs2019.csproj package nanoFramework.Tools.Debugger.Net
 dotnet remove VisualStudio.Extension-2022/VisualStudio.Extension-vs2022.csproj package nanoFramework.Tools.Debugger.Net
-dotnet add VisualStudio.Extension-2022/VisualStudio.Extension-vs2022.csproj package nanoFramework.Tools.Debugger.Net --prerelease
+dotnet add VisualStudio.Extension-2022/VisualStudio.Extension-vs2022.csproj package nanoFramework.Tools.Debugger.Net
 
 "Bumping nanoFramework.Tools.Debugger to $packageTargetVersion." | Write-Host -ForegroundColor Cyan                
 
@@ -125,7 +125,7 @@ else
 
 Set-Location "$env:Agent_TempDirectory" | Out-Null
 
-# clone repo and checkout develop branch
+# clone repo and checkout main branch
 Write-Debug "Init and featch nf-Deployer repo"
 
 git clone --depth 1 https://github.com/nanoframework/nanoFrameworkDeployer nanoFrameworkDeployer
@@ -135,8 +135,8 @@ git config --global user.name nfbot
 git config --global user.email nanoframework@outlook.com
 git config --global core.autocrlf true
 
-Write-Host "Checkout develop branch..."
-git checkout --quiet develop | Out-Null
+Write-Host "Checkout main branch..."
+git checkout --quiet main | Out-Null
 
 dotnet remove nanoFrameworkDeployer/nanoFrameworkDeployer.csproj package nanoFramework.Tools.Debugger.Net
 dotnet add nanoFrameworkDeployer/nanoFrameworkDeployer.csproj package nanoFramework.Tools.Debugger.Net --prerelease
@@ -186,10 +186,10 @@ if ($repoStatus -ne "")
     git -c http.extraheader="AUTHORIZATION: $auth" push --set-upstream origin $newBranchName > $null
 
     # start PR
-    # we are hardcoding to 'develop' branch to have a fixed one
+    # we are hardcoding to 'main' branch to have a fixed one
     # this is very important for tags (which don't have branch information)
     # considering that the base branch can be changed at the PR ther is no big deal about this 
-    $prRequestBody = @{title="$prTitle";body="$commitMessage";head="$newBranchName";base="develop"} | ConvertTo-Json
+    $prRequestBody = @{title="$prTitle";body="$commitMessage";head="$newBranchName";base="main"} | ConvertTo-Json
     $githubApiEndpoint = "https://api.github.com/repos/nanoframework/nanoFrameworkDeployer/pulls"
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
