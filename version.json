@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AArnott/Nerdbank.GitVersioning/master/src/NerdBank.GitVersioning/version.schema.json",
+  "version": "2.3",
+  "assemblyVersion": {
+    "precision": "minor"
+  },
+  "semVer1NumericIdentifierPadding": 3,
+  "nugetPackageVersion": {
+    "semVer": 2
+   },
+  "publicReleaseRefSpec": [
+    "^$",
+  ],
+  "cloudBuild": {
+    "setVersionVariables": true,
+    "setAllVariables": true
+  }
+}

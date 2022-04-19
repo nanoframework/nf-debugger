@@ -1,10 +1,1011 @@
-# Change Log
+# Changelog
 
-## [v1.0.0](https://github.com/nanoframework/nf-debugger/tree/v1.0.0) (2018-10-15)
-[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview026...v1.0.0)
+## [**Changes available only in 'Preview' NuGet packages:**](https://github.com/nanoframework/nf-debugger/tree/HEAD)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.1-preview.14...HEAD)
+
+**Fixed bugs:**
+
+- Fix ESP32 board unintentional reset on Linux [\#345](https://github.com/nanoframework/nf-debugger/pull/345)
+- Fix race condition in PortSerialManager [\#344](https://github.com/nanoframework/nf-debugger/pull/344)
+
+## [v2.2.1-preview.14](https://github.com/nanoframework/nf-debugger/tree/v2.2.1-preview.14) (2022-03-23)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.1-preview.10...v2.2.1-preview.14)
 
 **Implemented enhancements:**
 
+- Improve UpdateDeviceConfiguration [\#343](https://github.com/nanoframework/nf-debugger/pull/343)
+
+**Fixed bugs:**
+
+- Fix network configuration serialization [\#342](https://github.com/nanoframework/nf-debugger/pull/342)
+
+## [v2.2.1-preview.10](https://github.com/nanoframework/nf-debugger/tree/v2.2.1-preview.10) (2022-03-22)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.1-preview.2...v2.2.1-preview.10)
+
+**Implemented enhancements:**
+
+- Add CanChangeMacAddress to CLR capabilites [\#341](https://github.com/nanoframework/nf-debugger/pull/341)
+- Remove unused flags of QueryCLRCapabilities [\#340](https://github.com/nanoframework/nf-debugger/pull/340)
+
+**Documentation and other chores:**
+
+- Update dependencies [\#339](https://github.com/nanoframework/nf-debugger/pull/339)
+
+## [v2.2.1-preview.2](https://github.com/nanoframework/nf-debugger/tree/v2.2.1-preview.2) (2021-12-21)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.0-preview.4...v2.2.1-preview.2)
+
+**Implemented enhancements:**
+
+- Increase pause between requests [\#338](https://github.com/nanoframework/nf-debugger/pull/338)
+
+## [v2.2.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v2.2.0-preview.4) (2021-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.2.0-preview.2...v2.2.0-preview.4)
+
+## [v2.2.0-preview.2](https://github.com/nanoframework/nf-debugger/tree/v2.2.0-preview.2) (2021-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.1.0-preview.1...v2.2.0-preview.2)
+
+**Implemented enhancements:**
+
+- Improve WriteMemory [\#336](https://github.com/nanoframework/nf-debugger/pull/336)
+- Rework PerformSyncRequest [\#335](https://github.com/nanoframework/nf-debugger/pull/335)
+
+## [v2.1.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v2.1.0-preview.1) (2021-12-02)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.60...v2.1.0-preview.1)
+
+**Implemented enhancements:**
+
+- Improve write memory operation [\#334](https://github.com/nanoframework/nf-debugger/pull/334)
+
+## [v2.0.0-preview.60](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.60) (2021-11-30)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.45...v2.0.0-preview.60)
+
+**Implemented enhancements:**
+
+- Remove idle check from WP requests [\#333](https://github.com/nanoframework/nf-debugger/pull/333)
+- Rework valid marker detection [\#331](https://github.com/nanoframework/nf-debugger/pull/331)
+- Work Ports and PortManagers [\#330](https://github.com/nanoframework/nf-debugger/pull/330)
+- Fix network watcher [\#329](https://github.com/nanoframework/nf-debugger/pull/329)
+- Add parameter to network port managers to control watchers [\#328](https://github.com/nanoframework/nf-debugger/pull/328)
+- Add processing for bad WP packets [\#327](https://github.com/nanoframework/nf-debugger/pull/327)
+- Work on PortBase class [\#326](https://github.com/nanoframework/nf-debugger/pull/326)
+- Add LogMessageAvailable event to PortComposite [\#325](https://github.com/nanoframework/nf-debugger/pull/325)
+
+**Fixed bugs:**
+
+- Fix output of progress when deploying [\#332](https://github.com/nanoframework/nf-debugger/pull/332)
+
+## [v2.0.0-preview.45](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.45) (2021-11-09)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.41...v2.0.0-preview.45)
+
+**Implemented enhancements:**
+
+- Fixes in composite and tcp ports [\#324](https://github.com/nanoframework/nf-debugger/pull/324)
+- Add method to log WP payload content [\#323](https://github.com/nanoframework/nf-debugger/pull/323)
+
+**Documentation and other chores:**
+
+- Update NuGets [\#322](https://github.com/nanoframework/nf-debugger/pull/322)
+
+## [v2.0.0-preview.41](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.41) (2021-09-28)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.38...v2.0.0-preview.41)
+
+**Implemented enhancements:**
+
+- Add timeout to PerformSyncRequest [\#321](https://github.com/nanoframework/nf-debugger/pull/321)
+- TCP/IP debugger port implementation [\#318](https://github.com/nanoframework/nf-debugger/pull/318)
+
+## [v2.0.0-preview.38](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.38) (2021-09-27)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.34...v2.0.0-preview.38)
+
+**Implemented enhancements:**
+
+- Improved Linux SerialPort lookup [\#320](https://github.com/nanoframework/nf-debugger/pull/320)
+- Add UNIX support for PortSerial [\#319](https://github.com/nanoframework/nf-debugger/pull/319)
+
+## [v2.0.0-preview.34](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.34) (2021-08-09)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.32...v2.0.0-preview.34)
+
+**Fixed bugs:**
+
+- Fix packet size for targets requiring program alignment [\#317](https://github.com/nanoframework/nf-debugger/pull/317)
+
+## [v2.0.0-preview.32](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.32) (2021-07-06)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.30...v2.0.0-preview.32)
+
+**Implemented enhancements:**
+
+- Certificate update to device are now more robust [\#316](https://github.com/nanoframework/nf-debugger/pull/316)
+
+## [v2.0.0-preview.30](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.30) (2021-07-02)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.28...v2.0.0-preview.30)
+
+**Fixed bugs:**
+
+- Fix lookup in type system [\#315](https://github.com/nanoframework/nf-debugger/pull/315)
+
+## [v2.0.0-preview.28](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.28) (2021-07-01)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.25...v2.0.0-preview.28)
+
+**Implemented enhancements:**
+
+- Improvements related with connection [\#314](https://github.com/nanoframework/nf-debugger/pull/314)
+
+## [v2.0.0-preview.25](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.25) (2021-05-27)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.23...v2.0.0-preview.25)
+
+**Implemented enhancements:**
+
+- General improvements [\#313](https://github.com/nanoframework/nf-debugger/pull/313)
+
+## [v2.0.0-preview.23](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.23) (2021-05-27)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.18...v2.0.0-preview.23)
+
+**Implemented enhancements:**
+
+- Reboot now returns operation result [\#312](https://github.com/nanoframework/nf-debugger/pull/312)
+- Improvements in device detection [\#309](https://github.com/nanoframework/nf-debugger/pull/309)
+
+**Fixed bugs:**
+
+- Fix set execution [\#311](https://github.com/nanoframework/nf-debugger/pull/311)
+- Improve handling of WP request execution [\#310](https://github.com/nanoframework/nf-debugger/pull/310)
+
+## [v2.0.0-preview.18](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.18) (2021-05-26)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.15...v2.0.0-preview.18)
+
+**Implemented enhancements:**
+
+- Improve WP request send [\#308](https://github.com/nanoframework/nf-debugger/pull/308)
+- Improvements in port connection [\#307](https://github.com/nanoframework/nf-debugger/pull/307)
+
+## [v2.0.0-preview.15](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.15) (2021-05-12)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.13...v2.0.0-preview.15)
+
+**Implemented enhancements:**
+
+- Improvements in serial comms [\#306](https://github.com/nanoframework/nf-debugger/pull/306)
+
+## [v2.0.0-preview.13](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.13) (2021-05-10)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.11...v2.0.0-preview.13)
+
+**Implemented enhancements:**
+
+- Work on serial device detection [\#305](https://github.com/nanoframework/nf-debugger/pull/305)
+
+## [v2.0.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.11) (2021-05-10)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.8...v2.0.0-preview.11)
+
+**Implemented enhancements:**
+
+- Work on serial device detection [\#304](https://github.com/nanoframework/nf-debugger/pull/304)
+
+## [v2.0.0-preview.8](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.8) (2021-05-08)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.6...v2.0.0-preview.8)
+
+**Fixed bugs:**
+
+- Improving device watcher [\#303](https://github.com/nanoframework/nf-debugger/pull/303)
+
+## [v2.0.0-preview.6](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.6) (2021-05-08)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v2.0.0-preview.3...v2.0.0-preview.6)
+
+**Implemented enhancements:**
+
+- Enable write check on deployment [\#301](https://github.com/nanoframework/nf-debugger/pull/301)
+
+**Fixed bugs:**
+
+- Fix initialization of Expires in WP Request [\#302](https://github.com/nanoframework/nf-debugger/pull/302)
+
+## [v2.0.0-preview.3](https://github.com/nanoframework/nf-debugger/tree/v2.0.0-preview.3) (2021-05-07)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.30.0-preview.1...v2.0.0-preview.3)
+
+**Implemented enhancements:**
+
+- Rework Wire Protocol [\#300](https://github.com/nanoframework/nf-debugger/pull/300)
+
+## [v1.30.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.30.0-preview.1) (2021-03-19)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.29.0-preview.1...v1.30.0-preview.1)
+
+**Implemented enhancements:**
+
+- Add support for device certificate in configuration block [\#299](https://github.com/nanoframework/nf-debugger/pull/299)
+
+## [v1.29.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.29.0-preview.1) (2021-01-29)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.28.0-preview.7...v1.29.0-preview.1)
+
+**Implemented enhancements:**
+
+- Work on generics [\#297](https://github.com/nanoframework/nf-debugger/pull/297)
+
+## [v1.28.0-preview.7](https://github.com/nanoframework/nf-debugger/tree/v1.28.0-preview.7) (2020-12-23)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.28.0-preview.4...v1.28.0-preview.7)
+
+**Implemented enhancements:**
+
+- StopDebuggerOnConnect shouldn't resume execution [\#296](https://github.com/nanoframework/nf-debugger/pull/296)
+
+**Fixed bugs:**
+
+- Fix access to platform name [\#295](https://github.com/nanoframework/nf-debugger/pull/295)
+
+## [v1.28.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.28.0-preview.4) (2020-12-21)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.28.0-preview.1...v1.28.0-preview.4)
+
+**Implemented enhancements:**
+
+- EraseAsync now uses sectors instead of blocks [\#294](https://github.com/nanoframework/nf-debugger/pull/294)
+
+**Fixed bugs:**
+
+- Fix write memory output [\#293](https://github.com/nanoframework/nf-debugger/pull/293)
+
+## [v1.28.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.28.0-preview.1) (2020-12-18)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.27.0-preview.11...v1.28.0-preview.1)
+
+**Implemented enhancements:**
+
+- Improvements on deploy and erase [\#292](https://github.com/nanoframework/nf-debugger/pull/292)
+
+## [v1.27.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.27.0-preview.11) (2020-12-18)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.27.0-preview.7...v1.27.0-preview.11)
+
+**Implemented enhancements:**
+
+- Add retry policy to Ping [\#291](https://github.com/nanoframework/nf-debugger/pull/291)
+- Add retry policy to IsDeviceInInitializeState [\#290](https://github.com/nanoframework/nf-debugger/pull/290)
+- Improve DeploymentExecuteIncremental [\#289](https://github.com/nanoframework/nf-debugger/pull/289)
+
+## [v1.27.0-preview.7](https://github.com/nanoframework/nf-debugger/tree/v1.27.0-preview.7) (2020-12-18)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.27.0-preview.4...v1.27.0-preview.7)
+
+**Implemented enhancements:**
+
+- Rework ConnectionSource property [\#288](https://github.com/nanoframework/nf-debugger/pull/288)
+- Fix setting of ConnectionSource field [\#287](https://github.com/nanoframework/nf-debugger/pull/287)
+
+## [v1.27.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.27.0-preview.4) (2020-12-17)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.27.0-preview.1...v1.27.0-preview.4)
+
+**Implemented enhancements:**
+
+- Improvements in EraseAsync [\#286](https://github.com/nanoframework/nf-debugger/pull/286)
+
+## [v1.27.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.27.0-preview.1) (2020-12-16)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.5-preview.3...v1.27.0-preview.1)
+
+**Implemented enhancements:**
+
+- Work Flash Sector Data [\#285](https://github.com/nanoframework/nf-debugger/pull/285)
+
+## [v1.26.5-preview.3](https://github.com/nanoframework/nf-debugger/tree/v1.26.5-preview.3) (2020-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.5-preview.1...v1.26.5-preview.3)
+
+## [v1.26.5-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.5-preview.1) (2020-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.4-preview.1...v1.26.5-preview.1)
+
+## [v1.26.4-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.4-preview.1) (2020-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.3-preview.1...v1.26.4-preview.1)
+
+## [v1.26.3-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.3-preview.1) (2020-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.2-preview.1...v1.26.3-preview.1)
+
+## [v1.26.2-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.2-preview.1) (2020-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.1-preview.5...v1.26.2-preview.1)
+
+## [v1.26.1-preview.5](https://github.com/nanoframework/nf-debugger/tree/v1.26.1-preview.5) (2020-12-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.1-preview.3...v1.26.1-preview.5)
+
+## [v1.26.1-preview.3](https://github.com/nanoframework/nf-debugger/tree/v1.26.1-preview.3) (2020-12-02)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.1-preview.1...v1.26.1-preview.3)
+
+## [v1.26.1-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.1-preview.1) (2020-12-02)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.0-preview.11...v1.26.1-preview.1)
+
+## [v1.26.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.26.0-preview.11) (2020-12-02)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.0-preview.6...v1.26.0-preview.11)
+
+## [v1.26.0-preview.6](https://github.com/nanoframework/nf-debugger/tree/v1.26.0-preview.6) (2020-11-30)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.0-preview.5...v1.26.0-preview.6)
+
+## [v1.26.0-preview.5](https://github.com/nanoframework/nf-debugger/tree/v1.26.0-preview.5) (2020-11-30)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.26.0-preview.1...v1.26.0-preview.5)
+
+## [v1.26.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.26.0-preview.1) (2020-11-30)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.25.0-preview.16...v1.26.0-preview.1)
+
+**Implemented enhancements:**
+
+- Rework async methods [\#283](https://github.com/nanoframework/nf-debugger/pull/283)
+
+## [v1.25.0-preview.16](https://github.com/nanoframework/nf-debugger/tree/v1.25.0-preview.16) (2020-11-27)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.25.0-preview.9...v1.25.0-preview.16)
+
+**Implemented enhancements:**
+
+- Improve serial device check [\#282](https://github.com/nanoframework/nf-debugger/pull/282)
+
+**Fixed bugs:**
+
+- Fix ConnectAsync [\#281](https://github.com/nanoframework/nf-debugger/pull/281)
+
+## [v1.25.0-preview.9](https://github.com/nanoframework/nf-debugger/tree/v1.25.0-preview.9) (2020-11-27)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.24.0-preview.3...v1.25.0-preview.9)
+
+**Implemented enhancements:**
+
+- Add attempts parameter to ConnectAsync [\#280](https://github.com/nanoframework/nf-debugger/pull/280)
+- Rework DeployFile inner methods [\#279](https://github.com/nanoframework/nf-debugger/pull/279)
+- Work on async calls [\#278](https://github.com/nanoframework/nf-debugger/pull/278)
+
+## [v1.24.0-preview.3](https://github.com/nanoframework/nf-debugger/tree/v1.24.0-preview.3) (2020-11-26)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.24.0-preview.1...v1.24.0-preview.3)
+
+## [v1.24.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.24.0-preview.1) (2020-11-25)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.15...v1.24.0-preview.1)
+
+**Implemented enhancements:**
+
+- Improvements in device detection [\#277](https://github.com/nanoframework/nf-debugger/pull/277)
+
+**Fixed bugs:**
+
+- Fix output of address on erase operation [\#276](https://github.com/nanoframework/nf-debugger/pull/276)
+
+## [v1.23.0-preview.15](https://github.com/nanoframework/nf-debugger/tree/v1.23.0-preview.15) (2020-11-24)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.10...v1.23.0-preview.15)
+
+**Implemented enhancements:**
+
+- Add new property DeviceId [\#275](https://github.com/nanoframework/nf-debugger/pull/275)
+- Fix EraseAsync [\#274](https://github.com/nanoframework/nf-debugger/pull/274)
+- Add progress report to WriteMemory methods [\#273](https://github.com/nanoframework/nf-debugger/pull/273)
+- Add CheckMemory command to Engine [\#272](https://github.com/nanoframework/nf-debugger/pull/272)
+
+## [v1.23.0-preview.10](https://github.com/nanoframework/nf-debugger/tree/v1.23.0-preview.10) (2020-11-24)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.4...v1.23.0-preview.10)
+
+**Implemented enhancements:**
+
+- Add VerifyMemory method [\#271](https://github.com/nanoframework/nf-debugger/pull/271)
+- Improve serial read/receive operations [\#270](https://github.com/nanoframework/nf-debugger/pull/270)
+- Improve message output [\#269](https://github.com/nanoframework/nf-debugger/pull/269)
+- Improve device detection [\#268](https://github.com/nanoframework/nf-debugger/pull/268)
+- Improve progress messages during DeployBinaryFileAsync [\#267](https://github.com/nanoframework/nf-debugger/pull/267)
+
+## [v1.23.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.23.0-preview.4) (2020-11-23)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.23.0-preview.1...v1.23.0-preview.4)
+
+**Fixed bugs:**
+
+- Fix access to Version properties in NanoDevice [\#265](https://github.com/nanoframework/nf-debugger/pull/265)
+
+**Documentation and other chores:**
+
+- Update NuGet packages [\#266](https://github.com/nanoframework/nf-debugger/pull/266)
+
+## [v1.23.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.23.0-preview.1) (2020-11-23)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.22.0-preview.1...v1.23.0-preview.1)
+
+**Implemented enhancements:**
+
+- Add ConnectionId to NanoDeviceBase [\#264](https://github.com/nanoframework/nf-debugger/pull/264)
+- Add Monitor\_TargetInfo command [\#263](https://github.com/nanoframework/nf-debugger/pull/263)
+
+## [v1.22.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.22.0-preview.1) (2020-11-20)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.21.0-preview.5...v1.22.0-preview.1)
+
+**Implemented enhancements:**
+
+- Improvements in NanoDevice target properties [\#262](https://github.com/nanoframework/nf-debugger/pull/262)
+
+## [v1.21.0-preview.5](https://github.com/nanoframework/nf-debugger/tree/v1.21.0-preview.5) (2020-11-20)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.21.0-preview.4...v1.21.0-preview.5)
+
+## [v1.21.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.21.0-preview.4) (2020-11-20)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.21.0-preview.1...v1.21.0-preview.4)
+
+**Implemented enhancements:**
+
+- Add DeploymentStartAddress and ClrStartAddress [\#261](https://github.com/nanoframework/nf-debugger/pull/261)
+- Remove complex ProgressReport [\#260](https://github.com/nanoframework/nf-debugger/pull/260)
+
+## [v1.21.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.21.0-preview.1) (2020-11-19)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.20.0-preview.8...v1.21.0-preview.1)
+
+**Implemented enhancements:**
+
+- Add DeployBinaryFileAsync to NanoDeviceBase [\#259](https://github.com/nanoframework/nf-debugger/pull/259)
+
+## [v1.20.0-preview.8](https://github.com/nanoframework/nf-debugger/tree/v1.20.0-preview.8) (2020-11-12)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.20.0-preview.5...v1.20.0-preview.8)
+
+**Fixed bugs:**
+
+- Fix check for nanoBooter flag [\#258](https://github.com/nanoframework/nf-debugger/pull/258)
+
+## [v1.20.0-preview.5](https://github.com/nanoframework/nf-debugger/tree/v1.20.0-preview.5) (2020-11-12)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.20.0-preview.1...v1.20.0-preview.5)
+
+**Implemented enhancements:**
+
+- Add flag to Ping to expose support for nanoBooter [\#257](https://github.com/nanoframework/nf-debugger/pull/257)
+
+**Fixed bugs:**
+
+- Fix reboot options [\#256](https://github.com/nanoframework/nf-debugger/pull/256)
+
+## [v1.20.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.20.0-preview.1) (2020-11-12)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.19.0-preview.4...v1.20.0-preview.1)
+
+**Implemented enhancements:**
+
+- Update boot options [\#255](https://github.com/nanoframework/nf-debugger/pull/255)
+
+## [v1.19.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.19.0-preview.4) (2020-11-06)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.18.2-preview.1...v1.19.0-preview.4)
+
+**Implemented enhancements:**
+
+- Expose capability flags [\#254](https://github.com/nanoframework/nf-debugger/pull/254)
+- Work on capability flags [\#253](https://github.com/nanoframework/nf-debugger/pull/253)
+- Work capability flags [\#252](https://github.com/nanoframework/nf-debugger/pull/252)
+- Update CapabilityFlags [\#250](https://github.com/nanoframework/nf-debugger/pull/250)
+
+## [v1.18.2-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.18.2-preview.1) (2020-09-05)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.18.1-preview.1...v1.18.2-preview.1)
+
+**Fixed bugs:**
+
+- Fix return result for WriteMemory and EraseMemory [\#249](https://github.com/nanoframework/nf-debugger/pull/249)
+
+## [v1.18.1-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.18.1-preview.1) (2020-09-04)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.18.0-preview.1...v1.18.1-preview.1)
+
+**Fixed bugs:**
+
+- Fixes in deploy method [\#248](https://github.com/nanoframework/nf-debugger/pull/248)
+
+## [v1.18.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.18.0-preview.1) (2020-07-24)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.17.0-preview.12...v1.18.0-preview.1)
+
+**Implemented enhancements:**
+
+- Rework COM port black list [\#247](https://github.com/nanoframework/nf-debugger/pull/247)
+
+## [v1.17.0-preview.12](https://github.com/nanoframework/nf-debugger/tree/v1.17.0-preview.12) (2020-07-24)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.17.0-preview.4...v1.17.0-preview.12)
+
+**Implemented enhancements:**
+
+- Add COMPortBlackList to SerialPortManager [\#246](https://github.com/nanoframework/nf-debugger/pull/246)
+
+## [v1.17.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.17.0-preview.4) (2020-06-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.17.0-preview.3...v1.17.0-preview.4)
+
+**Implemented enhancements:**
+
+- Improve description on some Wireless config enums [\#245](https://github.com/nanoframework/nf-debugger/pull/245)
+
+## [v1.17.0-preview.3](https://github.com/nanoframework/nf-debugger/tree/v1.17.0-preview.3) (2020-06-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.17.0-preview.2...v1.17.0-preview.3)
+
+**Implemented enhancements:**
+
+- Update wireless config enums [\#244](https://github.com/nanoframework/nf-debugger/pull/244)
+
+## [v1.17.0-preview.2](https://github.com/nanoframework/nf-debugger/tree/v1.17.0-preview.2) (2020-06-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.17...v1.17.0-preview.2)
+
+**Implemented enhancements:**
+
+- Work on wireless configs [\#242](https://github.com/nanoframework/nf-debugger/pull/242)
+
+**Documentation and other chores:**
+
+- Update NuGets [\#243](https://github.com/nanoframework/nf-debugger/pull/243)
+
+## [v1.16.0-preview.17](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.17) (2020-06-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.16...v1.16.0-preview.17)
+
+## [v1.16.0-preview.16](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.16) (2020-06-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.15...v1.16.0-preview.16)
+
+## [v1.16.0-preview.15](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.15) (2020-05-05)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.11...v1.16.0-preview.15)
+
+**Implemented enhancements:**
+
+- Add short timeout to reboot request [\#241](https://github.com/nanoframework/nf-debugger/pull/241)
+- Improve reboot handling [\#240](https://github.com/nanoframework/nf-debugger/pull/240)
+
+**Fixed bugs:**
+
+- Fix processing of OemInfo [\#239](https://github.com/nanoframework/nf-debugger/pull/239)
+
+## [v1.16.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.11) (2020-03-13)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.10...v1.16.0-preview.11)
+
+## [v1.16.0-preview.10](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.10) (2020-03-13)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.8...v1.16.0-preview.10)
+
+**Documentation and other chores:**
+
+- Update Nugets on all projects [\#237](https://github.com/nanoframework/nf-debugger/pull/237)
+
+## [v1.16.0-preview.8](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.8) (2020-03-13)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.4...v1.16.0-preview.8)
+
+**Implemented enhancements:**
+
+- Improve update device config [\#236](https://github.com/nanoframework/nf-debugger/pull/236)
+
+## [v1.16.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.4) (2020-03-12)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.2...v1.16.0-preview.4)
+
+**Fixed bugs:**
+
+- Improve commands that use full WP buffer capacity [\#235](https://github.com/nanoframework/nf-debugger/pull/235)
+
+**Documentation and other chores:**
+
+- Improve UpdateConfiguration command [\#234](https://github.com/nanoframework/nf-debugger/pull/234)
+
+## [v1.16.0-preview.2](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.2) (2020-03-12)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.16.0-preview.1...v1.16.0-preview.2)
+
+**Fixed bugs:**
+
+- Fix UpdateDeviceConfiguration not returning [\#233](https://github.com/nanoframework/nf-debugger/pull/233)
+
+## [v1.16.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.16.0-preview.1) (2020-03-11)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.15.0-preview.8...v1.16.0-preview.1)
+
+**Documentation and other chores:**
+
+- Replace several throws with return value [\#232](https://github.com/nanoframework/nf-debugger/pull/232)
+
+## [v1.15.0-preview.8](https://github.com/nanoframework/nf-debugger/tree/v1.15.0-preview.8) (2020-03-05)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.15.0-preview.7...v1.15.0-preview.8)
+
+**Fixed bugs:**
+
+- Fix error checking on WriteMemory operation [\#231](https://github.com/nanoframework/nf-debugger/pull/231)
+
+## [v1.15.0-preview.7](https://github.com/nanoframework/nf-debugger/tree/v1.15.0-preview.7) (2020-03-05)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.15.0-preview.2...v1.15.0-preview.7)
+
+**Documentation and other chores:**
+
+- Update AccessMemoryErrorCodes enum [\#230](https://github.com/nanoframework/nf-debugger/pull/230)
+
+## [v1.15.0-preview.2](https://github.com/nanoframework/nf-debugger/tree/v1.15.0-preview.2) (2020-03-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.15.0-preview.1...v1.15.0-preview.2)
+
+**Implemented enhancements:**
+
+- Update output format of ReleaseInfo and DeviceInfo [\#229](https://github.com/nanoframework/nf-debugger/pull/229)
+
+## [v1.15.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.15.0-preview.1) (2020-03-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.14.0-preview.1...v1.15.0-preview.1)
+
+**Implemented enhancements:**
+
+- Update ReleaseInfo and related [\#228](https://github.com/nanoframework/nf-debugger/pull/228)
+
+## [v1.14.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.14.0-preview.1) (2020-03-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.12.0-preview.1...v1.14.0-preview.1)
+
+**Implemented enhancements:**
+
+- Improve device detection [\#227](https://github.com/nanoframework/nf-debugger/pull/227)
+
+## [v1.12.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.12.0-preview.1) (2020-03-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.10.0-preview.4...v1.12.0-preview.1)
+
+**Implemented enhancements:**
+
+- Add new method GetTargetInfo [\#226](https://github.com/nanoframework/nf-debugger/pull/226)
+
+## [v1.10.0-preview.4](https://github.com/nanoframework/nf-debugger/tree/v1.10.0-preview.4) (2020-03-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.10.0-preview.3...v1.10.0-preview.4)
+
+## [v1.10.0-preview.3](https://github.com/nanoframework/nf-debugger/tree/v1.10.0-preview.3) (2020-03-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.10.0-preview.2...v1.10.0-preview.3)
+
+## [v1.10.0-preview.2](https://github.com/nanoframework/nf-debugger/tree/v1.10.0-preview.2) (2020-03-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.10.0-preview.1...v1.10.0-preview.2)
+
+## [v1.10.0-preview.1](https://github.com/nanoframework/nf-debugger/tree/v1.10.0-preview.1) (2020-03-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.9.0-preview.16...v1.10.0-preview.1)
+
+**Documentation and other chores:**
+
+- Replace WinRT components access [\#224](https://github.com/nanoframework/nf-debugger/pull/224)
+
+## [v1.9.0-preview.16](https://github.com/nanoframework/nf-debugger/tree/v1.9.0-preview.16) (2020-02-27)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.9.0-preview.13...v1.9.0-preview.16)
+
+**Implemented enhancements:**
+
+- General improvements with serial devices [\#223](https://github.com/nanoframework/nf-debugger/pull/223)
+- Improvements on device detection [\#222](https://github.com/nanoframework/nf-debugger/pull/222)
+
+**Documentation and other chores:**
+
+- Update DiscoveryInteropNativeAssemblies [\#221](https://github.com/nanoframework/nf-debugger/pull/221)
+
+## [v1.9.0-preview.13](https://github.com/nanoframework/nf-debugger/tree/v1.9.0-preview.13) (2020-02-26)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.9.0-preview.12...v1.9.0-preview.13)
+
+**Implemented enhancements:**
+
+- Revert some changes in detection workflow [\#220](https://github.com/nanoframework/nf-debugger/pull/220)
+
+## [v1.9.0-preview.12](https://github.com/nanoframework/nf-debugger/tree/v1.9.0-preview.12) (2020-02-26)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.9.0-preview.11...v1.9.0-preview.12)
+
+**Implemented enhancements:**
+
+- Expose bootTime property [\#219](https://github.com/nanoframework/nf-debugger/pull/219)
+
+## [v1.9.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.9.0-preview.11) (2020-02-26)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.8.1-preview.12...v1.9.0-preview.11)
+
+**Implemented enhancements:**
+
+- Improvements in serial device detection [\#218](https://github.com/nanoframework/nf-debugger/pull/218)
+
+## [v1.8.1-preview.12](https://github.com/nanoframework/nf-debugger/tree/v1.8.1-preview.12) (2020-02-26)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.8.0-preview.11...v1.8.1-preview.12)
+
+**Implemented enhancements:**
+
+- Major code refactoring [\#217](https://github.com/nanoframework/nf-debugger/pull/217)
+
+## [v1.8.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.8.0-preview.11) (2020-02-24)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.7.0-preview.12...v1.8.0-preview.11)
+
+**Implemented enhancements:**
+
+- Update .NET framework to 4.7.2 [\#216](https://github.com/nanoframework/nf-debugger/pull/216)
+
+## [v1.7.0-preview.12](https://github.com/nanoframework/nf-debugger/tree/v1.7.0-preview.12) (2020-02-13)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.6.0-preview.11...v1.7.0-preview.12)
+
+**Implemented enhancements:**
+
+- Improve ToString of NanoFrameworkDeviceInfo [\#215](https://github.com/nanoframework/nf-debugger/pull/215)
+
+**Documentation and other chores:**
+
+- Implement paged request of assemblies available in the target [\#214](https://github.com/nanoframework/nf-debugger/pull/214)
+
+## [v1.6.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.6.0-preview.11) (2020-02-06)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.5.0-preview.14...v1.6.0-preview.11)
+
+**Fixed bugs:**
+
+- Fixes and improvements in Wire Protocol [\#213](https://github.com/nanoframework/nf-debugger/pull/213)
+
+## [v1.5.0-preview.14](https://github.com/nanoframework/nf-debugger/tree/v1.5.0-preview.14) (2019-11-20)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.5.0-preview.11...v1.5.0-preview.14)
+
+**Implemented enhancements:**
+
+- Work towards stability improvement [\#212](https://github.com/nanoframework/nf-debugger/pull/212)
+
+## [v1.5.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.5.0-preview.11) (2019-10-09)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.4.0-preview.17...v1.5.0-preview.11)
+
+**Implemented enhancements:**
+
+- Improve serial target detection [\#211](https://github.com/nanoframework/nf-debugger/pull/211)
+
+## [v1.4.0-preview.17](https://github.com/nanoframework/nf-debugger/tree/v1.4.0-preview.17) (2019-09-24)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.4.0-preview.13...v1.4.0-preview.17)
+
+## [v1.4.0-preview.13](https://github.com/nanoframework/nf-debugger/tree/v1.4.0-preview.13) (2019-09-23)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.4.0-preview.11...v1.4.0-preview.13)
+
+**Implemented enhancements:**
+
+- Improvements in deployment [\#210](https://github.com/nanoframework/nf-debugger/pull/210)
+
+## [v1.4.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.4.0-preview.11) (2019-09-10)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.3.1-preview.18...v1.4.0-preview.11)
+
+**Implemented enhancements:**
+
+- Rework SerialDevice watcher [\#209](https://github.com/nanoframework/nf-debugger/pull/209)
+- Replace chars in ToString output on device capabilities [\#207](https://github.com/nanoframework/nf-debugger/pull/207)
+
+**Fixed bugs:**
+
+- Fix getters of ReleaseInfo class [\#208](https://github.com/nanoframework/nf-debugger/pull/208)
+
+## [v1.3.1-preview.18](https://github.com/nanoframework/nf-debugger/tree/v1.3.1-preview.18) (2019-07-24)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.3.0-preview.14...v1.3.1-preview.18)
+
+**Fixed bugs:**
+
+- Fix OemInfo command [\#206](https://github.com/nanoframework/nf-debugger/pull/206)
+
+## [v1.3.0-preview.14](https://github.com/nanoframework/nf-debugger/tree/v1.3.0-preview.14) (2019-07-23)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.3.0-preview.11...v1.3.0-preview.14)
+
+**Implemented enhancements:**
+
+- Improvements in deployment [\#205](https://github.com/nanoframework/nf-debugger/pull/205)
+
+## [v1.3.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.3.0-preview.11) (2019-07-23)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.19...v1.3.0-preview.11)
+
+**Documentation and other chores:**
+
+- Update serial baud rate to 921600 [\#204](https://github.com/nanoframework/nf-debugger/pull/204)
+
+## [v1.2.1-preview.19](https://github.com/nanoframework/nf-debugger/tree/v1.2.1-preview.19) (2019-07-13)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.17...v1.2.1-preview.19)
+
+**Fixed bugs:**
+
+- Fix deployment progress message [\#203](https://github.com/nanoframework/nf-debugger/pull/203)
+
+## [v1.2.1-preview.17](https://github.com/nanoframework/nf-debugger/tree/v1.2.1-preview.17) (2019-06-27)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.15...v1.2.1-preview.17)
+
+**Implemented enhancements:**
+
+- Add PlatformCapabilities and TargetCapabilities to CLRCapabilities [\#202](https://github.com/nanoframework/nf-debugger/pull/202)
+
+## [v1.2.1-preview.15](https://github.com/nanoframework/nf-debugger/tree/v1.2.1-preview.15) (2019-06-24)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.1-preview.13...v1.2.1-preview.15)
+
+**Fixed bugs:**
+
+- Fix bug with connected state upon reboot [\#201](https://github.com/nanoframework/nf-debugger/pull/201)
+
+## [v1.2.1-preview.13](https://github.com/nanoframework/nf-debugger/tree/v1.2.1-preview.13) (2019-06-20)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.2.0-preview.11...v1.2.1-preview.13)
+
+**Implemented enhancements:**
+
+- Work TargetName and Platform properties [\#200](https://github.com/nanoframework/nf-debugger/pull/200)
+
+## [v1.2.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.2.0-preview.11) (2019-06-20)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.1.0-preview.11...v1.2.0-preview.11)
+
+**Implemented enhancements:**
+
+- Add target name and platform name properties [\#199](https://github.com/nanoframework/nf-debugger/pull/199)
+
+## [v1.1.0-preview.11](https://github.com/nanoframework/nf-debugger/tree/v1.1.0-preview.11) (2019-06-05)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-070...v1.1.0-preview.11)
+
+**Implemented enhancements:**
+
+- Add support for type resolution failed flag [\#197](https://github.com/nanoframework/nf-debugger/pull/197)
+- Work on ReadMemory command [\#195](https://github.com/nanoframework/nf-debugger/pull/195)
+
+**Documentation and other chores:**
+
+- Update NuGet packages [\#196](https://github.com/nanoframework/nf-debugger/pull/196)
+
+## [v1.0.1-preview-070](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-070) (2019-03-19)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-068...v1.0.1-preview-070)
+
+**Implemented enhancements:**
+
+- Improvements in EraseAsync [\#194](https://github.com/nanoframework/nf-debugger/pull/194)
+
+## [v1.0.1-preview-068](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-068) (2019-03-18)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-066...v1.0.1-preview-068)
+
+**Fixed bugs:**
+
+- Improve code on EraseAsync [\#193](https://github.com/nanoframework/nf-debugger/pull/193)
+
+## [v1.0.1-preview-066](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-066) (2019-03-15)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-064...v1.0.1-preview-066)
+
+**Fixed bugs:**
+
+- Fix progress output on DeploymentExecuteIncremental [\#192](https://github.com/nanoframework/nf-debugger/pull/192)
+
+## [v1.0.1-preview-064](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-064) (2019-03-14)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-061...v1.0.1-preview-064)
+
+**Implemented enhancements:**
+
+- Add new method UpdateDebugFlags [\#191](https://github.com/nanoframework/nf-debugger/pull/191)
+- Add output of error codes on WriteMemory [\#190](https://github.com/nanoframework/nf-debugger/pull/190)
+
+## [v1.0.1-preview-061](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-061) (2019-03-12)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-043...v1.0.1-preview-061)
+
+**Implemented enhancements:**
+
+- Work on DeploymentExecuteIncremental [\#189](https://github.com/nanoframework/nf-debugger/pull/189)
+- Add output to help debug device state [\#188](https://github.com/nanoframework/nf-debugger/pull/188)
+- Improve disconnection of SerialDevice [\#186](https://github.com/nanoframework/nf-debugger/pull/186)
+- Tidy output of device capabilites listings [\#184](https://github.com/nanoframework/nf-debugger/pull/184)
+- Update CreateInstanceForSerial constructor for .NET lib [\#183](https://github.com/nanoframework/nf-debugger/pull/183)
+- Improvements device discovery and PortBase classes [\#182](https://github.com/nanoframework/nf-debugger/pull/182)
+- Fix FlashSectorData ToString [\#181](https://github.com/nanoframework/nf-debugger/pull/181)
+
+**Fixed bugs:**
+
+- Fix getting configuration blocks [\#187](https://github.com/nanoframework/nf-debugger/pull/187)
+- Fix update network config [\#185](https://github.com/nanoframework/nf-debugger/pull/185)
+
+## [v1.0.1-preview-043](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-043) (2019-01-30)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-040...v1.0.1-preview-043)
+
+**Implemented enhancements:**
+
+- Remove NoShutdown from RebootOptions [\#180](https://github.com/nanoframework/nf-debugger/pull/180)
+
+## [v1.0.1-preview-040](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-040) (2019-01-28)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-037...v1.0.1-preview-040)
+
+**Implemented enhancements:**
+
+- Improve SerialDevice creation [\#179](https://github.com/nanoframework/nf-debugger/pull/179)
+
+**Documentation and other chores:**
+
+- Update references and dependencies [\#178](https://github.com/nanoframework/nf-debugger/pull/178)
+
+## [v1.0.1-preview-037](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-037) (2019-01-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-035...v1.0.1-preview-037)
+
+## [v1.0.1-preview-035](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-035) (2019-01-03)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview-012...v1.0.1-preview-035)
+
+**Implemented enhancements:**
+
+- Add new entries to Serial Devices black list [\#175](https://github.com/nanoframework/nf-debugger/pull/175)
+- Work on update device config [\#173](https://github.com/nanoframework/nf-debugger/pull/173)
+
+**Documentation and other chores:**
+
+- Update NuGet packages [\#172](https://github.com/nanoframework/nf-debugger/pull/172)
+- Update Minimum and Target version for UWP [\#171](https://github.com/nanoframework/nf-debugger/pull/171)
+
+## [v1.0.1-preview-012](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview-012) (2018-11-07)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.1-preview008...v1.0.1-preview-012)
+
+**Documentation and other chores:**
+
+- Update dependencies [\#170](https://github.com/nanoframework/nf-debugger/pull/170)
+
+## [v1.0.1-preview008](https://github.com/nanoframework/nf-debugger/tree/v1.0.1-preview008) (2018-10-31)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v1.0.0...v1.0.1-preview008)
+
+**Implemented enhancements:**
+
+- Fix to address ESP32 Memory Erase timeout [\#169](https://github.com/nanoframework/nf-debugger/pull/169)
 - Add PropertyChangedInterface to device configuration classes [\#165](https://github.com/nanoframework/nf-debugger/pull/165)
 - Add Display.Description atrribute to network enums [\#164](https://github.com/nanoframework/nf-debugger/pull/164)
 - Add new device ID to black list [\#161](https://github.com/nanoframework/nf-debugger/pull/161)
@@ -110,17 +1111,15 @@
 - Fix potential issue with output stream on SendBufferAsync [\#79](https://github.com/nanoframework/nf-debugger/pull/79)
 - Fix GetDeviceInfo [\#74](https://github.com/nanoframework/nf-debugger/pull/74)
 - Fix several issue with connect/disconnect workflow [\#71](https://github.com/nanoframework/nf-debugger/pull/71)
-- Stability improvements [\#70](https://github.com/nanoframework/nf-debugger/pull/70)
-- Work on MessageReassembler [\#68](https://github.com/nanoframework/nf-debugger/pull/68)
 - Fix declaration of Monitor\_Message [\#65](https://github.com/nanoframework/nf-debugger/pull/65)
 - Correct WriteMemoryAsync [\#56](https://github.com/nanoframework/nf-debugger/pull/56)
 
-**Documentation and other chores:**
+## [v1.0.0](https://github.com/nanoframework/nf-debugger/tree/v1.0.0) (2018-10-15)
 
-- Merge 'develop' to Release 1.0.0 [\#167](https://github.com/nanoframework/nf-debugger/pull/167)
-- Revert "Improvements in engine process exit and termination" [\#146](https://github.com/nanoframework/nf-debugger/pull/146)
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview026...v1.0.0)
 
 ## [0.4.0-preview026](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview026) (2017-09-28)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview025...0.4.0-preview026)
 
 **Fixed bugs:**
@@ -128,6 +1127,7 @@
 - Improve init state detection [\#48](https://github.com/nanoframework/nf-debugger/pull/48)
 
 ## [0.4.0-preview025](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview025) (2017-09-26)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview024...0.4.0-preview025)
 
 **Fixed bugs:**
@@ -135,6 +1135,7 @@
 - Fix wrong return value on SetExecutionModeAsync [\#47](https://github.com/nanoframework/nf-debugger/pull/47)
 
 ## [0.4.0-preview024](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview024) (2017-09-26)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview023...0.4.0-preview024)
 
 **Implemented enhancements:**
@@ -142,6 +1143,7 @@
 - Improvements for deployment and reboot [\#46](https://github.com/nanoframework/nf-debugger/pull/46)
 
 ## [0.4.0-preview023](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview023) (2017-09-25)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview022...0.4.0-preview023)
 
 **Implemented enhancements:**
@@ -149,6 +1151,7 @@
 - Exposed compiler details for device capabilities [\#45](https://github.com/nanoframework/nf-debugger/pull/45)
 
 ## [0.4.0-preview022](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview022) (2017-09-11)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview021...0.4.0-preview022)
 
 **Implemented enhancements:**
@@ -156,9 +1159,11 @@
 - Correct method names [\#44](https://github.com/nanoframework/nf-debugger/pull/44)
 
 ## [0.4.0-preview021](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview021) (2017-09-06)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview020...0.4.0-preview021)
 
 ## [0.4.0-preview020](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview020) (2017-07-24)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview019...0.4.0-preview020)
 
 **Fixed bugs:**
@@ -167,6 +1172,7 @@
 - Improve detection of nanoFramework devices [\#41](https://github.com/nanoframework/nf-debugger/pull/41)
 
 ## [0.4.0-preview019](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview019) (2017-07-19)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview018...0.4.0-preview019)
 
 **Implemented enhancements:**
@@ -175,6 +1181,7 @@
 - Improvements in flash map output [\#36](https://github.com/nanoframework/nf-debugger/pull/36)
 
 ## [0.4.0-preview018](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview018) (2017-06-30)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview017...0.4.0-preview018)
 
 **Implemented enhancements:**
@@ -182,17 +1189,15 @@
 - Fixed issues with device add/removal [\#33](https://github.com/nanoframework/nf-debugger/pull/33)
 
 ## [0.4.0-preview017](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview017) (2017-06-29)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview016...0.4.0-preview017)
 
 **Implemented enhancements:**
 
 - Fix erase memory command [\#32](https://github.com/nanoframework/nf-debugger/pull/32)
 
-**Fixed bugs:**
-
-- Fix erase memory command [\#32](https://github.com/nanoframework/nf-debugger/pull/32)
-
 ## [0.4.0-preview016](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview016) (2017-06-23)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview015...0.4.0-preview016)
 
 **Implemented enhancements:**
@@ -200,17 +1205,15 @@
 - Improve code in Deploy incremental method [\#31](https://github.com/nanoframework/nf-debugger/pull/31)
 
 ## [0.4.0-preview015](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview015) (2017-06-23)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview014...0.4.0-preview015)
 
 **Implemented enhancements:**
 
 - Fix bug with deployment blob building [\#30](https://github.com/nanoframework/nf-debugger/pull/30)
 
-**Fixed bugs:**
-
-- Fix bug with deployment blob building [\#30](https://github.com/nanoframework/nf-debugger/pull/30)
-
 ## [0.4.0-preview014](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview014) (2017-06-23)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview013...0.4.0-preview014)
 
 **Implemented enhancements:**
@@ -219,6 +1222,7 @@
 - Add error code to reply of access memory commands [\#28](https://github.com/nanoframework/nf-debugger/pull/28)
 
 ## [0.4.0-preview013](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview013) (2017-06-22)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview012...0.4.0-preview013)
 
 **Implemented enhancements:**
@@ -226,6 +1230,7 @@
 - Work on DeploymentExecuteIncrementalAsync [\#27](https://github.com/nanoframework/nf-debugger/pull/27)
 
 ## [0.4.0-preview012](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview012) (2017-06-21)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview011...0.4.0-preview012)
 
 **Implemented enhancements:**
@@ -233,6 +1238,7 @@
 - Work on deployment related features [\#26](https://github.com/nanoframework/nf-debugger/pull/26)
 
 ## [0.4.0-preview011](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview011) (2017-06-14)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview010...0.4.0-preview011)
 
 **Implemented enhancements:**
@@ -240,6 +1246,7 @@
 - Add field to expose flags as enum [\#25](https://github.com/nanoframework/nf-debugger/pull/25)
 
 ## [0.4.0-preview010](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview010) (2017-06-14)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview009...0.4.0-preview010)
 
 **Implemented enhancements:**
@@ -247,6 +1254,7 @@
 - Revert removal of assembly deployment flags [\#24](https://github.com/nanoframework/nf-debugger/pull/24)
 
 ## [0.4.0-preview009](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview009) (2017-06-14)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview008...0.4.0-preview009)
 
 **Implemented enhancements:**
@@ -255,6 +1263,7 @@
 - major rework to bring C\#7.0 improvements to code [\#21](https://github.com/nanoframework/nf-debugger/pull/21)
 
 ## [0.4.0-preview008](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview008) (2017-06-13)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview007...0.4.0-preview008)
 
 **Implemented enhancements:**
@@ -262,6 +1271,7 @@
 - Work on DebuggingResolveAssembly [\#19](https://github.com/nanoframework/nf-debugger/pull/19)
 
 ## [0.4.0-preview007](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview007) (2017-06-06)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.4.0-preview006...0.4.0-preview007)
 
 **Implemented enhancements:**
@@ -269,6 +1279,7 @@
 - Correct issues with device disconnect [\#18](https://github.com/nanoframework/nf-debugger/pull/18)
 
 ## [0.4.0-preview006](https://github.com/nanoframework/nf-debugger/tree/0.4.0-preview006) (2017-06-05)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.3.0-preview005...0.4.0-preview006)
 
 **Implemented enhancements:**
@@ -276,6 +1287,7 @@
 - Work on debug component stability [\#17](https://github.com/nanoframework/nf-debugger/pull/17)
 
 ## [0.3.0-preview005](https://github.com/nanoframework/nf-debugger/tree/0.3.0-preview005) (2017-05-30)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/0.3.0-preview004...0.3.0-preview005)
 
 **Fixed bugs:**
@@ -283,6 +1295,7 @@
 - Refactor RegisterForDeviceAccessStatusChange [\#15](https://github.com/nanoframework/nf-debugger/pull/15)
 
 ## [0.3.0-preview004](https://github.com/nanoframework/nf-debugger/tree/0.3.0-preview004) (2017-05-26)
+
 [Full Changelog](https://github.com/nanoframework/nf-debugger/compare/v0.2.20-preview20...0.3.0-preview004)
 
 **Implemented enhancements:**
@@ -294,10 +1307,13 @@
 - Rename solutioninfo to targetinfo [\#4](https://github.com/nanoframework/nf-debugger/pull/4)
 
 ## [v0.2.20-preview20](https://github.com/nanoframework/nf-debugger/tree/v0.2.20-preview20) (2017-03-29)
+
+[Full Changelog](https://github.com/nanoframework/nf-debugger/compare/379db0b08d388a7d20ec942ec50878767a77496c...v0.2.20-preview20)
+
 **Implemented enhancements:**
 
 - Correct structure for flash map command [\#1](https://github.com/nanoframework/nf-debugger/pull/1)
 
 
 
-\* *This Change Log was automatically generated by [github_changelog_generator](https://github.com/skywinder/Github-Changelog-Generator)*
+\* *This Changelog was automatically generated by [github_changelog_generator](https://github.com/github-changelog-generator/github-changelog-generator)*

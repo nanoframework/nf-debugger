@@ -1,0 +1,352 @@
+# Copyright (c) .NET Foundation and Contributors
+# See LICENSE file in the project root for full license information.
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - release-*
+  paths:
+    exclude:
+      - .github_changelog_generator
+      - .gitignore
+      - CHANGELOG.md
+      - CODE_OF_CONDUCT.md
+      - LICENSE.md
+      - README.md
+      - NuGet.Config
+      - assets/*
+      - config/*
+      - .github/*
+
+  tags:
+    include: 
+      - v*
+
+# PR always trigger build
+pr:
+  autoCancel: true
+
+# add nf-tools repo to resources (for Azure Pipelines templates)
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: nanoframework/nf-tools
+      endpoint: nanoframework
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  DOTNET_NOLOGO: true
+  solution: 'nanoFramework.Tools.Debugger.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+  isTag: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/v')]
+
+steps:
+
+- checkout: self
+
+- script: |
+    git config --global user.email 'nanoframework@outlook.com'
+    git config --global user.name 'nfbot'
+  displayName: Setup git identity
+
+# get commit message
+- powershell: |
+
+    # default to false
+    $update = $false
+
+    if($env:Build_Reason -eq 'PullRequest')
+    {
+        # PR build, nothing interesting in commit message
+        Write-Host "Build from PR"
+    }
+    else
+    {
+        # build NOT from PR
+        Write-Host "Build NOT from PR, commit ID: $env:Build_SourceVersion"
+    
+        # get PR associate with commit
+        $prUrl = "https://api.github.com/repos/$env:Build_Repository_Name/commits/$env:Build_SourceVersion/pulls"
+        $commit = Invoke-RestMethod -Uri $prUrl -ContentType "application/json" -Headers @{"Accept"="application/vnd.github.groot-preview+json"} -Method GET
+
+        if($commit -ne $null)
+        {
+            # there is a PR, check labels
+            $updateDependents = $commit.labels | where {$_.Name -eq 'CI: Update Dependents'}
+            if($updateDependents -ne $null)
+            {
+                $update = $true
+            }
+        }
+    }
+
+    # set variable to foward to jobs
+    echo "##vso[task.setvariable variable=RUN_UPDATE_DEPENDENTS]$update"
+  displayName: Check PR labels
+
+- powershell: |
+
+    # compute authorization header in format "AUTHORIZATION: basic 'encoded token'"
+    # 'encoded token' is the Base64 of the string "nfbot:personal-token"
+    $auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$(GitHubToken)"))))"
+
+    cd "$env:Agent_TempDirectory" > $null
+
+    git init "$env:Agent_TempDirectory\repo"
+    cd repo > $null
+    git remote add origin "$env:Build_Repository_Uri"
+    git config --global gc.auto 0
+    git config --global user.name nfbot
+    git config --global user.email nanoframework@outlook.com
+    git config --global core.autocrlf true
+    git -c http.extraheader="AUTHORIZATION: $auth" fetch --progress origin
+    
+    git checkout develop
+
+    nbgv prepare-release
+ 
+    # get commit message for the merge
+    $commitMessage = git log -1 --pretty=%B
+
+    # amend commit message to skip build
+    git commit --amend -m "$commitMessage" -m "***NO_CI***" > $null
+
+    # push all changes to github
+    git -c http.extraheader="AUTHORIZATION: $auth" push --all origin
+
+  condition: eq( variables['StartReleaseCandidate'], true )
+  displayName: NBGV prepare release
+
+- task: SonarCloudPrepare@1
+  condition: >-
+    and(
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      eq(variables['isTag'], 'false')
+    )
+  displayName: 'Prepare analysis on SonarCloud'
+  inputs:
+    SonarCloud: 'sonarcloud-debugger'
+    organization: 'nanoframework'
+    scannerMode: 'MSBuild'
+    projectKey: 'nanoframework_nf-debugger'
+
+- template: azure-pipelines-templates/install-nuget.yml@templates
+
+- task: NuGetCommand@2
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      eq(variables['isTag'], 'false')
+    )
+  displayName: NuGet restore
+  inputs:
+    restoreSolution: '$(solution)'
+
+- task: VSBuild@1
+  condition: >-
+    and(
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      eq(variables['isTag'], 'false')
+    )
+  inputs:
+    solution: '$(solution)'
+    platform: '$(buildPlatform)'
+    msbuildArgs: '-p:PublicRelease=true -t:pack'
+    configuration: '$(buildConfiguration)'
+
+# we don't have tests (yet)
+# - task: VSTest@2
+#   inputs:
+#     platform: '$(buildPlatform)'
+#     configuration: '$(buildConfiguration)'
+
+- task: SonarCloudAnalyze@1
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      eq(variables['isTag'], 'false')
+    )
+  displayName: 'Run Code Analysis'
+
+- task: SonarCloudPublish@1
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      eq(variables['isTag'], 'false')
+    )
+  inputs:
+    pollingTimeoutSec: '300'
+
+- task: CopyFiles@1
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      eq(variables['isTag'], 'false')
+    )
+  displayName: Collecting deployable artifacts
+  inputs:
+    sourceFolder: $(Build.SourcesDirectory)
+    Contents: |
+      **\nanoFramework.Tools.Debugger.Net.*.nupkg
+      **\nanoFramework.Tools.Debugger.Net.*.snupkg
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    flattenFolders: true
+
+- task: DotNetCoreCLI@2
+  displayName: Install SignTool tool
+  condition: >-
+    and(
+      succeeded(),
+      eq(variables['StartReleaseCandidate'], false),
+      eq(variables['System.PullRequest.PullRequestId'], ''),
+      eq(variables['UPDATE_DEPENDENTS'], 'false'),
+      eq(variables['isTag'], 'false')
+    )
+  inputs:
+    command: custom
+    custom: tool
+    arguments: install --tool-path . SignClient
+
+- pwsh: |
+    .\SignClient "Sign" `
+    --baseDirectory "$(Build.ArtifactStagingDirectory)" `
+    --input "**/*.nupkg" `
+    --config "$(Build.Repository.LocalPath)\config\SignClient.json" `
+    --filelist "$(Build.Repository.LocalPath)\config\filelist.txt" `
+    --user "$(SignClientUser)" `
+    --secret '$(SignClientSecret)' `
+    --name ".NET nanoFramework Debugger" `
+    --description ".NET nanoFramework Debugger" `
+    --descriptionUrl "https://github.com/$env:Build_Repository_Name"
+  displayName: Sign packages
+  continueOnError: true
+  condition: >-
+    and(
+      succeeded(),
+      eq(variables['StartReleaseCandidate'], false),
+      eq(variables['System.PullRequest.PullRequestId'], ''),
+      eq(variables['UPDATE_DEPENDENTS'], 'false'),
+      eq(variables['isTag'], 'false')
+    )
+
+# publish artifacts (only possible if this is not a PR originated on a fork)
+- task: PublishBuildArtifacts@1
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      eq(variables['isTag'], 'false')
+    )
+  displayName: Publish deployables artifacts
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: deployables
+    ArtifactType: Container
+
+# push NuGet packages to Azure Artifacts feed (always happens except on PR builds)
+- task: NuGetCommand@2
+  condition: >-
+    and(
+      succeeded(),
+      eq(variables['System.PullRequest.PullRequestId'], ''),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      eq(variables['isTag'], 'false')
+    )
+  displayName: Push NuGet packages to Azure Artifacts
+  inputs:
+    command: push
+    nuGetFeedType: external
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+    publishFeedCredentials: 'AzureArtifacts-debugger'
+    includeSymbols: true
+    allowPackageConflicts: true
+
+# push NuGet class lib package to NuGet (always happens except on PR builds)
+- task: NuGetCommand@2
+  condition: >-
+    and(
+      succeeded(),
+      eq(variables['System.PullRequest.PullRequestId'], ''),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true'),
+      eq(variables['isTag'], 'false')
+    )
+  continueOnError: true
+  displayName: Push NuGet packages to NuGet
+  inputs:
+    command: push
+    nuGetFeedType: external
+    allowPackageConflicts: true
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+    publishFeedCredentials: 'NuGet-debugger'
+    includeSymbols: true
+    
+# create or update GitHub release ON tags from release or main branches
+- task: GithubRelease@1
+  condition: >-
+    and(
+      succeeded(),
+      eq(variables['isTag'], 'false'),
+      eq(variables['System.PullRequest.PullRequestId'], ''),
+      eq(variables['UPDATE_DEPENDENTS'], 'false')
+    )
+  displayName:  Create GitHub release
+  inputs:
+    gitHubConnection: 'github.com_nano-$(System.TeamProject)'
+    tagSource: userSpecifiedTag
+    tag: v$(NBGV_NuGetPackageVersion)
+    title: 'nanoFramework Debugger Library v$(NBGV_NuGetPackageVersion)'
+    assets: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+    isPreRelease: false
+    action: create
+    isDraft: false
+    addChangeLog: true
+    changeLogLabels: |
+      [
+        { "label" : "Type: bug", "displayName" : "Bugs fixed", "state" : "closed" },
+        { "label" : "Type: enhancement", "displayName" : "Enhancements and new features", "state" : "closed" },
+        { "label" : "Breaking-Change", "displayName" : "Breaking Changes", "state" : "closed" }
+        { "label" : "Type: dependencies", "displayName" : "Dependencies updated", "state" : "closed" },
+        { "label" : "Type: documentation", "displayName" : "Documentation", "state" : "closed" }
+      ]
+
+# update dependents
+- task: PowerShell@2
+  condition: >-
+    or(
+      eq(variables['UPDATE_DEPENDENTS'], 'true'),
+      eq(variables['run_update_dependents'], 'true'),
+      eq(variables['isTag'], 'true')
+    )
+  displayName: Update dependent tools
+  inputs:
+    targetType: filePath
+    filePath: azure-pipelines/update-dependents.ps1
+  env:
+    GH_TOKEN: $(GitHubToken)
+
+# step from template @ nf-tools repo
+# report error
+- template: azure-pipelines-templates/discord-webhook-task.yml@templates  
+  parameters:
+    status: 'failure'
+    webhookUrl: '$(DiscordWebhook)'
+    message: ''
