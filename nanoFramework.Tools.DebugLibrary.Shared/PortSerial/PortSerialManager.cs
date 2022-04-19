@@ -31,6 +31,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         // counter of device watchers completed
         private int _newDevicesCount = 0;
+        private readonly object _newDevicesCountLock = new object();
 
         private readonly Random _delay = new Random(DateTime.Now.Millisecond);
 
@@ -277,7 +278,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     }
 
                     // subtract devices count
-                    _newDevicesCount--;
+                    lock (_newDevicesCountLock)
+                    {
+                        _newDevicesCount--;
+                    }
+
 
                     // check if we are done processing arriving devices
                     if (_newDevicesCount == 0)
@@ -427,7 +432,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(serialPort));
 
-            _newDevicesCount++;
+            lock (_newDevicesCountLock)
+            {
+                _newDevicesCount++;
+            }
 
             Task.Run(() =>
             {
