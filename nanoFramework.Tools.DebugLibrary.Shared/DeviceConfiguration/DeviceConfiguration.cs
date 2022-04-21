@@ -129,12 +129,15 @@ namespace nanoFramework.Tools.Debugger
         {
             try
             {
-                var addressAsArray = address.GetAddressBytes();
+                if (address != null)
+                {
+                    var addressAsArray = address.GetAddressBytes();
 
-                return (((uint)addressAsArray[3] << 24) |
-                        ((uint)addressAsArray[2] << 16) |
-                        ((uint)addressAsArray[1] << 8) |
-                        (addressAsArray[0]));
+                    return (((uint)addressAsArray[3] << 24) |
+                            ((uint)addressAsArray[2] << 16) |
+                            ((uint)addressAsArray[1] << 8) |
+                            (addressAsArray[0]));
+                }
             }
             catch { };
 
@@ -145,12 +148,15 @@ namespace nanoFramework.Tools.Debugger
         {
             try
             {
-                var addressBytesReversed = address.GetAddressBytes().Reverse().ToArray();
+                if (address != null)
+                {
+                    var addressBytesReversed = address.GetAddressBytes().Reverse().ToArray();
 
-                return new uint[] { BitConverter.ToUInt32(addressBytesReversed, 0),
+                    return new uint[] { BitConverter.ToUInt32(addressBytesReversed, 0),
                                     BitConverter.ToUInt32(addressBytesReversed, 4),
                                     BitConverter.ToUInt32(addressBytesReversed, 8),
                                     BitConverter.ToUInt32(addressBytesReversed, 12) };
+                }
             }
             catch { };
 
