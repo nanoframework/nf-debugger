@@ -26,7 +26,7 @@ namespace nanoFramework.Tools.Debugger
     public partial class Engine : IDisposable, IControllerHostLocal
     {
         private const int TIMEOUT_DEFAULT = 5000;
-        
+
         /// <summary>
         /// This constant is to be used to pause between requests, when doing batched requests to a target.
         /// </summary>
@@ -112,9 +112,9 @@ namespace nanoFramework.Tools.Debugger
 
         public CLRCapabilities Capabilities { get; internal set; }
         public TargetInfo TargetInfo { get; private set; }
-        
+
         public List<Commands.Monitor_FlashSectorMap.FlashSectorData> FlashSectorMap { get; private set; }
-        
+
         public List<Commands.Monitor_MemoryMap.Range> MemoryMap { get; private set; }
 
         /// <summary>
@@ -136,7 +136,7 @@ namespace nanoFramework.Tools.Debugger
         /// This indicates if the device has a proprietary bootloader.
         /// </summary>
         public bool HasProprietaryBooter { get; private set; }
-        
+
         /// <summary>
         /// This indicates if the target device has nanoBooter.
         /// </summary>
@@ -197,7 +197,7 @@ namespace nanoFramework.Tools.Debugger
         }
 
         public bool Connect(
-            int millisecondsTimeout, 
+            int millisecondsTimeout,
             bool force = false,
             bool requestCapabilities = false)
         {
@@ -212,7 +212,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     if (!IsRunning)
                     {
-                        if (_state.GetValue() == EngineState.Value.NotStarted )
+                        if (_state.GetValue() == EngineState.Value.NotStarted)
                         {
                             // background processor was never started
                             _state.SetValue(EngineState.Value.Starting, true);
@@ -334,7 +334,7 @@ namespace nanoFramework.Tools.Debugger
 
                 if (FlashSectorMap.Count != 0)
                 {
-                    if(MemoryMap.Count == 0)
+                    if (MemoryMap.Count == 0)
                     {
                         MemoryMap = memoryMapPolicy.Execute(() => GetMemoryMap());
                     }
@@ -396,7 +396,7 @@ namespace nanoFramework.Tools.Debugger
                         TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
                     }
 
-                    if(TargetInfo != null)
+                    if (TargetInfo != null)
                     {
                         // we have everything that we need
                         capabilitesRetrieved = true;
@@ -462,7 +462,7 @@ namespace nanoFramework.Tools.Debugger
         public void IncomingMessagesListener()
         {
             Debug.WriteLine(">>>> START IncomingMessagesListener <<<<");
-            
+
             var reassembler = new MessageReassembler(_controlller);
 
             while (_state.IsRunning)
@@ -471,12 +471,12 @@ namespace nanoFramework.Tools.Debugger
                 {
                     reassembler.Process();
                 }
-                catch(DeviceNotConnectedException)
+                catch (DeviceNotConnectedException)
                 {
                     Stop(true);
                     break;
                 }
-                catch(ThreadAbortException)
+                catch (ThreadAbortException)
                 {
                     break;
                 }
@@ -506,7 +506,7 @@ namespace nanoFramework.Tools.Debugger
 
         public bool ThrowOnCommunicationFailure { get; set; } = false;
 
-#region Events 
+        #region Events 
 
         public event NoiseEventHandler OnNoise
         {
@@ -560,9 +560,9 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-#endregion
+        #endregion
 
-#region IDisposable Support
+        #region IDisposable Support
 
         private bool disposedValue = false; // To detect redundant calls
 
@@ -841,7 +841,7 @@ namespace nanoFramework.Tools.Debugger
 
                             if (payload != null)
                             {
-                                Task.Factory.StartNew(() => _eventMessage?.Invoke(message, payload.ToString()));  
+                                Task.Factory.StartNew(() => _eventMessage?.Invoke(message, payload.ToString()));
                             }
 
                             return true;
@@ -941,7 +941,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (_backgroundProcessor == null)
             {
-                _backgroundProcessor = CreateThreadHelper(new ThreadStart( this.IncomingMessagesListener ));
+                _backgroundProcessor = CreateThreadHelper(new ThreadStart(this.IncomingMessagesListener));
             }
         }
 
@@ -964,7 +964,7 @@ namespace nanoFramework.Tools.Debugger
 
         public bool IsRunning => _state.IsRunning;
 
-#region RPC Support
+        #region RPC Support
 
         // comment from original code REVIEW: Can this be refactored out of here to a separate class dedicated to RPC?
         internal class EndPointRegistration
@@ -1117,9 +1117,9 @@ namespace nanoFramework.Tools.Debugger
                 {
                     EndPoint ep = eep.m_ep;
 
-                    if (ep._type == type && 
+                    if (ep._type == type &&
                         ep._id == id &&
-                        (!fOnlyServer || 
+                        (!fOnlyServer ||
                         ep.IsRpcServer))
                     {
                         return eep;
@@ -1330,7 +1330,7 @@ namespace nanoFramework.Tools.Debugger
             return _controlller.GetUniqueEndpointId();
         }
 
-#endregion
+        #endregion
 
 
         internal WireProtocolRequest AsyncRequest(OutgoingMessage message, int timeout)
@@ -1354,7 +1354,7 @@ namespace nanoFramework.Tools.Debugger
                     _requestsStore.Add(request);
                 }
                 else
-                { 
+                {
                     // send failed...
                     request.TaskCompletionSource.SetException(new InvalidOperationException());
                 }
@@ -1387,7 +1387,7 @@ namespace nanoFramework.Tools.Debugger
         //}
 
 
-#region Commands implementation
+        #region Commands implementation
 
         public List<Commands.Monitor_MemoryMap.Range> GetMemoryMap()
         {
@@ -1543,15 +1543,15 @@ namespace nanoFramework.Tools.Debugger
 
             while (count > 0)
             {
-                progress?.Report(new MessageWithProgress($"Deploying { startLenght + position }/{totalLenght} bytes...", (uint)(startLenght + position), (uint)totalLenght));
-                log?.Report($"Deploying { startLenght + position }/{ totalLenght } bytes.");
+                progress?.Report(new MessageWithProgress($"Deploying {startLenght + position}/{totalLenght} bytes...", (uint)(startLenght + position), (uint)totalLenght));
+                log?.Report($"Deploying {startLenght + position}/{totalLenght} bytes.");
 
                 Commands.Monitor_WriteMemory cmd = new Commands.Monitor_WriteMemory();
 
                 // get packet length, either the maximum allowed size or whatever is still available to TX
                 int packetLength = Math.Min(GetPacketMaxLength(cmd), count);
 
-                if(programAligment != 0 && packetLength % programAligment != 0 && packetLength > programAligment)
+                if (programAligment != 0 && packetLength % programAligment != 0 && packetLength > programAligment)
                 {
                     packetLength -= packetLength % programAligment;
                 }
@@ -1569,12 +1569,12 @@ namespace nanoFramework.Tools.Debugger
                 if (reply != null)
                 {
                     Commands.Monitor_WriteMemory.Reply cmdReply = reply.Payload as Commands.Monitor_WriteMemory.Reply;
-                    
+
                     // check for negative reply
                     if (!reply.IsPositiveAcknowledge())
                     {
                         progress?.Report(new MessageWithProgress(""));
-                        log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Write operation failed.");
+                        log?.Report($"Error writing {packetLength} bytes to device @ 0x{address:X8}. Write operation failed.");
 
                         return AccessMemoryErrorCodes.Unknown;
                     }
@@ -1583,7 +1583,29 @@ namespace nanoFramework.Tools.Debugger
                     if ((AccessMemoryErrorCodes)cmdReply.ErrorCode != AccessMemoryErrorCodes.NoError)
                     {
                         progress?.Report(new MessageWithProgress(""));
-                        log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). Error code: {cmdReply.ErrorCode}.");
+
+                        var errorMessage = new StringBuilder($"Error writing {packetLength} bytes to device @ 0x{address:X8}. ");
+
+                        switch ((AccessMemoryErrorCodes)cmdReply.ErrorCode)
+                        {
+                            case AccessMemoryErrorCodes.FailedToAllocateReadBuffer:
+                                errorMessage.Append("Failed to allocate read buffer.");
+                                break;
+
+                            case AccessMemoryErrorCodes.PermissionDenied:
+                                errorMessage.Append("Permission denied.");
+                                break;
+
+                            case AccessMemoryErrorCodes.RequestedOperationFailed:
+                                errorMessage.Append("Requested operation failed.");
+                                break;
+
+                            default:
+                                errorMessage.Append("Unknown error.");
+                                break;
+                        }
+
+                        log?.Report(errorMessage.ToString());
 
                         return (AccessMemoryErrorCodes)cmdReply.ErrorCode;
                     }
@@ -1595,20 +1617,20 @@ namespace nanoFramework.Tools.Debugger
                 else
                 {
                     progress?.Report(new MessageWithProgress(""));
-                    log?.Report($"Error writing to device @ 0x{address:X8} ({packetLength} bytes). No reply from nanoDevice.");
+                    log?.Report($"Error writing {packetLength} bytes to device @ 0x{address:X8}. No reply from nanoDevice.");
 
                     return AccessMemoryErrorCodes.Unknown;
                 }
 
                 // pausing here to artificially allow some slack in the channel
-                Thread.Sleep(3);
+                Thread.Sleep(10);
             }
 
             return AccessMemoryErrorCodes.NoError;
         }
 
         public AccessMemoryErrorCodes WriteMemory(
-            uint address, 
+            uint address,
             byte[] buf,
             int programAligment = 0,
             int startLenght = 0,
@@ -1657,7 +1679,7 @@ namespace nanoFramework.Tools.Debugger
         }
 
         public (AccessMemoryErrorCodes ErrorCode, bool Success) EraseMemory(
-            uint address, 
+            uint address,
             uint length)
         {
             DebuggerEventSource.Log.EngineEraseMemory(address, length);
@@ -1718,7 +1740,7 @@ namespace nanoFramework.Tools.Debugger
             }
 
             // minimum timeout required for ESP32
-            if(TargetInfo.PlatformName.StartsWith("ESP32"))
+            if (TargetInfo.PlatformName.StartsWith("ESP32"))
             {
                 timeout = 10000;
             }
@@ -1762,7 +1784,7 @@ namespace nanoFramework.Tools.Debugger
             ThrowOnCommunicationFailure = false;
 
             // check if device running nanoBooter or if it can handle soft reboot
-            if (IsConnectedTonanoBooter || 
+            if (IsConnectedTonanoBooter ||
                 Capabilities.SoftReboot)
             {
                 cmd.flags = (uint)options;
@@ -1776,14 +1798,14 @@ namespace nanoFramework.Tools.Debugger
             try
             {
                 log?.Report($"Rebooting ({(RebootOptions)cmd.flags})");
-                
+
                 // reset event
                 _pingEvent.Reset();
 
                 // don't keep hopes too high on a reply from reboot request
                 var reqResult = PerformSyncRequest(Commands.c_Monitor_Reboot, Flags.c_NoCaching, cmd);
 
-                if(reqResult != null)
+                if (reqResult != null)
                 {
                     var result = reqResult.IsPositiveAcknowledge() ? "successfully" : " without reply";
 
@@ -1804,7 +1826,7 @@ namespace nanoFramework.Tools.Debugger
                 log?.Report($"Waiting {rebootTimeout}ms for reboot...");
 
                 // make it 3x the default timeout
-                if(_pingEvent.WaitOne(rebootTimeout))
+                if (_pingEvent.WaitOne(rebootTimeout))
                 {
                     log?.Report($"!! Device reboot confirmed !!");
 
@@ -1903,7 +1925,7 @@ namespace nanoFramework.Tools.Debugger
             };
 
             IncomingMessage reply = PerformSyncRequest(Commands.c_Debugging_Execution_ChangeConditions, Flags.c_NoCaching, cmd);
-            
+
             if (reply != null)
             {
                 if (reply.Payload is Commands.DebuggingExecutionChangeConditions.Reply cmdReply)
@@ -2513,7 +2535,7 @@ namespace nanoFramework.Tools.Debugger
                         break;
                     }
 
-                    if(!message.IsPositiveAcknowledge())
+                    if (!message.IsPositiveAcknowledge())
                     {
                         // can't happen, failing right now
                         break;
@@ -3158,7 +3180,7 @@ namespace nanoFramework.Tools.Debugger
                             return false;
                         }
                         // check the error code returned
-                        if(eraseMemoryResult.ErrorCode != AccessMemoryErrorCodes.NoError)
+                        if (eraseMemoryResult.ErrorCode != AccessMemoryErrorCodes.NoError)
                         {
                             log?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}. Error code: {eraseMemoryResult.ErrorCode}.");
                             progress?.Report(new MessageWithProgress(""));
@@ -3167,7 +3189,7 @@ namespace nanoFramework.Tools.Debugger
                     }
 
                     // block erased, write buffer
-                    AccessMemoryErrorCodes errorCode = WriteMemory(
+                    AccessMemoryErrorCodes writeOpResult = WriteMemory(
                         (uint)block.StartAddress,
                         block.DeploymentData,
                         block.ProgramAligment,
@@ -3176,25 +3198,26 @@ namespace nanoFramework.Tools.Debugger
                         progress,
                         log);
 
-                    if (errorCode == AccessMemoryErrorCodes.Unknown)
+                    // check operation success
+                    if (writeOpResult != AccessMemoryErrorCodes.NoError)
                     {
-                        log?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes). Unknown error.");
                         progress?.Report(new MessageWithProgress(""));
-                        return false;
-                    }
 
-                    // check the error code returned
-                    if (errorCode != AccessMemoryErrorCodes.NoError)
-                    {
-                        log?.Report($"Error writing to device memory @ 0x{block.StartAddress:X8} ({block.DeploymentData.Length} bytes). Error code: {errorCode}.");
-                        progress?.Report(new MessageWithProgress(""));
                         return false;
                     }
 
                     // check memory
                     bool memCheck = PerformWriteMemoryCheck((uint)block.StartAddress, block.DeploymentData);
-                    Debug.Assert(memCheck, "Memory check Failed.");
 
+                    if (!memCheck)
+                    {
+                        log?.Report($"Failed memory check @ 0x{block.StartAddress:X8}.");
+                        progress?.Report(new MessageWithProgress(""));
+
+                        return false;
+                    }
+
+                    // all good
                     deployedBytes += block.DeploymentData.Length;
                 }
 
@@ -3297,7 +3320,7 @@ namespace nanoFramework.Tools.Debugger
 
             var executionState = GetExecutionMode();
 
-            if(executionState == Commands.DebuggingExecutionChangeConditions.State.Unknown)
+            if (executionState == Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {
                 log?.Report("*** ERROR: failed to get device execution state, aborting deployment ***");
                 return false;
@@ -3721,7 +3744,7 @@ namespace nanoFramework.Tools.Debugger
                 return null;
             }
 
-            if(clrFlags == 0)
+            if (clrFlags == 0)
             {
                 return null;
             }
@@ -3815,10 +3838,10 @@ namespace nanoFramework.Tools.Debugger
             return DiscoverTargetInfoProperties();
         }
 
-#endregion
+        #endregion
 
 
-#region Device configuration methods
+        #region Device configuration methods
 
         public DeviceConfiguration GetDeviceConfiguration(CancellationToken cancellationToken)
         {
@@ -3873,8 +3896,8 @@ namespace nanoFramework.Tools.Debugger
             }
 
             return new DeviceConfiguration(
-                networkConfigs, 
-                networkWirelessConfigs, 
+                networkConfigs,
+                networkWirelessConfigs,
                 networkWirelessAPConfigs,
                 x509Certificates,
                 x509DeviceCertificates);
@@ -3883,7 +3906,7 @@ namespace nanoFramework.Tools.Debugger
         public List<DeviceConfiguration.NetworkConfigurationProperties> GetAllNetworkConfigurations()
         {
             List<DeviceConfiguration.NetworkConfigurationProperties> networkConfigurations = new List<DeviceConfiguration.NetworkConfigurationProperties>();
-            
+
             uint index = 0;
             DeviceConfiguration.NetworkConfigurationProperties networkConfig;
 
@@ -4065,7 +4088,7 @@ namespace nanoFramework.Tools.Debugger
                             networkConfiguration.StartupAddressMode = (byte)AddressMode.Invalid;
                         }
 
-                        if(networkConfiguration.InterfaceType > (byte)NetworkInterfaceType.Wireless80211)
+                        if (networkConfiguration.InterfaceType > (byte)NetworkInterfaceType.Wireless80211)
                         {
                             // fix this to invalid
                             networkConfiguration.InterfaceType = (byte)NetworkInterfaceType.Unknown;
@@ -4212,7 +4235,7 @@ namespace nanoFramework.Tools.Debugger
             // if that is not the case, then the flash map won't show any config blocks and this step will be skipped 
             if ((IsConnectedTonanoCLR && Capabilities.ConfigBlockRequiresErase) ||
                 IsConnectedTonanoBooter)
-            { 
+            {
                 // this devices probably requires flash erase before updating the configuration block
 
                 // we need the device memory map in order to know were to store this
@@ -4241,7 +4264,7 @@ namespace nanoFramework.Tools.Debugger
 
                         // start erasing the sector that holds the configuration block
                         var (ErrorCode, Success) = EraseMemory(configSector.StartAddress, configSector.NumBlocks * configSector.BytesPerBlock);
-                        
+
                         if (Success)
                         {
                             okToUploadConfig = true;
@@ -4286,7 +4309,7 @@ namespace nanoFramework.Tools.Debugger
                     int packetLength = Math.Min(GetPacketMaxLength(cmd), count);
 
                     // check if this is the last chunk
-                    if(count <= packetLength &&
+                    if (count <= packetLength &&
                        packetLength <= GetPacketMaxLength(cmd))
                     {
                         // yes, signal that by setting the Done field
@@ -4314,7 +4337,7 @@ namespace nanoFramework.Tools.Debugger
                         count -= packetLength;
                         position += packetLength;
 
-                        if(count == 0)
+                        if (count == 0)
                         {
                             // update was OK, switch flag
                             updateFailed = false;
@@ -4329,7 +4352,7 @@ namespace nanoFramework.Tools.Debugger
                     }
                 }
 
-                if(updateFailed)
+                if (updateFailed)
                 {
                     // failed to upload new configuration
                     // revert back old one
@@ -4364,7 +4387,7 @@ namespace nanoFramework.Tools.Debugger
             // Create cancellation token source
             CancellationTokenSource cts = new CancellationTokenSource();
 
-            if(Capabilities.ConfigBlockRequiresErase)
+            if (Capabilities.ConfigBlockRequiresErase)
             {
                 // this device requires erasing the configuration block before updating it
 
@@ -4471,7 +4494,7 @@ namespace nanoFramework.Tools.Debugger
                 // flag to signal the update operation success/failure
                 bool updateFailed = true;
 
-                while ( count > 0 &&
+                while (count > 0 &&
                         attemptCount >= 0)
                 {
                     Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration
@@ -4538,7 +4561,7 @@ namespace nanoFramework.Tools.Debugger
         }
 
         private byte[] GetDeviceConfigurationSerialized<T>(T configuration)
-        {   
+        {
             if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
             {
                 DeviceConfiguration.NetworkConfigurationProperties configBase = configuration as DeviceConfiguration.NetworkConfigurationProperties;
@@ -4598,7 +4621,7 @@ namespace nanoFramework.Tools.Debugger
             }
         }
 
-#endregion
+        #endregion
 
         private Thread CreateThreadHelper(ThreadStart ts)
         {
