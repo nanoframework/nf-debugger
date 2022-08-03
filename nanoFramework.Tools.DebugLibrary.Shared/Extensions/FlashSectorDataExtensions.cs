@@ -27,12 +27,21 @@ namespace nanoFramework.Tools.Debugger.Extensions
                 int programmingAlignment = 0;
 
                 // check alignment requirements
-                if ((value.Flags
-                     & BlockRegionAttributes_MASK
-                     & BlockRegionAttribute_ProgramWidthIs64bits) == BlockRegionAttribute_ProgramWidthIs64bits)
+                uint blockRegionAttributes = value.Flags & BlockRegionAttributes_MASK;
+                switch (blockRegionAttributes)
                 {
-                    // programming width is 64bits => 8 bytes
-                    programmingAlignment = 8;
+                    case BlockRegionAttribute_ProgramWidthIs64bits:
+                        programmingAlignment = 64 / 8;
+                        break;
+                    case BlockRegionAttribute_ProgramWidthIs128bits:
+                        programmingAlignment = 128 / 8;
+                        break;
+                    case BlockRegionAttribute_ProgramWidthIs256bits:
+                        programmingAlignment = 256 / 8;
+                        break;
+                    default:
+                        programmingAlignment = 0;
+                        break;
                 }
 
                 blocks.Add(new DeploymentBlock(
