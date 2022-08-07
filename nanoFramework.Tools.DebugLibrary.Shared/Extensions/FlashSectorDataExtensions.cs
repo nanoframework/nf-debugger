@@ -40,7 +40,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
                 }
                 if( countOfBitsSet > 1)
                 {
-                    throw new Exception("Exception");
+                    throw new NotSupportedException("Multiple selections for Flash Program Width found, only one supported per block");
                 }
 
                 switch (blockRegionFlashProgrammingWidth)
