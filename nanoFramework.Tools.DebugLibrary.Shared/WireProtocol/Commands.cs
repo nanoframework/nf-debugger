@@ -96,6 +96,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             // media attributes
             public const uint BlockRegionAttributes_MASK = 0x0000FF00;
+            public const uint BlockRegionFlashProgrammingWidth_MASK = 0x00000E00;
 
             public const uint BlockRegionAttribute_MemoryMapped = 0x0100;
 

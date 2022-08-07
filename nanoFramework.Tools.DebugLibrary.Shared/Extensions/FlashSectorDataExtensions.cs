@@ -4,6 +4,7 @@
 //
 
 using nanoFramework.Tools.Debugger.WireProtocol;
+using System;
 using System.Collections.Generic;
 using static nanoFramework.Tools.Debugger.WireProtocol.Commands.Monitor_FlashSectorMap;
 
@@ -27,27 +28,39 @@ namespace nanoFramework.Tools.Debugger.Extensions
                 int programmingAlignment = 0;
 
                 // check alignment requirements
-                if ((value.Flags
-                    & BlockRegionAttributes_MASK
-                    & BlockRegionAttribute_ProgramWidthIs64bits) == BlockRegionAttribute_ProgramWidthIs64bits)
+                uint blockRegionFlashProgrammingWidth = value.Flags & BlockRegionFlashProgrammingWidth_MASK;
+                uint blockRegionBitsSet = blockRegionFlashProgrammingWidth;
+
+                // Zero, or 1 bit only allowed to be set for programming width
+                uint countOfBitsSet = 0;
+                while (blockRegionBitsSet > 0)
                 {
-                    // programming width is 64bits => 8 bytes
-                    programmingAlignment = 8;
+                    countOfBitsSet += blockRegionBitsSet & 1;
+                    blockRegionBitsSet >>= 1;
                 }
-                if ((value.Flags
-                    & BlockRegionAttributes_MASK
-                    & BlockRegionAttribute_ProgramWidthIs128bits) == BlockRegionAttribute_ProgramWidthIs128bits)
+                if( countOfBitsSet > 1)
                 {
-                    // programming width is 128bits => 16 bytes
-                    programmingAlignment = 16;
+                    throw new Exception("Exception");
                 }
-                if ((value.Flags
-                    & BlockRegionAttributes_MASK
-                    & BlockRegionAttribute_ProgramWidthIs256bits) == BlockRegionAttribute_ProgramWidthIs256bits)
+
+                switch (blockRegionFlashProgrammingWidth)
                 {
-                    // programming width is 256bits => 32 bytes
-                    programmingAlignment = 32;
+                    case BlockRegionAttribute_ProgramWidthIs64bits:
+                        programmingAlignment = 64 / 8;
+                        break;
+                    case BlockRegionAttribute_ProgramWidthIs128bits:
+                        programmingAlignment = 128 / 8;
+                        break;
+                    case BlockRegionAttribute_ProgramWidthIs256bits:
+                        programmingAlignment = 256 / 8;
+                        break;
+                    default:
+                        // No minimum flash word size
+                        programmingAlignment = 0;
+                        break;
                 }
+
+                Console.WriteLine($"The value is {programmingAlignment}");
 
                 blocks.Add(new DeploymentBlock(
                     (int)value.StartAddress + (i * (int)value.BytesPerBlock),
