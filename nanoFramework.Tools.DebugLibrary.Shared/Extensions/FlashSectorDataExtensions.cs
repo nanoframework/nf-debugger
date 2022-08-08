@@ -45,19 +45,25 @@ namespace nanoFramework.Tools.Debugger.Extensions
 
                 switch (blockRegionFlashProgrammingWidth)
                 {
+                    case BlockRegionAttribute_ProgramWidthIs8bits:
+                        // when not specified, default to minimum flash word size
+                        programmingAlignment = 0;
+                        break;
+
                     case BlockRegionAttribute_ProgramWidthIs64bits:
                         programmingAlignment = 64 / 8;
                         break;
+
                     case BlockRegionAttribute_ProgramWidthIs128bits:
                         programmingAlignment = 128 / 8;
                         break;
+
                     case BlockRegionAttribute_ProgramWidthIs256bits:
                         programmingAlignment = 256 / 8;
                         break;
+
                     default:
-                        // No minimum flash word size
-                        programmingAlignment = 0;
-                        break;
+                        throw new NotSupportedException($"The specified Flash Program Width '{blockRegionFlashProgrammingWidth}' is not supported. Please check the native implementation and/or that you have the .NET nanoFramework Visual Studio extension update.");
                 }
 
                 Console.WriteLine($"The value is {programmingAlignment}");

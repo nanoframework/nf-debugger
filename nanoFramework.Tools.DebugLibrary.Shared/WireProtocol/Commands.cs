@@ -101,6 +101,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint BlockRegionAttribute_MemoryMapped = 0x0100;
 
             // Programming width definitions
+            public const uint BlockRegionAttribute_ProgramWidthIs8bits = 0x0000;
             public const uint BlockRegionAttribute_ProgramWidthIs64bits = 0x0200;
             public const uint BlockRegionAttribute_ProgramWidthIs128bits = 0x0400;
             public const uint BlockRegionAttribute_ProgramWidthIs256bits = 0x0800;
