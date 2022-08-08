@@ -4,6 +4,7 @@
 //
 
 using nanoFramework.Tools.Debugger.WireProtocol;
+using System;
 using System.Collections.Generic;
 using static nanoFramework.Tools.Debugger.WireProtocol.Commands.Monitor_FlashSectorMap;
 
@@ -27,13 +28,45 @@ namespace nanoFramework.Tools.Debugger.Extensions
                 int programmingAlignment = 0;
 
                 // check alignment requirements
-                if ((value.Flags
-                     & BlockRegionAttributes_MASK
-                     & BlockRegionAttribute_ProgramWidthIs64bits) == BlockRegionAttribute_ProgramWidthIs64bits)
+                uint blockRegionFlashProgrammingWidth = value.Flags & BlockRegionFlashProgrammingWidth_MASK;
+                uint blockRegionBitsSet = blockRegionFlashProgrammingWidth;
+
+                // Zero, or 1 bit only allowed to be set for programming width
+                uint countOfBitsSet = 0;
+                while (blockRegionBitsSet > 0)
                 {
-                    // programming width is 64bits => 8 bytes
-                    programmingAlignment = 8;
+                    countOfBitsSet += blockRegionBitsSet & 1;
+                    blockRegionBitsSet >>= 1;
                 }
+                if( countOfBitsSet > 1)
+                {
+                    throw new NotSupportedException("Multiple selections for Flash Program Width found, only one supported per block");
+                }
+
+                switch (blockRegionFlashProgrammingWidth)
+                {
+                    case BlockRegionAttribute_ProgramWidthIs8bits:
+                        // when not specified, default to minimum flash word size
+                        programmingAlignment = 0;
+                        break;
+
+                    case BlockRegionAttribute_ProgramWidthIs64bits:
+                        programmingAlignment = 64 / 8;
+                        break;
+
+                    case BlockRegionAttribute_ProgramWidthIs128bits:
+                        programmingAlignment = 128 / 8;
+                        break;
+
+                    case BlockRegionAttribute_ProgramWidthIs256bits:
+                        programmingAlignment = 256 / 8;
+                        break;
+
+                    default:
+                        throw new NotSupportedException($"The specified Flash Program Width '{blockRegionFlashProgrammingWidth}' is not supported. Please check the native implementation and/or that you have the .NET nanoFramework Visual Studio extension update.");
+                }
+
+                Console.WriteLine($"The value is {programmingAlignment}");
 
                 blocks.Add(new DeploymentBlock(
                     (int)value.StartAddress + (i * (int)value.BytesPerBlock),
