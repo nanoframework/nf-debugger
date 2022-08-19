@@ -20,10 +20,6 @@ trigger:
       - config/*
       - .github/*
 
-  tags:
-    include: 
-      - v*
-
 # PR always trigger build
 pr:
   autoCancel: true
@@ -44,7 +40,6 @@ variables:
   solution: 'nanoFramework.Tools.Debugger.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
-  isTag: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/v')]
 
 steps:
 
@@ -127,8 +122,7 @@ steps:
   condition: >-
     and(
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true'),
-      eq(variables['isTag'], 'false')
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
     )
   displayName: 'Prepare analysis on SonarCloud'
   inputs:
@@ -144,8 +138,7 @@ steps:
     and(
       succeeded(),
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true'),
-      eq(variables['isTag'], 'false')
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
     )
   displayName: NuGet restore
   inputs:
@@ -155,8 +148,7 @@ steps:
   condition: >-
     and(
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true'),
-      eq(variables['isTag'], 'false')
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
     )
   inputs:
     solution: '$(solution)'
@@ -175,8 +167,7 @@ steps:
     and(
       succeeded(),
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true'),
-      eq(variables['isTag'], 'false')
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
     )
   displayName: 'Run Code Analysis'
 
@@ -185,8 +176,7 @@ steps:
     and(
       succeeded(),
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true'),
-      eq(variables['isTag'], 'false')
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
     )
   inputs:
     pollingTimeoutSec: '300'
@@ -196,8 +186,7 @@ steps:
     and(
       succeeded(),
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true'),
-      eq(variables['isTag'], 'false')
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
     )
   displayName: Collecting deployable artifacts
   inputs:
@@ -215,8 +204,7 @@ steps:
       succeeded(),
       eq(variables['StartReleaseCandidate'], false),
       eq(variables['System.PullRequest.PullRequestId'], ''),
-      eq(variables['UPDATE_DEPENDENTS'], 'false'),
-      eq(variables['isTag'], 'false')
+      eq(variables['UPDATE_DEPENDENTS'], 'false')
     )
   inputs:
     command: custom
@@ -241,8 +229,7 @@ steps:
       succeeded(),
       eq(variables['StartReleaseCandidate'], false),
       eq(variables['System.PullRequest.PullRequestId'], ''),
-      eq(variables['UPDATE_DEPENDENTS'], 'false'),
-      eq(variables['isTag'], 'false')
+      eq(variables['UPDATE_DEPENDENTS'], 'false')
     )
 
 # publish artifacts (only possible if this is not a PR originated on a fork)
@@ -251,8 +238,7 @@ steps:
     and(
       succeeded(),
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true'),
-      eq(variables['isTag'], 'false')
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
     )
   displayName: Publish deployables artifacts
   inputs:
@@ -267,8 +253,7 @@ steps:
       succeeded(),
       eq(variables['System.PullRequest.PullRequestId'], ''),
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true'),
-      eq(variables['isTag'], 'false')
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
     )
   displayName: Push NuGet packages to Azure Artifacts
   inputs:
@@ -286,8 +271,7 @@ steps:
       succeeded(),
       eq(variables['System.PullRequest.PullRequestId'], ''),
       ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true'),
-      eq(variables['isTag'], 'false')
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
     )
   continueOnError: true
   displayName: Push NuGet packages to NuGet
@@ -304,7 +288,6 @@ steps:
   condition: >-
     and(
       succeeded(),
-      eq(variables['isTag'], 'false'),
       eq(variables['System.PullRequest.PullRequestId'], ''),
       eq(variables['UPDATE_DEPENDENTS'], 'false')
     )
@@ -333,8 +316,7 @@ steps:
   condition: >-
     or(
       eq(variables['UPDATE_DEPENDENTS'], 'true'),
-      eq(variables['run_update_dependents'], 'true'),
-      eq(variables['isTag'], 'true')
+      eq(variables['run_update_dependents'], 'true')
     )
   displayName: Update dependent tools
   inputs:
