@@ -161,7 +161,7 @@ steps:
   inputs:
     solution: '$(solution)'
     platform: '$(buildPlatform)'
-    msbuildArgs: '-p:PublicRelease=true -t:pack'
+    msbuildArgs: '-p:PublicRelease=true -t:build,pack'
     configuration: '$(buildConfiguration)'
 
 # we don't have tests (yet)
