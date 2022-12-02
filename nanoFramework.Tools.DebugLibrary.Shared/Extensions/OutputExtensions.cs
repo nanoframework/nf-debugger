@@ -118,12 +118,15 @@ namespace nanoFramework.Tools.Debugger.Extensions
                             $"   {range.First(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG).UsageAsString()}");
                     }
 
-                    // nanoCLR
-                    output.AppendLine(
-                        $" {string.Format(" 0x{0:X08}", range.First(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).StartAddress)}" +
-                        $"   {string.Format(" 0x{0:X06}", range.Where(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).Sum(obj => obj.NumBlocks * obj.BytesPerBlock))}" +
-                        $" {range.Where(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).Sum(obj => obj.NumBlocks * obj.BytesPerBlock).ToMemorySizeFormart()}" +
-                        $"   {range.First(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).UsageAsString()}");
+                    // nanoCLR, if available (for RAM based devices, there might not be a CODE region)
+                    if (range.Any(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE))
+                    {
+                        output.AppendLine(
+                            $" {string.Format(" 0x{0:X08}", range.First(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).StartAddress)}" +
+                            $"   {string.Format(" 0x{0:X06}", range.Where(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).Sum(obj => obj.NumBlocks * obj.BytesPerBlock))}" +
+                            $" {range.Where(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).Sum(obj => obj.NumBlocks * obj.BytesPerBlock).ToMemorySizeFormart()}" +
+                            $"   {range.First(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE).UsageAsString()}");
+                    }
 
                     // deployment
                     output.AppendLine(
