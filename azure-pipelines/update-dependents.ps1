@@ -117,7 +117,7 @@ if ($repoStatus -ne "")
 }
 else
 {
-    Write-Host "Nothing udpate at VS extension."
+    Write-Host "Nothing to udpate at VS extension."
 }
 
 #######################
@@ -221,7 +221,7 @@ if ($repoStatus -ne "")
 }
 else
 {
-    Write-Host "Nothing udpate at nanoFramework Deployer."
+    Write-Host "Nothing to udpate at nanoFramework Deployer."
 }
 
 #######################
@@ -325,5 +325,5 @@ if ($repoStatus -ne "")
 }
 else
 {
-    Write-Host "Nothing udpate at nano firmware flasher."
+    Write-Host "Nothing to udpate at nano firmware flasher."
 }
