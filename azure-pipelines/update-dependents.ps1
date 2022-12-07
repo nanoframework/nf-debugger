@@ -13,6 +13,7 @@ Start-Sleep -Seconds 60
 $prTitle = ""
 $newBranchName = "develop-nfbot/update-dependencies/" + [guid]::NewGuid().ToString()
 $packageTargetVersion = gh release view --json tagName --jq .tagName
+$packageTargetVersion = $packageTargetVersion -replace "v"
 
 # working directory is agent temp directory
 Write-Debug "Changing working directory to $env:Agent_TempDirectory"
@@ -37,17 +38,19 @@ git config --global core.autocrlf true
 Write-Host "Checkout develop branch..."
 git checkout --quiet develop | Out-Null
 
-dotnet remove VisualStudio.Extension-2019/VisualStudio.Extension-vs2019.csproj package nanoFramework.Tools.Debugger.Net
-dotnet add VisualStudio.Extension-2019/VisualStudio.Extension-vs2019.csproj package nanoFramework.Tools.Debugger.Net
+dotnet restore
+dotnet remove VisualStudio.Extension-2019/VisualStudio.Extension-vs2019.csproj package nanoFramework.Tools.Debugger.Net 
+dotnet add VisualStudio.Extension-2019/VisualStudio.Extension-vs2019.csproj package nanoFramework.Tools.Debugger.Net --version $packageTargetVersion --no-restore 
 dotnet remove VisualStudio.Extension-2022/VisualStudio.Extension-vs2022.csproj package nanoFramework.Tools.Debugger.Net
-dotnet add VisualStudio.Extension-2022/VisualStudio.Extension-vs2022.csproj package nanoFramework.Tools.Debugger.Net
+dotnet add VisualStudio.Extension-2022/VisualStudio.Extension-vs2022.csproj package nanoFramework.Tools.Debugger.Net --version $packageTargetVersion --no-restore 
+dotnet restore --force-evaluate
 
-"Bumping nanoFramework.Tools.Debugger to $packageTargetVersion." | Write-Host -ForegroundColor Cyan                
+"Bumping nanoFramework.Tools.Debugger to v$packageTargetVersion." | Write-Host -ForegroundColor Cyan                
 
 # build commit message
-$commitMessage += "Bumps nanoFramework.Tools.Debugger to $packageTargetVersion.`n"
+$commitMessage += "Bumps nanoFramework.Tools.Debugger to v$packageTargetVersion.`n"
 # build PR title
-$prTitle = "Bumps nanoFramework.Tools.Debugger to $packageTargetVersion"
+$prTitle = "Bumps nanoFramework.Tools.Debugger to v$packageTargetVersion"
 
 # need this line so nfbot flags the PR appropriately
 $commitMessage += "`n[version update]`n`n"
@@ -138,15 +141,17 @@ git config --global core.autocrlf true
 Write-Host "Checkout main branch..."
 git checkout --quiet main | Out-Null
 
-dotnet remove nanoFrameworkDeployer/nanoFrameworkDeployer.csproj package nanoFramework.Tools.Debugger.Net
-dotnet add nanoFrameworkDeployer/nanoFrameworkDeployer.csproj package nanoFramework.Tools.Debugger.Net
+dotnet restore
+dotnet remove nanoFrameworkDeployer/nanoFrameworkDeployer.csproj package nanoFramework.Tools.Debugger.Net 
+dotnet add nanoFrameworkDeployer/nanoFrameworkDeployer.csproj package nanoFramework.Tools.Debugger.Net --version $packageTargetVersion --no-restore 
+nuget restore -ForceEvaluate
 
-"Bumping nanoFramework.Tools.Debugger to $packageTargetVersion." | Write-Host -ForegroundColor Cyan                
+"Bumping nanoFramework.Tools.Debugger to v$packageTargetVersion." | Write-Host -ForegroundColor Cyan                
 
 # build commit message
-$commitMessage = "Bumps nanoFramework.Tools.Debugger to $packageTargetVersion.`n"
+$commitMessage = "Bumps nanoFramework.Tools.Debugger to v$packageTargetVersion.`n"
 # build PR title
-$prTitle = "Bumps nanoFramework.Tools.Debugger to $packageTargetVersion"
+$prTitle = "Bumps nanoFramework.Tools.Debugger to v$packageTargetVersion"
 
 # need this line so nfbot flags the PR appropriately
 $commitMessage += "`n[version update]`n`n"
@@ -240,18 +245,17 @@ git config --global core.autocrlf true
 Write-Host "Checkout main branch..."
 git checkout --quiet main | Out-Null
 
+dotnet restore
 dotnet remove nanoFirmwareFlasher.Library/nanoFirmwareFlasher.Library.csproj package nanoFramework.Tools.Debugger.Net
-dotnet add nanoFirmwareFlasher.Library/nanoFirmwareFlasher.Library.csproj package nanoFramework.Tools.Debugger.Net
-dotnet remove nanoFirmwareFlasher.Tool/nanoFirmwareFlasher.Tool.csproj package nanoFramework.Tools.Debugger.Net
-dotnet add nanoFirmwareFlasher.Tool/nanoFirmwareFlasher.Tool.csproj package nanoFramework.Tools.Debugger.Net
-nuget restore nanoFirmwareFlasher.sln
+dotnet add nanoFirmwareFlasher.Tool/nanoFirmwareFlasher.Tool.csproj package nanoFramework.Tools.Debugger.Net --version $packageTargetVersion --no-restore 
+dotnet restore --force-evaluate
 
-"Bumping nanoFramework.Tools.Debugger to $packageTargetVersion." | Write-Host -ForegroundColor Cyan                
+"Bumping nanoFramework.Tools.Debugger to v$packageTargetVersion." | Write-Host -ForegroundColor Cyan                
 
 # build commit message
-$commitMessage = "Bumps nanoFramework.Tools.Debugger to $packageTargetVersion.`n"
+$commitMessage = "Bumps nanoFramework.Tools.Debugger to v$packageTargetVersion.`n"
 # build PR title
-$prTitle = "Bumps nanoFramework.Tools.Debugger to $packageTargetVersion"
+$prTitle = "Bumps nanoFramework.Tools.Debugger to v$packageTargetVersion"
 
 # need this line so nfbot flags the PR appropriately
 $commitMessage += "`n[version update]`n`n"
