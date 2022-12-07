@@ -19,6 +19,7 @@ trigger:
       - assets/*
       - config/*
       - .github/*
+      - azure-pipelines/update-dependents.ps1
 
 # PR always trigger build
 pr:
