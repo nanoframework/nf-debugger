@@ -96,7 +96,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             // media attributes
             public const uint BlockRegionAttributes_MASK = 0x0000FF00;
-            public const uint BlockRegionFlashProgrammingWidth_MASK = 0x00000E00;
+            public const uint BlockRegionFlashProgrammingWidth_MASK = 0x00007E00;
 
             public const uint BlockRegionAttribute_MemoryMapped = 0x0100;
 
@@ -105,6 +105,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint BlockRegionAttribute_ProgramWidthIs64bits = 0x0200;
             public const uint BlockRegionAttribute_ProgramWidthIs128bits = 0x0400;
             public const uint BlockRegionAttribute_ProgramWidthIs256bits = 0x0800;
+            public const uint BlockRegionAttribute_ProgramWidthIs512bits = 0x1000;
+            public const uint BlockRegionAttribute_ProgramWidthIs1024bits = 0x2000;
+            public const uint BlockRegionAttribute_ProgramWidthIs2048bits = 0x4000;
 
             public struct FlashSectorData
             {
