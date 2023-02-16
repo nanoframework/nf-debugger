@@ -48,7 +48,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         {
             _deviceWatcher = new DeviceWatcher(this, discoveryPort);
 
-            NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
+            NanoFrameworkDevices = NanoFrameworkDevices.Instance;
 
             Task.Factory.StartNew(() =>
             {

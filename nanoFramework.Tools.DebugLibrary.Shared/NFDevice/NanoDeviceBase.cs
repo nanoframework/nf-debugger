@@ -5,7 +5,7 @@
 //
 
 using nanoFramework.Tools.Debugger.WireProtocol;
-using Polly;
+//using Polly;
 using PropertyChanged;
 using System;
 using System.Collections.Generic;

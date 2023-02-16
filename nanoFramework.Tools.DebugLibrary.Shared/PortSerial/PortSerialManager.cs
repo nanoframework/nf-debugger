@@ -4,7 +4,6 @@
 //
 
 using Microsoft.Win32;
-using nanoFramework.Tools.Debugger.Serial;
 using nanoFramework.Tools.Debugger.WireProtocol;
 using Polly;
 using System;
@@ -12,6 +11,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Threading;
@@ -35,11 +35,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private readonly Random _delay = new Random(DateTime.Now.Millisecond);
 
-        /// <summary>
-        /// Internal list with the actual nF Serial devices
-        /// </summary>
-        private readonly List<SerialDeviceInformation> _serialDevices;
-
         private readonly ConcurrentDictionary<string, CachedDeviceInfo> _devicesCache = new ConcurrentDictionary<string, CachedDeviceInfo>();
 
         public int BootTime { get; set; }
@@ -49,9 +44,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         public PortSerialManager(bool startDeviceWatchers = true, List<string> portExclusionList = null, int bootTime = 3000)
         {
-            NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
-            _serialDevices = new List<SerialDeviceInformation>();
-
+            NanoFrameworkDevices = NanoFrameworkDevices.Instance;
             _deviceWatcher = new(this);
 
             BootTime = bootTime;
@@ -148,25 +141,20 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
             }
 
-            // Clear the list of devices so we don't have potentially disconnected devices around
-            ClearDeviceEntries();
+            NanoFrameworkDevicesRemoveAllSerial();
 
+            _watchersStarted = false;
+        }
+
+        private void NanoFrameworkDevicesRemoveAllSerial()
+        {
             // also clear nanoFramework devices list
             var devicesToRemove = NanoFrameworkDevices.Select(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).DeviceId).ToList();
 
             foreach (var deviceId in devicesToRemove)
             {
-                // get device...
-                var device = FindNanoFrameworkDevice(deviceId);
-
-                // ... and remove it from collection
-                NanoFrameworkDevices.Remove(device);
-
-                device?.DebugEngine?.StopProcessing();
-                device?.DebugEngine?.Stop(true);
+                RemoveDeviceFromList(deviceId);
             }
-
-            _watchersStarted = false;
         }
 
         #endregion
@@ -181,18 +169,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <param name="deviceId">The AQS used to find this device</param>
         private void AddDeviceToListAsync(String deviceId)
         {
-            // search the device list for a device with a matching interface ID
-            var serialMatch = FindDevice(deviceId);
+            // search the nanoFramework device list for a device with a matching interface ID
+            var nanoFrameworkDeviceMatch = FindNanoFrameworkDevice(deviceId);
 
             // Add the device if it's new
-            if (serialMatch == null)
+            if (nanoFrameworkDeviceMatch == null)
             {
-                var serialDevice = new SerialDeviceInformation(deviceId);
-
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.CandidateDevice(deviceId));
 
-                // search the nanoFramework device list for a device with a matching interface ID
-                var nanoFrameworkDeviceMatch = FindNanoFrameworkDevice(deviceId);
 
                 if (nanoFrameworkDeviceMatch == null)
                 {
@@ -213,9 +197,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice))
                         {
                             //add device to the collection
-                            NanoFrameworkDevices.Add(newNanoFrameworkDevice);
-
-                            _serialDevices.Add(serialDevice);
+                            NanoFrameworkDeviceAdd(newNanoFrameworkDevice);
 
                             OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
                         }
@@ -254,10 +236,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             {
                                 if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice, true))
                                 {
-                                    //add device to the collection
-                                    NanoFrameworkDevices.Add(newNanoFrameworkDevice);
-
-                                    _serialDevices.Add(serialDevice);
+                                    NanoFrameworkDeviceAdd(newNanoFrameworkDevice);
 
                                     OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
                                 }
@@ -292,6 +271,18 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
             }
         }
+        /// <summary>
+        /// add device to the collection (if new)
+        /// </summary>
+        /// <param name="newNanoFrameworkDevice">new NanoSerialDevice</param>
+        private void NanoFrameworkDeviceAdd(NanoDevice<NanoSerialDevice> newNanoFrameworkDevice)
+        {
+            if (newNanoFrameworkDevice != null && NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().Count(i => i.DeviceId == newNanoFrameworkDevice.DeviceId) == 0)
+            {
+                //add device to the collection
+                NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+            }
+        }
 
         public override void DisposeDevice(string instanceId)
         {
@@ -308,56 +299,26 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private void RemoveDeviceFromList(string deviceId)
         {
-            // Removes the device entry from the internal list; therefore the UI
-            var deviceEntry = FindDevice(deviceId);
-
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceDeparture(deviceId));
 
-            _serialDevices.Remove(deviceEntry);
+            // get devices and remove them from collection
+            NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>()
+                .Where(i => i.DeviceId == deviceId).ToList()
+                .ForEach(RemoveNanoFrameworkDevices);
+        }
 
-            // get device...
-            var device = FindNanoFrameworkDevice(deviceId);
-
-            // ... and remove it from collection
+        private void RemoveNanoFrameworkDevices(NanoDevice<NanoSerialDevice> device)
+        {
             NanoFrameworkDevices.Remove(device);
-
             device?.DebugEngine?.StopProcessing();
             device?.DebugEngine?.Dispose();
-        }
-
-        private void ClearDeviceEntries()
-        {
-            _serialDevices.Clear();
-        }
-
-        /// <summary>
-        /// Searches through the existing list of devices for the first DeviceListEntry that has
-        /// the specified device Id.
-        /// </summary>
-        /// <param name="deviceId">Id of the device that is being searched for</param>
-        /// <returns>DeviceListEntry that has the provided Id; else a nullptr</returns>
-        internal SerialDeviceInformation FindDevice(String deviceId)
-        {
-            if (deviceId != null)
-            {
-                foreach (SerialDeviceInformation entry in _serialDevices)
-                {
-                    if (entry.InstanceId == deviceId)
-                    {
-                        return entry;
-                    }
-                }
-            }
-
-            return null;
         }
 
         private NanoDeviceBase FindNanoFrameworkDevice(string deviceId)
         {
             if (deviceId != null)
             {
-                // SerialMatch.Device.DeviceInformation
-                return NanoFrameworkDevices.FirstOrDefault(d => ((d as NanoDevice<NanoSerialDevice>).DeviceId) == deviceId);
+                return NanoFrameworkDevices.FirstOrDefault(d => (d as NanoDevice<NanoSerialDevice>).DeviceId == deviceId);
             }
 
             return null;
@@ -439,8 +400,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             Task.Run(() =>
             {
-                AddDeviceToListAsync(serialPort);
+                Policy.Handle<InvalidOperationException>()
+                    .WaitAndRetry(10, retryCount => TimeSpan.FromMilliseconds((retryCount * retryCount) * 25),
+                        onRetry: (exception, delay, retryCount, context) => LogRetry(exception, delay, retryCount, context))
+                    .Execute(() => AddDeviceToListAsync(serialPort));
             });
+        }
+
+        private void LogRetry(Exception exception, TimeSpan delay, object retryCount, object context)
+        {
+            string logMsg = $"Error in AddDeviceToListAsync: {exception.Message} retryCount: {retryCount}, delay msec: {delay.TotalMilliseconds}";
+
+            Debug.WriteLine(logMsg);
+            OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError(logMsg));
         }
 
         #endregion
@@ -499,7 +471,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         ((SerialPort)device.DeviceBase).DiscardInBuffer();
                         ((SerialPort)device.DeviceBase).DiscardOutBuffer();
 
-                        OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {deviceId} @ { baudRate }"));
+                        OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {deviceId} @ {baudRate}"));
 
                         // try to "just" connect to the device meaning...
                         // ... don't request capabilities or force anything except the absolute minimum required, plus...

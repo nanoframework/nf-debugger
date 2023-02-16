@@ -10,6 +10,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
 
+
 namespace nanoFramework.Tools.Debugger.PortComposite
 {
     public class PortCompositeDeviceManager : PortBase
@@ -22,7 +23,7 @@ namespace nanoFramework.Tools.Debugger.PortComposite
             IEnumerable<PortBase> ports,
             bool startDeviceWatchers = true)
         {
-            NanoFrameworkDevices = new ObservableCollection<NanoDeviceBase>();
+            NanoFrameworkDevices = NanoFrameworkDevices.Instance;
 
             _ports.AddRange(ports);
 
@@ -43,7 +44,6 @@ namespace nanoFramework.Tools.Debugger.PortComposite
             _ports.ForEach(p =>
             {
                 p.DeviceEnumerationCompleted += OnPortDeviceEnumerationCompleted;
-                p.NanoFrameworkDevices.CollectionChanged += OnPortNanoFrameworkDevicesOnCollectionChanged;
                 p.LogMessageAvailable += OnLogMessageAvailable;
             });
         }
@@ -51,24 +51,6 @@ namespace nanoFramework.Tools.Debugger.PortComposite
         private void OnLogMessageAvailable(object sender, StringEventArgs e)
         {
             LogMessageAvailable?.Invoke(this, new StringEventArgs(e.EventText));
-        }
-
-        private void OnPortNanoFrameworkDevicesOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            switch (e.Action)
-            {
-                case NotifyCollectionChangedAction.Reset:
-                    NanoFrameworkDevices.Clear();
-                    break;
-
-                case NotifyCollectionChangedAction.Add:
-                    e.NewItems.Cast<NanoDeviceBase>().ToList().ForEach(d => NanoFrameworkDevices.Add(d));
-                    break;
-
-                case NotifyCollectionChangedAction.Remove:
-                    e.OldItems.Cast<NanoDeviceBase>().ToList().ForEach(d => NanoFrameworkDevices.Remove(d));
-                    break;
-            }
         }
 
         private void OnPortDeviceEnumerationCompleted(object sender, EventArgs e)

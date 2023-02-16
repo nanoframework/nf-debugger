@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using Polly;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -69,74 +70,43 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         public ConnectPortResult OpenDevice()
         {
             bool successfullyOpenedDevice = false;
-            bool retry = false;
 
-            try
+            /////////////////////////////////////////////////////////////
+            // need to FORCE the parity setting to _NONE_ because        
+            // the default on the current ST Link is different causing 
+            // the communication to fail
+            /////////////////////////////////////////////////////////////
+
+            NanoDevice.DeviceBase = new SerialPort(InstanceId, BaudRate, Parity.None, 8);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                /////////////////////////////////////////////////////////////
-                // need to FORCE the parity setting to _NONE_ because        
-                // the default on the current ST Link is different causing 
-                // the communication to fail
-                /////////////////////////////////////////////////////////////
-
-                NanoDevice.DeviceBase = new SerialPort(InstanceId, BaudRate, Parity.None, 8);
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    Device.DtrEnable = true;
-                    Device.RtsEnable = true;
-                }
-
-                // Device could have been blocked by user or the device has already been opened by another app.
-                if (Device != null)
-                {
-                    try
-                    {
-                        Device.Open();
-                    }
-                    catch (IOException)
-                    {
-                        retry = true;
-                    }
-
-                    if (retry)
-                    {
-                        Thread.Sleep(100);
-                        Device.Open();
-                    }
-
-                    successfullyOpenedDevice = true;
-
-                    // set conservative timeouts
-                    Device.WriteTimeout = 5000;
-                    Device.ReadTimeout = 500;
-                    Device.ErrorReceived += Device_ErrorReceived;
-
-                    // better make sure the RX FIFO it's cleared
-                    Device.DiscardInBuffer();
-                }
-                else
-                {
-                    successfullyOpenedDevice = false;
-                }
+                Device.DtrEnable = true;
+                Device.RtsEnable = true;
             }
-            catch(UnauthorizedAccessException)
+
+            // Device could have been blocked by user or the device has already been opened by another app.
+            if (Device != null)
             {
-                return ConnectPortResult.Unauthorized;
+                Device.Open();
+
+                successfullyOpenedDevice = true;
+
+                // set conservative timeouts
+                Device.WriteTimeout = 5000;
+                Device.ReadTimeout = 500;
+                Device.ErrorReceived += Device_ErrorReceived;
+
+                // better make sure the RX FIFO it's cleared
+                Device.DiscardInBuffer();
             }
-#if DEBUG
-            catch (Exception ex)
-#else
-            catch
-#endif
+            else
             {
-                // catch all because the device open might fail for a number of reasons
-                return ConnectPortResult.ExceptionOccurred;
+                successfullyOpenedDevice = false;
             }
 
             return successfullyOpenedDevice ? ConnectPortResult.Connected : ConnectPortResult.NotConnected;
         }
-
 
         public bool IsDeviceConnected
         {
@@ -154,8 +124,18 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             if (NanoDevice.DeviceBase != null)
             {
-                ((SerialPort)NanoDevice.DeviceBase).Close();
-                ((SerialPort)NanoDevice.DeviceBase).Dispose();
+                try
+                {
+                    if (((SerialPort)NanoDevice.DeviceBase).IsOpen)
+                    {
+                        ((SerialPort)NanoDevice.DeviceBase).Close();
+                    }
+                    ((SerialPort)NanoDevice.DeviceBase).Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($">>>> CloseDevice ERROR from {InstanceId}: {ex.Message}");
+                }
             }
         }
 
@@ -168,6 +148,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public ConnectPortResult ConnectDevice()
         {
+            ConnectPortResult openDeviceResult = ConnectPortResult.NotConnected;
+
             // try to determine if we already have this device opened.
             if (Device != null &&
                 Device.IsOpen)
@@ -178,24 +160,51 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 return ConnectPortResult.Connected;
             }
 
-            ConnectPortResult openDeviceResult = OpenDevice();
+            try
+            {
+                openDeviceResult = Policy.Handle<IOException>()
+                    .Or<UnauthorizedAccessException>()
+                    .Or<Exception>()
+                    .WaitAndRetry(10, retryCount => TimeSpan.FromMilliseconds((retryCount * retryCount) * 25),
+                        onRetry: (exception, delay, retryCount, context) => LogRetry(exception, delay, retryCount, context))
+                    .Execute(() => OpenDevice());
 
-            if (openDeviceResult == ConnectPortResult.Connected)
-            {
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.OpenDevice(InstanceId));
+                if (openDeviceResult == ConnectPortResult.Connected)
+                {
+                    OnLogMessageAvailable(NanoDevicesEventSource.Log.OpenDevice(InstanceId));
+                }
+                else 
+                {
+                    // Most likely the device is opened by another app, but cannot be sure
+                    OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Can't open Device: {InstanceId}"));
+                }
             }
-            else if (openDeviceResult == ConnectPortResult.Unauthorized)
+            catch (UnauthorizedAccessException uaEx)
             {
                 // Most likely the device is opened by another app, but cannot be sure
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Can't open {InstanceId}, possibly opened by another app"));
+                var logMsg = ($"Error in ConnectDevice: {uaEx.Message} Can't open {InstanceId}, possibly opened by another app");
+                Debug.WriteLine(logMsg);
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError(logMsg));
+                openDeviceResult = ConnectPortResult.Unauthorized;
             }
-            else if (openDeviceResult == ConnectPortResult.ExceptionOccurred)
+            catch (Exception ex)
             {
                 // Most likely the device is opened by another app, but cannot be sure
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Unknown error opening {InstanceId}"));
+                var logMsg = ($"Error in ConnectDevice: {ex.Message} Unknown error opening {InstanceId}");
+                Debug.WriteLine(logMsg);
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError(logMsg));
+                openDeviceResult = ConnectPortResult.ExceptionOccurred;
             }
 
             return openDeviceResult;
+        }
+
+        private void LogRetry(Exception response, TimeSpan delay, object retryCount, object context)
+        {
+            string logMsg = $"Can't open {InstanceId}: {response.Message} retryCount: {retryCount}, delay msec: {delay.TotalMilliseconds}";
+
+            Debug.WriteLine(logMsg);
+            OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError(logMsg));
         }
 
         public void DisconnectDevice(bool force = false)

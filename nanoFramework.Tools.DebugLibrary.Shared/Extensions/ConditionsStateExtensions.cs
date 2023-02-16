@@ -4,7 +4,7 @@
 //
 
 using nanoFramework.Tools.Debugger.WireProtocol;
-using Polly;
+//using Polly;
 using System;
 using System.Diagnostics;
 

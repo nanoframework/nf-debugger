@@ -465,7 +465,7 @@ namespace nanoFramework.Tools.Debugger
 
             var reassembler = new MessageReassembler(_controlller);
 
-            while (_state.IsRunning)
+            while (_state.IsRunning & _backgroundProcessor != null)
             {
                 try
                 {
@@ -921,7 +921,6 @@ namespace nanoFramework.Tools.Debugger
                 try
                 {
                     _backgroundProcessor.Join(TimeSpan.FromSeconds(1));
-                    _backgroundProcessor.Abort();
                 }
                 catch
                 {
