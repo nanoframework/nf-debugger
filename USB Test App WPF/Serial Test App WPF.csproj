@@ -102,7 +102,7 @@
       <Version>2.0.6</Version>
     </PackageReference>
     <PackageReference Include="Fody">
-      <Version>6.6.4</Version>
+      <Version>4.2.1</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -113,7 +113,7 @@
       <Version>1.14.2</Version>
     </PackageReference>
     <PackageReference Include="PropertyChanged.Fody">
-      <Version>4.1.0</Version>
+      <Version>2.6.1</Version>
     </PackageReference>
     <PackageReference Include="System.Threading.Tasks.Extensions">
       <Version>4.5.4</Version>
