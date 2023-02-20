@@ -41,67 +41,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 _threadWatch = new Thread(() =>
                 {
-                    _ownerManager.OnLogMessageAvailable($"PortSerial device watcher started @ Thread {_threadWatch.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
-
-                    _ports = new List<string>();
-
-                    _started = true;
-
-                    Status = DeviceWatcherStatus.Started;
-
-                    while (_started)
-                    {
-                        try
-                        {
-                            var ports = GetPortNames();
-
-                            // process ports that have arrived
-                            foreach (var port in ports)
-                            {
-                                if (!_ports.Contains(port))
-                                {
-                                    _ports.Add(port);
-                                    Added?.Invoke(this, port);
-                                }
-                            }
-
-                            // check for ports that departed 
-                            List<string> portsToRemove = new();
-
-                            foreach (var port in _ports)
-                            {
-                                if (!ports.Contains(port))
-                                {
-                                    portsToRemove.Add(port);
-                                }
-                            }
-
-                            // process ports that have departed 
-                            foreach (var port in portsToRemove)
-                            {
-                                if (_ports.Contains(port))
-                                {
-                                    _ports.Remove(port);
-                                    Removed?.Invoke(this, port);
-                                }
-                            }
-
-                            Thread.Sleep(200);
-                        }
-#if DEBUG
-                        catch (Exception ex)
-#else
-                        catch
-#endif
-                        {
-                            // catch all so the watcher can always do it's job
-                            // on any exception the thread will get back to the loop or exit on the while loop condition
-                        }
-                    }
-
-                    _ownerManager.OnLogMessageAvailable($"PortSerial device watcher stopped @ Thread {_threadWatch.ManagedThreadId}");
-
-                    Status = DeviceWatcherStatus.Stopped;
+                    StartWatcher();
                 })
                 {
                     IsBackground = true,
@@ -110,6 +50,71 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 _threadWatch.Start();
             }
+        }
+
+        private void StartWatcher()
+        {
+            _ownerManager.OnLogMessageAvailable($"PortSerial device watcher started @ Thread {_threadWatch.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
+
+            _ports = new List<string>();
+
+            _started = true;
+
+            Status = DeviceWatcherStatus.Started;
+
+            while (_started)
+            {
+                try
+                {
+                    var ports = GetPortNames();
+
+                    // check for ports that departed 
+                    List<string> portsToRemove = new();
+
+                    foreach (var port in _ports)
+                    {
+                        if (!ports.Contains(port))
+                        {
+                            portsToRemove.Add(port);
+                        }
+                    }
+
+                    // process ports that have departed 
+                    foreach (var port in portsToRemove)
+                    {
+                        if (_ports.Contains(port))
+                        {
+                            _ports.Remove(port);
+                            Removed?.Invoke(this, port);
+                        }
+                    }
+
+                    // process ports that have arrived
+                    foreach (var port in ports)
+                    {
+                        if (!_ports.Contains(port))
+                        {
+                            _ports.Add(port);
+                            Added?.Invoke(this, port);
+                        }
+                    }
+
+                    Thread.Sleep(200);
+                }
+#if DEBUG
+                catch (Exception ex)
+#else
+                        catch
+#endif
+                {
+                    // catch all so the watcher can always do it's job
+                    // on any exception the thread will get back to the loop or exit on the while loop condition
+                }
+            }
+
+            _ownerManager.OnLogMessageAvailable($"PortSerial device watcher stopped @ Thread {_threadWatch.ManagedThreadId}");
+
+            Status = DeviceWatcherStatus.Stopped;
         }
 
         public List<string> GetPortNames()

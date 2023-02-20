@@ -53,7 +53,7 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public bool IsDevicesEnumerationComplete { get; internal set; } = false;
 
-        public ObservableCollection<NanoDeviceBase> NanoFrameworkDevices { get; protected set; }
+        public NanoFrameworkDevices NanoFrameworkDevices { get; protected set; } 
 
         /// <summary>
         /// Starts the device watchers.

@@ -20,6 +20,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationOption.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NanoFrameworkDevices.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessAPBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessAPConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\Wireless80211ConfigurationPropertiesBase.cs" />
@@ -81,8 +82,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)PortDefinitions\PortBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortSerial\DeviceWatcher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortDefinitions\DeviceWatcherStatus.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PortSerial\SerialDeviceInformation.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PortSerial\SerialDeviceProperties.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortSerial\PortSerial.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortSerial\PortSerialManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\NanoNetworkDevice.cs" />
