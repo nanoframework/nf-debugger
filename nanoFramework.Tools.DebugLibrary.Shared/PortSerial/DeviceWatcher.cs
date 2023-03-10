@@ -153,6 +153,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             foreach (string name in Directory.GetFiles("/dev", "tty.usbserial*"))
             {
+                // We don't want Bluetooth ports
+                if (name.ToLower().Contains("bluetooth"))
+                {
+                    continue;
+                }
+
                 // GetFiles can return unexpected results because of 8.3 matching.
                 // Like /dev/tty
                 if (name.StartsWith("/dev/tty.", StringComparison.Ordinal))
@@ -163,6 +169,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             foreach (string name in Directory.GetFiles("/dev", "cu.usbserial*"))
             {
+                // We don't want Bluetooth ports
+                if (name.ToLower().Contains("bluetooth"))
+                {
+                    continue;
+                }
+
                 if (name.StartsWith("/dev/cu.", StringComparison.Ordinal))
                 {
                     ports.Add(name);
