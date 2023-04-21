@@ -333,13 +333,22 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 try
                 {
-                    int readBytes = Device.Read(buffer, 0, bytesToRead);
+                    // this loop shall fix issues with M1 and some drivers showing up bytes to fast
+                    List<byte> received = new List<byte>();
+                    int readBytes = 0;
+                    while (Device.BytesToRead > 0)
+                    {
+                        byte[] toRead = new byte[Device.BytesToRead];
+                        readBytes += Device.Read(toRead, 0, toRead.Length);
+                        received.AddRange(toRead);
+                    }
 
                     if (readBytes != bytesToRead)
                     {
                         Array.Resize(ref buffer, readBytes);
                     }
 
+                    received.CopyTo(buffer);
                     return buffer;
                 }
                 catch (TimeoutException)
