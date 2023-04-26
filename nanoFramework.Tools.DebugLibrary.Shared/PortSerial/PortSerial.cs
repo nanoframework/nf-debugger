@@ -200,7 +200,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 {
                     OnLogMessageAvailable(NanoDevicesEventSource.Log.OpenDevice(InstanceId));
                 }
-                else 
+                else
                 {
                     // Most likely the device is opened by another app, but cannot be sure
                     OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Can't open Device: {InstanceId}"));
@@ -336,7 +336,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // this loop shall fix issues with M1 and some drivers showing up bytes to fast
                     List<byte> received = new List<byte>();
                     int readBytes = 0;
-                    while (Device.BytesToRead > 0)
+                    while (Device.BytesToRead > 0 && readBytes < bytesToRead)
                     {
                         byte[] toRead = new byte[Device.BytesToRead];
                         readBytes += Device.Read(toRead, 0, toRead.Length);
