@@ -5,7 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -53,7 +52,13 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public bool IsDevicesEnumerationComplete { get; internal set; } = false;
 
-        public NanoFrameworkDevices NanoFrameworkDevices { get; protected set; } 
+        public NanoFrameworkDevices NanoFrameworkDevices { get; protected set; }
+
+        /// <summary>
+        /// Adds a new <see cref="PortSerial"/> device to list of NanoFrameworkDevices.
+        /// </summary>
+        /// <param name="deviceId">The serial port name where the device is connected.</param>
+        public abstract void AddDevice(string deviceId);
 
         /// <summary>
         /// Starts the device watchers.

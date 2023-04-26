@@ -9,9 +9,7 @@ using Polly;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Threading;
@@ -159,15 +157,22 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         #endregion
 
-
         #region Methods to manage device list add, remove, etc
 
         /// <summary>
-        /// Creates a DeviceListEntry for a device and adds it to the list of devices
+        /// Adds a new <see cref="PortSerial"/> device to list of NanoFrameworkDevices.
         /// </summary>
-        /// <param name="deviceInformation">DeviceInformation on the device to be added to the list</param>
+        /// <param name="deviceId">The serial port name where the device is connected.</param>
+        public override void AddDevice(string deviceId)
+        {
+            AddDeviceToListAsync(deviceId);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="NanoDevice"/> and adds it to the list of devices.
+        /// </summary>
         /// <param name="deviceId">The AQS used to find this device</param>
-        private void AddDeviceToListAsync(String deviceId)
+        private void AddDeviceToListAsync(string deviceId)
         {
             // search the nanoFramework device list for a device with a matching interface ID
             var nanoFrameworkDeviceMatch = FindNanoFrameworkDevice(deviceId);
@@ -176,7 +181,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             if (nanoFrameworkDeviceMatch == null)
             {
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.CandidateDevice(deviceId));
-
 
                 if (nanoFrameworkDeviceMatch == null)
                 {
@@ -271,6 +275,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
             }
         }
+
         /// <summary>
         /// add device to the collection (if new)
         /// </summary>
