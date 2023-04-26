@@ -3,10 +3,10 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools.Debugger.PortSerial;
-using System.Collections.Generic;
 using nanoFramework.Tools.Debugger.PortComposite;
+using nanoFramework.Tools.Debugger.PortSerial;
 using nanoFramework.Tools.Debugger.PortTcpIp;
+using System.Collections.Generic;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -31,17 +31,17 @@ namespace nanoFramework.Tools.Debugger
         {
             return new PortSerialManager(startDeviceWatchers, portExclusionList, bootTime);
         }
-        
+
         public static PortBase CreateInstanceForNetwork(bool startDeviceWatchers)
         {
             return new PortTcpIpManager(startDeviceWatchers);
         }
-        
+
         public static PortBase CreateInstanceForNetwork(bool startDeviceWatchers, int discoveryPort)
         {
             return new PortTcpIpManager(startDeviceWatchers, discoveryPort);
         }
-        
+
         public static PortBase CreateInstanceForComposite(IEnumerable<PortBase> ports, bool startDeviceWatchers)
         {
             return new PortCompositeDeviceManager(ports, startDeviceWatchers);

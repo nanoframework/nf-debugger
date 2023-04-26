@@ -3,15 +3,15 @@
 // See LICENSE file in the project root for full license information.
 //
 
+using nanoFramework.Tools.Debugger.WireProtocol;
+using Polly;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using nanoFramework.Tools.Debugger.WireProtocol;
-using Polly;
 
 namespace nanoFramework.Tools.Debugger.PortTcpIp
 {
@@ -492,6 +492,21 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         internal void OnLogMessageAvailable(string message)
         {
             LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
+        }
+
+        public override void AddDevice(string deviceId)
+        {
+            // expected format is "tcpip://{Host}:{Port}"
+
+            var match = Regex.Match(deviceId, $"\"(tcpip:\\/\\/)(?<host>\\d{{1,3}}\\.\\d{{1,3}}\\.\\d{{1,3}}\\.\\d{{1,3}}):(?<port>[0-9]{{1,5}})\"gm");
+            if (!match.Success)
+            {
+                throw new ArgumentException("Invalid tcpip format.");
+            }
+
+            AddDeviceToListAsync(new NetworkDeviceInformation(
+                match.Groups["host"].Value,
+                int.Parse(match.Groups["port"].Value)));
         }
 
         /// <summary>

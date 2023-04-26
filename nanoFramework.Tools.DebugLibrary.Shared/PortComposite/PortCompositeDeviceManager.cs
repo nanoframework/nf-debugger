@@ -5,9 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Linq;
 using System.Threading.Tasks;
 
 
@@ -56,6 +53,16 @@ namespace nanoFramework.Tools.Debugger.PortComposite
         private void OnPortDeviceEnumerationCompleted(object sender, EventArgs e)
         {
             DeviceEnumerationCompleted?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <inheritdoc/>
+        /// <exception cref="NotImplementedException">This API is not available in </exception>
+        public override void AddDevice(string deviceId)
+        {
+            _ports.ForEach(p =>
+            {
+                p.AddDevice(deviceId);
+            });
         }
 
         public override void StartDeviceWatchers()
