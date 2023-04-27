@@ -9,9 +9,6 @@ using System.Threading;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
-    /// <summary>
-    /// Device watcher.
-    /// </summary>
     public class DeviceWatcher : IDisposable
     {
         private bool _started = false;
@@ -19,33 +16,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private Thread _threadWatch = null;
         private readonly PortSerialManager _ownerManager;
 
-        /// <summary>
-        /// Represents a delegate method that is used to handle the DeviceAdded event.
-        /// </summary>
-        /// <param name="sender">The object that raised the event.</param>
-        /// <param name="port">The port of the device that was added.</param>
         public delegate void EventDeviceAdded(object sender, string port);
 
-        /// <summary>
-        /// Raised when a device is added to the system.
-        /// </summary>
         public event EventDeviceAdded Added;
 
-        /// <summary>
-        /// Represents a delegate method that is used to handle the DeviceRemoved event.
-        /// </summary>
-        /// <param name="sender">The object that raised the event.</param>
-        /// <param name="port">The port of the device that was removed.</param>
         public delegate void EventDeviceRemoved(object sender, string port);
 
-        /// <summary>
-        /// Raised when a device is removed from the system.
-        /// </summary>
         public event EventDeviceRemoved Removed;
 
-        /// <summary>
-        /// Gets or sets the status of the device watcher.
-        /// </summary>
         public DeviceWatcherStatus Status { get; internal set; }
 
         /// <summary>
@@ -57,9 +35,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             _ownerManager = owner;
         }
 
-        /// <summary>
-        /// Starts the device watcher.
-        /// </summary>
         public void Start()
         {
             if (!_started)
@@ -129,7 +104,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 #if DEBUG
                 catch (Exception ex)
 #else
-                catch
+                        catch
 #endif
                 {
                     // catch all so the watcher can always do it's job
@@ -142,10 +117,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             Status = DeviceWatcherStatus.Stopped;
         }
 
-        /// <summary>
-        /// Gets the list of serial ports.
-        /// </summary>
-        /// <returns>The list of serial ports.</returns>
         public List<string> GetPortNames()
         {
 
@@ -322,18 +293,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return portNames;
         }
 
-        /// <summary>
-        /// Stops the watcher.
-        /// </summary>
         public void Stop()
         {
             _started = false;
             Status = DeviceWatcherStatus.Stopping;
         }
 
-        /// <summary>
-        /// Disposes the watcher.
-        /// </summary>
         public void Dispose()
         {
             Stop();

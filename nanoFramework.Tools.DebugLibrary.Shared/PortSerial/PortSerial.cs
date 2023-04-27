@@ -14,41 +14,21 @@ using System.Threading;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
-    /// <summary>
-    /// A class representing a serial port used for communication with a device.
-    /// </summary>
     public class PortSerial : PortMessageBase, IPort
     {
         private readonly PortSerialManager _portManager;
-
-        /// <summary>
-        /// Event that is raised when a log message is available.
-        /// </summary>
         public override event EventHandler<StringEventArgs> LogMessageAvailable;
 
-        /// <summary>
-        /// Gets the underlying SerialPort device.
-        /// </summary>
         public SerialPort Device => (SerialPort)NanoDevice.DeviceBase;
 
         // valid baud rates
-        /// <summary>
-        /// A list of valid baud rates for the serial port.
-        /// </summary>
         public static readonly List<int> ValidBaudRates = new List<int>() { 921600, 460800, 115200 };
 
-        /// <summary>
-        /// Gets or sets the baud rate for the serial port.
-        /// </summary>
         public int BaudRate { get; internal set; }
 
-        /// <summary>
-        /// Gets or sets the baud rate for the serial port.
-        /// </summary>
         public NanoDevice<NanoSerialDevice> NanoDevice { get; }
 
         /// <summary>
-        /// Gets the Instance ID of the device.
         /// This DeviceInformation represents which device is connected or which device will be reconnected when
         /// the device is plugged in again (if IsEnabledAutoReconnect is true);.
         /// </summary>
@@ -61,10 +41,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         }
 
         /// <summary>
-        /// Initializes a new instance of the PortSerial class.
+        /// Creates an Serial debug client
         /// </summary>
-        /// <param name="portManager">The manager for the serial port.</param>
-        /// <param name="serialDevice">The NanoDevice associated with the serial port.</param>
+        /// <param name="deviceInfo">Device information of the device to be opened</param>
+        /// <param name="deviceSelector">The AQS used to find this device</param>
         public PortSerial(PortSerialManager portManager, NanoDevice<NanoSerialDevice> serialDevice)
         {
             _portManager = portManager ?? throw new ArgumentNullException(nameof(portManager));
@@ -128,9 +108,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return successfullyOpenedDevice ? ConnectPortResult.Connected : ConnectPortResult.NotConnected;
         }
 
-        /// <summary>
-        /// Gets a value indicating whether the device is connected.
-        /// </summary>
         public bool IsDeviceConnected
         {
             get
@@ -169,10 +146,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         #endregion
 
-        /// <summary>
-        /// Connects to a serial device.
-        /// </summary>
-        /// <returns>The result of the connection attempt</returns>
         public ConnectPortResult ConnectDevice()
         {
             ConnectPortResult openDeviceResult = ConnectPortResult.NotConnected;
@@ -234,10 +207,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError(logMsg));
         }
 
-        /// <summary>
-        /// Disconnects the current device.
-        /// </summary>
-        /// <param name="force">Flag indicating whether the device should be forcibly disposed.</param>
         public void DisconnectDevice(bool force = false)
         {
             // disconnecting the current device
@@ -252,7 +221,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 _portManager.DisposeDevice(InstanceId);
             }
         }
-
         private void OnLogMessageAvailable(string message)
         {
             LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
@@ -260,15 +228,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         #region Interface implementations
 
-        /// <summary>
-        /// Gets or sets the date and time when the device was last active.
-        /// </summary>
         public DateTime LastActivity { get; set; }
 
-        /// <summary>
-        /// Gets the number of bytes available in the receive buffer of the open serial port.
-        /// If the port is not open, returns -1.
-        /// </summary>
         public int AvailableBytes
         {
             get
@@ -285,12 +246,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
         }
 
-        /// <summary>
-        /// Sends the specified byte array to the connected device.
-        /// </summary>
-        /// <param name="buffer">The byte array to send.</param>
-        /// <returns>The number of bytes sent.</returns>
-        /// <exception cref="DeviceNotConnectedException">Thrown when the device is not connected.</exception>
         public int SendBuffer(byte[] buffer)
         {
             // device must be connected
@@ -317,12 +272,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
         }
 
-        /// <summary>
-        /// Reads the specified number of bytes from the connected device. The device must be connected and open.
-        /// </summary>
-        /// <param name="bytesToRead">The number of bytes to read from the device.</param>
-        /// <returns>A byte array containing the bytes read from the device. If an error occurs or the device is not connected or open, an empty byte array is returned.</returns>
-        /// <exception cref="DeviceNotConnectedException">Thrown when the device is not connected or open.</exception>
         public byte[] ReadBuffer(int bytesToRead)
         {
             // device must be connected
@@ -333,22 +282,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 try
                 {
-                    // this loop shall fix issues with M1 and some drivers showing up bytes to fast
-                    List<byte> received = new List<byte>();
-                    int readBytes = 0;
-                    while (Device.BytesToRead > 0)
-                    {
-                        byte[] toRead = new byte[Device.BytesToRead];
-                        readBytes += Device.Read(toRead, 0, toRead.Length);
-                        received.AddRange(toRead);
-                    }
+                    int readBytes = Device.Read(buffer, 0, bytesToRead);
 
                     if (readBytes != bytesToRead)
                     {
                         Array.Resize(ref buffer, readBytes);
                     }
 
-                    received.CopyTo(buffer);
                     return buffer;
                 }
                 catch (TimeoutException)
