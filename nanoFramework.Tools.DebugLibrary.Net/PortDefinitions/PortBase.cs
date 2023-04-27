@@ -10,8 +10,12 @@ using System.Collections.Generic;
 
 namespace nanoFramework.Tools.Debugger
 {
+    //  write intellisense documentation for this class  
     public abstract partial class PortBase : PortMessageBase
     {
+
+        #region creating serial instances
+
         public static PortBase CreateInstanceForSerial()
         {
             return new PortSerialManager(true, null);
@@ -19,32 +23,65 @@ namespace nanoFramework.Tools.Debugger
 
         public static PortBase CreateInstanceForSerial(List<string> portExclusionList)
         {
-            return new PortSerialManager(true, portExclusionList);
+            return new PortSerialManager(
+                true,
+                portExclusionList);
+        }
+        public static PortBase CreateInstanceForSerial(bool startDeviceWatchers)
+        {
+            return new PortSerialManager(
+                startDeviceWatchers,
+                null);
         }
 
-        public static PortBase CreateInstanceForSerial(bool startDeviceWatchers, int bootTime = 1000)
+        public static PortBase CreateInstanceForSerial(
+            bool startDeviceWatchers,
+            int bootTime = 1000)
         {
-            return new PortSerialManager(startDeviceWatchers, null, bootTime);
+            return new PortSerialManager(
+                startDeviceWatchers,
+                null,
+                bootTime);
         }
 
-        public static PortBase CreateInstanceForSerial(bool startDeviceWatchers, List<string> portExclusionList = null, int bootTime = 1000)
+        public static PortBase CreateInstanceForSerial(
+            bool startDeviceWatchers,
+            List<string> portExclusionList = null,
+            int bootTime = 1000)
         {
-            return new PortSerialManager(startDeviceWatchers, portExclusionList, bootTime);
+            return new PortSerialManager(
+                startDeviceWatchers,
+                portExclusionList,
+                bootTime);
         }
+
+        #endregion
+
+        #region creating tcp/ip instances
 
         public static PortBase CreateInstanceForNetwork(bool startDeviceWatchers)
         {
             return new PortTcpIpManager(startDeviceWatchers);
         }
 
-        public static PortBase CreateInstanceForNetwork(bool startDeviceWatchers, int discoveryPort)
+        public static PortBase CreateInstanceForNetwork(
+            bool startDeviceWatchers,
+            int discoveryPort)
         {
-            return new PortTcpIpManager(startDeviceWatchers, discoveryPort);
+            return new PortTcpIpManager(
+                startDeviceWatchers,
+                discoveryPort);
         }
 
-        public static PortBase CreateInstanceForComposite(IEnumerable<PortBase> ports, bool startDeviceWatchers)
+        #endregion
+
+        public static PortBase CreateInstanceForComposite(
+            IEnumerable<PortBase> ports,
+            bool startDeviceWatchers)
         {
-            return new PortCompositeDeviceManager(ports, startDeviceWatchers);
+            return new PortCompositeDeviceManager(
+                ports,
+                startDeviceWatchers);
         }
     }
 }
