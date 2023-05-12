@@ -4,13 +4,14 @@
 //
 
 using System;
-using System.ComponentModel.DataAnnotations;
+using System.ComponentModel;
 
 namespace nanoFramework.Tools.Debugger
 {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // !!! KEEP IN SYNC WITH System.Net.NetworkInformation.Wireless80211Configuration.ConfigurationOptions (in nanoFramework.System.Net) !!! //
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /// <summary>
     /// Configuration flags used for Wireless configuration.
     /// </summary>
@@ -37,7 +38,7 @@ namespace nanoFramework.Tools.Debugger
         /// Will auto connect when AP is available or after being disconnected.
         /// This option forces enabling the Wireless station.
         /// </summary>
-        [Display(Description = "Auto connect")]
+        [Description("Auto connect")]
         AutoConnect = 0x04 | Enable,
 
         /// <summary>

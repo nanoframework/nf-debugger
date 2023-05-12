@@ -4,13 +4,14 @@
 //
 
 using System;
-using System.ComponentModel.DataAnnotations;
+using System.ComponentModel;
 
 namespace nanoFramework.Tools.Debugger
 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // !!! KEEP IN SYNC WITH System.Net.NetworkInformation.WirelessAPConfiguration.ConfigurationOptions (in nanoFramework.System.Net) !!! //
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /// <summary>
     /// Configuration flags used for Wireless Soft AP configuration.
     /// </summary>
@@ -37,13 +38,13 @@ namespace nanoFramework.Tools.Debugger
         /// Will automatically start the Soft AP when CLR starts.
         /// This option forces enabling the Wireless Soft AP.
         /// </summary>
-        [Display(Description = "Auto start")]
+        [Description("Auto start")]
         AutoStart = 0x04 | Enable,
 
         /// <summary>
         /// The SSID for the Soft AP will be hidden.
         /// </summary>
-        [Display(Description = "SSID hidden")]
+        [Description("SSID hidden")]
         HiddenSSID = 0x08,
     };
 }
