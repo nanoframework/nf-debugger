@@ -3081,9 +3081,10 @@ namespace nanoFramework.Tools.Debugger
 
                 // build the deployment blob from the flash sector map
                 // apply a filter so that we take only the blocks flag for deployment 
-                List<DeploymentSector> deploymentBlob = FlashSectorMap.Where(s => (s.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
-                    .Select(s => s.ToDeploymentSector())
-                    .ToList();
+                List<DeploymentSector> deploymentBlob = FlashSectorMap.Where(s => (s.Flags
+                                                                                   & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
+                                                                      .Select(s => s.ToDeploymentSector())
+                                                                      .ToList();
 
                 // rough check if there is enough room to deploy
                 if (deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size) < deployLength)
@@ -3093,6 +3094,7 @@ namespace nanoFramework.Tools.Debugger
 
                     log?.Report(errorMessage);
                     progress?.Report(new MessageWithProgress(""));
+
                     return false;
                 }
 
@@ -3105,6 +3107,7 @@ namespace nanoFramework.Tools.Debugger
                     {
                         log?.Report($"It's only possible to deploy word aligned assemblies. Failed to deploy assembly with {assemblies.First().Length} bytes.");
                         progress?.Report(new MessageWithProgress(""));
+
                         return false;
                     }
 
@@ -3145,26 +3148,25 @@ namespace nanoFramework.Tools.Debugger
                     }
                     else
                     {
-                        // shouldn't happen, but couldn't find enough space to deploy all the assemblies!!
+                        // shouldn't happen!
+                        // if got here that's because couldn't find enough space to deploy all the assemblies!!
                         string errorMessage = $"Couldn't find a free deployment block to complete the deployment (remaining: {remainingBytes} bytes).";
 
                         log?.Report(errorMessage);
                         progress?.Report(new MessageWithProgress(""));
+
                         return false;
                     }
                 }
 
-                // get the block list to deploy (not empty)
-                List<DeploymentBlock> blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
-                int deploymentSize = blocksToDeploy.Sum(b => b.DeploymentData.Length);
-                int deployedBytes = 0;
-
-                foreach (DeploymentBlock block in blocksToDeploy)
+                if (!skipErase)
                 {
-                    // check if skip erase step was requested
-                    if (!skipErase)
+                    int deploymentRegionSize = deploymentBlob.ToDeploymentBlockList().Sum(b => b.DeploymentData.Length);
+                    int erasedBytes = 0;
+
+                    foreach (DeploymentBlock block in deploymentBlob.ToDeploymentBlockList())
                     {
-                        progress?.Report(new MessageWithProgress($"Erasing block @ 0x{block.StartAddress:X8}...", (uint)deployedBytes, (uint)deploymentSize));
+                        progress?.Report(new MessageWithProgress($"Erasing block @ 0x{block.StartAddress:X8}...", (uint)erasedBytes, (uint)deploymentRegionSize));
                         log?.Report($"Erasing block @ 0x{block.StartAddress:X8}...");
 
                         // erase memory sector
@@ -3178,16 +3180,26 @@ namespace nanoFramework.Tools.Debugger
 
                             return false;
                         }
+
                         // check the error code returned
                         if (eraseMemoryResult.ErrorCode != AccessMemoryErrorCodes.NoError)
                         {
                             log?.Report($"Error erasing device memory @ 0x{block.StartAddress:X8}. Error code: {eraseMemoryResult.ErrorCode}.");
                             progress?.Report(new MessageWithProgress(""));
+
                             return false;
                         }
                     }
+                }
 
-                    // block erased, write buffer
+                // get the block list to deploy (not empty)
+                List<DeploymentBlock> blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
+                int deploymentSize = blocksToDeploy.Sum(b => b.DeploymentData.Length);
+                int deployedBytes = 0;
+
+                foreach (DeploymentBlock block in blocksToDeploy)
+                {
+                    // write buffer
                     AccessMemoryErrorCodes writeOpResult = WriteMemory(
                         (uint)block.StartAddress,
                         block.DeploymentData,
@@ -3303,11 +3315,16 @@ namespace nanoFramework.Tools.Debugger
             return writeResult2 == AccessMemoryErrorCodes.NoError;
         }
 
-        //public bool Deployment_Execute(ArrayList assemblies)
-        //{
-        //    return Deployment_Execute(assemblies, true, null);
-        //}
-
+        /// <summary>
+        /// Deploy a list of assemblies to the device and optionally reboot it.
+        /// </summary>
+        /// <param name="assemblies">A collection of assemblies to deploy.</param>
+        /// <param name="rebootAfterDeploy"><see langword="true"/> to reboot device after a successfull deployment.</param>
+        /// <param name="skipErase"><see langword="true"/> to skip erasing the storage block before writting to it.</param>
+        /// <param name="progress">An <see cref="IProgress&lt;MessageWithProgress&gt;"/> object to track the progress of the deploy operation.</param>
+        /// <param name="log">An <see cref="IProgress&lt;String&gt;"/> object to log the progress of the deploy operation.</param>
+        /// <returns><see langword="true"/> upon a successfull deployment operation. <see langword="false"/> otherwise.</returns>
+        /// <exception cref="NotSupportedException">In case the connected device doesn't have support for incremental deployment.</exception>
         public bool DeploymentExecute(
             List<byte[]> assemblies,
             bool rebootAfterDeploy = true,
@@ -3347,9 +3364,6 @@ namespace nanoFramework.Tools.Debugger
             else
             {
                 throw new NotSupportedException("Current version only supports incremental deployment. Check the image source code for Debugging_Execution_QueryCLRCapabilities. The capabilities list has to include c_CapabilityFlags_IncrementalDeployment.");
-                //progress?.Report("Deploying assemblies to device");
-
-                //fDeployedOK = await DeploymentExecuteFullAsync(assemblies, progress);
             }
 
             if (!deployedOK)
