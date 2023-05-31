@@ -231,7 +231,7 @@ namespace nanoFramework.Tools.Debugger
         /// <returns></returns>
         public ConnectionSource Ping()
         {
-            if(DebugEngine == null)
+            if (DebugEngine == null)
             {
                 return ConnectionSource.Unknown;
             }
@@ -354,10 +354,10 @@ namespace nanoFramework.Tools.Debugger
         }
 
         /// <summary>
-        /// Erases the deployment sectors of the connected nanoDevice
+        /// Erases the deployment sectors of the connected <see cref="NanoDevice"/>.
         /// </summary>
-        /// <param name="options">Identifies which areas are to be erased</param>
-        /// <param name="cancellationToken">Cancellation token to allow caller to cancel task</param>
+        /// <param name="options">Identifies which areas are to be erased.</param>
+        /// <param name="progress">Progress report of execution.</param>
         /// <param name="log">Progress report of execution</param>
         /// <returns>Returns false if the erase fails, true otherwise
         /// Possible exceptions: MFUserExitException, MFDeviceNoResponseException
@@ -403,10 +403,8 @@ namespace nanoFramework.Tools.Debugger
             {
                 log?.Report("Getting connection source...");
 
-                DebugEngine.GetConnectionSource();               
+                DebugEngine.GetConnectionSource();
             }
-
-            long total = 0;
 
             if (DebugEngine.IsConnectedTonanoCLR)
             {
@@ -418,8 +416,8 @@ namespace nanoFramework.Tools.Debugger
 
                     return false;
                 }
-                
-                if(!deviceState.IsDeviceInStoppedState())
+
+                if (!deviceState.IsDeviceInStoppedState())
                 {
                     log?.Report("Connected to CLR. Pausing execution...");
 
@@ -434,6 +432,7 @@ namespace nanoFramework.Tools.Debugger
 
             List<Commands.Monitor_FlashSectorMap.FlashSectorData> eraseSectors = new List<Commands.Monitor_FlashSectorMap.FlashSectorData>();
 
+            // need to use a foreach loop here because EraseOptions can contain multiple options 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in DebugEngine.FlashSectorMap)
             {
                 switch (flashSectorData.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK)
@@ -442,7 +441,6 @@ namespace nanoFramework.Tools.Debugger
                         if (EraseOptions.Deployment == (options & EraseOptions.Deployment))
                         {
                             eraseSectors.Add(flashSectorData);
-                            total++;
                         }
                         break;
 
@@ -450,7 +448,6 @@ namespace nanoFramework.Tools.Debugger
                         if (EraseOptions.UpdateStorage == (options & EraseOptions.UpdateStorage))
                         {
                             eraseSectors.Add(flashSectorData);
-                            total++;
                         }
                         break;
 
@@ -459,7 +456,6 @@ namespace nanoFramework.Tools.Debugger
                         if (EraseOptions.SimpleStorage == (options & EraseOptions.SimpleStorage))
                         {
                             eraseSectors.Add(flashSectorData);
-                            total++;
                         }
                         break;
 
@@ -468,7 +464,6 @@ namespace nanoFramework.Tools.Debugger
                         if (EraseOptions.UserStorage == (options & EraseOptions.UserStorage))
                         {
                             eraseSectors.Add(flashSectorData);
-                            total++;
                         }
                         break;
 
@@ -476,7 +471,6 @@ namespace nanoFramework.Tools.Debugger
                         if (EraseOptions.FileSystem == (options & EraseOptions.FileSystem))
                         {
                             eraseSectors.Add(flashSectorData);
-                            total++;
                         }
                         break;
 
@@ -484,7 +478,6 @@ namespace nanoFramework.Tools.Debugger
                         if (EraseOptions.Configuration == (options & EraseOptions.Configuration))
                         {
                             eraseSectors.Add(flashSectorData);
-                            total++;
                         }
                         break;
 
@@ -492,7 +485,6 @@ namespace nanoFramework.Tools.Debugger
                         if (EraseOptions.Firmware == (options & EraseOptions.Firmware))
                         {
                             eraseSectors.Add(flashSectorData);
-                            total++;
                         }
                         break;
                 }
@@ -506,8 +498,8 @@ namespace nanoFramework.Tools.Debugger
             {
                 var sectorSize = flashSectorData.NumBlocks * flashSectorData.BytesPerBlock;
 
-                progress?.Report(new MessageWithProgress($"Erasing sector @ 0x{flashSectorData.StartAddress:X8}...", current, totalBytes));
                 log?.Report($"Erasing sector @ 0x{flashSectorData.StartAddress:X8}...");
+                progress?.Report(new MessageWithProgress($"Erasing sector @ 0x{flashSectorData.StartAddress:X8}...", current, totalBytes));
 
                 (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(
                     flashSectorData.StartAddress,
@@ -516,7 +508,9 @@ namespace nanoFramework.Tools.Debugger
                 if (!Success)
                 {
                     log?.Report($"Error erasing sector @ 0x{flashSectorData.StartAddress:X8}.");
+                    progress?.Report(new MessageWithProgress(""));
 
+                    // don't bother continuing
                     return false;
                 }
 
@@ -525,6 +519,7 @@ namespace nanoFramework.Tools.Debugger
                 {
                     // operation failed
                     log?.Report($"Error erasing sector @ 0x{flashSectorData.StartAddress:X8}. Error code: {ErrorCode}.");
+                    progress?.Report(new MessageWithProgress(""));
 
                     // don't bother continuing
                     return false;
@@ -533,7 +528,9 @@ namespace nanoFramework.Tools.Debugger
                 current += sectorSize;
             }
 
-            // reset if we specifically entered nanoBooter to erase
+            progress?.Report(new MessageWithProgress(""));
+
+            // reset device if we specifically entered nanoBooter to erase
             if (fReset)
             {
                 log?.Report("Executing memory...");
@@ -543,12 +540,15 @@ namespace nanoFramework.Tools.Debugger
             // reboot if we are talking to the CLR
             if (DebugEngine.IsConnectedTonanoCLR)
             {
+                log?.Report("Rebooting...");
                 progress?.Report(new MessageWithProgress("Rebooting..."));
 
                 RebootOptions rebootOptions = RebootOptions.ClrOnly;
 
                 DebugEngine.RebootDevice(rebootOptions, log);
             }
+
+            progress?.Report(new MessageWithProgress(""));
 
             return true;
         }
@@ -585,7 +585,7 @@ namespace nanoFramework.Tools.Debugger
             IProgress<string> progress = null)
         {
             // validate if file exists
-            if(!File.Exists(binFile))
+            if (!File.Exists(binFile))
             {
                 return false;
             }
@@ -594,7 +594,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 return false;
             }
-            
+
             var data = File.ReadAllBytes(binFile);
 
             if (!PrepareForDeploy(
@@ -604,7 +604,7 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            if(!DeployFile(
+            if (!DeployFile(
                 data,
                 address,
                 0,
@@ -662,7 +662,7 @@ namespace nanoFramework.Tools.Debugger
                     total += blocks[i].data.Length;
                 }
 
-                if(!PrepareForDeploy(blocks, progress))
+                if (!PrepareForDeploy(blocks, progress))
                 {
                     return false;
                 }
@@ -1344,7 +1344,7 @@ namespace nanoFramework.Tools.Debugger
 
         private bool PrepareForDeploy(
             uint address,
-            List<SRecordFile.Block> blocks, 
+            List<SRecordFile.Block> blocks,
             IProgress<string> progress = null)
         {
             // get flash sector map, only if needed
@@ -1396,7 +1396,7 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            if(
+            if (
                 !updatesDeployment &&
                 !updatesClr &&
                 !updatesBooter)
@@ -1431,7 +1431,7 @@ namespace nanoFramework.Tools.Debugger
             if (updatesDeployment)
             {
                 if (!Erase(
-                    EraseOptions.Deployment, 
+                    EraseOptions.Deployment,
                     null,
                     progress))
                 {
