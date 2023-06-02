@@ -133,26 +133,26 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public class Monitor_Ping
         {
             ///////////////////////////////////////////////////////////////////////
-            
-            public const uint c_Ping_Source_NanoCLR =                   0x00010000;
-            public const uint c_Ping_Source_NanoBooter =                0x00010001;
-            public const uint c_Ping_Source_Host =                      0x00010002;
 
-            public const uint c_Ping_DbgFlag_Stop =                     0x00000001;
-            public const uint c_Ping_DbgFlag_BigEndian =                0x02000002;
-            public const uint c_Ping_DbgFlag_AppExit =                  0x00000004;
+            public const uint c_Ping_Source_NanoCLR = 0x00010000;
+            public const uint c_Ping_Source_NanoBooter = 0x00010001;
+            public const uint c_Ping_Source_Host = 0x00010002;
+
+            public const uint c_Ping_DbgFlag_Stop = 0x00000001;
+            public const uint c_Ping_DbgFlag_BigEndian = 0x02000002;
+            public const uint c_Ping_DbgFlag_AppExit = 0x00000004;
 
             ///////////////////////////////////////////////////////////////////////
             // flags specific to Wire Protocol capabilities
-            public const uint c_Ping_WPFlag_SupportsCRC32 =             0x00000010;
+            public const uint c_Ping_WPFlag_SupportsCRC32 = 0x00000010;
 
             // Wire Protocol packet size (3rd position)
-            public const uint Monitor_Ping_c_PacketSize_Position =      0x00000700;
+            public const uint Monitor_Ping_c_PacketSize_Position = 0x00000700;
             // default packet size is 1024
-            public const uint Monitor_Ping_c_PacketSize_1024 =          0x00000100;
-            public const uint Monitor_Ping_c_PacketSize_0512 =          0x00000200;
-            public const uint Monitor_Ping_c_PacketSize_0256 =          0x00000300;
-            public const uint Monitor_Ping_c_PacketSize_0128 =          0x00000400;
+            public const uint Monitor_Ping_c_PacketSize_1024 = 0x00000100;
+            public const uint Monitor_Ping_c_PacketSize_0512 = 0x00000200;
+            public const uint Monitor_Ping_c_PacketSize_0256 = 0x00000300;
+            public const uint Monitor_Ping_c_PacketSize_0128 = 0x00000400;
 
             //////////////////////////////////////////////////////////////////////
             // flags related with device capabilities
@@ -160,12 +160,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             /// <summary>
             /// This flag indicates that the device has a proprietary bootloader.
             /// </summary>
-            public const uint Monitor_Ping_c_HasProprietaryBooter =     0x00010000;
+            public const uint Monitor_Ping_c_HasProprietaryBooter = 0x00010000;
 
             /// <summary>
             /// This flag indicates that the target device is IFU capable.
             /// </summary>
-            public const uint Monitor_Ping_c_IFUCapable =               0x00020000;
+            public const uint Monitor_Ping_c_IFUCapable = 0x00020000;
 
             /// <summary>
             /// This flag indicates that the device requires that the configuration block to be erased before updating it.
@@ -175,7 +175,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             /// <summary>
             /// This flag indicates that the device has nanoBooter.
             /// </summary>
-            public const uint Monitor_Ping_c_HasNanoBooter =            0x00080000;
+            public const uint Monitor_Ping_c_HasNanoBooter = 0x00080000;
 
             ///////////////////////////////////////////////////////////////////////
 
@@ -630,59 +630,59 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 /// <summary>
                 /// Device is in initialization state
                 /// </summary>
-                Initialize =            0x00000000,
+                Initialize = 0x00000000,
 
                 /// <summary>
                 /// Type resolution has failed
                 /// </summary>
-                ResolutionFailed =      0x00000001,
+                ResolutionFailed = 0x00000001,
 
                 /// <summary>
                 /// Device has a program running
                 /// </summary>
-                ProgramRunning =        0x00000400,
+                ProgramRunning = 0x00000400,
 
                 /// <summary>
                 /// Device has exited a previously running program
                 /// </summary>
-                ProgramExited =         0x00000800,
+                ProgramExited = 0x00000800,
 
                 /// <summary>
                 /// Breakpoints are disabled in the device
                 /// </summary>
-                BreakpointsDisabled =   0x00001000,
+                BreakpointsDisabled = 0x00001000,
 
                 /// <summary>
                 /// No debugger text is to be sent by target device
                 /// </summary>
-                DebuggerQuiet =         0x00010000,
+                DebuggerQuiet = 0x00010000,
 
                 /// <summary>
                 /// Threads associated with timers are created in "suspended" mode.
                 /// </summary>
-                PauseTimers =           0x04000000,
+                PauseTimers = 0x04000000,
 
                 /// <summary>
                 /// No compaction is to be performed during execution.
                 /// </summary>
-                NoCompaction =          0x08000000,
+                NoCompaction = 0x08000000,
 
                 /// <summary>
                 /// Enable source level debugging
                 /// </summary>
-                SourceLevelDebugging =  0x10000000,
+                SourceLevelDebugging = 0x10000000,
 
                 /// <summary>
                 /// The debugger is enabled
                 /// </summary>
-                DebuggerEnabled =       0x40000000,
+                DebuggerEnabled = 0x40000000,
 
                 /// <summary>
                 /// Debugger is stopped
                 /// </summary>
-                Stopped =               0x80000000,
+                Stopped = 0x80000000,
 
-                Unknown =               0xFFFFFFFF,
+                Unknown = 0xFFFFFFFF,
             }
 
             internal const State StateMask = (State.ProgramRunning | State.ProgramExited);
@@ -691,7 +691,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public uint FlagsToSet = 0;
             public uint FlagsToReset = 0;
 
-            public  class Reply
+            public class Reply
             {
                 public uint CurrentState = (uint)State.Unknown;
             }
@@ -951,12 +951,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
         public class Debugging_Execution_QueryCLRCapabilities
         {
-            public const uint c_CapabilityFlags =                       1;
-            public const uint c_CapabilitySoftwareVersion =             3;
-            public const uint c_CapabilityHalSystemInfo =               5;
-            public const uint c_CapabilityClrInfo =                     6;
-            public const uint c_CapabilitySolutionReleaseInfo =         7;
-            public const uint c_CapabilityInteropNativeAssemblies =     8;
+            public const uint c_CapabilityFlags = 1;
+            public const uint c_CapabilitySoftwareVersion = 3;
+            public const uint c_CapabilityHalSystemInfo = 5;
+            public const uint c_CapabilityClrInfo = 6;
+            public const uint c_CapabilitySolutionReleaseInfo = 7;
+            public const uint c_CapabilityInteropNativeAssemblies = 8;
 
             ///////////////////////////////////////////////////////////
             // because the number of deployed assemblies can make the size of the Wire Protocol package grow beyond the 
@@ -967,31 +967,31 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             //////////////////////////////////////////////////////////////////////////////////////
             // Keep in sync with Debugging_Execution_QueryCLRCapabilities struct in native code //
             //////////////////////////////////////////////////////////////////////////////////////
-            public const uint c_CapabilityFlags_FloatingPoint =             0x00000001;
-            public const uint c_CapabilityFlags_SourceLevelDebugging =      0x00000002;
-            public const uint c_CapabilityFlags_AppDomains =                0x00000004;
-            public const uint c_CapabilityFlags_ExceptionFilters =          0x00000008;
-            public const uint c_CapabilityFlags_IncrementalDeployment =     0x00000010;
-            public const uint c_CapabilityFlags_SoftReboot =                0x00000020;
-            public const uint c_CapabilityFlags_Profiling =                 0x00000040;
-            public const uint c_CapabilityFlags_Profiling_Allocations =     0x00000080;
-            public const uint c_CapabilityFlags_Profiling_Calls =           0x00000100;
-            public const uint c_CapabilityFlags_ThreadCreateEx =            0x00000400;
-            public const uint c_CapabilityFlags_ConfigBlockRequiresErase =  0x00000800;
-            public const uint c_CapabilityFlags_HasNanoBooter =             0x00001000;
-            public const uint c_CapabilityFlags_CanChangeMacAddress =       0x00002000;
+            public const uint c_CapabilityFlags_FloatingPoint = 0x00000001;
+            public const uint c_CapabilityFlags_SourceLevelDebugging = 0x00000002;
+            public const uint c_CapabilityFlags_AppDomains = 0x00000004;
+            public const uint c_CapabilityFlags_ExceptionFilters = 0x00000008;
+            public const uint c_CapabilityFlags_IncrementalDeployment = 0x00000010;
+            public const uint c_CapabilityFlags_SoftReboot = 0x00000020;
+            public const uint c_CapabilityFlags_Profiling = 0x00000040;
+            public const uint c_CapabilityFlags_Profiling_Allocations = 0x00000080;
+            public const uint c_CapabilityFlags_Profiling_Calls = 0x00000100;
+            public const uint c_CapabilityFlags_ThreadCreateEx = 0x00000400;
+            public const uint c_CapabilityFlags_ConfigBlockRequiresErase = 0x00000800;
+            public const uint c_CapabilityFlags_HasNanoBooter = 0x00001000;
+            public const uint c_CapabilityFlags_CanChangeMacAddress = 0x00002000;
 
-            public const uint c_CapabilityFlags_PlatformCapabiliy_0 =       0x01000000;
-            public const uint c_CapabilityFlags_PlatformCapabiliy_1 =       0x02000000;
-            public const uint c_CapabilityFlags_PlatformCapabiliy_2 =       0x04000000;
-            public const uint c_CapabilityFlags_PlatformCapabiliy_3 =       0x08000000;
-            public const uint c_CapabilityFlags_PlatformCapabiliy_Mask =    0x0F000000;
+            public const uint c_CapabilityFlags_PlatformCapabiliy_0 = 0x01000000;
+            public const uint c_CapabilityFlags_PlatformCapabiliy_1 = 0x02000000;
+            public const uint c_CapabilityFlags_PlatformCapabiliy_2 = 0x04000000;
+            public const uint c_CapabilityFlags_PlatformCapabiliy_3 = 0x08000000;
+            public const uint c_CapabilityFlags_PlatformCapabiliy_Mask = 0x0F000000;
 
-            public const uint c_CapabilityFlags_TargetCapabiliy_0 =         0x10000000;
-            public const uint c_CapabilityFlags_TargetCapabiliy_1 =         0x20000000;
-            public const uint c_CapabilityFlags_TargetCapabiliy_2 =         0x40000000;
-            public const uint c_CapabilityFlags_TargetCapabiliy_3 =         0x80000000;
-            public const uint c_CapabilityFlags_TargetCapabiliy_Mask =      0xF0000000;
+            public const uint c_CapabilityFlags_TargetCapabiliy_0 = 0x10000000;
+            public const uint c_CapabilityFlags_TargetCapabiliy_1 = 0x20000000;
+            public const uint c_CapabilityFlags_TargetCapabiliy_2 = 0x40000000;
+            public const uint c_CapabilityFlags_TargetCapabiliy_3 = 0x80000000;
+            public const uint c_CapabilityFlags_TargetCapabiliy_Mask = 0xF0000000;
 
             //////////////////////////////////////////////////////////////////////////////////////
             //////////////////////////////////////////////////////////////////////////////////////
