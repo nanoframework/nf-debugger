@@ -661,6 +661,16 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 DebuggerQuiet = 0x00010000,
 
                 /// <summary>
+                /// Execution engine won't process stack trace when an exception occurs.
+                /// </summary>
+                /// <remarks>
+                /// This is used to save processing time with crawling the stack and gatthering the details. It will also
+                /// prevent detailed stack trace information to be sent to the debugger. The StackTrace property in the Exception will be empty.
+                /// Note that this won't have any effect if the firmware has been compiled without debugger support or with the configuration that disables tracing exceptions.
+                /// </remarks>
+                NoStackTraceInExceptions = 0x02000000,
+
+                /// <summary>
                 /// Threads associated with timers are created in "suspended" mode.
                 /// </summary>
                 PauseTimers = 0x04000000,
