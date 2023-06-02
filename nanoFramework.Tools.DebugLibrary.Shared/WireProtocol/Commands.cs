@@ -614,12 +614,15 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
+        /// <summary>
+        /// These flags are used to change the state of the debugger execution on the target.
+        /// </summary>
         public class DebuggingExecutionChangeConditions
         {
-            [Flags]
             /// <summary>
             /// State for debugger execution on target.
             /// </summary>
+            [Flags]
             public enum State : uint
             {
                 /////////////////////////////////////////////////////////////////////////////////////////////////
