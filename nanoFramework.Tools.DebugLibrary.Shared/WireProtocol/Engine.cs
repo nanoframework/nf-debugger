@@ -447,6 +447,11 @@ namespace nanoFramework.Tools.Debugger
                 // get state flags to set
                 Commands.DebuggingExecutionChangeConditions.State stateFlagsToSet = Commands.DebuggingExecutionChangeConditions.State.SourceLevelDebugging;
 
+                if (NoStackTraceInExceptions)
+                {
+                    stateFlagsToSet |= Commands.DebuggingExecutionChangeConditions.State.NoStackTraceInExceptions;
+                }
+
                 if (Silent)
                 {
                     stateFlagsToSet |= Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet;
@@ -962,6 +967,11 @@ namespace nanoFramework.Tools.Debugger
         }
 
         public bool IsRunning => _state.IsRunning;
+
+        /// <summary>
+        ///  
+        /// </summary>
+        public bool NoStackTraceInExceptions { get; set; }
 
         #region RPC Support
 
