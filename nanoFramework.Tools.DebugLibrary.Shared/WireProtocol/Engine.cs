@@ -3159,14 +3159,24 @@ namespace nanoFramework.Tools.Debugger
                     }
                 }
 
+                // get the block list to deploy (not empty)
+                List<DeploymentBlock> blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
+                int deploymentSize = blocksToDeploy.Sum(b => b.DeploymentData.Length);
+                int deployedBytes = 0;
+
+                // compute progress information
+                int deploymentTotalSize = deploymentSize;
+
                 if (!skipErase)
                 {
-                    int deploymentRegionSize = deploymentBlob.ToDeploymentBlockList().Sum(b => b.DeploymentData.Length);
+                    int deploymentRegionSize = deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size);
                     int erasedBytes = 0;
+
+                    deploymentSize += deploymentRegionSize;
 
                     foreach (DeploymentBlock block in deploymentBlob.ToDeploymentBlockList())
                     {
-                        progress?.Report(new MessageWithProgress($"Erasing block @ 0x{block.StartAddress:X8}...", (uint)erasedBytes, (uint)deploymentRegionSize));
+                        progress?.Report(new MessageWithProgress($"Erasing block @ 0x{block.StartAddress:X8}...", (uint)erasedBytes, (uint)deploymentSize));
                         log?.Report($"Erasing block @ 0x{block.StartAddress:X8}...");
 
                         // erase memory sector
@@ -3189,13 +3199,13 @@ namespace nanoFramework.Tools.Debugger
 
                             return false;
                         }
-                    }
-                }
 
-                // get the block list to deploy (not empty)
-                List<DeploymentBlock> blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
-                int deploymentSize = blocksToDeploy.Sum(b => b.DeploymentData.Length);
-                int deployedBytes = 0;
+                        erasedBytes += block.Size;
+                    }
+
+                    // update progress counter
+                    deployedBytes += erasedBytes;
+                }
 
                 foreach (DeploymentBlock block in blocksToDeploy)
                 {
