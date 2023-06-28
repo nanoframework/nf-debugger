@@ -367,7 +367,6 @@ namespace nanoFramework.Tools.Debugger
             IProgress<MessageWithProgress> progress = null,
             IProgress<string> log = null)
         {
-            bool fReset = false;
             bool requestBooter = false;
 
             if (DebugEngine == null)
@@ -379,17 +378,19 @@ namespace nanoFramework.Tools.Debugger
             {
                 log?.Report("Connecting to nanoBooter...");
 
-                fReset = DebugEngine.IsConnectedTonanoCLR;
-
-                if (!ConnectToNanoBooter())
+                if (DebugEngine.IsConnectedTonanoCLR)
                 {
-                    log?.Report("*** ERROR: request to connect to nanoBooter failed ***");
+                    // executing CLR so need to reset to nanoBooter
+                    if (!ConnectToNanoBooter())
+                    {
+                        log?.Report("*** ERROR: request to connect to nanoBooter failed ***");
 
-                    return false;
+                        return false;
+                    }
+
+                    // flag request to launch nanoBooter 
+                    requestBooter = true;
                 }
-
-                // flag request to launch nanoBooter 
-                requestBooter = true;
             }
 
             if (DebugEngine.FlashSectorMap.Count == 0)
@@ -397,13 +398,6 @@ namespace nanoFramework.Tools.Debugger
                 log?.Report("*** ERROR: device flash map not available, aborting ***");
 
                 return false;
-            }
-
-            if (requestBooter)
-            {
-                log?.Report("Getting connection source...");
-
-                DebugEngine.GetConnectionSource();
             }
 
             if (DebugEngine.IsConnectedTonanoCLR)
@@ -496,56 +490,97 @@ namespace nanoFramework.Tools.Debugger
 
             foreach (Commands.Monitor_FlashSectorMap.FlashSectorData flashSectorData in eraseSectors)
             {
-                var sectorSize = flashSectorData.NumBlocks * flashSectorData.BytesPerBlock;
-
-                log?.Report($"Erasing sector @ 0x{flashSectorData.StartAddress:X8}...");
-                progress?.Report(new MessageWithProgress($"Erasing sector @ 0x{flashSectorData.StartAddress:X8}...", current, totalBytes));
-
-                (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(
-                    flashSectorData.StartAddress,
-                    sectorSize);
-
-                if (!Success)
+                if (DebugEngine.IsConnectedTonanoCLR)
                 {
-                    log?.Report($"Error erasing sector @ 0x{flashSectorData.StartAddress:X8}.");
-                    progress?.Report(new MessageWithProgress(""));
+                    // connected to CLR, OK to erase per sector
 
-                    // don't bother continuing
-                    return false;
+                    var sectorSize = flashSectorData.NumBlocks * flashSectorData.BytesPerBlock;
+
+                    log?.Report($"Erasing sector @ 0x{flashSectorData.StartAddress:X8}...");
+                    progress?.Report(new MessageWithProgress($"Erasing sector @ 0x{flashSectorData.StartAddress:X8}...", current, totalBytes));
+
+                    (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory(
+                        flashSectorData.StartAddress,
+                        sectorSize);
+
+                    if (!Success)
+                    {
+                        log?.Report($"Error erasing sector @ 0x{flashSectorData.StartAddress:X8}.");
+                        progress?.Report(new MessageWithProgress(""));
+
+                        // don't bother continuing
+                        return false;
+                    }
+
+                    // check the error code returned
+                    if (ErrorCode != AccessMemoryErrorCodes.NoError)
+                    {
+                        // operation failed
+                        log?.Report($"Error erasing sector @ 0x{flashSectorData.StartAddress:X8}. Error code: {ErrorCode}.");
+                        progress?.Report(new MessageWithProgress(""));
+
+                        // don't bother continuing
+                        return false;
+                    }
+
+                    current += sectorSize;
                 }
-
-                // check the error code returned
-                if (ErrorCode != AccessMemoryErrorCodes.NoError)
+                else
                 {
-                    // operation failed
-                    log?.Report($"Error erasing sector @ 0x{flashSectorData.StartAddress:X8}. Error code: {ErrorCode}.");
-                    progress?.Report(new MessageWithProgress(""));
+                    // connected to nanoBooter so need to erase per sector
+                    for (int blockIndex = 0; blockIndex < flashSectorData.NumBlocks; blockIndex++)
+                    {
+                        var blockAddress = flashSectorData.StartAddress + (blockIndex * flashSectorData.BytesPerBlock);
 
-                    // don't bother continuing
-                    return false;
+                        log?.Report($"Erasing block @ 0x{blockAddress:X8}...");
+                        progress?.Report(new MessageWithProgress($"Erasing block @ 0x{blockAddress:X8}...", current, totalBytes));
+
+                        (AccessMemoryErrorCodes ErrorCode, bool Success) = DebugEngine.EraseMemory((uint)blockAddress,
+                                                                                                   flashSectorData.BytesPerBlock);
+
+                        if (!Success)
+                        {
+                            log?.Report($"Error erasing block @ 0x{blockAddress:X8}.");
+                            progress?.Report(new MessageWithProgress(""));
+
+                            // don't bother continuing
+                            return false;
+                        }
+
+                        // check the error code returned
+                        if (ErrorCode != AccessMemoryErrorCodes.NoError)
+                        {
+                            // operation failed
+                            log?.Report($"Error erasing block @ 0x{blockAddress:X8}. Error code: {ErrorCode}.");
+                            progress?.Report(new MessageWithProgress(""));
+
+                            // don't bother continuing
+                            return false;
+                        }
+
+                        current += flashSectorData.BytesPerBlock;
+                    }
                 }
-
-                current += sectorSize;
             }
 
             progress?.Report(new MessageWithProgress(""));
 
             // reset device if we specifically entered nanoBooter to erase
-            if (fReset)
-            {
-                log?.Report("Executing memory...");
-                DebugEngine.ExecuteMemory(0);
-            }
-
-            // reboot if we are talking to the CLR
-            if (DebugEngine.IsConnectedTonanoCLR)
+            if (requestBooter)
             {
                 log?.Report("Rebooting...");
                 progress?.Report(new MessageWithProgress("Rebooting..."));
 
-                RebootOptions rebootOptions = RebootOptions.ClrOnly;
+                DebugEngine.RebootDevice(RebootOptions.NormalReboot, log);
+            }
+            else if (DebugEngine.IsConnectedTonanoCLR)
+            {
+                // reboot if we are talking to the CLR
 
-                DebugEngine.RebootDevice(rebootOptions, log);
+                log?.Report("Rebooting nanoCLR...");
+                progress?.Report(new MessageWithProgress("Rebooting nanoCLR..."));
+
+                DebugEngine.RebootDevice(RebootOptions.ClrOnly, log);
             }
 
             progress?.Report(new MessageWithProgress(""));
