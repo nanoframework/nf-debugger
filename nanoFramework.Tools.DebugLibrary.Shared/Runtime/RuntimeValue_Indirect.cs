@@ -52,6 +52,7 @@ namespace nanoFramework.Tools.Debugger
         public override bool IsValueType { get { return (m_value != null && m_value.IsValueType); } }
         public override bool IsArray { get { return (m_value != null && m_value.IsArray); } }
         public override bool IsReflection { get { return false; } }
+        public override bool IsGenericInst { get { return false; } }
 
         public override object Value
         {

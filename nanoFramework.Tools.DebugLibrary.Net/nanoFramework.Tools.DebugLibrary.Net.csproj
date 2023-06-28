@@ -15,7 +15,9 @@
     <!-- need this here to rebuild the packages.lock.json file in case the hashes fail to validate -->
     <!-- <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder> -->
   </PropertyGroup>
-
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
   <PropertyGroup>
     <PackageId>nanoFramework.Tools.Debugger.Net</PackageId>
     <Authors>nanoframework</Authors>

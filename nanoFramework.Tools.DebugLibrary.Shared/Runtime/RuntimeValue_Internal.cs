@@ -18,5 +18,6 @@ namespace nanoFramework.Tools.Debugger
         public override bool IsValueType { get { return false; } }
         public override bool IsArray { get { return false; } }
         public override bool IsReflection { get { return false; } }
+        public override bool IsGenericInst { get { return false; } }
     }
 }

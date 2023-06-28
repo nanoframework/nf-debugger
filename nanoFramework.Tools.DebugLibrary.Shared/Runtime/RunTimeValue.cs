@@ -219,6 +219,7 @@ public abstract class RuntimeValue
         public abstract bool IsArray { get; }
         public virtual bool IsArrayReference { get { return m_handle.m_arrayref_referenceID != 0; } }
         public abstract bool IsReflection { get; }
+        public abstract bool IsGenericInst { get; }
 
         public virtual nanoClrDataType DataType
         {
@@ -337,9 +338,9 @@ public abstract class RuntimeValue
                 case nanoClrDataType.DATATYPE_CLASS: return new RuntimeValue_Class(eng, src);
                 case nanoClrDataType.DATATYPE_VALUETYPE: return new RuntimeValue_ValueType(eng, src);
 
-                case nanoClrDataType.DATATYPE_VAR: return new RuntimeValue_Class(eng, src);
-                case nanoClrDataType.DATATYPE_GENERICINST: return new RuntimeValue_Class(eng, src);
-                case nanoClrDataType.DATATYPE_MVAR: return new RuntimeValue_Class(eng, src);
+                case nanoClrDataType.DATATYPE_VAR: return new RuntimeValue_Var(eng, src);
+                case nanoClrDataType.DATATYPE_GENERICINST: return new RuntimeValue_Generic(eng, src);
+                case nanoClrDataType.DATATYPE_MVAR: return new RuntimeValue_MVar(eng, src);
 
                 case nanoClrDataType.DATATYPE_SZARRAY: return new RuntimeValue_Array(eng, src);
 
