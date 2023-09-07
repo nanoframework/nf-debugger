@@ -35,13 +35,38 @@ namespace nanoFramework.Tools.Debugger
                 Array.Copy(data, pos, m_data, 0, len);
             }
 
-            internal Buffer(byte[] data, int pos, int len, int bitsInLastPos)
+            internal Buffer(
+                byte[] data,
+                int pos,
+                int len,
+                int bitsInLastPos)
             {
-                if (bitsInLastPos < 1 || bitsInLastPos > 8) { throw new ArgumentException("bits"); }
+                if (bitsInLastPos < 1 || bitsInLastPos > 8) 
+                { 
+                    throw new ArgumentException("bits");
+                }
+
                 m_data = new byte[len];
-                m_length = len;
                 m_avail = bitsInLastPos;
-                Array.Copy(data, pos, m_data, 0, len);
+
+                // can't copy more than what's available in the source array!
+                if (len > data.Length - pos)
+                {
+                    // NOT enough elements, so adjust length to copy
+                    m_length = data.Length - pos;
+                }
+                else
+                {
+                    // all good
+                    m_length = len;
+                }
+
+                Array.Copy(
+                    data,
+                    pos,
+                    m_data,
+                    0,
+                    m_length);
             }
         }
 
