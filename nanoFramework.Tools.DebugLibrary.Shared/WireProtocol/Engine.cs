@@ -1538,12 +1538,14 @@ namespace nanoFramework.Tools.Debugger
 
         public AccessMemoryErrorCodes WriteMemory(
             uint address,
-            byte[] buf,
+            byte[] buffer,
             int offset,
             int length,
             int programAligment = 0,
-            int startLenght = 0,
-            int totalLenght = 0,
+            int deploymentExecuted = 0,
+            int deploymentLength = 0,
+            int operationExecutedLenght = 0,
+            int operationTotalLength = 0,
             IProgress<MessageWithProgress> progress = null,
             IProgress<string> log = null)
         {
@@ -1552,9 +1554,6 @@ namespace nanoFramework.Tools.Debugger
 
             while (count > 0)
             {
-                progress?.Report(new MessageWithProgress($"Deploying {startLenght + position}/{totalLenght} bytes...", (uint)(startLenght + position), (uint)totalLenght));
-                log?.Report($"Deploying {startLenght + position}/{totalLenght} bytes.");
-
                 Commands.Monitor_WriteMemory cmd = new Commands.Monitor_WriteMemory();
 
                 // get packet length, either the maximum allowed size or whatever is still available to TX
@@ -1565,7 +1564,10 @@ namespace nanoFramework.Tools.Debugger
                     packetLength -= packetLength % programAligment;
                 }
 
-                cmd.PrepareForSend(address, buf, position, packetLength);
+                cmd.PrepareForSend(address, buffer, position, packetLength);
+
+                progress?.Report(new MessageWithProgress($"Deploying {deploymentExecuted + position + packetLength}/{deploymentLength} bytes...", (uint)(operationExecutedLenght + position + packetLength), (uint)operationTotalLength));
+                log?.Report($"Deploying {deploymentExecuted + position + packetLength}/{deploymentLength} bytes.");
 
                 DebuggerEventSource.Log.EngineWriteMemory(address, packetLength);
 
@@ -1640,21 +1642,25 @@ namespace nanoFramework.Tools.Debugger
 
         public AccessMemoryErrorCodes WriteMemory(
             uint address,
-            byte[] buf,
+            byte[] buffer,
             int programAligment = 0,
-            int startLenght = 0,
-            int totalLenght = 0,
+            int deploymentExecuted = 0,
+            int deploymentLength = 0,
+            int opearationExecutedLenght = 0,
+            int operationTotalLength = 0,
             IProgress<MessageWithProgress> progress = null,
             IProgress<string> log = null)
         {
             return WriteMemory(
                 address,
-                buf,
+                buffer,
                 0,
-                buf.Length,
+                buffer.Length,
                 programAligment,
-                startLenght,
-                totalLenght,
+                deploymentExecuted,
+                deploymentLength,
+                opearationExecutedLenght,
+                operationTotalLength,
                 progress,
                 log);
         }
@@ -3172,21 +3178,25 @@ namespace nanoFramework.Tools.Debugger
                 // get the block list to deploy (not empty)
                 List<DeploymentBlock> blocksToDeploy = deploymentBlob.ToDeploymentBlockList().FindAll(b => b.DeploymentData.Length > 0);
                 int deploymentSize = blocksToDeploy.Sum(b => b.DeploymentData.Length);
-                int deployedBytes = 0;
+                int deploymentOperationExecutedBytes = 0;
+                int deploymentRegionSize = 0;
+                int bytesDeployedCount = 0;
+                int deploymentOperationTotalSize = deploymentSize;
 
                 // compute progress information
                 int deploymentTotalSize = deploymentSize;
 
                 if (!skipErase)
                 {
-                    int deploymentRegionSize = deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size);
+                    deploymentRegionSize = deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size);
                     int erasedBytes = 0;
 
-                    deploymentSize += deploymentRegionSize;
+                    // compute a rough estimate of the progress step of each sector erase operation to have a consistent progress throughout the operation
+                    deploymentOperationTotalSize += (int)(deploymentBlob.ToDeploymentBlockList().Count * WireProtocolPacketSize);
 
                     foreach (DeploymentBlock block in deploymentBlob.ToDeploymentBlockList())
                     {
-                        progress?.Report(new MessageWithProgress($"Erasing block @ 0x{block.StartAddress:X8}...", (uint)erasedBytes, (uint)deploymentSize));
+                        progress?.Report(new MessageWithProgress($"Erasing block @ 0x{block.StartAddress:X8}...", (uint)erasedBytes, (uint)deploymentOperationTotalSize));
                         log?.Report($"Erasing block @ 0x{block.StartAddress:X8}...");
 
                         // erase memory sector
@@ -3210,11 +3220,13 @@ namespace nanoFramework.Tools.Debugger
                             return false;
                         }
 
-                        erasedBytes += block.Size;
+                        // this is only used for progress reporting, is not the actual number of bytes erased
+                        erasedBytes += (int)WireProtocolPacketSize;
                     }
 
                     // update progress counter
-                    deployedBytes += erasedBytes;
+                    // this is only used for progress reporting, is not the actual number of bytes erased
+                    deploymentOperationExecutedBytes += (int)WireProtocolPacketSize;
                 }
 
                 foreach (DeploymentBlock block in blocksToDeploy)
@@ -3224,8 +3236,10 @@ namespace nanoFramework.Tools.Debugger
                         (uint)block.StartAddress,
                         block.DeploymentData,
                         block.ProgramAligment,
-                        deployedBytes,
+                        bytesDeployedCount,
                         deploymentSize,
+                        deploymentOperationExecutedBytes,
+                        deploymentOperationTotalSize,
                         progress,
                         log);
 
@@ -3249,7 +3263,8 @@ namespace nanoFramework.Tools.Debugger
                     }
 
                     // all good
-                    deployedBytes += block.DeploymentData.Length;
+                    bytesDeployedCount += block.DeploymentData.Length;
+                    deploymentOperationExecutedBytes += block.DeploymentData.Length;
                 }
 
                 // report progress
