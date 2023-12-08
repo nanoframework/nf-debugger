@@ -37,10 +37,15 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  DOTNET_NOLOGO: true
-  solution: 'nanoFramework.Tools.Debugger.sln'
-  buildPlatform: 'Any CPU'
-  buildConfiguration: 'Release'
+  - group: sign-client-credentials
+  - name: DOTNET_NOLOGO
+    value: true  
+  - name: buildPlatform
+    value: 'Any CPU'  
+  - name: buildConfiguration
+    value: 'Release'
+  - name: solution
+    value: 'nanoFramework.Tools.Debugger.sln'
 
 steps:
 
@@ -199,7 +204,7 @@ steps:
     flattenFolders: true
 
 - task: DotNetCoreCLI@2
-  displayName: Install SignTool tool
+  displayName: Install Sign Client CLI
   condition: >-
     and(
       succeeded(),
@@ -213,16 +218,19 @@ steps:
     arguments: install --tool-path . SignClient
 
 - pwsh: |
-    .\SignClient "Sign" `
-    --baseDirectory "$(Build.ArtifactStagingDirectory)" `
-    --input "**/*.nupkg" `
-    --config "$(Build.Repository.LocalPath)\config\SignClient.json" `
-    --filelist "$(Build.Repository.LocalPath)\config\filelist.txt" `
-    --user "$(SignClientUser)" `
-    --secret '$(SignClientSecret)' `
-    --name ".NET nanoFramework Debugger" `
+    .\sign code azure-key-vault `
+    "**/*.nupkg" `
+    --base-directory "$(Build.ArtifactStagingDirectory)" `
+    --file-list "$(Build.Repository.LocalPath)\config\filelist.txt" `
+    --publisher-name ".NET nanoFramework" `
     --description ".NET nanoFramework Debugger" `
-    --descriptionUrl "https://github.com/$env:Build_Repository_Name"
+    --description-url "https://github.com/$env:Build_Repository_Name" `
+    --azure-key-vault-tenant-id "$(SignTenantId)" `
+    --azure-key-vault-client-id "$(SignClientId)" `
+    --azure-key-vault-client-secret "$(SignClientSecret)" `
+    --azure-key-vault-certificate "$(SignKeyVaultCertificate)" `
+    --azure-key-vault-url "$(SignKeyVaultUrl)" `
+    --timestamp-url http://timestamp.digicert.com
   displayName: Sign packages
   continueOnError: true
   condition: >-
