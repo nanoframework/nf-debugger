@@ -3222,11 +3222,11 @@ namespace nanoFramework.Tools.Debugger
 
                         // this is only used for progress reporting, is not the actual number of bytes erased
                         erasedBytes += (int)WireProtocolPacketSize;
-                    }
 
-                    // update progress counter
-                    // this is only used for progress reporting, is not the actual number of bytes erased
-                    deploymentOperationExecutedBytes += (int)WireProtocolPacketSize;
+                        // update progress counter
+                        // this is only used for progress reporting, is not the actual number of bytes erased
+                        deploymentOperationExecutedBytes += (int)WireProtocolPacketSize;
+                    }
                 }
 
                 foreach (DeploymentBlock block in blocksToDeploy)
