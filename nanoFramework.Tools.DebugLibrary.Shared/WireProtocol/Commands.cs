@@ -551,6 +551,87 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 return true;
             }
         }
+       
+        /// <summary>
+        /// Perform storage operation on the target device.
+        /// </summary>
+        public class Monitor_StorageOperation : OverheadBase
+        {
+            public StorageOperation Operation = StorageOperation.None;
+            public uint Length = 0;
+            public string StorageName = null;
+            public byte[] Data = null;
+
+            public class Reply
+            {
+                public uint ErrorCode;
+            };
+
+            public void PrepareForSend(
+              StorageOperation operation,
+              string name)
+            {
+                Operation = operation;
+                StorageName = name;
+            }
+
+            public void PrepareForSend(
+                StorageOperation operation,
+                string name,
+                byte[] data,
+                int offset,
+                int length)
+            {
+                Operation = operation;
+                StorageName = name;
+
+                PrepareForSend(data, offset, length);
+            }
+
+            public override bool PrepareForSend(
+                byte[] data,
+                int offset,
+                int length)
+            {
+                Length = (uint)length;
+                Data = new byte[length];
+
+                Array.Copy(data, offset, Data, 0, length);
+
+                return true;
+            }
+
+            //////////////////////////////////////////////////////////////////////////////////////
+            // !!! KEEP IN SYNC WITH typedef enum Monitor_StorageOperation (in native code) !!! //
+            //////////////////////////////////////////////////////////////////////////////////////
+
+            /// <summary>
+            /// Storage operation to be performed.
+            /// </summary>
+            public enum StorageOperation : byte
+            {
+                /// <summary>
+                /// Not specified.
+                /// </summary>
+                None = 0,
+
+                /// <summary>
+                /// Write to storage.
+                /// </summary>
+                /// <remarks>
+                /// If the file already exists, it will be overwritten.
+                /// </remarks>
+                Write = 1,
+
+                /// <summary>
+                /// Delete from storage.
+                /// </summary>
+                /// <remarks>
+                /// If the file doesn't exist, no action is taken.
+                /// </remarks>
+                Delete = 2
+            }
+        }
 
         /// <summary>
         /// Perform storage operation on the target device.
