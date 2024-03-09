@@ -41,6 +41,28 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         Unknown = 0xFFFF,
     }
 
+    public enum StorageOperationErrorCodes : uint
+    {
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // NEED TO KEEP THESE IN SYNC WITH native 'StorageOperationErrorCodes' enum in Debugger.h //
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// No error
+        /// </summary>
+        NoError = 0x0001,
+
+        /// <summary>
+        /// Write error
+        /// </summary>
+        WriteError = 0x0010,
+
+        /// <summary>
+        /// Delete error
+        /// </summary>
+        DeleteError = 0x0020,
+    }
+
     public class Commands
     {
         public const uint c_Monitor_Ping = 0x00000000; // The payload is empty, this command is used to let the other side know we are here...
@@ -529,14 +551,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 return true;
             }
         }
-       
+
         /// <summary>
         /// Perform storage operation on the target device.
         /// </summary>
         public class Monitor_StorageOperation : OverheadBase
         {
             public StorageOperation Operation = StorageOperation.None;
-            public string StorageName = null;
+            public string StorageName = string.Empty;
             public uint Length = 0;
             public byte[] Data = null;
 
@@ -1960,6 +1982,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap.Reply();
                     case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration.Reply();
                     case c_Monitor_UpdateConfiguration: return new Monitor_UpdateConfiguration.Reply();
+                    case c_Monitor_StorageOperation: return new Monitor_StorageOperation.Reply();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr.Reply();
                     case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions.Reply();
@@ -2033,6 +2056,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_DeploymentMap: return new Monitor_DeploymentMap();
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap();
                     case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration();
+                    case c_Monitor_StorageOperation: return new Monitor_StorageOperation();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr();
                     case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions();

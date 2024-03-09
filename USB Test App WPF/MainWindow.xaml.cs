@@ -1092,5 +1092,28 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             // enable button
             (sender as Button).IsEnabled = true;
         }
+
+        private void UploadFileInternalStorage_Click(object sender, RoutedEventArgs e)
+        {
+            string fileContent = "This is a test file to upload in internal storage. A long message to test more than just a line.\r\n" +
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. " +
+                "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. " +
+                "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. " +
+                "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\r\n" +
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. " +
+                "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. " +
+                "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. " +
+                "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+            string fileName = "I:\\upload.txt";
+
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            var reply1 = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.AddFile(fileName, Encoding.UTF8.GetBytes(fileContent));
+            Debug.WriteLine($"File upload internal success: {reply1}");
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
     }
 }

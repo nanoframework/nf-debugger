@@ -4423,6 +4423,35 @@ namespace nanoFramework.Tools.Debugger
             return (int)WireProtocolPacketSize - cmd.Overhead;
         }
 
+        public StorageOperationErrorCodes AddFile(string fileName, byte[] fileContent)
+        {
+            var storop = new Commands.Monitor_StorageOperation();
+            storop.PrepareForSend(Commands.Monitor_StorageOperation.StorageOperation.Write, fileName, fileContent, 0, fileContent.Length);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_StorageOperation, 0, storop);
+            if (reply != null)
+            {
+                Commands.Monitor_StorageOperation.Reply cmdReply = reply.Payload as Commands.Monitor_StorageOperation.Reply;
+                return (StorageOperationErrorCodes)cmdReply.ErrorCode;
+            }
+
+            return StorageOperationErrorCodes.WriteError;
+        }
+
+        public StorageOperationErrorCodes RemoveFile(string fileName)
+        {
+            var storop = new Commands.Monitor_StorageOperation();
+            storop.PrepareForSend(Commands.Monitor_StorageOperation.StorageOperation.Delete, fileName);
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_StorageOperation, 0, storop);
+            if (reply != null)
+            {
+                Commands.Monitor_StorageOperation.Reply cmdReply = reply.Payload as Commands.Monitor_StorageOperation.Reply;
+                return (StorageOperationErrorCodes)cmdReply.ErrorCode;
+            }
+
+            return StorageOperationErrorCodes.WriteError;
+        }
+
+
         /// <summary>
         /// Writes a specific configuration block to the device.
         /// The configuration block is updated only with the changes for this configuration part.
