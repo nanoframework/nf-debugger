@@ -53,6 +53,7 @@
         <Button Content="Deploy File" HorizontalAlignment="Left" Margin="162,275,0,0" VerticalAlignment="Top" Width="75" Click="DeployFileTestButton_Click" />
         <Button Content="Reboot CLR" HorizontalAlignment="Left" Margin="364,77,0,0" VerticalAlignment="Top" Width="121" Click="RebootDeviceButton_Click"/>
         <Button Content="Upload File I:\" HorizontalAlignment="Left" Margin="39,306,0,0" VerticalAlignment="Top" Width="110" Click="UploadFileInternalStorage_Click"/>
+        <Button Content="Rm file I:\" HorizontalAlignment="Left" Margin="162,306,0,0" VerticalAlignment="Top" Width="75" Click="RemoveFileInternalStorage_Click"/>
 
 
     </Grid>

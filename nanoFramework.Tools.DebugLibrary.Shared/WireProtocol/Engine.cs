@@ -4426,15 +4426,38 @@ namespace nanoFramework.Tools.Debugger
         public StorageOperationErrorCodes AddFile(string fileName, byte[] fileContent)
         {
             var storop = new Commands.Monitor_StorageOperation();
-            storop.PrepareForSend(Commands.Monitor_StorageOperation.StorageOperation.Write, fileName, fileContent, 0, fileContent.Length);
-            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_StorageOperation, 0, storop);
-            if (reply != null)
-            {
-                Commands.Monitor_StorageOperation.Reply cmdReply = reply.Payload as Commands.Monitor_StorageOperation.Reply;
-                return (StorageOperationErrorCodes)cmdReply.ErrorCode;
-            }
+            // Send by chunk, the first chunk is a write, the others will be appened
+            storop.PrepareForSend(Commands.Monitor_StorageOperation.StorageOperation.Write, fileName);
 
-            return StorageOperationErrorCodes.WriteError;
+            // We do have 3 * 4 = 12 overhead as well plus byte array type
+            var datasize = GetPacketMaxLength(storop) - 13;
+            int idx = 0;
+            int length;
+
+            IncomingMessage reply;
+
+            do
+            {
+                length = (idx + datasize < fileContent.Length) ? datasize : fileContent.Length - idx;
+                storop.PrepareForSend(fileContent, idx, length);
+                idx += length;
+                reply = PerformSyncRequest(Commands.c_Monitor_StorageOperation, 0, storop);
+                storop.Operation = (uint)Commands.Monitor_StorageOperation.StorageOperation.Append;
+                if (reply != null)
+                {
+                    Commands.Monitor_StorageOperation.Reply cmdReply = reply.Payload as Commands.Monitor_StorageOperation.Reply;
+                    if ((StorageOperationErrorCodes)cmdReply.ErrorCode != StorageOperationErrorCodes.NoError)
+                    {
+                        return StorageOperationErrorCodes.WriteError;
+                    }
+                }
+                else
+                {
+                    return StorageOperationErrorCodes.WriteError;
+                }
+            } while (idx < fileContent.Length);
+
+            return StorageOperationErrorCodes.NoError;
         }
 
         public StorageOperationErrorCodes RemoveFile(string fileName)
