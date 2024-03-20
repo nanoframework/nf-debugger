@@ -64,6 +64,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         /// Delete error.
         /// </summary>
         DeleteError = 0x0020,
+
+        /// <summary>
+        /// Platform dependent error.
+        /// </summary>
+        PlatformError = 0x0030,
     }
 
     public class Commands
