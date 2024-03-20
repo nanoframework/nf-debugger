@@ -593,7 +593,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 public uint ErrorCode;
             };
 
-            public void PrepareForSend(
+            /// <summary>
+            /// Prepare for sending a storage operation to the target device.
+            /// </summary>
+            /// <param name="operation"><see cref="StorageOperation"/> to be performed.</param>
+            /// <param name="name">Name of the file to be used in the operation.</param>
+            public void SetupOperation(
               StorageOperation operation,
               string name)
             {
@@ -602,35 +607,25 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 NameLength = (uint)Data.Length;
             }
 
-            public void PrepareForSend(
-                StorageOperation operation,
-                string name,
-                byte[] data,
-                int offset,
-                int length)
-            {
-                Operation = (byte)operation;
-                Data = Encoding.UTF8.GetBytes(name);
-                NameLength = (uint)(Data.Length + data.Length);
-
-                PrepareForSend(data, offset, length);
-            }
-
+            /// <summary>
+            /// Prepare for sending a storage operation to the target device.
+            /// </summary>
+            /// <param name="buffer">Data buffer to be sent to the device.</param>
+            /// <param name="offset">Offset in the <paramref name="buffer"/> to start copying data from.</param>
+            /// <param name="length">Length of the data to be copied from the <paramref name="buffer"/>.</param>
             public override bool PrepareForSend(
-                byte[] data,
-                int offset,
-                int length)
+                byte[] buffer,
+                int length,
+                int offset = 0)
             {
+                // setup the data payload
                 DataLength = (uint)length;
-                if(Data.Length < DataLength + NameLength)
-                {
-                    byte[] bytes = new byte[Data.Length];
-                    Array.Copy(Data, 0, bytes, 0, Data.Length);
-                    Data = new byte[DataLength + NameLength];
-                    Array.Copy(bytes, 0, Data, 0, bytes.Length);
-                }
 
-                Array.Copy(data, offset, Data, NameLength, length);
+                // need to resize the data buffer to accommodate the buffer data
+                Array.Resize(ref Data, (int)DataLength + (int)NameLength);
+
+                // copy the buffer data to the data buffer
+                Array.Copy(buffer, offset, Data, NameLength, length);
 
                 return true;
             }
