@@ -560,9 +560,32 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         /// </summary>
         public class Monitor_StorageOperation : OverheadBase
         {
+            /// <summary>
+            /// Storage operation to be performed.
+            /// </summary>
             public uint Operation = (byte)StorageOperation.None;
+
+            /// <summary>
+            /// Length of the name of the file to be used in the operation.
+            /// </summary>
             public uint NameLength = 0;
+
+            /// <summary>
+            /// Length of the data to be used in the operation.
+            /// </summary>
             public uint DataLength = 0;
+
+            /// <summary>
+            /// Offset in the file data of the chunck in this operation.
+            /// </summary>
+            /// <remarks>
+            /// This is to be used by the target device to know where to start writing the chunk data.
+            /// </remarks>
+            public uint Offset = 0;
+
+            /// <summary>
+            /// Data buffer to be sent to the device.
+            /// </summary>
             public byte[] Data = new byte[0];
 
             public class Reply
