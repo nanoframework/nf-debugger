@@ -46,9 +46,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
     /// </summary>
     public enum StorageOperationErrorCode : uint
     {
-        ////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////
         // NEED TO KEEP THESE IN SYNC WITH native 'StorageOperationErrorCode' enum in Debugger.h //
-        ////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// No error.
@@ -554,7 +554,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 return true;
             }
         }
-       
+
         /// <summary>
         /// Perform storage operation on the target device.
         /// </summary>
@@ -1998,7 +1998,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             while (len < num && buf[len] != 0) len++;
 
             if (fUTF8) return Encoding.UTF8.GetString(buf, 0, len);
-            else return Encoding.UTF8.GetString(buf, 0, len);
+            else return Encoding.ASCII.GetString(buf, 0, len);
         }
 
         public static object ResolveCommandToPayload(uint cmd, bool fReply, CLRCapabilities capabilities)
