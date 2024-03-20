@@ -371,48 +371,10 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
             int retryCount = 0;
 
-            List<byte[]> assemblies = new List<byte[]>(4);
-            // test data (equivalent to deploying the Blinky test app)
-            // mscorlib v1.0.0.0 (38448 bytes)
-            // nanoFramework.Runtime.Events v1.0.0.0 (2568 bytes)
-            // Windows.Devices.Gpio v1.0.0.0 (3800 bytes)
-            // Blinky v1.0.0.0 (752 bytes)
-            // assemblies to device...total size in bytes is 47032.
+            List<byte[]> assemblies = new List<byte[]>();
+            assemblies.Add(File.ReadAllBytes("NFApp34.bin"));
 
-            var p1Size = 644;
-            var p2Size = 2116;
-            var p3Size = 3412;
-            var p4Size = 5684;
-
-            assemblies.Add(new byte[p1Size]);
-
-            for (int i = 0; i < p1Size; i++)
-            {
-                assemblies[0][i] = (byte)i;
-            }
-
-            assemblies.Add(new byte[p2Size]);
-
-            for (int i = 0; i < p2Size; i++)
-            {
-                assemblies[1][i] = (byte)i;
-            }
-
-            assemblies.Add(new byte[p3Size]);
-
-            for (int i = 0; i < p3Size; i++)
-            {
-                assemblies[2][i] = (byte)i;
-            }
-
-            assemblies.Add(new byte[p4Size]);
-
-            for (int i = 0; i < p4Size; i++)
-            {
-                assemblies[3][i] = (byte)i;
-            }
-
-            var totalSize = p1Size + p2Size + p3Size + p4Size;
+            var totalSize = assemblies[0].Length;
 
             try
             {
