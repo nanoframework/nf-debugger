@@ -2036,7 +2036,15 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public abstract class OverheadBase
         {
             [IgnoreDataMember]
-            public int Overhead { get; private set; }
+            public int Overhead
+            {
+                get
+                {
+                    return GetOverhead();
+                }
+
+                private set { }
+            }
 
             protected OverheadBase()
             {
