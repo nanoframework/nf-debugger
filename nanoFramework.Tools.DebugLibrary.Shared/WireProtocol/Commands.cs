@@ -643,6 +643,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 return true;
             }
 
+            internal void PrepareForSend()
+            {
+                // add the file name to the data property buffer
+                Data = Encoding.UTF8.GetBytes(FileName);
+                NameLength = (uint)FileName.Length;
+            }
+
             //////////////////////////////////////////////////////////////////////////////////////
             // !!! KEEP IN SYNC WITH typedef enum Monitor_StorageOperation (in native code) !!! //
             //////////////////////////////////////////////////////////////////////////////////////

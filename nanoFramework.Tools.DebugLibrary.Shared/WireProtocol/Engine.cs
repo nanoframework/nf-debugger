@@ -4494,6 +4494,8 @@ namespace nanoFramework.Tools.Debugger
                 Commands.Monitor_StorageOperation.StorageOperation.Delete,
                 fileName);
 
+            storop.PrepareForSend();
+
             IncomingMessage reply = PerformSyncRequest(
                 Commands.c_Monitor_StorageOperation,
                 0,
