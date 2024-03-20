@@ -4423,57 +4423,93 @@ namespace nanoFramework.Tools.Debugger
             return (int)WireProtocolPacketSize - cmd.Overhead;
         }
 
-        public StorageOperationErrorCodes AddFile(string fileName, byte[] fileContent)
+        #region Storage methods
+
+        /// <summary>
+        /// Add a file to the device storage.
+        /// </summary>
+        /// <param name="fileName">File name.</param>
+        /// <param name="fileContent">Content of the file.</param>
+        /// <returns>Operation result as a <see cref="StorageOperationErrorCode"/>.</returns>
+        public StorageOperationErrorCode AddStorageFile(
+            string fileName,
+            byte[] fileContent)
         {
-            var storop = new Commands.Monitor_StorageOperation();
-            // Send by chunk, the first chunk is a write, the others will be appened
-            storop.PrepareForSend(Commands.Monitor_StorageOperation.StorageOperation.Write, fileName);
+            // counters to manage the chunked update process
+            int count = fileContent.Length;
+            int position = 0;
 
-            // We do have 3 * 4 = 12 overhead as well plus byte array type
-            var datasize = GetPacketMaxLength(storop) - 13;
-            int idx = 0;
-            int length;
-
-            IncomingMessage reply;
-
-            do
+            while (count > 0)
             {
-                length = (idx + datasize < fileContent.Length) ? datasize : fileContent.Length - idx;
-                storop.PrepareForSend(fileContent, idx, length);
-                idx += length;
-                reply = PerformSyncRequest(Commands.c_Monitor_StorageOperation, 0, storop);
-                storop.Operation = (uint)Commands.Monitor_StorageOperation.StorageOperation.Append;
+                // Send by chunk, the first chunk is a write, the others will be appened
+                var storageOperation = new Commands.Monitor_StorageOperation();
+
+                storageOperation.SetupOperation(
+                    position == 0 ? Commands.Monitor_StorageOperation.StorageOperation.Write : Commands.Monitor_StorageOperation.StorageOperation.Append,
+                    fileName);
+
+                // get packet length, either the maximum allowed size or whatever is still available to TX
+                int packetLength = Math.Min(GetPacketMaxLength(storageOperation), count);
+
+                storageOperation.PrepareForSend(fileContent, packetLength, position);
+
+                // update offset field
+                storageOperation.Offset = (uint)position;
+
+                // send the file chunk to the device
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_StorageOperation, 0, storageOperation);
+
                 if (reply != null)
                 {
                     Commands.Monitor_StorageOperation.Reply cmdReply = reply.Payload as Commands.Monitor_StorageOperation.Reply;
-                    if ((StorageOperationErrorCodes)cmdReply.ErrorCode != StorageOperationErrorCodes.NoError)
+
+                    if ((StorageOperationErrorCode)cmdReply.ErrorCode != StorageOperationErrorCode.NoError)
                     {
-                        return StorageOperationErrorCodes.WriteError;
+                        return StorageOperationErrorCode.WriteError;
                     }
                 }
                 else
                 {
-                    return StorageOperationErrorCodes.WriteError;
+                    return StorageOperationErrorCode.WriteError;
                 }
-            } while (idx < fileContent.Length);
 
-            return StorageOperationErrorCodes.NoError;
+                // update counters
+                count -= packetLength;
+                position += packetLength;
+            }
+
+            return StorageOperationErrorCode.NoError;
         }
 
-        public StorageOperationErrorCodes RemoveFile(string fileName)
+        /// <summary>
+        /// Delete a file from the device storage.
+        /// </summary>
+        /// <param name="fileName">Name of file to delete.</param>
+        /// <returns>Operation result as a <see cref="StorageOperationErrorCode"/>.</returns>
+        public StorageOperationErrorCode DeleteStorageFile(string fileName)
         {
             var storop = new Commands.Monitor_StorageOperation();
-            storop.PrepareForSend(Commands.Monitor_StorageOperation.StorageOperation.Delete, fileName);
-            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_StorageOperation, 0, storop);
+
+            storop.SetupOperation(
+                Commands.Monitor_StorageOperation.StorageOperation.Delete,
+                fileName);
+
+            IncomingMessage reply = PerformSyncRequest(
+                Commands.c_Monitor_StorageOperation,
+                0,
+                storop);
+
             if (reply != null)
             {
                 Commands.Monitor_StorageOperation.Reply cmdReply = reply.Payload as Commands.Monitor_StorageOperation.Reply;
-                return (StorageOperationErrorCodes)cmdReply.ErrorCode;
+
+                return (StorageOperationErrorCode)cmdReply.ErrorCode;
             }
 
-            return StorageOperationErrorCodes.WriteError;
+            return StorageOperationErrorCode.WriteError;
         }
 
+        #endregion
 
         /// <summary>
         /// Writes a specific configuration block to the device.
