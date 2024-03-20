@@ -571,6 +571,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public uint Operation = (byte)StorageOperation.None;
 
             /// <summary>
+            /// File name for the the storage operation.
+            /// </summary>
+            [IgnoreDataMember]
+            public string FileName = string.Empty;
+
+            /// <summary>
             /// Length of the name of the file to be used in the operation.
             /// </summary>
             public uint NameLength = 0;
@@ -591,7 +597,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             /// <summary>
             /// Data buffer to be sent to the device.
             /// </summary>
-            public byte[] Data = new byte[0];
+            public byte[] Data;
 
             public class Reply
             {
@@ -607,9 +613,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
               StorageOperation operation,
               string name)
             {
-                Operation = (byte)operation;
-                Data = Encoding.UTF8.GetBytes(name);
-                NameLength = (uint)Data.Length;
+                Operation = (uint)operation;
+                FileName = name;
             }
 
             /// <summary>
@@ -625,11 +630,14 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 // setup the data payload
                 DataLength = (uint)length;
+                Data = new byte[length + FileName.Length];
 
-                // need to resize the data buffer to accommodate the buffer data
-                Array.Resize(ref Data, (int)DataLength + (int)NameLength);
+                // add the file name to the data property buffer
+                var tempName = Encoding.UTF8.GetBytes(FileName);
+                NameLength = (uint)tempName.Length;
+                Array.Copy(tempName, 0, Data, 0, NameLength);
 
-                // copy the buffer data to the data buffer
+                // copy the buffer data to the data property buffer
                 Array.Copy(buffer, offset, Data, NameLength, length);
 
                 return true;
