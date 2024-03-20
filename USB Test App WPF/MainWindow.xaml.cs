@@ -1114,7 +1114,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             // disable button
             (sender as Button).IsEnabled = false;
 
-            var reply1 = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.AddFile(fileName, Encoding.UTF8.GetBytes(fileContent));
+            var reply1 = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.AddStorageFile(fileName, Encoding.UTF8.GetBytes(fileContent));
             Debug.WriteLine($"File upload internal success: {reply1}");
 
             // enable button
@@ -1127,7 +1127,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             // disable button
             (sender as Button).IsEnabled = false;
 
-            var reply1 = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.RemoveFile(fileName);
+            var reply1 = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.DeleteStorageFile(fileName);
             Debug.WriteLine($"File upload internal success: {reply1}");
 
             // enable button
