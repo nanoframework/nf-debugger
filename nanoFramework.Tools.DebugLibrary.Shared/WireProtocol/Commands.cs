@@ -41,24 +41,27 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         Unknown = 0xFFFF,
     }
 
-    public enum StorageOperationErrorCodes : uint
+    /// <summary>
+    /// Storage operation error codes.
+    /// </summary>
+    public enum StorageOperationErrorCode : uint
     {
         ////////////////////////////////////////////////////////////////////////////////////////////
-        // NEED TO KEEP THESE IN SYNC WITH native 'StorageOperationErrorCodes' enum in Debugger.h //
+        // NEED TO KEEP THESE IN SYNC WITH native 'StorageOperationErrorCode' enum in Debugger.h //
         ////////////////////////////////////////////////////////////////////////////////////////////
 
         /// <summary>
-        /// No error
+        /// No error.
         /// </summary>
         NoError = 0x0001,
 
         /// <summary>
-        /// Write error
+        /// Write error.
         /// </summary>
         WriteError = 0x0010,
 
         /// <summary>
-        /// Delete error
+        /// Delete error.
         /// </summary>
         DeleteError = 0x0020,
     }
