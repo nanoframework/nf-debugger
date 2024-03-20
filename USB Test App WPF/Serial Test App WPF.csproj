@@ -96,6 +96,9 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="NFApp34.bin">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommonServiceLocator">
