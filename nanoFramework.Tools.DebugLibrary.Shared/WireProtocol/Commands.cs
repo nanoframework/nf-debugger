@@ -41,6 +41,45 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         Unknown = 0xFFFF,
     }
 
+    /// <summary>
+    /// Storage operation error codes.
+    /// </summary>
+    public enum StorageOperationErrorCode : uint
+    {
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        // NEED TO KEEP THESE IN SYNC WITH native 'StorageOperationErrorCode' enum in Debugger.h //
+        ///////////////////////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// No error.
+        /// </summary>
+        NoError = 0x0001,
+
+        /// <summary>
+        /// Write error.
+        /// </summary>
+        WriteError = 0x0010,
+
+        /// <summary>
+        /// Delete error.
+        /// </summary>
+        DeleteError = 0x0020,
+
+        /// <summary>
+        /// Platform dependent error.
+        /// </summary>
+        PlatformError = 0x0030,
+
+        /////////////////////////////////////////////////////////
+        // The following element is not present in native code //
+        /////////////////////////////////////////////////////////
+        
+        /// <summary>
+        /// Target does not support storage operations.
+        /// </summary>
+        NotSupported = 0xFFFF,
+    }
+
     public class Commands
     {
         public const uint c_Monitor_Ping = 0x00000000; // The payload is empty, this command is used to let the other side know we are here...
@@ -58,6 +97,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Monitor_OemInfo = 0x0000000E;
         public const uint c_Monitor_QueryConfiguration = 0x0000000F;
         public const uint c_Monitor_UpdateConfiguration = 0x00000010;
+        public const uint c_Monitor_StorageOperation = 0x00000011;
         public const uint c_Monitor_TargetInfo = 0x00000020;
 
         public class Monitor_Message : IConverter
@@ -526,6 +566,136 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 Array.Copy(data, offset, Data, 0, length);
 
                 return true;
+            }
+        }
+
+        /// <summary>
+        /// Perform storage operation on the target device.
+        /// </summary>
+        public class Monitor_StorageOperation : OverheadBase
+        {
+            /// <summary>
+            /// Storage operation to be performed.
+            /// </summary>
+            public uint Operation = (byte)StorageOperation.None;
+
+            /// <summary>
+            /// File name for the the storage operation.
+            /// </summary>
+            [IgnoreDataMember]
+            public string FileName = string.Empty;
+
+            /// <summary>
+            /// Length of the name of the file to be used in the operation.
+            /// </summary>
+            public uint NameLength = 0;
+
+            /// <summary>
+            /// Length of the data to be used in the operation.
+            /// </summary>
+            public uint DataLength = 0;
+
+            /// <summary>
+            /// Offset in the file data of the chunck in this operation.
+            /// </summary>
+            /// <remarks>
+            /// This is to be used by the target device to know where to start writing the chunk data.
+            /// </remarks>
+            public uint Offset = 0;
+
+            /// <summary>
+            /// Data buffer to be sent to the device.
+            /// </summary>
+            public byte[] Data;
+
+            public class Reply
+            {
+                public uint ErrorCode;
+            };
+
+            /// <summary>
+            /// Prepare for sending a storage operation to the target device.
+            /// </summary>
+            /// <param name="operation"><see cref="StorageOperation"/> to be performed.</param>
+            /// <param name="name">Name of the file to be used in the operation.</param>
+            public void SetupOperation(
+              StorageOperation operation,
+              string name)
+            {
+                Operation = (uint)operation;
+                FileName = name;
+            }
+
+            /// <summary>
+            /// Prepare for sending a storage operation to the target device.
+            /// </summary>
+            /// <param name="buffer">Data buffer to be sent to the device.</param>
+            /// <param name="offset">Offset in the <paramref name="buffer"/> to start copying data from.</param>
+            /// <param name="length">Length of the data to be copied from the <paramref name="buffer"/>.</param>
+            public override bool PrepareForSend(
+                byte[] buffer,
+                int length,
+                int offset = 0)
+            {
+                // setup the data payload
+                DataLength = (uint)length;
+                Data = new byte[length + FileName.Length];
+
+                // add the file name to the data property buffer
+                var tempName = Encoding.UTF8.GetBytes(FileName);
+                NameLength = (uint)tempName.Length;
+                Array.Copy(tempName, 0, Data, 0, NameLength);
+
+                // copy the buffer data to the data property buffer
+                Array.Copy(buffer, offset, Data, NameLength, length);
+
+                return true;
+            }
+
+            internal void PrepareForSend()
+            {
+                // add the file name to the data property buffer
+                Data = Encoding.UTF8.GetBytes(FileName);
+                NameLength = (uint)FileName.Length;
+            }
+
+            //////////////////////////////////////////////////////////////////////////////////////
+            // !!! KEEP IN SYNC WITH typedef enum Monitor_StorageOperation (in native code) !!! //
+            //////////////////////////////////////////////////////////////////////////////////////
+
+            /// <summary>
+            /// Storage operation to be performed.
+            /// </summary>
+            public enum StorageOperation : byte
+            {
+                /// <summary>
+                /// Not specified.
+                /// </summary>
+                None = 0,
+
+                /// <summary>
+                /// Write to storage.
+                /// </summary>
+                /// <remarks>
+                /// If the file already exists, it will be overwritten.
+                /// </remarks>
+                Write = 1,
+
+                /// <summary>
+                /// Delete from storage.
+                /// </summary>
+                /// <remarks>
+                /// If the file doesn't exist, no action is taken.
+                /// </remarks>
+                Delete = 2,
+
+                /// <summary>
+                /// Append to a file.
+                /// </summary>
+                /// <remarks>
+                /// If the file doesn't exist, no action is taken.
+                /// </remarks>
+                Append = 3
             }
         }
 
@@ -1864,7 +2034,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             while (len < num && buf[len] != 0) len++;
 
             if (fUTF8) return Encoding.UTF8.GetString(buf, 0, len);
-            else return Encoding.UTF8.GetString(buf, 0, len);
+            else return Encoding.ASCII.GetString(buf, 0, len);
         }
 
         public static object ResolveCommandToPayload(uint cmd, bool fReply, CLRCapabilities capabilities)
@@ -1885,6 +2055,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap.Reply();
                     case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration.Reply();
                     case c_Monitor_UpdateConfiguration: return new Monitor_UpdateConfiguration.Reply();
+                    case c_Monitor_StorageOperation: return new Monitor_StorageOperation.Reply();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr.Reply();
                     case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions.Reply();
@@ -1958,6 +2129,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_DeploymentMap: return new Monitor_DeploymentMap();
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap();
                     case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration();
+                    case c_Monitor_StorageOperation: return new Monitor_StorageOperation();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr();
                     case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions();
