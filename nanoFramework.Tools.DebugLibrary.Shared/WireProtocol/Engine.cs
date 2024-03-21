@@ -32,6 +32,11 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         private const int _InterRequestSleep = 2;
 
+        /// <summary>
+        /// This constant is to be used in progress report when performing delete operation.
+        /// </summary>
+        public const int StorageDeleteOperationProgressStep = 10;
+
         internal IPort _portDefinition;
         internal Controller _controlller { get; set; }
 
@@ -4430,14 +4435,27 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         /// <param name="fileName">File name.</param>
         /// <param name="fileContent">Content of the file.</param>
+        /// <param name="operationExecutedLenght">Count of bytes already executed in this operation.</param>
+        /// <param name="operationTotalLength">Total length of the operation, in bytes.</param>
+        /// <param name="progress">An <see cref="IProgress&lt;MessageWithProgress&gt;"/> object to track the progress of the deploy operation.</param>
+        /// <param name="log">An <see cref="IProgress&lt;String&gt;"/> object to log the progress of the deploy operation.</param>
         /// <returns>Operation result as a <see cref="StorageOperationErrorCode"/>.</returns>
         public StorageOperationErrorCode AddStorageFile(
             string fileName,
-            byte[] fileContent)
+            byte[] fileContent,
+            int operationExecutedLenght = 0,
+            int operationTotalLength = 0,
+            IProgress<MessageWithProgress> progress = null,
+            IProgress<string> log = null)
         {
             // counters to manage the chunked update process
             int count = fileContent.Length;
             int position = 0;
+            int packetLength = 0;
+
+            StorageOperationErrorCode operationOutcome = StorageOperationErrorCode.WriteError;
+
+            log?.Report($"Storing '{fileName}'...");
 
             while (count > 0)
             {
@@ -4449,28 +4467,54 @@ namespace nanoFramework.Tools.Debugger
                     fileName);
 
                 // get packet length, either the maximum allowed size or whatever is still available to TX
-                int packetLength = Math.Min(GetPacketMaxLength(storageOperation), count);
+                packetLength = Math.Min(GetPacketMaxLength(storageOperation), count);
 
                 storageOperation.PrepareForSend(fileContent, packetLength, position);
 
                 // update offset field
                 storageOperation.Offset = (uint)position;
 
+                progress?.Report(new MessageWithProgress($"Storing '{fileName}' file in target storage...", (uint)(operationExecutedLenght + position + packetLength), (uint)operationTotalLength));
+                log?.Report($"Sent {position + packetLength}/{fileContent.Length} bytes.");
+
                 // send the file chunk to the device
                 IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_StorageOperation, 0, storageOperation);
 
                 if (reply != null)
                 {
-                    Commands.Monitor_StorageOperation.Reply cmdReply = reply.Payload as Commands.Monitor_StorageOperation.Reply;
-
-                    if ((StorageOperationErrorCode)cmdReply.ErrorCode != StorageOperationErrorCode.NoError)
+                    if (!reply.IsPositiveAcknowledge())
                     {
-                        return StorageOperationErrorCode.WriteError;
+                        // target doesn't support this command
+                        operationOutcome = StorageOperationErrorCode.NotSupported;
+                    }
+                    else
+                    {
+                        if (reply.Payload is Commands.Monitor_StorageOperation.Reply cmdReply)
+                        {
+                            operationOutcome = (StorageOperationErrorCode)cmdReply.ErrorCode;
+                            if (operationOutcome != StorageOperationErrorCode.NoError)
+                            {
+                                // done here
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            // set generic write error
+                            operationOutcome = StorageOperationErrorCode.WriteError;
+
+                            // done here
+                            break;
+                        }
                     }
                 }
                 else
                 {
-                    return StorageOperationErrorCode.WriteError;
+                    // set generic write error
+                    operationOutcome = StorageOperationErrorCode.WriteError;
+
+                    // done here
+                    break;
                 }
 
                 // update counters
@@ -4478,16 +4522,57 @@ namespace nanoFramework.Tools.Debugger
                 position += packetLength;
             }
 
-            return StorageOperationErrorCode.NoError;
+            // clear progress report message
+            progress?.Report(new MessageWithProgress(""));
+
+            if (operationOutcome != StorageOperationErrorCode.NoError)
+            {
+                // there was an error, compose error message...
+                var errorMessage = new StringBuilder($"Error sending {packetLength} bytes to device. Store operation failed. ");
+
+                switch (operationOutcome)
+                {
+                    case StorageOperationErrorCode.PlatformError:
+                        errorMessage.Append("Error is platform related.");
+                        break;
+
+                    case StorageOperationErrorCode.NotSupported:
+                        errorMessage = new StringBuilder($"Target doesn't have support to access storage. "); ;
+                        break;
+
+                    default:
+                        errorMessage.Append("Unknown error.");
+                        break;
+                }
+
+                // ...and report it
+                log?.Report(errorMessage.ToString());
+            }
+
+            return operationOutcome;
         }
 
         /// <summary>
         /// Delete a file from the device storage.
         /// </summary>
         /// <param name="fileName">Name of file to delete.</param>
+        /// <param name="operationExecutedLenght">Count of bytes already executed in this operation.</param>
+        /// <param name="operationTotalLength">Total length of the operation, in bytes.</param>
+        /// <param name="progress">An <see cref="IProgress&lt;MessageWithProgress&gt;"/> object to track the progress of the deploy operation.</param>
+        /// <param name="log">An <see cref="IProgress&lt;String&gt;"/> object to log the progress of the deploy operation.</param>
         /// <returns>Operation result as a <see cref="StorageOperationErrorCode"/>.</returns>
-        public StorageOperationErrorCode DeleteStorageFile(string fileName)
+        /// <remarks>
+        /// When computing the operation total length, use the constant <see cref="StorageDeleteOperationProgressStep"/> as the step weight and consider that this will be executed in a single step.
+        /// </remarks>
+        public StorageOperationErrorCode DeleteStorageFile(
+            string fileName,
+            int operationExecutedLenght = 0,
+            int operationTotalLength = 0,
+            IProgress<MessageWithProgress> progress = null,
+            IProgress<string> log = null)
         {
+            StorageOperationErrorCode operationOutcome = StorageOperationErrorCode.DeleteError;
+
             var storop = new Commands.Monitor_StorageOperation();
 
             storop.SetupOperation(
@@ -4496,6 +4581,9 @@ namespace nanoFramework.Tools.Debugger
 
             storop.PrepareForSend();
 
+            progress?.Report(new MessageWithProgress($"Deleting '{fileName}' from target storage...", (uint)(operationExecutedLenght + StorageDeleteOperationProgressStep), (uint)operationTotalLength));
+            log?.Report($"Deleting '{fileName}' from target storage...");
+
             IncomingMessage reply = PerformSyncRequest(
                 Commands.c_Monitor_StorageOperation,
                 0,
@@ -4503,12 +4591,57 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null)
             {
-                Commands.Monitor_StorageOperation.Reply cmdReply = reply.Payload as Commands.Monitor_StorageOperation.Reply;
-
-                return (StorageOperationErrorCode)cmdReply.ErrorCode;
+                if (!reply.IsPositiveAcknowledge())
+                {
+                    // target doesn't support this command
+                    operationOutcome = StorageOperationErrorCode.NotSupported;
+                }
+                else
+                {
+                    if (reply.Payload is Commands.Monitor_StorageOperation.Reply cmdReply)
+                    {
+                        operationOutcome = (StorageOperationErrorCode)cmdReply.ErrorCode;
+                    }
+                    else
+                    {
+                        // set generic write error
+                        operationOutcome = StorageOperationErrorCode.DeleteError;
+                    }
+                }
             }
 
-            return StorageOperationErrorCode.WriteError;
+            // clear progress report message
+            progress?.Report(new MessageWithProgress(""));
+
+            if (operationOutcome != StorageOperationErrorCode.NoError)
+            {
+                // there was an error, compose error message...
+                var errorMessage = new StringBuilder($"Error deleting file from storage. ");
+
+                switch (operationOutcome)
+                {
+                    case StorageOperationErrorCode.PlatformError:
+                        errorMessage.Append("Error platform related.");
+                        break;
+
+                    case StorageOperationErrorCode.DeleteError:
+                        errorMessage.Append("Couldn't delete the file.");
+                        break;
+
+                    case StorageOperationErrorCode.NotSupported:
+                        errorMessage = new StringBuilder($"Target doesn't have support to access storage. "); ;
+                        break;
+
+                    default:
+                        errorMessage.Append("Unknown error.");
+                        break;
+                }
+
+                // ...and report it
+                log?.Report(errorMessage.ToString());
+            }
+
+            return operationOutcome;
         }
 
         #endregion

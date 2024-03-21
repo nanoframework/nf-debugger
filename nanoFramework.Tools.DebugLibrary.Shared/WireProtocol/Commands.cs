@@ -69,6 +69,15 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         /// Platform dependent error.
         /// </summary>
         PlatformError = 0x0030,
+
+        /////////////////////////////////////////////////////////
+        // The following element is not present in native code //
+        /////////////////////////////////////////////////////////
+        
+        /// <summary>
+        /// Target does not support storage operations.
+        /// </summary>
+        NotSupported = 0xFFFF,
     }
 
     public class Commands
