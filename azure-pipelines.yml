@@ -215,14 +215,13 @@ steps:
   inputs:
     command: custom
     custom: tool
-    arguments: install --tool-path . SignClient
+    arguments: install --tool-path . sign --version 0.9.1-beta.24170.3
 
 - pwsh: |
     .\sign code azure-key-vault `
     "**/*.nupkg" `
     --base-directory "$(Build.ArtifactStagingDirectory)" `
     --file-list "$(Build.Repository.LocalPath)\config\filelist.txt" `
-    --publisher-name ".NET nanoFramework" `
     --description ".NET nanoFramework Debugger" `
     --description-url "https://github.com/$env:Build_Repository_Name" `
     --azure-key-vault-tenant-id "$(SignTenantId)" `
