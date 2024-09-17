@@ -15,7 +15,7 @@ namespace nanoFramework.Tools.Debugger
         {
             get
             {
-                lock (typeof(NanoFrameworkDevices))
+                lock (_instance)
                 {
                     return _instance.Value;
                 }
