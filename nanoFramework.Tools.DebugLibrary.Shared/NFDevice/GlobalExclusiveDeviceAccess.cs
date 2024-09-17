@@ -59,32 +59,44 @@ namespace nanoFramework.Tools.Debugger.NFDevice
         #region Implementation
         private static bool DoCommunicateWithDevice(string connectionKey, Action communication, int millisecondsTimeout, CancellationToken? cancellationToken)
         {
-            var waitHandles = new List<WaitHandle>();
-            var mutex = new Mutex(false, $"{MutexBaseName}_{connectionKey}");
-            waitHandles.Add(mutex);
+            for (var retry = true; retry;)
+            {
+                retry = false;
 
-            CancellationTokenSource timeOutToken = null;
-            if (millisecondsTimeout > 0 && millisecondsTimeout != Timeout.Infinite)
-            {
-                timeOutToken = new CancellationTokenSource(millisecondsTimeout);
-                waitHandles.Add(timeOutToken.Token.WaitHandle);
-            }
-            if (cancellationToken.HasValue)
-            {
-                waitHandles.Add(cancellationToken.Value.WaitHandle);
-            }
-            try
-            {
-                if (WaitHandle.WaitAny(waitHandles.ToArray()) == 0)
+                var waitHandles = new List<WaitHandle>();
+                var mutex = new Mutex(false, $"{MutexBaseName}_{connectionKey}");
+                waitHandles.Add(mutex);
+
+                CancellationTokenSource timeOutToken = null;
+                if (millisecondsTimeout > 0 && millisecondsTimeout != Timeout.Infinite)
                 {
-                    communication();
-                    return true;
+                    timeOutToken = new CancellationTokenSource(millisecondsTimeout);
+                    waitHandles.Add(timeOutToken.Token.WaitHandle);
                 }
-            }
-            finally
-            {
-                mutex.ReleaseMutex();
-                timeOutToken?.Dispose();
+                if (cancellationToken.HasValue)
+                {
+                    waitHandles.Add(cancellationToken.Value.WaitHandle);
+                }
+                try
+                {
+                    if (WaitHandle.WaitAny(waitHandles.ToArray()) == 0)
+                    {
+                        communication();
+                        return true;
+                    }
+                }
+                catch (AbandonedMutexException)
+                {
+                    // While this process is waiting on a mutex, the process that owned the mutex has been terminated
+                    // without properly releasing the mutex.
+                    // Try again, if this is the only remaining process it will re-create the mutex and get exclusive access.
+                    retry = true;
+                }
+                finally
+                {
+                    mutex.ReleaseMutex();
+                    timeOutToken?.Dispose();
+                }
             }
             return false;
         }

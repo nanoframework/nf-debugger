@@ -19,8 +19,6 @@ namespace nanoFramework.Tools.Debugger.PortComposite
             IEnumerable<PortBase> ports,
             bool startDeviceWatchers = true)
         {
-            NanoFrameworkDevices = NanoFrameworkDevices.Instance;
-
             _ports.AddRange(ports);
 
             SubscribeToPortEvents();

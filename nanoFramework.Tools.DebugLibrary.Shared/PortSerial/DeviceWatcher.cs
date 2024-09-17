@@ -144,8 +144,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             {
                                 if (PortSerialManager.GetRegisteredDevice(port) is null)
                                 {
-                                    tasks.Add(Task.Run(() =>
+                                    tasks.Add(Task.Run(async () =>
                                     {
+                                        await Task.Yield(); // Force true async running
                                         GlobalExclusiveDeviceAccess.CommunicateWithDevice(
                                             port,
                                             () => Added.Invoke(this, port)

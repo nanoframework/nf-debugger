@@ -35,7 +35,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         public PortSerialManager(bool startDeviceWatchers = true, List<string> portExclusionList = null, int bootTime = 3000)
         {
-            NanoFrameworkDevices = NanoFrameworkDevices.Instance;
             _deviceWatcher = new(this);
 
             BootTime = bootTime;

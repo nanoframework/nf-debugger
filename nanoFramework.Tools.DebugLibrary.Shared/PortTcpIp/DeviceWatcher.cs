@@ -153,12 +153,14 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                         var info = new NetworkDeviceInformation(host, port);
                         if (PortTcpIpManager.GetRegisteredDevice(info) is null)
                         {
-                            Task.Run(() =>
+                            Task.Run(async () =>
+                            {
+                                await Task.Yield(); // Force true async running
                                 GlobalExclusiveDeviceAccess.CommunicateWithDevice(info, () =>
                                 {
                                     Added.Invoke(this, info);
-                                })
-                            );
+                                });
+                            });
                         }
                     }
                     break;
