@@ -1,11 +1,6 @@
-﻿//
-// Copyright (c) .NET Foundation and Contributors
-// See LICENSE file in the project root for full license information.
-//
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32;
-using nanoFramework.Tools.Debugger.WireProtocol;
-using Polly;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,6 +9,8 @@ using System.IO.Ports;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using nanoFramework.Tools.Debugger.WireProtocol;
+using Polly;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
@@ -26,10 +23,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         // counter of device watchers completed
         private int _deviceWatchersCompletedCount = 0;
-
-        // counter of device watchers completed
-        private int _newDevicesCount = 0;
-        private readonly object _newDevicesCountLock = new object();
 
         private readonly Random _delay = new Random(DateTime.Now.Millisecond);
 
@@ -66,8 +59,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public override void ReScanDevices()
         {
-            _newDevicesCount = 0;
-
             // need to reset this here to have intimidate effect
             IsDevicesEnumerationComplete = false;
 
@@ -101,6 +92,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             _deviceWatcher.Added += OnDeviceAdded;
             _deviceWatcher.Removed += OnDeviceRemoved;
+            _deviceWatcher.AllNewDevicesAdded += ProcessDeviceEnumerationComplete;
         }
 
         public void StartSerialDeviceWatchers()
@@ -116,11 +108,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             // Start all device watchers
 
-            _deviceWatcher.Start();
+            _deviceWatcher.Start(PortExclusionList);
 
             _watchersStarted = true;
 
-            _deviceWatchersCompletedCount = 0;
             IsDevicesEnumerationComplete = false;
         }
 
@@ -146,8 +137,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private void NanoFrameworkDevicesRemoveAllSerial()
         {
+            List<string> devicesToRemove;
+
             // also clear nanoFramework devices list
-            var devicesToRemove = NanoFrameworkDevices.Select(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).DeviceId).ToList();
+            lock (NanoFrameworkDevices)
+            {
+                devicesToRemove = NanoFrameworkDevices.Select(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).DeviceId).ToList();
+            }
 
             foreach (var deviceId in devicesToRemove)
             {
@@ -158,122 +154,126 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         #endregion
 
         #region Methods to manage device list add, remove, etc
+        /// <summary>
+        /// Get the device that communicates via the serial port, provided it has been added to the
+        /// list of known devices.
+        /// </summary>
+        /// <param name="portName"></param>
+        /// <returns></returns>
+        public static NanoDeviceBase GetRegisteredDevice(string portName)
+        {
+            if (!string.IsNullOrWhiteSpace(portName))
+            {
+                var devices = NanoFrameworkDevices.Instance;
+                lock (devices)
+                {
+                    return devices.FirstOrDefault(d => (d as NanoDevice<NanoSerialDevice>)?.DeviceId == portName);
+                }
+            }
+            return null;
+        }
 
         /// <summary>
         /// Adds a new <see cref="PortSerial"/> device to list of NanoFrameworkDevices.
         /// </summary>
         /// <param name="deviceId">The serial port name where the device is connected.</param>
-        public override void AddDevice(string deviceId)
+        public override NanoDeviceBase AddDevice(string deviceId)
         {
-            AddDeviceToListAsync(deviceId);
+            return AddDeviceToListAsync(deviceId);
         }
 
         /// <summary>
         /// Creates a <see cref="NanoDevice"/> and adds it to the list of devices.
         /// </summary>
         /// <param name="deviceId">The AQS used to find this device</param>
-        private void AddDeviceToListAsync(string deviceId)
+        private NanoDeviceBase AddDeviceToListAsync(string deviceId)
         {
             // search the nanoFramework device list for a device with a matching interface ID
             var nanoFrameworkDeviceMatch = FindNanoFrameworkDevice(deviceId);
 
             // Add the device if it's new
-            if (nanoFrameworkDeviceMatch == null)
+            if (nanoFrameworkDeviceMatch is null)
             {
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.CandidateDevice(deviceId));
 
-                if (nanoFrameworkDeviceMatch == null)
+                // Create a new element for this device and...
+                var newNanoFrameworkDevice = new NanoDevice<NanoSerialDevice>();
+                newNanoFrameworkDevice.DeviceId = deviceId;
+                newNanoFrameworkDevice.ConnectionPort = new PortSerial(this, newNanoFrameworkDevice);
+                newNanoFrameworkDevice.Transport = TransportType.Serial;
+
+                var connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
+
+                if (connectResult == ConnectPortResult.Unauthorized)
                 {
-                    // Create a new element for this device and...
-                    var newNanoFrameworkDevice = new NanoDevice<NanoSerialDevice>();
-                    newNanoFrameworkDevice.DeviceId = deviceId;
-                    newNanoFrameworkDevice.ConnectionPort = new PortSerial(this, newNanoFrameworkDevice);
-                    newNanoFrameworkDevice.Transport = TransportType.Serial;
-
-                    var connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
-
-                    if (connectResult == ConnectPortResult.Unauthorized)
+                    OnLogMessageAvailable(NanoDevicesEventSource.Log.UnauthorizedAccessToDevice(deviceId));
+                }
+                else if (connectResult == ConnectPortResult.Connected)
+                {
+                    if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice))
                     {
-                        OnLogMessageAvailable(NanoDevicesEventSource.Log.UnauthorizedAccessToDevice(deviceId));
+                        //add device to the collection
+                        NanoFrameworkDeviceAdd(newNanoFrameworkDevice);
+
+                        OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
+                        nanoFrameworkDeviceMatch = newNanoFrameworkDevice;
                     }
-                    else if (connectResult == ConnectPortResult.Connected)
+                    else
                     {
-                        if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice))
-                        {
-                            //add device to the collection
-                            NanoFrameworkDeviceAdd(newNanoFrameworkDevice);
+                        // disconnect
+                        newNanoFrameworkDevice.Disconnect();
 
-                            OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
+                        // devices powered by the USB cable and that feature a serial converter (like an FTDI chip) 
+                        // are still booting when the USB enumeration event raises
+                        // so need to give them enough time for the boot sequence to complete before trying to communicate with them
+
+                        // Failing to connect to debugger engine on first attempt occurs frequently on dual USB devices like ESP32 WROVER KIT.
+                        // Seems to be something related with both devices using the same USB endpoint
+                        // Another reason is that an ESP32 takes around 3 seconds to complete the boot sequence and launch the CLR.
+                        // Until then the device will look non responsive or invalid to the detection mechanism that we're using.
+                        // A nice workaround for this seems to be adding an extra random wait so the comms are not simultaneous.
+
+                        int delay;
+                        lock (_delay)
+                        {
+                            delay = _delay.Next(200, 600);
                         }
-                        else
+
+                        Thread.Sleep(BootTime + delay);
+
+                        OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {newNanoFrameworkDevice.DeviceId} *** 2nd attempt ***"));
+
+                        connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
+
+                        if (connectResult == ConnectPortResult.Unauthorized)
                         {
-                            // disconnect
-                            newNanoFrameworkDevice.Disconnect();
-
-                            // devices powered by the USB cable and that feature a serial converter (like an FTDI chip) 
-                            // are still booting when the USB enumeration event raises
-                            // so need to give them enough time for the boot sequence to complete before trying to communicate with them
-
-                            // Failing to connect to debugger engine on first attempt occurs frequently on dual USB devices like ESP32 WROVER KIT.
-                            // Seems to be something related with both devices using the same USB endpoint
-                            // Another reason is that an ESP32 takes around 3 seconds to complete the boot sequence and launch the CLR.
-                            // Until then the device will look non responsive or invalid to the detection mechanism that we're using.
-                            // A nice workaround for this seems to be adding an extra random wait so the comms are not simultaneous.
-
-                            int delay;
-                            lock (_delay)
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.UnauthorizedAccessToDevice(deviceId));
+                        }
+                        else if (connectResult == ConnectPortResult.Connected)
+                        {
+                            if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice, true))
                             {
-                                delay = _delay.Next(200, 600);
-                            }
+                                NanoFrameworkDeviceAdd(newNanoFrameworkDevice);
 
-                            Thread.Sleep(BootTime + delay);
-
-                            OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {newNanoFrameworkDevice.DeviceId} *** 2nd attempt ***"));
-
-                            connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
-
-                            if (connectResult == ConnectPortResult.Unauthorized)
-                            {
-                                OnLogMessageAvailable(NanoDevicesEventSource.Log.UnauthorizedAccessToDevice(deviceId));
-                            }
-                            else if (connectResult == ConnectPortResult.Connected)
-                            {
-                                if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice, true))
-                                {
-                                    NanoFrameworkDeviceAdd(newNanoFrameworkDevice);
-
-                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
-                                }
-                                else
-                                {
-                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceId));
-                                }
+                                OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
                             }
                             else
                             {
                                 OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceId));
                             }
                         }
-                    }
-                    else
-                    {
-                        OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceId));
-                    }
-
-                    // subtract devices count
-                    lock (_newDevicesCountLock)
-                    {
-                        _newDevicesCount--;
-                    }
-
-
-                    // check if we are done processing arriving devices
-                    if (_newDevicesCount == 0)
-                    {
-                        ProcessDeviceEnumerationComplete();
+                        else
+                        {
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceId));
+                        }
                     }
                 }
+                else
+                {
+                    OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceId));
+                }
             }
+            return nanoFrameworkDeviceMatch;
         }
 
         /// <summary>
@@ -282,16 +282,23 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <param name="newNanoFrameworkDevice">new NanoSerialDevice</param>
         private void NanoFrameworkDeviceAdd(NanoDevice<NanoSerialDevice> newNanoFrameworkDevice)
         {
-            if (newNanoFrameworkDevice != null && NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().Count(i => i.DeviceId == newNanoFrameworkDevice.DeviceId) == 0)
+            lock (NanoFrameworkDevices)
             {
-                //add device to the collection
-                NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+                if (newNanoFrameworkDevice != null && NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().Count(i => i.DeviceId == newNanoFrameworkDevice.DeviceId) == 0)
+                {
+                    //add device to the collection
+                    NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+                }
             }
         }
 
         public override void DisposeDevice(string instanceId)
         {
-            var deviceToDispose = NanoFrameworkDevices.FirstOrDefault(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).DeviceId == instanceId);
+            NanoDeviceBase deviceToDispose;
+            lock (NanoFrameworkDevices)
+            {
+                deviceToDispose = NanoFrameworkDevices.FirstOrDefault(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).DeviceId == instanceId);
+            }
 
             if (deviceToDispose != null)
             {
@@ -306,15 +313,28 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceDeparture(deviceId));
 
-            // get devices and remove them from collection
-            NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>()
-                .Where(i => i.DeviceId == deviceId).ToList()
-                .ForEach(RemoveNanoFrameworkDevices);
+            List<NanoDevice<NanoSerialDevice>> devices;
+            lock (NanoFrameworkDevices)
+            {
+                // get devices
+                devices = NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>()
+                    .Where(i => i.DeviceId == deviceId).ToList();
+            }
+
+            // remove them from collection
+            devices.ForEach(RemoveNanoFrameworkDevices);
         }
 
         private void RemoveNanoFrameworkDevices(NanoDevice<NanoSerialDevice> device)
         {
-            NanoFrameworkDevices.Remove(device);
+            if (device is null)
+            {
+                return;
+            }
+            lock (NanoFrameworkDevices)
+            {
+                NanoFrameworkDevices.Remove(device);
+            }
             device?.DebugEngine?.StopProcessing();
             device?.DebugEngine?.Dispose();
         }
@@ -323,7 +343,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             if (deviceId != null)
             {
-                return NanoFrameworkDevices.FirstOrDefault(d => (d as NanoDevice<NanoSerialDevice>).DeviceId == deviceId);
+                lock (NanoFrameworkDevices.Instance)
+                {
+                    return NanoFrameworkDevices.FirstOrDefault(d => (d as NanoDevice<NanoSerialDevice>)?.DeviceId == deviceId);
+                }
             }
 
             return null;
@@ -333,7 +356,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Remove the device from the device list 
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="deviceInformationUpdate"></param>
+        /// <param name="serialPort"></param>
         private void OnDeviceRemoved(object sender, string serialPort)
         {
             RemoveDeviceFromList(serialPort);
@@ -344,7 +367,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// This function will add the device to the listOfDevices
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="deviceInformation"></param>
+        /// <param name="serialPort"></param>
         private void OnDeviceAdded(object sender, string serialPort)
         {
             // check against exclusion list
@@ -354,62 +377,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 return;
             }
 
-            // discard known system and other rogue devices
-            RegistryKey portKeyInfo = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\COM Name Arbiter\Devices");
-            if (portKeyInfo != null)
-            {
-                var portInfo = (string)portKeyInfo.GetValue(serialPort);
-
-                if (portInfo != null)
-                {
-                    Debug.WriteLine($"{nameof(OnDeviceAdded)}: port {serialPort}, portinfo: {portInfo}");
-
-                    // make  it upper case for comparison
-                    portInfo = portInfo.ToUpperInvariant();
-
-                    if (
-                       portInfo.StartsWith(@"\\?\ACPI") ||
-
-                       // reported in https://github.com/nanoframework/Home/issues/332
-                       // COM ports from Broadcom 20702 Bluetooth adapter
-                       portInfo.Contains(@"VID_0A5C+PID_21E1") ||
-
-                       // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
-                       // COM ports from Broadcom 20702 Bluetooth adapter
-                       portInfo.Contains(@"VID&00010057_PID&0023") ||
-
-                       // reported in Discord channel
-                       portInfo.Contains(@"VID&0001009E_PID&400A") ||
-
-                       // this seems to cover virtual COM ports from Bluetooth devices
-                       portInfo.Contains("BTHENUM") ||
-
-                       // this seems to cover virtual COM ports by ELTIMA 
-                       portInfo.Contains("EVSERIAL")
-                       )
-                    {
-                        OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingDeviceToExclude(serialPort));
-
-                        // don't even bother with this one
-                        return;
-                    }
-                }
-            }
-
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(serialPort));
 
-            lock (_newDevicesCountLock)
-            {
-                _newDevicesCount++;
-            }
-
-            Task.Run(() =>
-            {
-                Policy.Handle<InvalidOperationException>()
-                    .WaitAndRetry(10, retryCount => TimeSpan.FromMilliseconds((retryCount * retryCount) * 25),
-                        onRetry: (exception, delay, retryCount, context) => LogRetry(exception, delay, retryCount, context))
-                    .Execute(() => AddDeviceToListAsync(serialPort));
-            });
+            Policy.Handle<InvalidOperationException>()
+                .WaitAndRetry(10, retryCount => TimeSpan.FromMilliseconds((retryCount * retryCount) * 25),
+                    onRetry: (exception, delay, retryCount, context) => LogRetry(exception, delay, retryCount, context))
+                .Execute(() => AddDeviceToListAsync(serialPort));
         }
 
         private void LogRetry(Exception exception, TimeSpan delay, object retryCount, object context)
@@ -425,12 +398,22 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         #region Handlers and events for Device Enumeration Complete 
 
-        private void ProcessDeviceEnumerationComplete()
+        private void ProcessDeviceEnumerationComplete(object sender, int numDevicesAdded)
         {
-            OnLogMessageAvailable(NanoDevicesEventSource.Log.SerialDeviceEnumerationCompleted(NanoFrameworkDevices.Count));
+            int count;
+            lock (NanoFrameworkDevices)
+            {
+                if (IsDevicesEnumerationComplete && numDevicesAdded == 0)
+                {
+                    // Nothing has changed
+                    return;
+                }
+                // all watchers have completed enumeration
+                IsDevicesEnumerationComplete = true;
 
-            // all watchers have completed enumeration
-            IsDevicesEnumerationComplete = true;
+                count = NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().Count();
+            }
+            OnLogMessageAvailable(NanoDevicesEventSource.Log.SerialDeviceEnumerationCompleted(count));
 
             // fire event that Serial enumeration is complete 
             OnDeviceEnumerationCompleted();

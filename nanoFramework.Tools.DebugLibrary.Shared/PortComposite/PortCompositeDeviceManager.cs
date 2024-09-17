@@ -1,10 +1,9 @@
-﻿//
-// Copyright (c) .NET Foundation and Contributors
-// See LICENSE file in the project root for full license information.
-//
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 
@@ -52,21 +51,30 @@ namespace nanoFramework.Tools.Debugger.PortComposite
 
         private void OnPortDeviceEnumerationCompleted(object sender, EventArgs e)
         {
-            DeviceEnumerationCompleted?.Invoke(this, EventArgs.Empty);
+            IsDevicesEnumerationComplete = (from p in _ports
+                                            where p.IsDevicesEnumerationComplete
+                                            select p).Any();
+            if (IsDevicesEnumerationComplete)
+            {
+                DeviceEnumerationCompleted?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         /// <inheritdoc/>
         /// <exception cref="NotImplementedException">This API is not available in </exception>
-        public override void AddDevice(string deviceId)
+        public override NanoDeviceBase AddDevice(string deviceId)
         {
-            _ports.ForEach(p =>
-            {
-                p.AddDevice(deviceId);
-            });
+            // None of the Port*Manager has a check whether deviceId matches the ID handled by the manager.
+            throw new NotImplementedException();
+            //_ports.ForEach(p =>
+            //{
+            //    p.AddDevice(deviceId);
+            //});
         }
 
         public override void StartDeviceWatchers()
         {
+            IsDevicesEnumerationComplete = false;
             _ports.ForEach(p => p.StartDeviceWatchers());
         }
 
@@ -77,6 +85,7 @@ namespace nanoFramework.Tools.Debugger.PortComposite
 
         public override void ReScanDevices()
         {
+            IsDevicesEnumerationComplete = false;
             Task.Run(() =>
             {
                 _ports.ForEach(p => p.ReScanDevices());

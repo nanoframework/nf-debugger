@@ -1,11 +1,17 @@
-﻿using Microsoft.Win32;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Win32;
+using nanoFramework.Tools.Debugger.NFDevice;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
@@ -44,6 +50,18 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         public event EventDeviceRemoved Removed;
 
         /// <summary>
+        /// Represents a delegate method that is used to handle the AllNewDevicesAdded event.
+        /// </summary>
+        /// <param name="sender">The object that raised the event.</param>
+        /// <param name="numDevicesAdded">Number of devices added</param>
+        public delegate void EventAllNewDevicesAdded(object sender, int numDevicesAdded);
+
+        /// <summary>
+        /// Raised when all newly discovered devices have been added
+        /// </summary>
+        public event EventAllNewDevicesAdded AllNewDevicesAdded;
+
+        /// <summary>
         /// Gets or sets the status of the device watcher.
         /// </summary>
         public DeviceWatcherStatus Status { get; internal set; }
@@ -60,13 +78,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Starts the device watcher.
         /// </summary>
-        public void Start()
+        public void Start(ICollection<string> portExclusionList = null)
         {
             if (!_started)
             {
+                var exclusionList = portExclusionList?.ToList();
                 _threadWatch = new Thread(() =>
                 {
-                    StartWatcher();
+                    StartWatcher(exclusionList);
                 })
                 {
                     IsBackground = true,
@@ -77,7 +96,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
         }
 
-        private void StartWatcher()
+        private void StartWatcher(ICollection<string> portExclusionList)
         {
             _ownerManager.OnLogMessageAvailable($"PortSerial device watcher started @ Thread {_threadWatch.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
 
@@ -91,7 +110,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 try
                 {
-                    var ports = GetPortNames();
+                    var ports = GetPortNames(portExclusionList);
 
                     // check for ports that departed 
                     List<string> portsToRemove = new();
@@ -115,14 +134,32 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     }
 
                     // process ports that have arrived
+                    var tasks = new List<Task>();
                     foreach (var port in ports)
                     {
                         if (!_ports.Contains(port))
                         {
                             _ports.Add(port);
-                            Added?.Invoke(this, port);
+                            if (Added is not null)
+                            {
+                                if (PortSerialManager.GetRegisteredDevice(port) is null)
+                                {
+                                    tasks.Add(Task.Run(() =>
+                                    {
+                                        GlobalExclusiveDeviceAccess.CommunicateWithDevice(
+                                            port,
+                                            () => Added.Invoke(this, port)
+                                        );
+                                    }));
+                                }
+                            }
                         }
                     }
+                    if (tasks.Count > 0)
+                    {
+                        Task.WaitAll(tasks.ToArray());
+                    }
+                    AllNewDevicesAdded?.Invoke(this, tasks.Count);
 
                     Thread.Sleep(200);
                 }
@@ -146,22 +183,26 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Gets the list of serial ports.
         /// </summary>
         /// <returns>The list of serial ports.</returns>
-        public List<string> GetPortNames()
+        public static List<string> GetPortNames(ICollection<string> exclusionList = null)
         {
 
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux()
-                : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX()
-                : RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? GetPortNames_FreeBSD()
-                : GetPortNames_Windows();
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux(exclusionList)
+                : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX(exclusionList)
+                : RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? GetPortNames_FreeBSD(exclusionList)
+                : GetPortNames_Windows(exclusionList);
         }
 
-        private List<string> GetPortNames_Linux()
+        private static List<string> GetPortNames_Linux(ICollection<string> exclusionList)
         {
             List<string> ports = new List<string>();
 
             string[] ttys = System.IO.Directory.GetFiles("/dev/", "tty*");
             foreach (string dev in ttys)
             {
+                if (exclusionList?.Contains(dev) ?? false)
+                {
+                    continue;
+                }
                 if (dev.StartsWith("/dev/ttyS")
                     || dev.StartsWith("/dev/ttyUSB")
                     || dev.StartsWith("/dev/ttyACM")
@@ -176,12 +217,17 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return ports;
         }
 
-        private List<string> GetPortNames_OSX()
+        private static List<string> GetPortNames_OSX(ICollection<string> exclusionList)
         {
             List<string> ports = new List<string>();
 
             foreach (string name in Directory.GetFiles("/dev", "tty.usbserial*"))
             {
+                if (exclusionList?.Contains(name) ?? false)
+                {
+                    continue;
+                }
+
                 // We don't want Bluetooth ports
                 if (name.ToLower().Contains("bluetooth"))
                 {
@@ -198,6 +244,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             foreach (string name in Directory.GetFiles("/dev", "cu.usbserial*"))
             {
+                if (exclusionList?.Contains(name) ?? false)
+                {
+                    continue;
+                }
+
                 // We don't want Bluetooth ports
                 if (name.ToLower().Contains("bluetooth"))
                 {
@@ -213,12 +264,16 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return ports;
         }
 
-        private List<string> GetPortNames_FreeBSD()
+        private static List<string> GetPortNames_FreeBSD(ICollection<string> exclusionList)
         {
             List<string> ports = new List<string>();
 
             foreach (string name in Directory.GetFiles("/dev", "ttyd*"))
             {
+                if (exclusionList?.Contains(name) ?? false)
+                {
+                    continue;
+                }
                 if (!name.EndsWith(".init", StringComparison.Ordinal) && !name.EndsWith(".lock", StringComparison.Ordinal))
                 {
                     ports.Add(name);
@@ -227,6 +282,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             foreach (string name in Directory.GetFiles("/dev", "cuau*"))
             {
+                if (exclusionList?.Contains(name) ?? false)
+                {
+                    continue;
+                }
                 if (!name.EndsWith(".init", StringComparison.Ordinal) && !name.EndsWith(".lock", StringComparison.Ordinal))
                 {
                     ports.Add(name);
@@ -236,7 +295,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return ports;
         }
 
-        private List<string> GetPortNames_Windows()
+        private static List<string> GetPortNames_Windows(ICollection<string> exclusionList)
         {
             const string FindFullPathPattern = @"\\\\\?\\([\w]*)#([\w&]*)#([\w&]*)";
             const string RegExPattern = @"\\Device\\([a-zA-Z]*)(\d)";
@@ -271,7 +330,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                     if (portKeyInfo != null)
                                     {
                                         string portName = (string)allPorts.GetValue(port);
-                                        if (portName != null)
+                                        if (portName != null && !(exclusionList?.Contains(portName) ?? false))
                                         {
                                             portNames.Add(portName);
                                         }
@@ -283,10 +342,44 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 string portName = (string)allPorts.GetValue(port);
                                 if (portName != null)
                                 {
+                                    if (exclusionList?.Contains(portName) ?? false)
+                                    {
+                                        continue;
+                                    }
+
+                                    // discard known system and other rogue devices
                                     // Get the full qualified name of the device
                                     string deviceFullPath = (string)deviceFullPaths.GetValue(portName);
                                     if (deviceFullPath != null)
                                     {
+                                        // make  it upper case for comparison
+                                        var deviceFULLPATH = deviceFullPath.ToUpperInvariant();
+
+                                        if (
+                                           deviceFULLPATH.StartsWith(@"\\?\ACPI") ||
+
+                                           // reported in https://github.com/nanoframework/Home/issues/332
+                                           // COM ports from Broadcom 20702 Bluetooth adapter
+                                           deviceFULLPATH.Contains(@"VID_0A5C+PID_21E1") ||
+
+                                           // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
+                                           // COM ports from Broadcom 20702 Bluetooth adapter
+                                           deviceFULLPATH.Contains(@"VID&00010057_PID&0023") ||
+
+                                           // reported in Discord channel
+                                           deviceFULLPATH.Contains(@"VID&0001009E_PID&400A") ||
+
+                                           // this seems to cover virtual COM ports from Bluetooth devices
+                                           deviceFULLPATH.Contains("BTHENUM") ||
+
+                                           // this seems to cover virtual COM ports by ELTIMA 
+                                           deviceFULLPATH.Contains("EVSERIAL")
+                                           )
+                                        {
+                                            // don't even bother with this one
+                                            continue;
+                                        }
+
                                         var devicePathDetail = Regex.Match(deviceFullPath.Replace("+", "&"), FindFullPathPattern);
                                         if ((devicePathDetail.Success) && (devicePathDetail.Groups.Count == 4))
                                         {
