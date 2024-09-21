@@ -33,6 +33,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Creates an Serial debug client
         /// </summary>
+        /// <param name="startDeviceWatchers">Indicates whether to start the device watcher.</param>
+        /// <param name="portExclusionList">The collection of serial ports to ignore when searching for devices.
+        /// Changes in the collection after the start of the device watcher are taken into account.</param>
+        /// <param name="bootTime"></param>
         public PortSerialManager(bool startDeviceWatchers = true, List<string> portExclusionList = null, int bootTime = 3000)
         {
             _deviceWatcher = new(this);
@@ -153,6 +157,15 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         #endregion
 
         #region Methods to manage device list add, remove, etc
+        /// <summary>
+        /// Gets the list of serial ports.
+        /// </summary>
+        /// <returns>The list of serial ports to exclude from the result.</returns>
+        public static List<string> GetPortNames(ICollection<string> exclusionList = null)
+        {
+            return DeviceWatcher.GetPortNames(exclusionList);
+        }
+
         /// <summary>
         /// Get the device that communicates via the serial port, provided it has been added to the
         /// list of known devices.
@@ -370,7 +383,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private void OnDeviceAdded(object sender, string serialPort)
         {
             // check against exclusion list
-            if (PortExclusionList.Contains(serialPort))
+            bool exclude;
+            lock (PortExclusionList)
+            {
+                exclude = PortExclusionList.Contains(serialPort);
+            }
+            if (exclude)
             {
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.DroppingDeviceToExclude(serialPort));
                 return;
@@ -397,12 +415,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         #region Handlers and events for Device Enumeration Complete 
 
-        private void ProcessDeviceEnumerationComplete(object sender, int numDevicesAdded)
+        private void ProcessDeviceEnumerationComplete(object sender)
         {
             int count;
             lock (NanoFrameworkDevices)
             {
-                if (IsDevicesEnumerationComplete && numDevicesAdded == 0)
+                if (IsDevicesEnumerationComplete)
                 {
                     // Nothing has changed
                     return;

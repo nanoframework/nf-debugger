@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -53,8 +52,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Represents a delegate method that is used to handle the AllNewDevicesAdded event.
         /// </summary>
         /// <param name="sender">The object that raised the event.</param>
-        /// <param name="numDevicesAdded">Number of devices added</param>
-        public delegate void EventAllNewDevicesAdded(object sender, int numDevicesAdded);
+        public delegate void EventAllNewDevicesAdded(object sender);
 
         /// <summary>
         /// Raised when all newly discovered devices have been added
@@ -78,14 +76,15 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Starts the device watcher.
         /// </summary>
+        /// <param name="portExclusionList">The collection of serial ports to ignore when searching for devices.
+        /// Changes in the collection after the start of the device watcher are taken into account.</param>
         public void Start(ICollection<string> portExclusionList = null)
         {
             if (!_started)
             {
-                var exclusionList = portExclusionList?.ToList();
                 _threadWatch = new Thread(() =>
                 {
-                    StartWatcher(exclusionList);
+                    StartWatcher(portExclusionList ?? []);
                 })
                 {
                     IsBackground = true,
@@ -100,9 +99,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             _ownerManager.OnLogMessageAvailable($"PortSerial device watcher started @ Thread {_threadWatch.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
 
-            _ports = new List<string>();
+            _ports = [];
 
             _started = true;
+
+            int newPortsDetected = 0;
+            var newPortsDetectedLock = new object();
 
             Status = DeviceWatcherStatus.Started;
 
@@ -110,7 +112,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 try
                 {
-                    var ports = GetPortNames(portExclusionList);
+                    List<string> ports;
+                    lock (portExclusionList)
+                    {
+                        ports = GetPortNames(portExclusionList);
+                    }
 
                     // check for ports that departed 
                     List<string> portsToRemove = new();
@@ -134,7 +140,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     }
 
                     // process ports that have arrived
-                    var tasks = new List<Task>();
                     foreach (var port in ports)
                     {
                         if (!_ports.Contains(port))
@@ -144,24 +149,30 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             {
                                 if (PortSerialManager.GetRegisteredDevice(port) is null)
                                 {
-                                    tasks.Add(Task.Run(async () =>
+                                    lock (newPortsDetectedLock)
+                                    {
+                                        newPortsDetected++;
+                                    }
+
+                                    Task.Run(async () =>
                                     {
                                         await Task.Yield(); // Force true async running
                                         GlobalExclusiveDeviceAccess.CommunicateWithDevice(
                                             port,
                                             () => Added.Invoke(this, port)
                                         );
-                                    }));
+                                        lock (newPortsDetectedLock)
+                                        {
+                                            if (--newPortsDetected == 0)
+                                            {
+                                                AllNewDevicesAdded?.Invoke(this);
+                                            };
+                                        }
+                                    });
                                 }
                             }
                         }
                     }
-                    if (tasks.Count > 0)
-                    {
-                        Task.WaitAll(tasks.ToArray());
-                    }
-                    AllNewDevicesAdded?.Invoke(this, tasks.Count);
-
                     Thread.Sleep(200);
                 }
 #if DEBUG
@@ -183,8 +194,16 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Gets the list of serial ports.
         /// </summary>
-        /// <returns>The list of serial ports.</returns>
-        public static List<string> GetPortNames(ICollection<string> exclusionList = null)
+        public List<string> GetPortNames()
+        {
+            return GetPortNames(null);
+        }
+
+        /// <summary>
+        /// Gets the list of serial ports.
+        /// </summary>
+        /// <returns>The list of serial ports to exclude from the result.</returns>
+        internal static List<string> GetPortNames(ICollection<string> exclusionList = null)
         {
 
             return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux(exclusionList)
