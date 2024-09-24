@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -76,15 +77,15 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Starts the device watcher.
         /// </summary>
-        /// <param name="portExclusionList">The collection of serial ports to ignore when searching for devices.
+        /// <param name="portsToExclude">The collection of serial ports to ignore when searching for devices.
         /// Changes in the collection after the start of the device watcher are taken into account.</param>
-        public void Start(ICollection<string> portExclusionList = null)
+        public void Start(ICollection<string> portsToExclude = null)
         {
             if (!_started)
             {
                 _threadWatch = new Thread(() =>
                 {
-                    StartWatcher(portExclusionList ?? []);
+                    StartWatcher(portsToExclude ?? []);
                 })
                 {
                     IsBackground = true,
@@ -95,7 +96,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
         }
 
-        private void StartWatcher(ICollection<string> portExclusionList)
+        private void StartWatcher(ICollection<string> portsToExclude)
         {
             _ownerManager.OnLogMessageAvailable($"PortSerial device watcher started @ Thread {_threadWatch.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
 
@@ -112,10 +113,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 try
                 {
-                    List<string> ports;
-                    lock (portExclusionList)
+                    var ports = new List<string>();
+                    lock (portsToExclude)
                     {
-                        ports = GetPortNames(portExclusionList);
+                        ports.AddRange(from p in DoGetPortNames()
+                                       where !portsToExclude.Contains(p)
+                                       select p);
                     }
 
                     // check for ports that departed 
@@ -196,33 +199,29 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         public List<string> GetPortNames()
         {
-            return GetPortNames(null);
+            return DoGetPortNames();
         }
 
         /// <summary>
         /// Gets the list of serial ports.
         /// </summary>
-        /// <returns>The list of serial ports to exclude from the result.</returns>
-        internal static List<string> GetPortNames(ICollection<string> exclusionList = null)
+        /// <returns>The list of serial ports that may be connected to a nanoDevice.</returns>
+        internal static List<string> DoGetPortNames()
         {
 
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux(exclusionList)
-                : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX(exclusionList)
-                : RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? GetPortNames_FreeBSD(exclusionList)
-                : GetPortNames_Windows(exclusionList);
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux()
+                : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX()
+                : RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? GetPortNames_FreeBSD()
+                : GetPortNames_Windows();
         }
 
-        private static List<string> GetPortNames_Linux(ICollection<string> exclusionList)
+        private static List<string> GetPortNames_Linux()
         {
             List<string> ports = new List<string>();
 
             string[] ttys = System.IO.Directory.GetFiles("/dev/", "tty*");
             foreach (string dev in ttys)
             {
-                if (exclusionList?.Contains(dev) ?? false)
-                {
-                    continue;
-                }
                 if (dev.StartsWith("/dev/ttyS")
                     || dev.StartsWith("/dev/ttyUSB")
                     || dev.StartsWith("/dev/ttyACM")
@@ -237,17 +236,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return ports;
         }
 
-        private static List<string> GetPortNames_OSX(ICollection<string> exclusionList)
+        private static List<string> GetPortNames_OSX()
         {
             List<string> ports = new List<string>();
 
             foreach (string name in Directory.GetFiles("/dev", "tty.usbserial*"))
             {
-                if (exclusionList?.Contains(name) ?? false)
-                {
-                    continue;
-                }
-
                 // We don't want Bluetooth ports
                 if (name.ToLower().Contains("bluetooth"))
                 {
@@ -264,11 +258,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             foreach (string name in Directory.GetFiles("/dev", "cu.usbserial*"))
             {
-                if (exclusionList?.Contains(name) ?? false)
-                {
-                    continue;
-                }
-
                 // We don't want Bluetooth ports
                 if (name.ToLower().Contains("bluetooth"))
                 {
@@ -284,16 +273,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return ports;
         }
 
-        private static List<string> GetPortNames_FreeBSD(ICollection<string> exclusionList)
+        private static List<string> GetPortNames_FreeBSD()
         {
             List<string> ports = new List<string>();
 
             foreach (string name in Directory.GetFiles("/dev", "ttyd*"))
             {
-                if (exclusionList?.Contains(name) ?? false)
-                {
-                    continue;
-                }
                 if (!name.EndsWith(".init", StringComparison.Ordinal) && !name.EndsWith(".lock", StringComparison.Ordinal))
                 {
                     ports.Add(name);
@@ -302,10 +287,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             foreach (string name in Directory.GetFiles("/dev", "cuau*"))
             {
-                if (exclusionList?.Contains(name) ?? false)
-                {
-                    continue;
-                }
                 if (!name.EndsWith(".init", StringComparison.Ordinal) && !name.EndsWith(".lock", StringComparison.Ordinal))
                 {
                     ports.Add(name);
@@ -315,13 +296,49 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return ports;
         }
 
-        private static List<string> GetPortNames_Windows(ICollection<string> exclusionList)
+        private static List<string> GetPortNames_Windows()
         {
             const string FindFullPathPattern = @"\\\\\?\\([\w]*)#([\w&]*)#([\w&]*)";
             const string RegExPattern = @"\\Device\\([a-zA-Z]*)(\d)";
             List<string> portNames = new List<string>();
             try
             {
+                // discard known system and other rogue devices
+                bool IsSpecialPort(string deviceFullPath)
+                {
+                    if (deviceFullPath is not null)
+                    {
+                        // make  it upper case for comparison
+                        string deviceFULLPATH = deviceFullPath.ToUpperInvariant();
+
+                        if (
+                            deviceFULLPATH.StartsWith(@"\\?\ACPI") ||
+
+                            // reported in https://github.com/nanoframework/Home/issues/332
+                            // COM ports from Broadcom 20702 Bluetooth adapter
+                            deviceFULLPATH.Contains(@"VID_0A5C+PID_21E1") ||
+
+                            // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
+                            // COM ports from Broadcom 20702 Bluetooth adapter
+                            deviceFULLPATH.Contains(@"VID&00010057_PID&0023") ||
+
+                            // reported in Discord channel
+                            deviceFULLPATH.Contains(@"VID&0001009E_PID&400A") ||
+
+                            // this seems to cover virtual COM ports from Bluetooth devices
+                            deviceFULLPATH.Contains("BTHENUM") ||
+
+                            // this seems to cover virtual COM ports by ELTIMA 
+                            deviceFULLPATH.Contains("EVSERIAL")
+                            )
+                        {
+                            // don't even bother with this one
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
                 // Gets the list of supposed open ports
                 RegistryKey allPorts = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM");
                 RegistryKey deviceFullPaths = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\COM Name Arbiter\Devices");
@@ -350,7 +367,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                     if (portKeyInfo != null)
                                     {
                                         string portName = (string)allPorts.GetValue(port);
-                                        if (portName != null && !(exclusionList?.Contains(portName) ?? false))
+                                        if (portName != null
+                                            && !IsSpecialPort((string)deviceFullPaths.GetValue(portName)))
                                         {
                                             portNames.Add(portName);
                                         }
@@ -360,63 +378,32 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             else
                             {
                                 string portName = (string)allPorts.GetValue(port);
-                                if (portName != null)
+                                string deviceFullPath = (string)deviceFullPaths.GetValue(portName);
+                                if (deviceFullPath != null)
                                 {
-                                    if (exclusionList?.Contains(portName) ?? false)
+                                    if (IsSpecialPort(deviceFullPath))
                                     {
+                                        // don't even bother with this one
                                         continue;
                                     }
 
-                                    // discard known system and other rogue devices
                                     // Get the full qualified name of the device
-                                    string deviceFullPath = (string)deviceFullPaths.GetValue(portName);
-                                    if (deviceFullPath != null)
+                                    var devicePathDetail = Regex.Match(deviceFullPath.Replace("+", "&"), FindFullPathPattern);
+                                    if ((devicePathDetail.Success) && (devicePathDetail.Groups.Count == 4))
                                     {
-                                        // make  it upper case for comparison
-                                        var deviceFULLPATH = deviceFullPath.ToUpperInvariant();
+                                        string devicePath = deviceFullPath.Split('#')[1];
 
-                                        if (
-                                           deviceFULLPATH.StartsWith(@"\\?\ACPI") ||
-
-                                           // reported in https://github.com/nanoframework/Home/issues/332
-                                           // COM ports from Broadcom 20702 Bluetooth adapter
-                                           deviceFULLPATH.Contains(@"VID_0A5C+PID_21E1") ||
-
-                                           // reported in https://nanoframework.slack.com/archives/C4MGGBH1P/p1531660736000055?thread_ts=1531659631.000021&cid=C4MGGBH1P
-                                           // COM ports from Broadcom 20702 Bluetooth adapter
-                                           deviceFULLPATH.Contains(@"VID&00010057_PID&0023") ||
-
-                                           // reported in Discord channel
-                                           deviceFULLPATH.Contains(@"VID&0001009E_PID&400A") ||
-
-                                           // this seems to cover virtual COM ports from Bluetooth devices
-                                           deviceFULLPATH.Contains("BTHENUM") ||
-
-                                           // this seems to cover virtual COM ports by ELTIMA 
-                                           deviceFULLPATH.Contains("EVSERIAL")
-                                           )
+                                        RegistryKey device = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{devicePathDetail.Groups[1]}\\{devicePath}\\{devicePathDetail.Groups[3]}");
+                                        if (device != null)
                                         {
-                                            // don't even bother with this one
-                                            continue;
-                                        }
-
-                                        var devicePathDetail = Regex.Match(deviceFullPath.Replace("+", "&"), FindFullPathPattern);
-                                        if ((devicePathDetail.Success) && (devicePathDetail.Groups.Count == 4))
-                                        {
-                                            string devicePath = deviceFullPath.Split('#')[1];
-
-                                            RegistryKey device = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{devicePathDetail.Groups[1]}\\{devicePath}\\{devicePathDetail.Groups[3]}");
-                                            if (device != null)
+                                            string service = (string)device.GetValue("Service");
+                                            if (service != null)
                                             {
-                                                string service = (string)device.GetValue("Service");
-                                                if (service != null)
+                                                activePorts = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Services\\{service}\\Enum");
+                                                if (activePorts != null)
                                                 {
-                                                    activePorts = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Services\\{service}\\Enum");
-                                                    if (activePorts != null)
-                                                    {
-                                                        // If the device is still plugged, it should appear as valid here, if not present, it means, the device has been disconnected                                                        
-                                                        portNames.Add(portName);
-                                                    }
+                                                    // If the device is still plugged, it should appear as valid here, if not present, it means, the device has been disconnected                                                        
+                                                    portNames.Add(portName);
                                                 }
                                             }
                                         }

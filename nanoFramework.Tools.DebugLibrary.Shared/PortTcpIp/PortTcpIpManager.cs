@@ -541,7 +541,14 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
         }
 
-        public override NanoDeviceBase AddDevice(string deviceId)
+        /// <inheritdoc/>
+        public override void AddDevice(string deviceId)
+        {
+            AddAndReturnDevice(deviceId);
+        }
+
+        /// <inheritdoc/>
+        public override NanoDeviceBase AddAndReturnDevice(string deviceId)
         {
             // expected format is "tcpip://{Host}:{Port}"
 

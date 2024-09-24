@@ -60,7 +60,19 @@ namespace nanoFramework.Tools.Debugger.PortComposite
 
         /// <inheritdoc/>
         /// <exception cref="NotImplementedException">This API is not available in </exception>
-        public override NanoDeviceBase AddDevice(string deviceId)
+        public override void AddDevice(string deviceId)
+        {
+            // None of the Port*Manager has a check whether deviceId matches the ID handled by the manager.
+            throw new NotImplementedException();
+            //_ports.ForEach(p =>
+            //{
+            //    p.AddDevice(deviceId);
+            //});
+        }
+
+        /// <inheritdoc/>
+        /// <exception cref="NotImplementedException">This API is not available in </exception>
+        public override NanoDeviceBase AddAndReturnDevice(string deviceId)
         {
             // None of the Port*Manager has a check whether deviceId matches the ID handled by the manager.
             throw new NotImplementedException();

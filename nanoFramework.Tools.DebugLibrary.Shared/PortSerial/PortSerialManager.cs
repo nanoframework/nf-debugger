@@ -160,10 +160,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Gets the list of serial ports.
         /// </summary>
-        /// <returns>The list of serial ports to exclude from the result.</returns>
-        public static List<string> GetPortNames(ICollection<string> exclusionList = null)
+        /// <returns>The list of serial ports that may be connected to a nanoDevice.</returns>
+        public static List<string> GetPortNames()
         {
-            return DeviceWatcher.GetPortNames(exclusionList);
+            return DeviceWatcher.DoGetPortNames();
         }
 
         /// <summary>
@@ -189,7 +189,18 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Adds a new <see cref="PortSerial"/> device to list of NanoFrameworkDevices.
         /// </summary>
         /// <param name="deviceId">The serial port name where the device is connected.</param>
-        public override NanoDeviceBase AddDevice(string deviceId)
+        public override void AddDevice(string deviceId)
+        {
+            AddDeviceToListAsync(deviceId);
+        }
+
+        /// <summary>
+        /// Adds a new <see cref="PortSerial"/> device to list of NanoFrameworkDevices.
+        /// </summary>
+        /// <param name="deviceId">The serial port name where the device is connected.</param>
+        /// <returns>The device with the unique ID that is added or (if it was already discovered before) retrieved
+        /// from the list of devices. Returns <c>null</c> if no device has been added.</returns>
+        public override NanoDeviceBase AddAndReturnDevice(string deviceId)
         {
             return AddDeviceToListAsync(deviceId);
         }

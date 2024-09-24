@@ -56,7 +56,15 @@ namespace nanoFramework.Tools.Debugger
         /// Adds a new device to list of NanoFrameworkDevices.
         /// </summary>
         /// <param name="deviceId">The unique ID (based on the connection properties) of the device.</param>
-        public abstract NanoDeviceBase AddDevice(string deviceId);
+        public abstract void AddDevice(string deviceId);
+
+        /// <summary>
+        /// Adds a new device to list of NanoFrameworkDevices and returns the device that has been added.
+        /// </summary>
+        /// <param name="deviceId">The unique ID (based on the connection properties) of the device.</param>
+        /// <returns>The device with the unique ID that is added or (if it was already discovered before) retrieved
+        /// from the list of devices. Returns <c>null</c> if no device has been added.</returns>
+        public abstract NanoDeviceBase AddAndReturnDevice(string deviceId);
 
         /// <summary>
         /// Starts the device watchers.
