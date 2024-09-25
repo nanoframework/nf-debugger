@@ -142,6 +142,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                         // this is not a TcpIp-connected device and is managed by another PortManager
                         continue;
                     }
+
                     // ... and remove it from collection
                     _networkDevices.Remove(deviceEntry);
 
@@ -150,6 +151,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                     {
                         continue;
                     }
+
                     // ... and remove it from collection
                     NanoFrameworkDevices.Remove(device);
                 }
@@ -168,7 +170,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         /// Get the device that communicates via the network port, provided it has been added to the
         /// list of known devices.
         /// </summary>
-        /// <param name="networkDevice"></param>
+        /// <param name="networkDevice">The name of the network device.</param>
         /// <returns></returns>
         public static NanoDeviceBase GetRegisteredDevice(NetworkDeviceInformation networkDevice)
         {
@@ -542,13 +544,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         }
 
         /// <inheritdoc/>
-        public override void AddDevice(string deviceId)
-        {
-            AddAndReturnDevice(deviceId);
-        }
-
-        /// <inheritdoc/>
-        public override NanoDeviceBase AddAndReturnDevice(string deviceId)
+        public override NanoDeviceBase AddDevice(string deviceId)
         {
             // expected format is "tcpip://{Host}:{Port}"
 

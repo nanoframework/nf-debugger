@@ -189,18 +189,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Adds a new <see cref="PortSerial"/> device to list of NanoFrameworkDevices.
         /// </summary>
         /// <param name="deviceId">The serial port name where the device is connected.</param>
-        public override void AddDevice(string deviceId)
-        {
-            AddDeviceToListAsync(deviceId);
-        }
-
-        /// <summary>
-        /// Adds a new <see cref="PortSerial"/> device to list of NanoFrameworkDevices.
-        /// </summary>
-        /// <param name="deviceId">The serial port name where the device is connected.</param>
         /// <returns>The device with the unique ID that is added or (if it was already discovered before) retrieved
         /// from the list of devices. Returns <c>null</c> if no device has been added.</returns>
-        public override NanoDeviceBase AddAndReturnDevice(string deviceId)
+        public override NanoDeviceBase AddDevice(string deviceId)
         {
             return AddDeviceToListAsync(deviceId);
         }
@@ -354,6 +345,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 return;
             }
+
             lock (NanoFrameworkDevices)
             {
                 NanoFrameworkDevices.Remove(device);
@@ -441,6 +433,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 count = NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().Count();
             }
+
             OnLogMessageAvailable(NanoDevicesEventSource.Log.SerialDeviceEnumerationCompleted(count));
 
             // fire event that Serial enumeration is complete 

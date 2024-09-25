@@ -59,12 +59,12 @@ namespace nanoFramework.Tools.Debugger.NFDevice
         #region Implementation
         private static bool DoCommunicateWithDevice(string connectionKey, Action communication, int millisecondsTimeout, CancellationToken? cancellationToken)
         {
-            for (var retry = true; retry;)
+            for (bool retry = true; retry;)
             {
                 retry = false;
 
                 var waitHandles = new List<WaitHandle>();
-                var mutex = new Mutex(false, $"{MutexBaseName}_{connectionKey}");
+                var mutex = new Mutex(false, $"{MutexBaseName}{connectionKey}");
                 waitHandles.Add(mutex);
 
                 CancellationTokenSource timeOutToken = null;
@@ -73,10 +73,12 @@ namespace nanoFramework.Tools.Debugger.NFDevice
                     timeOutToken = new CancellationTokenSource(millisecondsTimeout);
                     waitHandles.Add(timeOutToken.Token.WaitHandle);
                 }
+
                 if (cancellationToken.HasValue)
                 {
                     waitHandles.Add(cancellationToken.Value.WaitHandle);
                 }
+
                 try
                 {
                     if (WaitHandle.WaitAny(waitHandles.ToArray()) == 0)
@@ -98,6 +100,7 @@ namespace nanoFramework.Tools.Debugger.NFDevice
                     timeOutToken?.Dispose();
                 }
             }
+
             return false;
         }
         #endregion

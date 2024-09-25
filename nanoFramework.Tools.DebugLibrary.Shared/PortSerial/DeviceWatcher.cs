@@ -159,7 +159,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                                     Task.Run(async () =>
                                     {
-                                        await Task.Yield(); // Force true async running
+                                        // Force true async running
+                                        await Task.Yield();
                                         GlobalExclusiveDeviceAccess.CommunicateWithDevice(
                                             port,
                                             () => Added.Invoke(this, port)
@@ -169,8 +170,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                             if (--newPortsDetected == 0)
                                             {
                                                 AllNewDevicesAdded?.Invoke(this);
-                                            };
+                                            }
                                         }
+
                                     });
                                 }
                             }
