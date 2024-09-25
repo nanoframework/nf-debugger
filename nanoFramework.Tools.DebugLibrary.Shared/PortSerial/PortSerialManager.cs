@@ -170,8 +170,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Get the device that communicates via the serial port, provided it has been added to the
         /// list of known devices.
         /// </summary>
-        /// <param name="portName"></param>
-        /// <returns></returns>
+        /// <param name="portName">The port name of the device to get.</param>
+        /// <returns>The <see cref="NanoDeviceBase"/> that communicates via the serial port, or <see langword="null"/> if the device is not found.</returns>
         public static NanoDeviceBase GetRegisteredDevice(string portName)
         {
             if (!string.IsNullOrWhiteSpace(portName))
@@ -190,14 +190,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         /// <param name="deviceId">The serial port name where the device is connected.</param>
         /// <returns>The device with the unique ID that is added or (if it was already discovered before) retrieved
-        /// from the list of devices. Returns <c>null</c> if no device has been added.</returns>
+        /// from the list of devices. Returns <see langword="null"/> if no device has been added.</returns>
         public override NanoDeviceBase AddDevice(string deviceId)
         {
             return AddDeviceToListAsync(deviceId);
         }
 
         /// <summary>
-        /// Creates a <see cref="NanoDevice"/> and adds it to the list of devices.
+        /// Creates a <see cref="NanoDevice{NanoSerialDevice}"/> and adds it to the list of devices.
         /// </summary>
         /// <param name="deviceId">The AQS used to find this device</param>
         private NanoDeviceBase AddDeviceToListAsync(string deviceId)
@@ -291,9 +291,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         }
 
         /// <summary>
-        /// add device to the collection (if new)
+        /// Adds a device to the collection (if new).
         /// </summary>
-        /// <param name="newNanoFrameworkDevice">new NanoSerialDevice</param>
+        /// <param name="newNanoFrameworkDevice">The new <see cref="NanoSerialDevice"/></param>
         private void NanoFrameworkDeviceAdd(NanoDevice<NanoSerialDevice> newNanoFrameworkDevice)
         {
             lock (NanoFrameworkDevices)
