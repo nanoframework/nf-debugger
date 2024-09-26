@@ -158,15 +158,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         #region Methods to manage device list add, remove, etc
         /// <summary>
-        /// Gets the list of serial ports.
-        /// </summary>
-        /// <returns>The list of serial ports that may be connected to a nanoDevice.</returns>
-        public static List<string> GetPortNames()
-        {
-            return DeviceWatcher.DoGetPortNames();
-        }
-
-        /// <summary>
         /// Get the device that communicates via the serial port, provided it has been added to the
         /// list of known devices.
         /// </summary>

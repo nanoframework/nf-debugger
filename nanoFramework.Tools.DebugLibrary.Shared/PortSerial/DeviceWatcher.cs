@@ -116,7 +116,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     var ports = new List<string>();
                     lock (portsToExclude)
                     {
-                        ports.AddRange(from p in DoGetPortNames()
+                        ports.AddRange(from p in GetPortNames()
                                        where !portsToExclude.Contains(p)
                                        select p);
                     }
@@ -199,18 +199,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Gets the list of serial ports.
         /// </summary>
-        public List<string> GetPortNames()
-        {
-            return DoGetPortNames();
-        }
-
-        /// <summary>
-        /// Gets the list of serial ports.
-        /// </summary>
         /// <returns>The list of serial ports that may be connected to a nanoDevice.</returns>
-        internal static List<string> DoGetPortNames()
+        public static List<string> GetPortNames()
         {
-
             return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux()
                 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX()
                 : RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? GetPortNames_FreeBSD()
