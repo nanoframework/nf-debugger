@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.ObjectModel;
 
 namespace nanoFramework.Tools.Debugger
@@ -10,7 +13,13 @@ namespace nanoFramework.Tools.Debugger
 
         public static NanoFrameworkDevices Instance
         {
-            get { return _instance.Value; }
+            get
+            {
+                lock (_instance)
+                {
+                    return _instance.Value;
+                }
+            }
         }
 
         private NanoFrameworkDevices() { }

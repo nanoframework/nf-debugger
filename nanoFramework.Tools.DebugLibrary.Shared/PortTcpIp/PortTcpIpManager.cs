@@ -1,10 +1,6 @@
-﻿//
-// Copyright (c) .NET Foundation and Contributors
-// See LICENSE file in the project root for full license information.
-//
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-using nanoFramework.Tools.Debugger.WireProtocol;
-using Polly;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,6 +8,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using nanoFramework.Tools.Debugger.WireProtocol;
+using Polly;
 
 namespace nanoFramework.Tools.Debugger.PortTcpIp
 {
@@ -27,13 +25,14 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         // Network device watchers started flag
         private bool _watchersStarted = false;
 
-        // counter of device watchers completed
-        private int _newDevicesCount = 0;
-
         /// <summary>
-        /// Internal list with the actual nF Network devices
+        /// Internal list with the actual nF Network devices.
+        /// This must be a static list as NanoFrameworkDevices is also global.
+        /// Take care that all items of _networkDevices are in the NanoFrameworkDevices,
+        /// and that there are no devices in NanoFrameworkDevices that should be present
+        /// in _networkDevices but are not (and use NanoFrameworkDevices for locks).
         /// </summary>
-        private readonly List<NetworkDeviceInformation> _networkDevices = new List<NetworkDeviceInformation>();
+        private static readonly List<NetworkDeviceInformation> _networkDevices = new List<NetworkDeviceInformation>();
 
         private IEnumerable<NanoDevice<NanoNetworkDevice>> _networkNanoFrameworkDevices =>
             NanoFrameworkDevices.Cast<NanoDevice<NanoNetworkDevice>>();
@@ -47,8 +46,6 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         public PortTcpIpManager(bool startDeviceWatchers = true, int discoveryPort = DiscoveryPort)
         {
             _deviceWatcher = new DeviceWatcher(this, discoveryPort);
-
-            NanoFrameworkDevices = NanoFrameworkDevices.Instance;
 
             Task.Factory.StartNew(() =>
             {
@@ -126,21 +123,40 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             }
 
             // Clear the list of devices so we don't have potentially disconnected devices around
-            ClearDeviceEntries();
-
             // also clear nanoFramework devices list
-            var devicesToRemove = _networkNanoFrameworkDevices.Select(nanoDevice => nanoDevice.DeviceId).ToList();
+            List<string> devicesToRemove;
+            lock (NanoFrameworkDevices)
+            {
+                devicesToRemove = _networkNanoFrameworkDevices.Select(nanoDevice => nanoDevice.DeviceId).ToList();
+            }
 
             foreach (var deviceId in devicesToRemove)
             {
                 // get device...
-                var device = FindNanoFrameworkDevice(deviceId);
+                NanoDeviceBase device;
+                lock (NanoFrameworkDevices)
+                {
+                    var deviceEntry = FindDevice(deviceId);
+                    if (deviceEntry is null)
+                    {
+                        // this is not a TcpIp-connected device and is managed by another PortManager
+                        continue;
+                    }
 
-                // ... and remove it from collection
-                NanoFrameworkDevices.Remove(device);
+                    // ... and remove it from collection
+                    _networkDevices.Remove(deviceEntry);
 
-                device?.DebugEngine?.StopProcessing();
-                device?.DebugEngine?.Stop(true);
+                    device = FindNanoFrameworkDevice(deviceId);
+                    if (device is null)
+                    {
+                        continue;
+                    }
+
+                    // ... and remove it from collection
+                    NanoFrameworkDevices.Remove(device);
+                }
+                device.DebugEngine?.StopProcessing();
+                device.DebugEngine?.Stop(true);
             }
 
             _watchersStarted = false;
@@ -150,69 +166,91 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
 
         #region Methods to manage device list add, remove, etc
+        /// <summary>
+        /// Get the device that communicates via the network port, provided it has been added to the
+        /// list of known devices.
+        /// </summary>
+        /// <param name="networkDevice">The name of the network device.</param>
+        /// <returns></returns>
+        public static NanoDeviceBase GetRegisteredDevice(NetworkDeviceInformation networkDevice)
+        {
+            if (networkDevice is not null)
+            {
+                var devices = NanoFrameworkDevices.Instance;
+                lock (devices)
+                {
+                    return devices.FirstOrDefault(d => (d as NanoDevice<NanoNetworkDevice>)?.DeviceId == networkDevice.DeviceId);
+                }
+            }
+            return null;
+        }
 
         /// <summary>
         /// Creates a DeviceListEntry for a device and adds it to the list of devices
         /// </summary>
-        private void AddDeviceToListAsync(NetworkDeviceInformation networkDevice)
+        private (NanoDeviceBase device, bool isNew) AddDeviceToListAsync(NetworkDeviceInformation networkDevice)
         {
+            bool isNew = false;
+
             // search the device list for a device with a matching interface ID
-            var networkMatch = FindDevice(networkDevice.DeviceId);
+            NetworkDeviceInformation networkMatch;
+            NanoDeviceBase nanoFrameworkDeviceMatch;
+            lock (NanoFrameworkDevices)
+            {
+                networkMatch = FindDevice(networkDevice.DeviceId);
+
+                // search the nanoFramework device list for a device with a matching interface ID
+                nanoFrameworkDeviceMatch = FindNanoFrameworkDevice(networkDevice.DeviceId);
+            }
 
             // Add the device if it's new
-            if (networkMatch != null) return;
-
-            OnLogMessageAvailable(NanoDevicesEventSource.Log.CandidateDevice(networkDevice.DeviceId));
-
-            // search the nanoFramework device list for a device with a matching interface ID
-            var nanoFrameworkDeviceMatch = FindNanoFrameworkDevice(networkDevice.DeviceId);
-
-            if (nanoFrameworkDeviceMatch != null) return;
-
-            // Create a new element for this device and...
-            var newNanoFrameworkDevice = new NanoDevice<NanoNetworkDevice>();
-            newNanoFrameworkDevice.DeviceId = networkDevice.DeviceId;
-            newNanoFrameworkDevice.ConnectionPort = new PortTcpIp(this, newNanoFrameworkDevice, networkDevice);
-            newNanoFrameworkDevice.Transport = TransportType.TcpIp;
-
-            var connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
-
-            if (connectResult == ConnectPortResult.Unauthorized)
+            if (networkMatch is null && nanoFrameworkDeviceMatch is null)
             {
-                OnLogMessageAvailable(
-                    NanoDevicesEventSource.Log.UnauthorizedAccessToDevice(networkDevice.DeviceId));
-            }
-            else if (connectResult == ConnectPortResult.Connected)
-            {
-                if (CheckValidNanoFrameworkNetworkDevice(newNanoFrameworkDevice))
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.CandidateDevice(networkDevice.DeviceId));
+
+                // Create a new element for this device and...
+                var newNanoFrameworkDevice = new NanoDevice<NanoNetworkDevice>();
+                newNanoFrameworkDevice.DeviceId = networkDevice.DeviceId;
+                newNanoFrameworkDevice.ConnectionPort = new PortTcpIp(this, newNanoFrameworkDevice, networkDevice);
+                newNanoFrameworkDevice.Transport = TransportType.TcpIp;
+
+                var connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
+
+                if (connectResult == ConnectPortResult.Unauthorized)
                 {
-                    //add device to the collection
-                    NanoFrameworkDevices.Add(newNanoFrameworkDevice);
-
-                    _networkDevices.Add(networkDevice);
-
                     OnLogMessageAvailable(
-                        NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
+                        NanoDevicesEventSource.Log.UnauthorizedAccessToDevice(networkDevice.DeviceId));
+                }
+                else if (connectResult == ConnectPortResult.Connected)
+                {
+                    if (CheckValidNanoFrameworkNetworkDevice(newNanoFrameworkDevice))
+                    {
+                        lock (NanoFrameworkDevices)
+                        {
+                            //add device to the collection
+                            NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+                            _networkDevices.Add(networkDevice);
+                        }
+
+                        OnLogMessageAvailable(
+                            NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
+
+                        nanoFrameworkDeviceMatch = newNanoFrameworkDevice;
+                        isNew = true;
+                    }
+                    else
+                    {
+                        // disconnect
+                        newNanoFrameworkDevice.Disconnect();
+                    }
                 }
                 else
                 {
-                    // disconnect
-                    newNanoFrameworkDevice.Disconnect();
+                    OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(networkDevice.DeviceId));
                 }
             }
-            else
-            {
-                OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(networkDevice.DeviceId));
-            }
 
-            // subtract devices count
-            _newDevicesCount--;
-
-            // check if we are done processing arriving devices
-            if (_newDevicesCount == 0)
-            {
-                ProcessDeviceEnumerationComplete();
-            }
+            return (nanoFrameworkDeviceMatch, isNew);
         }
 
         public override void DisposeDevice(string instanceId)
@@ -226,32 +264,39 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         private void RemoveDeviceFromList(NetworkDeviceInformation networkDevice)
         {
             // Removes the device entry from the internal list; therefore the UI
-            var deviceEntry = FindDevice(networkDevice.DeviceId);
-
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceDeparture(networkDevice.DeviceId));
 
-            _networkDevices.Remove(deviceEntry);
-
             // get device...
-            var device = FindNanoFrameworkDevice(networkDevice.DeviceId);
+            NanoDeviceBase device;
+            lock (NanoFrameworkDevices)
+            {
+                var deviceEntry = FindDevice(networkDevice.DeviceId);
+                if (deviceEntry != null)
+                {
+                    _networkDevices.Remove(deviceEntry);
+                }
 
-            // ... and remove it from collection
-            NanoFrameworkDevices.Remove(device);
+                device = FindNanoFrameworkDevice(networkDevice.DeviceId);
+                if (device != null)
+                {
+                    // ... and remove it from collection
+                    NanoFrameworkDevices.Remove(device);
+                }
+            }
 
+            // get rid of debug engine, if that was created
             device?.DebugEngine?.StopProcessing();
             device?.DebugEngine?.Dispose();
-        }
 
-        private void ClearDeviceEntries()
-        {
-            _networkDevices.Clear();
+            // disconnect device
+            device?.Disconnect(true);
         }
 
         /// <summary>
         /// Searches through the existing list of devices for the first DeviceListEntry that has
         /// the specified device Id.
         /// </summary>
-        internal NetworkDeviceInformation FindDevice(string deviceId) =>
+        private NetworkDeviceInformation FindDevice(string deviceId) =>
             _networkDevices.FirstOrDefault(d => d.DeviceId == deviceId);
 
         private NanoDeviceBase FindNanoFrameworkDevice(string deviceId) =>
@@ -272,9 +317,12 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         {
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(networkDevice.DeviceId));
 
-            _newDevicesCount++;
+            var (_, isNew) = AddDeviceToListAsync(networkDevice);
 
-            Task.Run(() => { AddDeviceToListAsync(networkDevice); });
+            if (isNew && !IsDevicesEnumerationComplete)
+            {
+                ProcessDeviceEnumerationComplete();
+            }
         }
 
         #endregion
@@ -284,11 +332,16 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         private void ProcessDeviceEnumerationComplete()
         {
-            OnLogMessageAvailable(
-                NanoDevicesEventSource.Log.SerialDeviceEnumerationCompleted(NanoFrameworkDevices.Count));
+            int count;
+            lock (NanoFrameworkDevices)
+            {
+                IsDevicesEnumerationComplete = true;
+                count = NanoFrameworkDevices.OfType<NanoDevice<NanoNetworkDevice>>().Count();
+            }
 
-            // all watchers have completed enumeration
-            IsDevicesEnumerationComplete = true;
+            // TODO: count are not serial devices
+            OnLogMessageAvailable(
+                NanoDevicesEventSource.Log.SerialDeviceEnumerationCompleted(count));
 
             // fire event that Network enumeration is complete 
             OnDeviceEnumerationCompleted();
@@ -494,7 +547,8 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             LogMessageAvailable?.Invoke(this, new StringEventArgs(message));
         }
 
-        public override void AddDevice(string deviceId)
+        /// <inheritdoc/>
+        public override NanoDeviceBase AddDevice(string deviceId)
         {
             // expected format is "tcpip://{Host}:{Port}"
 
@@ -504,9 +558,9 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 throw new ArgumentException("Invalid tcpip format.");
             }
 
-            AddDeviceToListAsync(new NetworkDeviceInformation(
+            return AddDeviceToListAsync(new NetworkDeviceInformation(
                 match.Groups["host"].Value,
-                int.Parse(match.Groups["port"].Value)));
+                int.Parse(match.Groups["port"].Value))).device;
         }
 
         /// <summary>
