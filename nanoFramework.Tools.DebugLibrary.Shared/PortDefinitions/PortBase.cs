@@ -1,7 +1,5 @@
-﻿//
-// Copyright (c) .NET Foundation and Contributors
-// See LICENSE file in the project root for full license information.
-//
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -52,13 +50,15 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public bool IsDevicesEnumerationComplete { get; internal set; } = false;
 
-        public NanoFrameworkDevices NanoFrameworkDevices { get; protected set; }
+        public NanoFrameworkDevices NanoFrameworkDevices { get; }
 
         /// <summary>
-        /// Adds a new <see cref="PortSerial"/> device to list of NanoFrameworkDevices.
+        /// Adds a new device to list of NanoFrameworkDevices.
         /// </summary>
-        /// <param name="deviceId">The serial port name where the device is connected.</param>
-        public abstract void AddDevice(string deviceId);
+        /// <param name="deviceId">The unique ID (based on the connection properties) of the device.</param>
+        /// <returns>The device with the unique ID that is added or (if it was already discovered before) retrieved
+        /// from the list of devices. Returns <see langword="null"/> if no device has been added.</returns>
+        public abstract NanoDeviceBase AddDevice(string deviceId);
 
         /// <summary>
         /// Starts the device watchers.

@@ -1,12 +1,6 @@
-//
-// Copyright (c) .NET Foundation and Contributors
-// Portions Copyright (c) Microsoft Corporation.  All rights reserved.
-// See LICENSE file in the project root for full license information.
-//
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-using nanoFramework.Tools.Debugger.Extensions;
-using nanoFramework.Tools.Debugger.WireProtocol;
-using Polly;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -16,6 +10,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using nanoFramework.Tools.Debugger.Extensions;
+using nanoFramework.Tools.Debugger.WireProtocol;
+using Polly;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -77,6 +74,14 @@ namespace nanoFramework.Tools.Debugger
 
         internal Engine(NanoDeviceBase device)
         {
+            lock (_syncReqLockForPort)
+            {
+                if (!_syncReqLockForPort.TryGetValue(device.ConnectionPort.InstanceId, out _syncReqLock))
+                {
+                    _syncReqLockForPort[device.ConnectionPort.InstanceId] = _syncReqLock = new SemaphoreSlim(1, 1);
+                }
+            }
+
             InitializeLocal(device);
 
             // default to false
@@ -619,9 +624,10 @@ namespace nanoFramework.Tools.Debugger
 
         /// <summary>
         /// Global lock object for synchronizing message request. This ensures there is only one
-        /// outstanding request at any point of time. 
+        /// outstanding request per device at any point of time. 
         /// </summary>
-        private static readonly SemaphoreSlim _syncReqLock = new SemaphoreSlim(1, 1);
+        private readonly static Dictionary<string, SemaphoreSlim> _syncReqLockForPort = [];
+        private readonly SemaphoreSlim _syncReqLock;
 
         private IncomingMessage PerformSyncRequest(
             uint command,
@@ -821,41 +827,41 @@ namespace nanoFramework.Tools.Debugger
                 switch (bp.Cmd)
                 {
                     case Commands.c_Monitor_Ping:
+                    {
+                        // signal that a monitor ping was received
+                        _pingEvent.Set();
+
+                        Commands.Monitor_Ping.Reply cmdReply = new Commands.Monitor_Ping.Reply
                         {
-                            // signal that a monitor ping was received
-                            _pingEvent.Set();
+                            Source = Commands.Monitor_Ping.c_Ping_Source_Host,
+                            Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
+                        };
 
-                            Commands.Monitor_Ping.Reply cmdReply = new Commands.Monitor_Ping.Reply
-                            {
-                                Source = Commands.Monitor_Ping.c_Ping_Source_Host,
-                                Flags = (StopDebuggerOnConnect ? Commands.Monitor_Ping.c_Ping_DbgFlag_Stop : 0)
-                            };
+                        PerformRequestAsync(
+                            new OutgoingMessage(
+                                _controlller.GetNextSequenceId(),
+                                message,
+                                _controlller.CreateConverter(),
+                                Flags.c_NonCritical,
+                                cmdReply)
+                            );
 
-                            PerformRequestAsync(
-                                new OutgoingMessage(
-                                    _controlller.GetNextSequenceId(),
-                                    message,
-                                    _controlller.CreateConverter(),
-                                    Flags.c_NonCritical,
-                                    cmdReply)
-                                );
-
-                            return true;
-                        }
+                        return true;
+                    }
 
                     case Commands.c_Monitor_Message:
+                    {
+                        Commands.Monitor_Message payload = message.Payload as Commands.Monitor_Message;
+
+                        Debug.Assert(payload != null);
+
+                        if (payload != null)
                         {
-                            Commands.Monitor_Message payload = message.Payload as Commands.Monitor_Message;
-
-                            Debug.Assert(payload != null);
-
-                            if (payload != null)
-                            {
-                                Task.Factory.StartNew(() => _eventMessage?.Invoke(message, payload.ToString()));
-                            }
-
-                            return true;
+                            Task.Factory.StartNew(() => _eventMessage?.Invoke(message, payload.ToString()));
                         }
+
+                        return true;
+                    }
 
                     case Commands.c_Debugging_Messaging_Query:
                         Debug.Assert(message.Payload != null);

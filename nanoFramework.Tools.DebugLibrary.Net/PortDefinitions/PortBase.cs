@@ -1,18 +1,20 @@
-﻿//
-// Copyright (c) .NET Foundation and Contributors
-// See LICENSE file in the project root for full license information.
-//
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using nanoFramework.Tools.Debugger.PortComposite;
 using nanoFramework.Tools.Debugger.PortSerial;
 using nanoFramework.Tools.Debugger.PortTcpIp;
-using System.Collections.Generic;
 
 namespace nanoFramework.Tools.Debugger
 {
     //  write intellisense documentation for this class  
     public abstract partial class PortBase : PortMessageBase
     {
+        protected PortBase()
+        {
+            NanoFrameworkDevices = NanoFrameworkDevices.Instance;
+        }
 
         #region creating serial instances
 
