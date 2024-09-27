@@ -284,8 +284,12 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 }
             }
 
+            // get rid of debug engine, if that was created
             device?.DebugEngine?.StopProcessing();
             device?.DebugEngine?.Dispose();
+
+            // disconnect device
+            device?.Disconnect(true);
         }
 
         /// <summary>

@@ -341,8 +341,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 NanoFrameworkDevices.Remove(device);
             }
-            device?.DebugEngine?.StopProcessing();
-            device?.DebugEngine?.Dispose();
+
+            // get rid of debug engine, if that was created
+            device.DebugEngine?.StopProcessing();
+            device.DebugEngine?.Dispose();
+
+            // disconnect device in order to free port
+            device.Disconnect(true);
         }
 
         private NanoDeviceBase FindNanoFrameworkDevice(string deviceId)
