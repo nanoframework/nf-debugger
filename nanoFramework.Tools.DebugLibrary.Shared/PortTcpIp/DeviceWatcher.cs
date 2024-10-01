@@ -80,7 +80,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                     _started = true;
 
                     Status = DeviceWatcherStatus.Started;
-                    var isDiscovering = new CancellationTokenSource();
+                    using var isDiscovering = new CancellationTokenSource();
 
                     while (_started)
                     {
