@@ -80,6 +80,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                     _started = true;
 
                     Status = DeviceWatcherStatus.Started;
+                    var isDiscovering = new CancellationTokenSource();
 
                     while (_started)
                     {
@@ -93,7 +94,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
                             var message = Encoding.ASCII.GetString(discoveryPacket.Buffer);
 
-                            ProcessDiscoveryMessage(message);
+                            ProcessDiscoveryMessage(message, isDiscovering.Token);
                         }
 #if DEBUG
                         catch (Exception ex)
@@ -105,6 +106,8 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                             // on exception caused by the socket being closed, the thread will exit on the while loop condition
                         }
                     }
+
+                    isDiscovering.Cancel();
 
                     _ownerManager.OnLogMessageAvailable($"PortTcpIp device watcher stopped @ Thread {_threadWatch.ManagedThreadId}");
 
@@ -123,7 +126,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             }
         }
 
-        private void ProcessDiscoveryMessage(string message)
+        private void ProcessDiscoveryMessage(string message, CancellationToken isDiscovering)
         {
             if (string.IsNullOrEmpty(message))
             {
@@ -155,11 +158,20 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                         {
                             Task.Run(async () =>
                             {
-                                await Task.Yield(); // Force true async running
-                                GlobalExclusiveDeviceAccess.CommunicateWithDevice(info, () =>
+                                // Force true async running
+                                await Task.Yield();
+                                var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(info, cancellationToken: isDiscovering);
+                                if (exclusiveAccess is not null)
                                 {
-                                    Added.Invoke(this, info);
-                                });
+                                    try
+                                    {
+                                        Added.Invoke(this, info);
+                                    }
+                                    finally
+                                    {
+                                        exclusiveAccess.Dispose();
+                                    }
+                                };
                             });
                         }
                     }
