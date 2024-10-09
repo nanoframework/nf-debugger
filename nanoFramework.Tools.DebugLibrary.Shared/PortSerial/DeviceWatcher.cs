@@ -21,7 +21,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
     public class DeviceWatcher : IDisposable
     {
         private bool _started = false;
-        private List<string> _ports;
+        private Dictionary<string, CancellationTokenSource> _ports;
         private Thread _threadWatch = null;
         private readonly PortSerialManager _ownerManager;
 
@@ -104,8 +104,39 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             _started = true;
 
-            int newPortsDetected = 0;
-            var newPortsDetectedLock = new object();
+            #region Support for the AllNewDevicesAdded event
+            object allNewDevicesLock = new object();
+            int allNewDevicesCandidateCount = 0;
+            bool anyOfAllNewDevicesDetected = false;
+            bool raiseAllNewDevicesAdded = true;
+
+            void UpdateAllNewDevices(bool isOneOfAllNewDevices)
+            {
+                lock (allNewDevicesLock)
+                {
+                    if (isOneOfAllNewDevices)
+                    {
+                        anyOfAllNewDevicesDetected = true;
+                    }
+                    if (--allNewDevicesCandidateCount == 0)
+                    {
+                        if (anyOfAllNewDevicesDetected && raiseAllNewDevicesAdded)
+                        {
+                            try
+                            {
+                                AllNewDevicesAdded?.Invoke(this);
+                            }
+                            catch
+                            {
+                                // The device watcher must continue
+                            }
+                        }
+                        anyOfAllNewDevicesDetected = false;
+                        raiseAllNewDevicesAdded = false;
+                    }
+                }
+            }
+            #endregion
 
             Status = DeviceWatcherStatus.Started;
 
@@ -126,16 +157,17 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                     foreach (var port in _ports)
                     {
-                        if (!ports.Contains(port))
+                        if (!ports.Contains(port.Key))
                         {
-                            portsToRemove.Add(port);
+                            port.Value.Cancel();
+                            portsToRemove.Add(port.Key);
                         }
                     }
 
                     // process ports that have departed 
                     foreach (var port in portsToRemove)
                     {
-                        if (_ports.Contains(port))
+                        if (_ports.ContainsKey(port))
                         {
                             _ports.Remove(port);
                             Removed?.Invoke(this, port);
@@ -145,34 +177,71 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // process ports that have arrived
                     foreach (var port in ports)
                     {
-                        if (!_ports.Contains(port))
+                        if (!_ports.ContainsKey(port))
                         {
-                            _ports.Add(port);
+                            var cancelWaitForAccess = new CancellationTokenSource();
+                            _ports[port] = cancelWaitForAccess;
                             if (Added is not null)
                             {
                                 if (PortSerialManager.GetRegisteredDevice(port) is null)
                                 {
-                                    lock (newPortsDetectedLock)
+                                    bool isOneOfAllNewDevices = true;
+                                    lock (allNewDevicesLock)
                                     {
-                                        newPortsDetected++;
+                                        if (raiseAllNewDevicesAdded)
+                                        {
+                                            allNewDevicesCandidateCount++;
+                                        }
+                                        else
+                                        {
+                                            isOneOfAllNewDevices = false;
+                                        }
                                     }
 
                                     Task.Run(async () =>
                                     {
                                         // Force true async running
                                         await Task.Yield();
-                                        GlobalExclusiveDeviceAccess.CommunicateWithDevice(
-                                            port,
-                                            () => Added.Invoke(this, port)
-                                        );
-                                        lock (newPortsDetectedLock)
+
+                                        // Wait a short time, so that the AllNewDevices event does not have to
+                                        // be delayed for ports that are inaccessible.
+                                        var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, 1000, cancelWaitForAccess.Token);
+                                        if (exclusiveAccess is null)
                                         {
-                                            if (--newPortsDetected == 0)
+                                            // It took too long to get access
+                                            if (isOneOfAllNewDevices)
                                             {
-                                                AllNewDevicesAdded?.Invoke(this);
+                                                // Do not wait for the port to send the AllNewDevicesAdded
+                                                isOneOfAllNewDevices = false;
+                                                UpdateAllNewDevices(isOneOfAllNewDevices);
+                                            }
+
+                                            if (cancelWaitForAccess.IsCancellationRequested)
+                                            {
+                                                // The port disappeared
+                                                return;
+                                            }
+
+                                            // Now wait forever for the port to become available
+                                            exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, cancellationToken: cancelWaitForAccess.Token);
+                                            if (exclusiveAccess is null)
+                                            {
+                                                return;
                                             }
                                         }
 
+                                        try
+                                        {
+                                            Added.Invoke(this, port);
+                                        }
+                                        finally
+                                        {
+                                            exclusiveAccess.Dispose();
+                                            if (isOneOfAllNewDevices)
+                                            {
+                                                UpdateAllNewDevices(isOneOfAllNewDevices);
+                                            }
+                                        }
                                     });
                                 }
                             }
@@ -189,6 +258,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // catch all so the watcher can always do it's job
                     // on any exception the thread will get back to the loop or exit on the while loop condition
                 }
+            }
+
+            foreach (var source in _ports.Values)
+            {
+                source.Cancel();
             }
 
             _ownerManager.OnLogMessageAvailable($"PortSerial device watcher stopped @ Thread {_threadWatch.ManagedThreadId}");

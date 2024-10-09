@@ -4,12 +4,14 @@
 using System;
 using System.Diagnostics;
 using System.Net.Sockets;
+using nanoFramework.Tools.Debugger.NFDevice;
 
 namespace nanoFramework.Tools.Debugger.PortTcpIp
 {
     public class PortTcpIp : PortMessageBase, IPort
     {
         private readonly PortTcpIpManager _portManager;
+        private GlobalExclusiveDeviceAccess _exclusiveAccess;
 
         private NetworkStream _stream;
 
@@ -94,6 +96,11 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             {
                 return ConnectPortResult.Connected;
             }
+            _exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(InstanceId);
+            if (_exclusiveAccess is null)
+            {
+                return ConnectPortResult.NoExclusiveAccess;
+            }
 
             try
             {
@@ -110,6 +117,14 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 #endif
             {
                 return ConnectPortResult.ExceptionOccurred;
+            }
+            finally
+            {
+                if (NanoNetworkDevice?.Connected != true)
+                {
+                    _exclusiveAccess.Dispose();
+                    _exclusiveAccess = null;
+                }
             }
 
             return NanoNetworkDevice?.Connected == true ? ConnectPortResult.Connected : ConnectPortResult.NotConnected;
@@ -129,8 +144,16 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         private void CloseDevice()
         {
-            NanoNetworkDevice.Close();
-            NanoNetworkDevice.Dispose();
+            try
+            {
+                NanoNetworkDevice.Close();
+                NanoNetworkDevice.Dispose();
+            }
+            finally
+            {
+                _exclusiveAccess?.Dispose();
+                _exclusiveAccess = null;
+            }
         }
 
         private void OnLogMessageAvailable(string message)
