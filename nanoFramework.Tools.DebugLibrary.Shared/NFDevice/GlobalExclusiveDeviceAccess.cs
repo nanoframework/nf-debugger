@@ -166,7 +166,8 @@ namespace nanoFramework.Tools.Debugger.NFDevice
             }
 
             CancellationTokenSource timeOutToken = null;
-            if (millisecondsTimeout >= 0 && millisecondsTimeout != Timeout.Infinite)
+
+            if (millisecondsTimeout is >= 0 and not Timeout.Infinite)
             {
                 timeOutToken = new CancellationTokenSource(millisecondsTimeout);
             }
