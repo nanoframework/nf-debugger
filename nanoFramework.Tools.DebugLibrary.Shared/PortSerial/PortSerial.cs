@@ -1,16 +1,14 @@
-﻿//
-// Copyright (c) .NET Foundation and Contributors
-// See LICENSE file in the project root for full license information.
-//
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-using Polly;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
 using System.Runtime.InteropServices;
-using System.Threading;
+using nanoFramework.Tools.Debugger.NFDevice;
+using Polly;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
@@ -20,6 +18,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
     public class PortSerial : PortMessageBase, IPort
     {
         private readonly PortSerialManager _portManager;
+        private GlobalExclusiveDeviceAccess _exclusiveAccess;
 
         /// <summary>
         /// Event that is raised when a log message is available.
@@ -89,40 +88,61 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
         public ConnectPortResult OpenDevice()
         {
+            bool exclusiveAccessCreated = false;
+            if (_exclusiveAccess is null)
+            {
+                _exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(InstanceId);
+                if (_exclusiveAccess is null)
+                {
+                    return ConnectPortResult.NoExclusiveAccess;
+                }
+                exclusiveAccessCreated = true;
+            }
+
             bool successfullyOpenedDevice = false;
-
-            /////////////////////////////////////////////////////////////
-            // need to FORCE the parity setting to _NONE_ because        
-            // the default on the current ST Link is different causing 
-            // the communication to fail
-            /////////////////////////////////////////////////////////////
-
-            NanoDevice.DeviceBase = new SerialPort(InstanceId, BaudRate, Parity.None, 8);
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            try
             {
-                Device.DtrEnable = true;
-                Device.RtsEnable = true;
+                /////////////////////////////////////////////////////////////
+                // need to FORCE the parity setting to _NONE_ because        
+                // the default on the current ST Link is different causing 
+                // the communication to fail
+                /////////////////////////////////////////////////////////////
+
+                NanoDevice.DeviceBase = new SerialPort(InstanceId, BaudRate, Parity.None, 8);
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    Device.DtrEnable = true;
+                    Device.RtsEnable = true;
+                }
+
+                // Device could have been blocked by user or the device has already been opened by another app.
+                if (Device != null)
+                {
+                    Device.Open();
+
+                    successfullyOpenedDevice = true;
+
+                    // set conservative timeouts
+                    Device.WriteTimeout = 5000;
+                    Device.ReadTimeout = 500;
+                    Device.ErrorReceived += Device_ErrorReceived;
+
+                    // better make sure the RX FIFO it's cleared
+                    Device.DiscardInBuffer();
+                }
+                else
+                {
+                    successfullyOpenedDevice = false;
+                }
             }
-
-            // Device could have been blocked by user or the device has already been opened by another app.
-            if (Device != null)
+            finally
             {
-                Device.Open();
-
-                successfullyOpenedDevice = true;
-
-                // set conservative timeouts
-                Device.WriteTimeout = 5000;
-                Device.ReadTimeout = 500;
-                Device.ErrorReceived += Device_ErrorReceived;
-
-                // better make sure the RX FIFO it's cleared
-                Device.DiscardInBuffer();
-            }
-            else
-            {
-                successfullyOpenedDevice = false;
+                if (exclusiveAccessCreated && !successfullyOpenedDevice)
+                {
+                    _exclusiveAccess.Dispose();
+                    _exclusiveAccess = null;
+                }
             }
 
             return successfullyOpenedDevice ? ConnectPortResult.Connected : ConnectPortResult.NotConnected;
@@ -160,6 +180,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     Debug.WriteLine($">>>> CloseDevice ERROR from {InstanceId}: {ex.Message}");
                 }
             }
+            if (_exclusiveAccess is not null)
+            {
+                _exclusiveAccess.Dispose();
+                _exclusiveAccess = null;
+            }
         }
 
         private void Device_ErrorReceived(object sender, SerialErrorReceivedEventArgs e)
@@ -187,12 +212,22 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 return ConnectPortResult.Connected;
             }
 
+            bool exclusiveAccessCreated = false;
+            if (_exclusiveAccess is null)
+            {
+                _exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(InstanceId);
+                if (_exclusiveAccess is null)
+                {
+                    return ConnectPortResult.NoExclusiveAccess;
+                }
+                exclusiveAccessCreated = true;
+            }
             try
             {
                 openDeviceResult = Policy.Handle<IOException>()
                     .Or<UnauthorizedAccessException>()
                     .Or<Exception>()
-                    .WaitAndRetry(10, retryCount => TimeSpan.FromMilliseconds((retryCount * retryCount) * 25),
+                    .WaitAndRetry(10, retryCount => TimeSpan.FromMilliseconds(retryCount * 75),
                         onRetry: (exception, delay, retryCount, context) => LogRetry(exception, delay, retryCount, context))
                     .Execute(() => OpenDevice());
 
@@ -221,6 +256,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 Debug.WriteLine(logMsg);
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError(logMsg));
                 openDeviceResult = ConnectPortResult.ExceptionOccurred;
+            }
+            finally
+            {
+                if (exclusiveAccessCreated && openDeviceResult != ConnectPortResult.Connected)
+                {
+                    _exclusiveAccess.Dispose();
+                    _exclusiveAccess = null;
+                }
             }
 
             return openDeviceResult;
