@@ -18,6 +18,7 @@ namespace nanoFramework.Tools.Debugger.NFDevice
     public sealed class GlobalExclusiveDeviceAccess : IDisposable
     {
         #region Fields
+
         /// <summary>
         ///  Base name for the system-wide mutex that controls access to a device connected to a COM port.
         /// </summary>
@@ -26,9 +27,11 @@ namespace nanoFramework.Tools.Debugger.NFDevice
         private readonly Semaphore _mutex;
         private int _lockCount;
         private readonly string _portInstanceId;
+
         #endregion
 
         #region Methods
+
         /// <summary>
         /// Get exclusive access to a connected device to communicate with that device.
         /// </summary>
@@ -38,9 +41,15 @@ namespace nanoFramework.Tools.Debugger.NFDevice
         /// <returns>Returns an instance of <see cref="GlobalExclusiveDeviceAccess"/> if exclusive access has been granted.
         /// Returns <c>null</c> if exclusive access cannot be obtained within <paramref name="millisecondsTimeout"/>,
         /// or if <paramref name="cancellationToken"/> was cancelled.</returns>
-        public static GlobalExclusiveDeviceAccess TryGet(NanoDeviceBase device, int millisecondsTimeout = Timeout.Infinite, CancellationToken? cancellationToken = null)
+        public static GlobalExclusiveDeviceAccess TryGet(
+            NanoDeviceBase device,
+            int millisecondsTimeout = Timeout.Infinite,
+            CancellationToken? cancellationToken = null)
         {
-            return GetOrCreate(device.ConnectionPort.InstanceId, millisecondsTimeout, cancellationToken);
+            return GetOrCreate(
+                device.ConnectionPort.InstanceId,
+                millisecondsTimeout,
+                cancellationToken);
         }
 
         /// <summary>
@@ -52,9 +61,15 @@ namespace nanoFramework.Tools.Debugger.NFDevice
         /// <returns>Returns an instance of <see cref="GlobalExclusiveDeviceAccess"/> if exclusive access has been granted.
         /// Returns <c>null</c> if exclusive access cannot be obtained within <paramref name="millisecondsTimeout"/>,
         /// or if <paramref name="cancellationToken"/> was cancelled.</returns>
-        public static GlobalExclusiveDeviceAccess TryGet(IPort port, int millisecondsTimeout = Timeout.Infinite, CancellationToken? cancellationToken = null)
+        public static GlobalExclusiveDeviceAccess TryGet(
+            IPort port,
+            int millisecondsTimeout = Timeout.Infinite,
+            CancellationToken? cancellationToken = null)
         {
-            return GetOrCreate(port.InstanceId, millisecondsTimeout, cancellationToken);
+            return GetOrCreate(
+                port.InstanceId,
+                millisecondsTimeout,
+                cancellationToken);
         }
 
         /// <summary>
@@ -66,9 +81,15 @@ namespace nanoFramework.Tools.Debugger.NFDevice
         /// <returns>Returns an instance of <see cref="GlobalExclusiveDeviceAccess"/> if exclusive access has been granted.
         /// Returns <c>null</c> if exclusive access cannot be obtained within <paramref name="millisecondsTimeout"/>,
         /// or if <paramref name="cancellationToken"/> was cancelled.</returns>
-        public static GlobalExclusiveDeviceAccess TryGet(string serialPort, int millisecondsTimeout = Timeout.Infinite, CancellationToken? cancellationToken = null)
+        public static GlobalExclusiveDeviceAccess TryGet(
+            string serialPort,
+            int millisecondsTimeout = Timeout.Infinite,
+            CancellationToken? cancellationToken = null)
         {
-            return GetOrCreate(serialPort, millisecondsTimeout, cancellationToken);
+            return GetOrCreate(
+                serialPort,
+                millisecondsTimeout,
+                cancellationToken);
         }
 
         /// <summary>
@@ -80,14 +101,25 @@ namespace nanoFramework.Tools.Debugger.NFDevice
         /// <returns>Returns an instance of <see cref="GlobalExclusiveDeviceAccess"/> if exclusive access has been granted.
         /// Returns <c>null</c> if exclusive access cannot be obtained within <paramref name="millisecondsTimeout"/>,
         /// or if <paramref name="cancellationToken"/> was cancelled.</returns>
-        public static GlobalExclusiveDeviceAccess TryGet(NetworkDeviceInformation address, int millisecondsTimeout = Timeout.Infinite, CancellationToken? cancellationToken = null)
+        public static GlobalExclusiveDeviceAccess TryGet(
+            NetworkDeviceInformation address,
+            int millisecondsTimeout = Timeout.Infinite,
+            CancellationToken? cancellationToken = null)
         {
-            return GetOrCreate($"{address.Host}:{address.Port}", millisecondsTimeout, cancellationToken);
+            return GetOrCreate(
+                $"{address.Host}:{address.Port}",
+                millisecondsTimeout,
+                cancellationToken);
         }
+
         #endregion
 
         #region Implementation
-        private static GlobalExclusiveDeviceAccess GetOrCreate(string portInstanceId, int millisecondsTimeout, CancellationToken? cancellationToken)
+
+        private static GlobalExclusiveDeviceAccess GetOrCreate(
+            string portInstanceId,
+            int millisecondsTimeout,
+            CancellationToken? cancellationToken)
         {
             if (cancellationToken?.IsCancellationRequested == true)
             {
@@ -97,15 +129,19 @@ namespace nanoFramework.Tools.Debugger.NFDevice
             // If the access lock has been created earlier (in previous statements) and has not yet been disposed,
             // use that lock.
             GlobalExclusiveDeviceAccess result = null;
+
             lock (s_locks)
             {
-                if (s_locks.TryGetValue(portInstanceId, out (AsyncLocal<GlobalExclusiveDeviceAccess>, Semaphore) instance))
+                if (s_locks.TryGetValue(
+                    portInstanceId,
+                    out (AsyncLocal<GlobalExclusiveDeviceAccess>, Semaphore) instance))
                 {
                     // Note that the result can still be null, in case the exclusive access was obtained by
                     // code that is not a statement previously executed in the context of the current async-thread.
                     result = instance.Item1?.Value;
                 }
             }
+
             if (result is not null)
             {
                 // Use the same lock as in Dispose
@@ -118,6 +154,7 @@ namespace nanoFramework.Tools.Debugger.NFDevice
                         {
                             s_locks.Remove(portInstanceId);
                         }
+
                         result = null;
                     }
                     else
@@ -140,7 +177,12 @@ namespace nanoFramework.Tools.Debugger.NFDevice
                 {
                     // Cannot use Mutex as the Mutex must be released on the same thread as it is created.
                     // That may not be the case if this is used in async code.
-                    var mutex = new Semaphore(0, 1, $"{MutexBaseName}{portInstanceId}", out bool createdNew);
+                    var mutex = new Semaphore(
+                        0,
+                        1,
+                        $"{MutexBaseName}{portInstanceId}",
+                        out bool createdNew);
+
                     if (createdNew)
                     {
                         // This code has created the semaphore, so it has exclusive access
@@ -157,7 +199,7 @@ namespace nanoFramework.Tools.Debugger.NFDevice
 
                         // The problem with a semaphore it that, while waiting, it does not detect if the application
                         // with exclusive access is aborted without releasing the semaphore. The semaphore
-                        // has to be re-created for that. If the other application just releases toe semaphore,
+                        // has to be re-created for that. If the other application just releases the semaphore,
                         // the wait is ended.
                         var iterationToken = new CancellationTokenSource(1000);
                         waitHandles.Add(iterationToken.Token.WaitHandle);
@@ -167,6 +209,7 @@ namespace nanoFramework.Tools.Debugger.NFDevice
                         {
                             waitHandles.Add(timeOutToken.Token.WaitHandle);
                         }
+
                         if (cancellationToken.HasValue)
                         {
                             waitHandles.Add(cancellationToken.Value.WaitHandle);
@@ -176,6 +219,7 @@ namespace nanoFramework.Tools.Debugger.NFDevice
                         {
                             // Try to get exclusive access to the device.
                             int handleIndex = WaitHandle.WaitAny([.. waitHandles]);
+
                             if (handleIndex == 0)
                             {
                                 // Exclusive access granted as the wait ended because of the mutex
@@ -190,6 +234,7 @@ namespace nanoFramework.Tools.Debugger.NFDevice
                         finally
                         {
                             iterationToken.Dispose();
+
                             if (result is null)
                             {
                                 mutex.Dispose();
@@ -202,18 +247,23 @@ namespace nanoFramework.Tools.Debugger.NFDevice
             {
                 timeOutToken?.Dispose();
             }
+
             return result;
         }
 
-        private GlobalExclusiveDeviceAccess(string portInstanceId, Semaphore mutex)
+        private GlobalExclusiveDeviceAccess(
+            string portInstanceId,
+            Semaphore mutex)
         {
             _mutex = mutex;
             _lockCount = 1;
             _portInstanceId = portInstanceId;
+
             var instance = new AsyncLocal<GlobalExclusiveDeviceAccess>
             {
                 Value = this
             };
+
             lock (s_locks)
             {
                 s_locks[portInstanceId] = (instance, mutex);
@@ -221,14 +271,16 @@ namespace nanoFramework.Tools.Debugger.NFDevice
         }
 
         /// <summary>
-        /// Dispose of the exclusive access
+        /// Dispose of the exclusive access.
         /// </summary>
         public void Dispose()
         {
             bool removeFromLocks = false;
+
             lock (_mutex)
             {
                 _lockCount--;
+
                 if (_lockCount == 0)
                 {
                     _mutex.Release();
@@ -236,6 +288,7 @@ namespace nanoFramework.Tools.Debugger.NFDevice
                     removeFromLocks = true;
                 }
             }
+
             if (removeFromLocks)
             {
                 lock (s_locks)
@@ -244,6 +297,7 @@ namespace nanoFramework.Tools.Debugger.NFDevice
                 }
             }
         }
+
         #endregion
     }
 }

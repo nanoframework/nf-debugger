@@ -31,7 +31,7 @@ namespace nanoFramework.Tools.Debugger
         ExceptionOccurred,
 
         /// <summary>
-        /// Exclusive access to the device was not granted
+        /// Exclusive access to the device was not granted.
         /// </summary>
         NoExclusiveAccess
     }
