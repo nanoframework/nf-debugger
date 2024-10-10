@@ -181,7 +181,11 @@ namespace nanoFramework.Tools.Debugger.NFDevice
                     var mutex = new Semaphore(
                         0,
                         1,
-                        $"{MutexBaseName}{portInstanceId}",
+                        Environment.OSVersion.Platform == PlatformID.Win32NT
+                            // A named Semaphore is only supported on Windows OS, and is global - for all processes.
+                            ? $"{MutexBaseName}{portInstanceId}"
+                            // On other platforms the access is not inter-process but restricted to the current process.
+                            : null,
                         out bool createdNew);
 
                     if (createdNew)
