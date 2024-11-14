@@ -855,7 +855,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                     Password = "1234",
                     Authentication = AuthenticationType.WPA2,
                     Encryption = EncryptionType.WPA2,
-                    Options = Wireless80211_ConfigurationOptions.AutoConnect
+                    Wireless80211Options = Wireless80211_ConfigurationOptions.AutoConnect
                 };
 
                 // write wireless configuration to device
