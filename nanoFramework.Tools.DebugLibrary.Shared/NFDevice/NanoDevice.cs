@@ -4,19 +4,29 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools.Debugger.WireProtocol;
-using PropertyChanged;
 using System;
 using nanoFramework.Tools.Debugger.PortTcpIp;
+using nanoFramework.Tools.Debugger.WireProtocol;
 
 namespace nanoFramework.Tools.Debugger
 {
-    [AddINotifyPropertyChangedInterface]
     public class NanoDevice<T> : NanoDeviceBase, IDisposable, INanoDevice where T : new()
     {
-        public T Device { get; set; }
+        private T _device;
+        private string _deviceId;
+        private bool _disposed;
 
-        public string DeviceId { get; set; }
+        public T Device
+        {
+            get => _device;
+            set => SetProperty(ref _device, value);
+        }
+
+        public string DeviceId
+        {
+            get => _deviceId;
+            set => SetProperty(ref _deviceId, value);
+        }
 
         public NanoDevice()
         {
@@ -30,8 +40,6 @@ namespace nanoFramework.Tools.Debugger
 
         #region Disposable implementation
 
-        public bool disposed { get; private set; }
-
         ~NanoDevice()
         {
             Dispose(false);
@@ -39,7 +47,7 @@ namespace nanoFramework.Tools.Debugger
 
         private void Dispose(bool disposing)
         {
-            if (!disposed)
+            if (!_disposed)
             {
                 if (disposing)
                 {
@@ -53,7 +61,7 @@ namespace nanoFramework.Tools.Debugger
                         // required to catch exceptions from Engine dispose calls
                     }
 
-                    disposed = true;
+                    _disposed = true;
                 }
             }
         }
@@ -64,6 +72,7 @@ namespace nanoFramework.Tools.Debugger
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion
@@ -78,7 +87,7 @@ namespace nanoFramework.Tools.Debugger
             {
                 return ConnectionPort.ConnectDevice();
             }
-            
+
             return ConnectPortResult.NotConnected;
         }
 

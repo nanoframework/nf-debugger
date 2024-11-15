@@ -1,95 +1,119 @@
-//
+﻿//
 // Copyright (c) .NET Foundation and Contributors
 // Portions Copyright (c) Microsoft Corporation.  All rights reserved.
 // See LICENSE file in the project root for full license information.
 //
 
-using nanoFramework.Tools.Debugger.WireProtocol;
-using PropertyChanged;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.PortTcpIp;
+using nanoFramework.Tools.Debugger.WireProtocol;
 
 namespace nanoFramework.Tools.Debugger
 {
-    [AddINotifyPropertyChangedInterface]
-    public abstract class NanoDeviceBase
+    public abstract class NanoDeviceBase : ObservableObject
     {
+        private Engine _debugEngine;
+        private TransportType _transport;
+        private IPort _connectionPort;
+        private string _connectionId;
+        private string _targetName;
+        private string _platform;
+        private string _serialNumber;
+        private Guid _deviceUniqueId;
+        private INanoFrameworkDeviceInfo _deviceInfo;
+
         /// <summary>
         /// nanoFramework debug engine.
         /// </summary>
-        /// 
-        public Engine DebugEngine { get; set; }
-
-        /// <summary>
-        /// Creates a new debug engine for this nanoDevice.
-        /// </summary>
-        public void CreateDebugEngine()
+        public Engine DebugEngine
         {
-            DebugEngine = new Engine(this);
-
-            DebugEngine.DefaultTimeout = Transport switch
-            {
-                TransportType.Serial => NanoSerialDevice.SafeDefaultTimeout,
-                TransportType.TcpIp => NanoNetworkDevice.SafeDefaultTimeout,
-                _ => throw new NotImplementedException()
-            };
-        }
-
-        /// <summary>
-        /// Creates a new debug engine for this nanoDevice.
-        /// </summary>
-        /// <param name="timeoutMilliseconds"></param>
-        public void CreateDebugEngine(int timeoutMilliseconds)
-        {
-            DebugEngine = new Engine(this);
-            DebugEngine.DefaultTimeout = NanoSerialDevice.SafeDefaultTimeout;
+            get => _debugEngine;
+            set => SetProperty(ref _debugEngine, value);
         }
 
         /// <summary>
         /// Transport to the device. 
         /// </summary>
-        public TransportType Transport { get; set; }
+        public TransportType Transport
+        {
+            get => _transport;
+            set => SetProperty(ref _transport, value);
+        }
 
         /// <summary>
         /// Port here this device is connected.
         /// </summary>
-        public IPort ConnectionPort { get; set; }
+        public IPort ConnectionPort
+        {
+            get => _connectionPort;
+            set => SetProperty(ref _connectionPort, value);
+        }
 
         /// <summary>
         /// Id of the connection to the device.
         /// </summary>
-        public string ConnectionId { get; internal set; }
+        public string ConnectionId
+        {
+            get => _connectionId;
+            internal set => SetProperty(ref _connectionId, value);
+        }
 
         /// <summary>
         /// Device description.
         /// </summary>
-        public string Description => TargetName + " @ " + ConnectionId;
+        public string Description => $"{TargetName} @ {ConnectionId}";
 
         /// <summary>
         /// Target name.
         /// </summary>
-        public string TargetName { get; internal set; }
+        public string TargetName
+        {
+            get => _targetName;
+            internal set => SetProperty(ref _targetName, value);
+        }
 
         /// <summary>
         /// Target platform.
         /// </summary>
-        public string Platform { get; internal set; }
+        public string Platform
+        {
+            get => _platform;
+            internal set => SetProperty(ref _platform, value);
+        }
 
         /// <summary>
-        /// Device serial number (if define on the target).
+        /// Device serial number (if defined on the target).
         /// </summary>
-        public string SerialNumber { get; internal set; }
+        public string SerialNumber
+        {
+            get => _serialNumber;
+            internal set => SetProperty(ref _serialNumber, value);
+        }
 
         /// <summary>
         /// Unique ID of the NanoDevice.
         /// </summary>
-        public Guid DeviceUniqueId { get; internal set; }
+        public Guid DeviceUniqueId
+        {
+            get => _deviceUniqueId;
+            internal set => SetProperty(ref _deviceUniqueId, value);
+        }
+
+        /// <summary>
+        /// Detailed info about the NanoFramework device hardware, solution and CLR.
+        /// </summary>
+        public INanoFrameworkDeviceInfo DeviceInfo
+        {
+            get => _deviceInfo;
+            internal set => SetProperty(ref _deviceInfo, value);
+        }
 
         /// <summary>
         /// Version of nanoBooter.
@@ -128,42 +152,19 @@ namespace nanoFramework.Tools.Debugger
         }
 
         /// <summary>
-        /// Detailed info about the NanoFramework device hardware, solution and CLR.
-        /// </summary>
-        public INanoFrameworkDeviceInfo DeviceInfo { get; internal set; }
-
-        /// <summary>
         /// This indicates if the device has a proprietary bootloader.
         /// </summary>
-        public bool HasProprietaryBooter
-        {
-            get
-            {
-                return DebugEngine != null && DebugEngine.HasProprietaryBooter;
-            }
-        }
+        public bool HasProprietaryBooter => DebugEngine != null && DebugEngine.HasProprietaryBooter;
 
         /// <summary>
         /// This indicates if the target device has nanoBooter.
         /// </summary>
-        public bool HasNanoBooter
-        {
-            get
-            {
-                return DebugEngine != null && DebugEngine.HasNanoBooter;
-            }
-        }
+        public bool HasNanoBooter => DebugEngine != null && DebugEngine.HasNanoBooter;
 
         /// <summary>
-        ///  This indicates if the target device is IFU capable.
+        /// This indicates if the target device is IFU capable.
         /// </summary>
-        public bool IsIFUCapable
-        {
-            get
-            {
-                return DebugEngine != null && DebugEngine.IsIFUCapable;
-            }
-        }
+        public bool IsIFUCapable => DebugEngine != null && DebugEngine.IsIFUCapable;
 
         private readonly object m_serverCert = null;
         private readonly Dictionary<uint, string> m_execSrecHash = new Dictionary<uint, string>();
@@ -172,13 +173,6 @@ namespace nanoFramework.Tools.Debugger
         private readonly AutoResetEvent m_evtMicroBooter = new AutoResetEvent(false);
         private readonly AutoResetEvent m_evtMicroBooterError = new AutoResetEvent(false);
         private readonly ManualResetEvent m_evtMicroBooterStart = new ManualResetEvent(false);
-
-        protected NanoDeviceBase()
-        {
-            DeviceInfo = new NanoFrameworkDeviceInfo(this);
-
-            DeviceUniqueId = Guid.NewGuid();
-        }
 
         private bool IsCLRDebuggerEnabled
         {
@@ -202,7 +196,41 @@ namespace nanoFramework.Tools.Debugger
 
         public object DeviceBase { get; internal set; }
 
+        protected NanoDeviceBase()
+        {
+            DeviceInfo = new NanoFrameworkDeviceInfo(this);
+
+            DeviceUniqueId = Guid.NewGuid();
+        }
+
         public abstract void Disconnect(bool force = false);
+
+        /// <summary>
+        /// Creates a new debug engine for this nanoDevice.
+        /// Transport to the device. 
+        /// </summary>
+        public void CreateDebugEngine()
+        {
+            DebugEngine = new Engine(this);
+
+            DebugEngine.DefaultTimeout = Transport switch
+            {
+                TransportType.Serial => NanoSerialDevice.SafeDefaultTimeout,
+                TransportType.TcpIp => NanoNetworkDevice.SafeDefaultTimeout,
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        /// <summary>
+        /// Creates a new debug engine for this nanoDevice.
+        /// Transport to the device. 
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        public void CreateDebugEngine(int timeoutMilliseconds)
+        {
+            DebugEngine = new Engine(this);
+            DebugEngine.DefaultTimeout = NanoSerialDevice.SafeDefaultTimeout;
+        }
 
         /// <summary>
         /// Get <see cref="INanoFrameworkDeviceInfo"/> from device.

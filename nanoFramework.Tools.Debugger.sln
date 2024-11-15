@@ -16,6 +16,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C4E43092-51E8-46C3-8C7A-FD05E9A29FE2}"
 	ProjectSection(SolutionItems) = preProject
 		..\azure-pipelines.yml = ..\azure-pipelines.yml
+		README-BEFORE-UPDATE-REFS.txt = README-BEFORE-UPDATE-REFS.txt
 		..\README.md = ..\README.md
 		version.json = version.json
 	EndProjectSection
