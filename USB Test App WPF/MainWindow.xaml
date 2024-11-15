@@ -4,7 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Serial_Test_App_WPF"
-        xmlns:ViewModel="clr-namespace:Serial_Test_App_WPF.ViewModel" x:Class="Serial_Test_App_WPF.MainWindow"
+        xmlns:ViewModel="clr-namespace:Serial_Test_App_WPF.ViewModel"
+        x:Class="Serial_Test_App_WPF.MainWindow"
         mc:Ignorable="d"
         Title="MainWindow" Height="374" Width="570.729">
     <Window.Resources>
@@ -54,7 +55,5 @@
         <Button Content="Reboot CLR" HorizontalAlignment="Left" Margin="364,77,0,0" VerticalAlignment="Top" Width="121" Click="RebootDeviceButton_Click"/>
         <Button Content="Upload File I:\" HorizontalAlignment="Left" Margin="39,306,0,0" VerticalAlignment="Top" Width="110" Click="UploadFileInternalStorage_Click"/>
         <Button Content="Rm file I:\" HorizontalAlignment="Left" Margin="162,306,0,0" VerticalAlignment="Top" Width="75" Click="RemoveFileInternalStorage_Click"/>
-
-
     </Grid>
 </Window>

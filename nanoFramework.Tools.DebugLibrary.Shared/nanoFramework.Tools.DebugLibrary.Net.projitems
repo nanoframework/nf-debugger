@@ -17,6 +17,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)CLRCapabilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CRC32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DebuggerEventSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.NetworkConfigurationProperties.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.Wireless80211ConfigurationProperties.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.WirelessAPConfigurationProperties.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.X509CaRootBundleProperties.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.X509DeviceCertificatesProperties.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationOption.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationBase.cs" />
@@ -24,6 +29,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessAPBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessAPConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\Wireless80211ConfigurationPropertiesBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509DeviceCertificatesPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509DeviceCertificatesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509CaRootBundleBase.cs" />

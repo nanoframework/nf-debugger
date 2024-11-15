@@ -1,51 +1,37 @@
-//
+﻿//
 // Copyright (c) .NET Foundation and Contributors
 // See LICENSE file in the project root for full license information.
 //
 
-using CommonServiceLocator;
-using GalaSoft.MvvmLight.Ioc;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using Serial_Test_App_WPF.ViewModel;
 
 namespace Serial_Test_App_WPF.ViewModel
 {
-    /// <summary>
-    /// This class contains static references to all the view models in the
-    /// application and provides an entry point for the bindings.
-    /// </summary>
     public class ViewModelLocator
     {
-        /// <summary>
-        /// Initializes a new instance of the ViewModelLocator class.
-        /// </summary>
+        private static bool _isConfigured = false;
+        private static readonly object _lock = new object();
+
         public ViewModelLocator()
         {
-            ServiceLocator.SetLocatorProvider(() => SimpleIoc.Default);
-
-            ////if (ViewModelBase.IsInDesignModeStatic)
-            ////{
-            ////    // Create design time view services and models
-            ////    SimpleIoc.Default.Register<IDataService, DesignDataService>();
-            ////}
-            ////else
-            ////{
-            ////    // Create run time view services and models
-            ////    SimpleIoc.Default.Register<IDataService, DataService>();
-            ////}
-
-            SimpleIoc.Default.Register<MainViewModel>();
-        }
-
-        public MainViewModel Main
-        {
-            get
+            if (!_isConfigured)
             {
-                return ServiceLocator.Current.GetInstance<MainViewModel>();
+                lock (_lock)
+                {
+                    if (!_isConfigured)
+                    {
+                        Ioc.Default.ConfigureServices(
+                            new ServiceCollection()
+                                .AddSingleton<MainViewModel>()
+                                .BuildServiceProvider());
+                        _isConfigured = true;
+                    }
+                }
             }
         }
-        
-        public static void Cleanup()
-        {
-            // TODO Clear the ViewModels
-        }
+
+        public MainViewModel Main => Ioc.Default.GetService<MainViewModel>();
     }
 }

@@ -244,7 +244,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
                 output.AppendLine($"radio: {wireless80211Configuration.Radio.ToString()}");
                 output.AppendLine($"ssid: {wireless80211Configuration.Ssid}");
                 output.AppendLine($"pwd: {wireless80211Configuration.Password}");
-                output.AppendLine($"options: 0x{wireless80211Configuration.Options}");
+                output.AppendLine($"options: 0x{wireless80211Configuration.Wireless80211Options}");
                 output.AppendLine("");
 
                 return output.ToString();
@@ -268,7 +268,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
                 output.AppendLine($"radio: {wirelesAPConfiguration.Radio.ToString()}");
                 output.AppendLine($"ssid: {wirelesAPConfiguration.Ssid}");
                 output.AppendLine($"pwd: {wirelesAPConfiguration.Password}");
-                output.AppendLine($"options: 0x{wirelesAPConfiguration.Options}");
+                output.AppendLine($"options: 0x{wirelesAPConfiguration.WirelessAPOptions}");
                 output.AppendLine($"channel: {wirelesAPConfiguration.Channel.ToString()}");
                 output.AppendLine($"max connections: {wirelesAPConfiguration.MaxConnections.ToString()}");
                 output.AppendLine("");

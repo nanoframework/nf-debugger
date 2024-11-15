@@ -2,6 +2,10 @@
 // Copyright (c) .NET Foundation and Contributors
 // See LICENSE file in the project root for full license information.
 //
+//
+// Copyright (c) .NET Foundation and Contributors
+// See LICENSE file in the project root for full license information.
+//
 
 using CommonServiceLocator;
 using nanoFramework.ANT.Services.NanoFrameworkService;
@@ -9,6 +13,7 @@ using nanoFramework.Tools.Debugger;
 using Serial_Test_App_WPF.ViewModel;
 using System;
 using System.Collections.Generic;
+using CommunityToolkit.Mvvm.DependencyInjection;
 
 namespace Serial_Test_App_WPF
 {
@@ -27,12 +32,12 @@ namespace Serial_Test_App_WPF
             vml = new ViewModelLocator();
 
             var serialClient = CreateSerialDebugClient();
-            ServiceLocator.Current.GetInstance<MainViewModel>().SerialDebugService = serialClient;
+            Ioc.Default.GetService<MainViewModel>().SerialDebugService = serialClient;
         }
 
         private void App_Exit(object sender, System.Windows.ExitEventArgs e)
         {
-            var serialClient = ServiceLocator.Current.GetInstance<MainViewModel>().SerialDebugService;
+            var serialClient = Ioc.Default.GetService<MainViewModel>().SerialDebugService;
             serialClient.SerialDebugClient.StopDeviceWatchers();
         }
 
