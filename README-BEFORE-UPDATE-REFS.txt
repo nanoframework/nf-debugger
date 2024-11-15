@@ -1,4 +1,6 @@
-﻿Notes on updating the project references:
+Notes on updating the project references:
 
-
-- System.Threading.Tasks.Extensions can NOT be updated to >4.5.4 or VS2019 extension wont work because of transitive dependency on Compilers.Services.Unsage which collides with System.Collections.Immutable.
+IMPORTANT VERSION CONSTRAINTS:
+- System.Threading.Tasks.Extensions must not be updated beyond version 4.5.4
+  Reason: The VS2019 extension will fail due to a transitive dependency conflict between
+          Compilers.Services.Unsafe and System.Collections.Immutable.
