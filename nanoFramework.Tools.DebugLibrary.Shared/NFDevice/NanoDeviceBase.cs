@@ -10,110 +10,66 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using CommunityToolkit.Mvvm.ComponentModel;
 using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.PortTcpIp;
 using nanoFramework.Tools.Debugger.WireProtocol;
+using PropertyChanged;
 
 namespace nanoFramework.Tools.Debugger
 {
-    public abstract class NanoDeviceBase : ObservableObject
+    [AddINotifyPropertyChangedInterface]
+    public abstract partial class NanoDeviceBase
     {
-        private Engine _debugEngine;
-        private TransportType _transport;
-        private IPort _connectionPort;
-        private string _connectionId;
-        private string _targetName;
-        private string _platform;
-        private string _serialNumber;
-        private Guid _deviceUniqueId;
-        private INanoFrameworkDeviceInfo _deviceInfo;
-
         /// <summary>
         /// nanoFramework debug engine.
         /// </summary>
-        public Engine DebugEngine
-        {
-            get => _debugEngine;
-            set => SetProperty(ref _debugEngine, value);
-        }
+        public Engine DebugEngine { get; set; }
 
         /// <summary>
         /// Transport to the device. 
         /// </summary>
-        public TransportType Transport
-        {
-            get => _transport;
-            set => SetProperty(ref _transport, value);
-        }
+        public TransportType Transport { get; set; }
 
         /// <summary>
         /// Port here this device is connected.
         /// </summary>
-        public IPort ConnectionPort
-        {
-            get => _connectionPort;
-            set => SetProperty(ref _connectionPort, value);
-        }
+        public IPort ConnectionPort { get; set; }
 
         /// <summary>
         /// Id of the connection to the device.
         /// </summary>
-        public string ConnectionId
-        {
-            get => _connectionId;
-            internal set => SetProperty(ref _connectionId, value);
-        }
+        public string ConnectionId { get; set; }
 
         /// <summary>
         /// Device description.
         /// </summary>
+        [DependsOn(nameof(TargetName), nameof(ConnectionId))]
         public string Description => $"{TargetName} @ {ConnectionId}";
 
         /// <summary>
         /// Target name.
         /// </summary>
-        public string TargetName
-        {
-            get => _targetName;
-            internal set => SetProperty(ref _targetName, value);
-        }
+        public string TargetName { get; set; }
 
         /// <summary>
         /// Target platform.
         /// </summary>
-        public string Platform
-        {
-            get => _platform;
-            internal set => SetProperty(ref _platform, value);
-        }
+        public string Platform { get; set; }
 
         /// <summary>
         /// Device serial number (if defined on the target).
         /// </summary>
-        public string SerialNumber
-        {
-            get => _serialNumber;
-            internal set => SetProperty(ref _serialNumber, value);
-        }
+        public string SerialNumber { get; set; }
 
         /// <summary>
         /// Unique ID of the NanoDevice.
         /// </summary>
-        public Guid DeviceUniqueId
-        {
-            get => _deviceUniqueId;
-            internal set => SetProperty(ref _deviceUniqueId, value);
-        }
+        public Guid DeviceUniqueId { get; set; }
 
         /// <summary>
         /// Detailed info about the NanoFramework device hardware, solution and CLR.
         /// </summary>
-        public INanoFrameworkDeviceInfo DeviceInfo
-        {
-            get => _deviceInfo;
-            internal set => SetProperty(ref _deviceInfo, value);
-        }
+        public INanoFrameworkDeviceInfo DeviceInfo { get; internal set; }
 
         /// <summary>
         /// Version of nanoBooter.

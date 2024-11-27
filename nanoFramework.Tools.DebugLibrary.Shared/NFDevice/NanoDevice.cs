@@ -10,23 +10,13 @@ using nanoFramework.Tools.Debugger.WireProtocol;
 
 namespace nanoFramework.Tools.Debugger
 {
-    public class NanoDevice<T> : NanoDeviceBase, IDisposable, INanoDevice where T : new()
+    public partial class NanoDevice<T> : NanoDeviceBase, IDisposable, INanoDevice where T : new()
     {
-        private T _device;
-        private string _deviceId;
         private bool _disposed;
 
-        public T Device
-        {
-            get => _device;
-            set => SetProperty(ref _device, value);
-        }
+        public T Device { get; set; }
 
-        public string DeviceId
-        {
-            get => _deviceId;
-            set => SetProperty(ref _deviceId, value);
-        }
+        public string DeviceId { get; set; }
 
         public NanoDevice()
         {

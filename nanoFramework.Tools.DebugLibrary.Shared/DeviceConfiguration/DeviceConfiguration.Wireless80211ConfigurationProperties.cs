@@ -3,12 +3,6 @@
 // See LICENSE file in the project root for full license information.
 //
 
-//
-// Copyright (c) .NET Foundation and Contributors
-// See LICENSE file in the project root for full license information.
-//
-
-using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Text;
 
@@ -16,15 +10,9 @@ namespace nanoFramework.Tools.Debugger
 {
     public partial class DeviceConfiguration
     {
-        public class Wireless80211ConfigurationProperties : Wireless80211ConfigurationPropertiesBase
+        public partial class Wireless80211ConfigurationProperties : Wireless80211ConfigurationPropertiesBase
         {
-            private bool _isUnknown = true;
-
-            public bool IsUnknown
-            {
-                get => _isUnknown;
-                set => SetProperty(ref _isUnknown, value);
-            }
+            public bool IsUnknown { get; set; }
 
             public Wireless80211ConfigurationProperties()
             {

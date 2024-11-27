@@ -3,27 +3,15 @@
 // See LICENSE file in the project root for full license information.
 //
 
-//
-// Copyright (c) .NET Foundation and Contributors
-// See LICENSE file in the project root for full license information.
-//
-
-using CommunityToolkit.Mvvm.ComponentModel;
 using System.Text;
 
 namespace nanoFramework.Tools.Debugger
 {
     public partial class DeviceConfiguration
     {
-        public class X509DeviceCertificatesProperties : X509DeviceCertificatesPropertiesBase
+        public partial class X509DeviceCertificatesProperties : X509DeviceCertificatesPropertiesBase
         {
-            private bool _isUnknown = true;
-
-            public bool IsUnknown
-            {
-                get => _isUnknown;
-                set => SetProperty(ref _isUnknown, value);
-            }
+            public bool IsUnknown { get; set; }
 
             public X509DeviceCertificatesProperties()
             {
