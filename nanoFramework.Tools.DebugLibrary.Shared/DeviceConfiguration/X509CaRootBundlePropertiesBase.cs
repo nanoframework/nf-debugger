@@ -3,30 +3,24 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using CommunityToolkit.Mvvm.ComponentModel;
+using PropertyChanged;
 
 namespace nanoFramework.Tools.Debugger
 {
-    public class X509CaRootBundlePropertiesBase : ObservableObject
+    [AddINotifyPropertyChangedInterface]
+    public class X509CaRootBundlePropertiesBase
     {
         private byte[] _certificate;
-        private uint _certificateSize;
 
-        public uint CertificateSize
-        {
-            get => _certificateSize;
-            set => SetProperty(ref _certificateSize, value);
-        }
+        public uint CertificateSize { get; set; }
 
         public byte[] Certificate
         {
             get => _certificate;
             set
             {
-                if (SetProperty(ref _certificate, value))
-                {
-                    CertificateSize = (uint)value.Length;
-                }
+                _certificate = value;
+                CertificateSize = (uint)value.Length;
             }
         }
     }

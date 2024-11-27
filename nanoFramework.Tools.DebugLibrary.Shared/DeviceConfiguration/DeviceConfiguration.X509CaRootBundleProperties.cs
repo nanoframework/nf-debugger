@@ -3,12 +3,6 @@
 // See LICENSE file in the project root for full license information.
 //
 
-//
-// Copyright (c) .NET Foundation and Contributors
-// See LICENSE file in the project root for full license information.
-//
-
-using CommunityToolkit.Mvvm.ComponentModel;
 using System.Text;
 
 namespace nanoFramework.Tools.Debugger
@@ -17,13 +11,7 @@ namespace nanoFramework.Tools.Debugger
     {
         public class X509CaRootBundleProperties : X509CaRootBundlePropertiesBase
         {
-            private bool _isUnknown = true;
-
-            public bool IsUnknown
-            {
-                get => _isUnknown;
-                set => SetProperty(ref _isUnknown, value);
-            }
+            public bool IsUnknown { get; set; }
 
             public X509CaRootBundleProperties()
             {

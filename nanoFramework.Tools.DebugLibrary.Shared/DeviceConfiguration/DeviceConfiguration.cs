@@ -7,9 +7,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using PropertyChanged;
 
 namespace nanoFramework.Tools.Debugger
 {
+    [AddINotifyPropertyChangedInterface]
     public partial class DeviceConfiguration
     {
         /////////////////////////////////////////////////////////////

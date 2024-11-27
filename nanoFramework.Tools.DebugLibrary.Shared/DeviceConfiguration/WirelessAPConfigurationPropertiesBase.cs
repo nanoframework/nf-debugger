@@ -10,26 +10,15 @@ namespace nanoFramework.Tools.Debugger
     /// </summary>
     public class WirelessAPConfigurationPropertiesBase : WirelessConfigurationPropertiesBase
     {
-        private byte _channel;
-        private byte _maxConnections;
-
         /// <summary>
         /// Channel for the network.
         /// </summary>
-        public byte Channel
-        {
-            get => _channel;
-            set => SetProperty(ref _channel, value);
-        }
+        public byte Channel { get; set; }
 
         /// <summary>
         /// Maximum number of connections allowed.
         /// </summary>
-        public byte MaxConnections
-        {
-            get => _maxConnections;
-            set => SetProperty(ref _maxConnections, value);
-        }
+        public byte MaxConnections { get; set; }
 
         /// <summary>
         /// Configuration options for the network.
