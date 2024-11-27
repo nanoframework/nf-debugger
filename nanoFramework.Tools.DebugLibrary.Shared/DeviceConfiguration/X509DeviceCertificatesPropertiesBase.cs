@@ -8,7 +8,7 @@ using PropertyChanged;
 namespace nanoFramework.Tools.Debugger
 {
     [AddINotifyPropertyChangedInterface]
-    public class X509DeviceCertificatesPropertiesBase
+    public partial class X509DeviceCertificatesPropertiesBase
     {
         private byte[] _certificate;
 

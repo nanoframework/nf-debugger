@@ -9,7 +9,7 @@ using System.Net;
 namespace nanoFramework.Tools.Debugger
 {
     [AddINotifyPropertyChangedInterface]
-    public class NetworkConfigurationPropertiesBase
+    public partial class NetworkConfigurationPropertiesBase
     {
         public IPAddress IPv4Address { get; set; }
         public IPAddress IPv4DNSAddress1 { get; set; }

@@ -12,7 +12,7 @@ namespace nanoFramework.Tools.Debugger
     {
         /////////////////////////////////////////////////////////////
 
-        public class NetworkConfigurationProperties : NetworkConfigurationPropertiesBase
+        public partial class NetworkConfigurationProperties : NetworkConfigurationPropertiesBase
         {
             internal const uint EmptySpecificConfigValue = uint.MaxValue;
 

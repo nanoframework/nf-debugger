@@ -10,7 +10,7 @@ namespace nanoFramework.Tools.Debugger
 {
     public partial class DeviceConfiguration
     {
-        public class WirelessAPConfigurationProperties : WirelessAPConfigurationPropertiesBase
+        public partial class WirelessAPConfigurationProperties : WirelessAPConfigurationPropertiesBase
         {
             public bool IsUnknown { get; set; }
 

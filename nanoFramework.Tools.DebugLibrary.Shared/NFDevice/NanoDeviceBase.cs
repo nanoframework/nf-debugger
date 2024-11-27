@@ -18,7 +18,7 @@ using PropertyChanged;
 namespace nanoFramework.Tools.Debugger
 {
     [AddINotifyPropertyChangedInterface]
-    public abstract class NanoDeviceBase
+    public abstract partial class NanoDeviceBase
     {
         /// <summary>
         /// nanoFramework debug engine.
@@ -43,6 +43,7 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Device description.
         /// </summary>
+        [DependsOn(nameof(TargetName), nameof(ConnectionId))]
         public string Description => $"{TargetName} @ {ConnectionId}";
 
         /// <summary>

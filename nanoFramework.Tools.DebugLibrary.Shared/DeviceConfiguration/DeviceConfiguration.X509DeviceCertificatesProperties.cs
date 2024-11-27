@@ -9,7 +9,7 @@ namespace nanoFramework.Tools.Debugger
 {
     public partial class DeviceConfiguration
     {
-        public class X509DeviceCertificatesProperties : X509DeviceCertificatesPropertiesBase
+        public partial class X509DeviceCertificatesProperties : X509DeviceCertificatesPropertiesBase
         {
             public bool IsUnknown { get; set; }
 

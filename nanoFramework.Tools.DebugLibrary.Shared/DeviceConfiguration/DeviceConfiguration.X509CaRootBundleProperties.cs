@@ -9,7 +9,7 @@ namespace nanoFramework.Tools.Debugger
 {
     public partial class DeviceConfiguration
     {
-        public class X509CaRootBundleProperties : X509CaRootBundlePropertiesBase
+        public partial class X509CaRootBundleProperties : X509CaRootBundlePropertiesBase
         {
             public bool IsUnknown { get; set; }
 
