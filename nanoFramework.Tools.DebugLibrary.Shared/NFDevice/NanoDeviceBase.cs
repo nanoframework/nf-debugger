@@ -270,68 +270,60 @@ namespace nanoFramework.Tools.Debugger
                 return false;
             }
 
-            if (DebugEngine != null)
+            if (DebugEngine.IsConnectedTonanoBooter) return true;
+
+            try
             {
-                if (DebugEngine.IsConnectedTonanoBooter) return true;
+                DebugEngine.RebootDevice(RebootOptions.EnterNanoBooter);
 
-                try
+                /////////////////////////////////////////
+                // FIXME
+                /////////////////////////////////////////
+                //// nanoBooter is only com port so
+                //if (Transport == TransportType.TcpIp)
+                //{
+                //    _DBG.PortDefinition pdTmp = m_port;
+
+                //    Disconnect();
+
+                //    try
+                //    {
+                //        m_port = m_portNanoBooter;
+
+                //        // digi takes forever to reset
+                //        if (!Connect(60000, true))
+                //        {
+                //            Console.WriteLine(Properties.Resources.ErrorUnableToConnectToNanoBooterSerial);
+                //            return false;
+                //        }
+                //    }
+                //    finally
+                //    {
+                //        m_port = pdTmp;
+                //    }
+                //}
+
+                bool fConnected = false;
+
+                for (int i = 0; i < 40; i++)
                 {
-                    DebugEngine.RebootDevice(RebootOptions.EnterNanoBooter);
+                    fConnected = DebugEngine.Connect(true);
 
-                    /////////////////////////////////////////
-                    // FIXME
-                    /////////////////////////////////////////
-                    //// nanoBooter is only com port so
-                    //if (Transport == TransportType.TcpIp)
-                    //{
-                    //    _DBG.PortDefinition pdTmp = m_port;
-
-                    //    Disconnect();
-
-                    //    try
-                    //    {
-                    //        m_port = m_portNanoBooter;
-
-                    //        // digi takes forever to reset
-                    //        if (!Connect(60000, true))
-                    //        {
-                    //            Console.WriteLine(Properties.Resources.ErrorUnableToConnectToNanoBooterSerial);
-                    //            return false;
-                    //        }
-                    //    }
-                    //    finally
-                    //    {
-                    //        m_port = pdTmp;
-                    //    }
-                    //}
-
-                    bool fConnected = false;
-
-                    for (int i = 0; i < 40; i++)
+                    if (fConnected)
                     {
-                        if (DebugEngine == null)
-                        {
-                            CreateDebugEngine();
-                        }
-
-                        if (fConnected = DebugEngine.Connect(
-                            true))
-                        {
-                            ret = (DebugEngine.GetConnectionSource() == ConnectionSource.nanoBooter);
-
-                            break;
-                        }
-                    }
-
-                    if (!fConnected)
-                    {
-                        //Debug.WriteLine("Unable to connect to NanoBooter");
+                        ret = (DebugEngine.GetConnectionSource() == ConnectionSource.nanoBooter);
+                        break;
                     }
                 }
-                catch
+
+                if (!fConnected)
                 {
-                    // need a catch all here because some targets re-enumerate the USB device and that makes it impossible to catch them here
+                    //Debug.WriteLine("Unable to connect to NanoBooter");
                 }
+            }
+            catch
+            {
+                // need a catch all here because some targets re-enumerate the USB device and that makes it impossible to catch them here
             }
 
             return ret;
