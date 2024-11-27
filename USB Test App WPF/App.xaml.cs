@@ -2,18 +2,13 @@
 // Copyright (c) .NET Foundation and Contributors
 // See LICENSE file in the project root for full license information.
 //
-//
-// Copyright (c) .NET Foundation and Contributors
-// See LICENSE file in the project root for full license information.
-//
 
-using CommonServiceLocator;
-using nanoFramework.ANT.Services.NanoFrameworkService;
-using nanoFramework.Tools.Debugger;
-using Serial_Test_App_WPF.ViewModel;
 using System;
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.DependencyInjection;
+using nanoFramework.ANT.Services.NanoFrameworkService;
+using nanoFramework.Tools.Debugger;
+using Serial_Test_App_WPF.ViewModel;
 
 namespace Serial_Test_App_WPF
 {
