@@ -8,7 +8,7 @@ namespace nanoFramework.Tools.Debugger
     /// <summary>
     /// Base class for wireless Access Point configuration properties.
     /// </summary>
-    public class WirelessAPConfigurationPropertiesBase : WirelessConfigurationPropertiesBase
+    public partial class WirelessAPConfigurationPropertiesBase : WirelessConfigurationPropertiesBase
     {
         /// <summary>
         /// Channel for the network.

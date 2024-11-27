@@ -11,7 +11,7 @@ namespace nanoFramework.Tools.Debugger
     /// Base class for common wireless configuration properties.
     /// </summary>
     [AddINotifyPropertyChangedInterface]
-    public class WirelessConfigurationPropertiesBase
+    public partial class WirelessConfigurationPropertiesBase
     {
         /// <summary>
         /// Id of the configuration.

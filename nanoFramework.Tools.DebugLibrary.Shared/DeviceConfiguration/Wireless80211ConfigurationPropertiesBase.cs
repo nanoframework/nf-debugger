@@ -8,7 +8,7 @@ namespace nanoFramework.Tools.Debugger
     /// <summary>
     /// Base class for wireless 802.11 configuration properties.
     /// </summary>
-    public class Wireless80211ConfigurationPropertiesBase : WirelessConfigurationPropertiesBase
+    public partial class Wireless80211ConfigurationPropertiesBase : WirelessConfigurationPropertiesBase
     {
         // No additional properties needed for now
     }
