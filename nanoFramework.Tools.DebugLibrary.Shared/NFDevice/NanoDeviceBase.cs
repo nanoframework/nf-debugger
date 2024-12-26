@@ -89,7 +89,7 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Version of nanoCLR.
         /// </summary>
-        public Version CLRVersion
+        public virtual Version CLRVersion
         {
             get
             {
