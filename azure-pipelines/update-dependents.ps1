@@ -1,3 +1,6 @@
+# Copyright (c) .NET Foundation and Contributors
+# See LICENSE file in the project root for full license information.
+
 "Updating dependents of nano-debugger" | Write-Host
 
 # compute authorization header in format "AUTHORIZATION: basic 'encoded token'"
@@ -14,12 +17,14 @@ $prTitle = ""
 $newBranchName = "develop-nfbot/update-dependencies/" + [guid]::NewGuid().ToString()
 $packageTargetVersion = gh release view --json tagName --jq .tagName
 $packageTargetVersion = $packageTargetVersion -replace "v"
+$packageName = "nanoframework.tools.debugger.net"
+$repoMainBranch = "main"
 
 # working directory is agent temp directory
 Write-Debug "Changing working directory to $env:Agent_TempDirectory"
 Set-Location "$env:Agent_TempDirectory" | Out-Null
 
-# clone repo and checkout develop branch
+# clone repo and checkout
 Write-Debug "Init and featch nf-Visual-Studio-extension repo"
 
 ####################
@@ -35,8 +40,34 @@ git config --global user.name nfbot
 git config --global user.email nanoframework@outlook.com
 git config --global core.autocrlf true
 
-Write-Host "Checkout develop branch..."
-git checkout --quiet develop | Out-Null
+Write-Host "Checkout $repoMainBranch branch..."
+git checkout --quiet $repoMainBranch | Out-Null
+
+# check if nuget package is already available from nuget.org
+$nugetApiUrl = "https://api.nuget.org/v3-flatcontainer/$packageName/index.json"
+
+function Get-LatestNugetVersion {
+    param (
+        [string]$url
+    )
+    try {
+        $response = Invoke-RestMethod -Uri $url -Method Get
+        return $response.versions[-1]
+    }
+    catch {
+        throw "Error querying NuGet API: $_"
+    }
+}
+
+$latestNugetVersion = Get-LatestNugetVersion -url $nugetApiUrl
+
+while ($latestNugetVersion -ne $packageTargetVersion) {
+    Write-Host "Latest version still not available from nuget.org feed. Waiting 5 minutes..."
+    Start-Sleep -Seconds 300
+    $latestNugetVersion = Get-LatestNugetVersion -url $nugetApiUrl
+}
+
+Write-Host "Version $latestNugetVersion available from nuget.org feed. Proceeding with update."
 
 dotnet restore
 dotnet remove VisualStudio.Extension-2019/VisualStudio.Extension-vs2019.csproj package nanoFramework.Tools.Debugger.Net 
