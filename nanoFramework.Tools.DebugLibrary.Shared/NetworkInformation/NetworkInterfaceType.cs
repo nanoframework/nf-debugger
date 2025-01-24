@@ -33,5 +33,12 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         [Description("Wi-Fi (802.11)")]
         Wireless80211 = 71,
+
+
+        /// <summary>
+        /// The network interface uses a wireless Soft AP connection (IEEE 802.11 standard).
+        /// </summary>
+        [Description("Wi-Fi Access Point (802.11)")]
+        WirelessAP = 72,
     }
 }
