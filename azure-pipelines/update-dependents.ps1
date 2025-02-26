@@ -5,7 +5,7 @@
 
 # compute authorization header in format "AUTHORIZATION: basic 'encoded token'"
 # 'encoded token' is the Base64 of the string "nfbot:personal-token"
-$auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$env:GH_TOKEN")))"
+$auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$env:GITHUB_TOKEN")))"
 
 # because it can take sometime for the package to become available on the NuGet providers
 # need to hang here for 1 minutes (1 * 60)
@@ -133,6 +133,12 @@ if ($repoStatus -ne "")
         $result = Invoke-RestMethod -Method Post -UserAgent [Microsoft.PowerShell.Commands.PSUserAgent]::InternetExplorer -Uri  $githubApiEndpoint -Header $headers -ContentType "application/json" -Body $prRequestBody
         'Started PR with dependencies update...' | Write-Host -NoNewline
         'OK' | Write-Host -ForegroundColor Green
+
+        # add labels to PR
+        $prNumber = $result.number
+
+        gh pr edit $prNumber --add-label "VS2019"
+        gh pr edit $prNumber --add-label "VS2022"
     }
     catch 
     {

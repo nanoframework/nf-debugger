@@ -220,7 +220,6 @@ steps:
     .\sign code azure-key-vault `
     "**/*.nupkg" `
     --base-directory "$(Build.ArtifactStagingDirectory)" `
-    --file-list "$(Build.Repository.LocalPath)\config\filelist.txt" `
     --description ".NET nanoFramework Debugger" `
     --description-url "https://github.com/$env:Build_Repository_Name" `
     --azure-key-vault-tenant-id "$(SignTenantId)" `
@@ -330,7 +329,7 @@ steps:
     targetType: filePath
     filePath: azure-pipelines/update-dependents.ps1
   env:
-    GH_TOKEN: $(GitHubToken)
+    GITHUB_TOKEN: $(GitHubToken)
 
 # step from template @ nf-tools repo
 # report error
