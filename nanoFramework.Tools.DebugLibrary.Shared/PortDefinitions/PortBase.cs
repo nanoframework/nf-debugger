@@ -48,9 +48,9 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Flag to signal that devices enumeration is complete.
         /// </summary>
-        public bool IsDevicesEnumerationComplete { get; internal set; } = false;
+        public virtual bool IsDevicesEnumerationComplete { get; internal set; } = false;
 
-        public NanoFrameworkDevices NanoFrameworkDevices { get; }
+        public virtual NanoFrameworkDevices NanoFrameworkDevices { get; }
 
         /// <summary>
         /// Adds a new device to list of NanoFrameworkDevices.

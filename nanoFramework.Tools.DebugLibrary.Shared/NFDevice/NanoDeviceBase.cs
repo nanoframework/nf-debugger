@@ -1,8 +1,5 @@
-﻿//
-// Copyright (c) .NET Foundation and Contributors
-// Portions Copyright (c) Microsoft Corporation.  All rights reserved.
-// See LICENSE file in the project root for full license information.
-//
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -69,7 +66,7 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Detailed info about the NanoFramework device hardware, solution and CLR.
         /// </summary>
-        public INanoFrameworkDeviceInfo DeviceInfo { get; internal set; }
+        public INanoFrameworkDeviceInfo DeviceInfo { get; protected internal set; }
 
         /// <summary>
         /// Version of nanoBooter.
@@ -92,7 +89,7 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Version of nanoCLR.
         /// </summary>
-        public Version CLRVersion
+        public virtual Version CLRVersion
         {
             get
             {

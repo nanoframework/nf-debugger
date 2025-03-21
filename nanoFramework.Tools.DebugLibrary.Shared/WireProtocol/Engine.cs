@@ -4147,7 +4147,7 @@ namespace nanoFramework.Tools.Debugger
                             networkConfiguration.StartupAddressMode = (byte)AddressMode.Invalid;
                         }
 
-                        if (networkConfiguration.InterfaceType > (byte)NetworkInterfaceType.Wireless80211)
+                        if (networkConfiguration.InterfaceType > (byte)NetworkInterfaceType.WirelessAP)
                         {
                             // fix this to invalid
                             networkConfiguration.InterfaceType = (byte)NetworkInterfaceType.Unknown;
@@ -4776,7 +4776,8 @@ namespace nanoFramework.Tools.Debugger
                 {
                     Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration
                     {
-                        Configuration = (uint)GetDeviceConfigurationOption(configuration)
+                        Configuration = (uint)GetDeviceConfigurationOption(configuration),
+                        BlockIndex = blockIndex,
                     };
 
                     // get packet length, either the maximum allowed size or whatever is still available to TX
