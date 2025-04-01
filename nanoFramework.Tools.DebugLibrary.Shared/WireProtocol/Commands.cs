@@ -1555,6 +1555,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             static internal Debugging_Value[] Allocate(int size, byte[] data)
             {
+                // size of the Debugging_Value struct comming from Wire Protocol is:
+                // 13 uint fields (size 4 bytes)
+                // 128 bytes in the m_builtinValue field
                 int num = size / (13 * 4 + 128);
 
                 Debugging_Value[] res = new Debugging_Value[num];

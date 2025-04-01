@@ -20,17 +20,5 @@ namespace nanoFramework.Tools.Debugger
         public override bool IsReflection { get { return false; } }
         public override bool IsGenericInst { get { return false; } }
 
-        //public override uint NumOfFields
-        //{
-        //    get
-        //    {
-        //        return m_handle.m_size - 1;
-        //    }
-        //}
-
-        //public override RuntimeValue GetField(uint offset, uint fd)
-        //{
-        //    return m_eng.GetFieldValue(this, offset, fd);
-        //}
     }
 }
