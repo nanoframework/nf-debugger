@@ -16,9 +16,6 @@
     <!-- <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder> -->
   </PropertyGroup>
   <PropertyGroup>
-    <IsTestProject>true</IsTestProject>
-  </PropertyGroup>
-  <PropertyGroup>
     <PackageId>nanoFramework.Tools.Debugger.Net</PackageId>
     <Authors>nanoframework</Authors>
     <Product>.NET nanoFramework debug library (.NET)</Product>
