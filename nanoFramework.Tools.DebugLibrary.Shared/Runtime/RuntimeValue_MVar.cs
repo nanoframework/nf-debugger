@@ -6,18 +6,19 @@
 
 namespace nanoFramework.Tools.Debugger
 {
-    public class RuntimeValue_ValueType : RuntimeValue_Class
+    public class RuntimeValue_MVar : RuntimeValue
     {
-        protected internal RuntimeValue_ValueType(Engine eng, WireProtocol.Commands.Debugging_Value handle) : base(eng, handle)
+        protected internal RuntimeValue_MVar(Engine eng, WireProtocol.Commands.Debugging_Value handle) : base(eng, handle)
         {
         }
 
         public override bool IsReference { get { return false; } }
         public override bool IsNull { get { return false; } }
         public override bool IsPrimitive { get { return false; } }
-        public override bool IsValueType { get { return true; } }
+        public override bool IsValueType { get { return false; } }
         public override bool IsArray { get { return false; } }
         public override bool IsReflection { get { return false; } }
         public override bool IsGenericInst { get { return false; } }
+
     }
 }

@@ -1506,6 +1506,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
+        /////////////////////////////////////////////////////////////
+        // Keep in sync with Debugging_Value struct in native code //
+        /////////////////////////////////////////////////////////////
+
         public class Debugging_Value
         {
             public const uint HB_Alive = 0x01;
@@ -1534,6 +1538,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             public uint m_td;
 
+            // For DATATYPE_GENERICINST
+            public uint m_ts;
+
             // For DATATYPE_SZARRAY
 
             public uint m_array_numOfElements;
@@ -1548,7 +1555,10 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 
             static internal Debugging_Value[] Allocate(int size, byte[] data)
             {
-                int num = size / (12 * 4 + 128);
+                // size of the Debugging_Value struct comming from Wire Protocol is:
+                // 13 uint fields (size 4 bytes)
+                // 128 bytes in the m_builtinValue field
+                int num = size / (13 * 4 + 128);
 
                 Debugging_Value[] res = new Debugging_Value[num];
 

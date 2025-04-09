@@ -100,6 +100,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Runtime\RunTimeValue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Runtime\RuntimeValue_Array.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Runtime\RuntimeValue_ByRef.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Runtime\RuntimeValue_MVar.cs" />
+    <Compile Include="..\nanoFramework.Tools.DebugLibrary.Shared\Runtime\RuntimeValue_Var.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Runtime\RuntimeValue_Generic.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Runtime\RuntimeValue_Class.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Runtime\RuntimeValue_Indirect.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Runtime\RuntimeValue_Internal.cs" />

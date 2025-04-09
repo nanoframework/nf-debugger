@@ -6,9 +6,9 @@
 
 namespace nanoFramework.Tools.Debugger
 {
-    public class RuntimeValue_Class : RuntimeValue
+    public class RuntimeValue_Generic : RuntimeValue
     {
-        protected internal RuntimeValue_Class(Engine eng, WireProtocol.Commands.Debugging_Value handle) : base(eng, handle)
+        protected internal RuntimeValue_Generic(Engine eng, WireProtocol.Commands.Debugging_Value handle) : base(eng, handle)
         {
         }
 
@@ -18,7 +18,9 @@ namespace nanoFramework.Tools.Debugger
         public override bool IsValueType { get { return false; } }
         public override bool IsArray { get { return false; } }
         public override bool IsReflection { get { return false; } }
-        public override bool IsGenericInst { get { return false; } }
+        public override bool IsGenericInst { get { return true; } }
+
+        public override uint Type => m_handle.m_ts;
 
         public override uint NumOfFields
         {
