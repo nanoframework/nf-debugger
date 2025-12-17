@@ -16,7 +16,7 @@ Start-Sleep -Seconds 60
 $prTitle = ""
 $newBranchName = "develop-nfbot/update-dependencies/" + [guid]::NewGuid().ToString()
 $packageTargetVersion = gh release view --json tagName --jq .tagName
-$packageTargetVersion = $packageTargetVersion -replace "v"
+$packageTargetVersion = $packageTargetVersion -replace "^v"
 $packageName = "nanoframework.tools.debugger.net"
 $repoMainBranch = "main"
 
@@ -62,7 +62,7 @@ function Get-LatestNugetVersion {
 $latestNugetVersion = Get-LatestNugetVersion -url $nugetApiUrl
 
 while ($latestNugetVersion -ne $packageTargetVersion) {
-    Write-Host "Latest version still not available from nuget.org feed. Waiting 5 minutes..."
+    Write-Host "Target version ($packageTargetVersion) still not available from nuget.org feed. Waiting 5 minutes..."
     Start-Sleep -Seconds 300
     $latestNugetVersion = Get-LatestNugetVersion -url $nugetApiUrl
 }
@@ -165,7 +165,7 @@ else
 Set-Location "$env:Agent_TempDirectory" | Out-Null
 
 # clone repo and checkout main branch
-Write-Debug "Init and featch nf-Deployer repo"
+Write-Debug "Init and fetch nano firmware flasher repo"
 
 git clone --depth 1 https://github.com/nanoframework/nanoFirmwareFlasher nanoFirmwareFlasher
 Set-Location nanoFirmwareFlasher | Out-Null
