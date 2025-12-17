@@ -3194,6 +3194,31 @@ namespace nanoFramework.Tools.Debugger
                 int bytesDeployedCount = 0;
                 int deploymentOperationTotalSize = deploymentSize;
 
+                // start by checking if the content of the deployment region is the same as what we are about to deploy
+                bool needsDeployment = false;
+
+                foreach (DeploymentBlock block in blocksToDeploy)
+                {
+                    if (!PerformWriteMemoryCheck((uint)block.StartAddress, block.DeploymentData))
+                    {
+                        // content is different, we need to deploy
+                        needsDeployment = true;
+
+                        // no need to check further
+                        break;
+                    }
+                }
+
+                if (!needsDeployment)
+                {
+                    // all good, no need to deploy
+                    log?.Report("Deployment skipped, deployment region content is the same.");
+                    progress?.Report(new MessageWithProgress(""));
+
+                    // done here
+                    return true;
+                }
+
                 // compute progress information
                 int deploymentTotalSize = deploymentSize;
 
