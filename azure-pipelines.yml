@@ -71,10 +71,14 @@ steps:
     {
         # build NOT from PR
         Write-Host "Build NOT from PR, commit ID: $env:Build_SourceVersion"
-    
+
+        # compute authorization header in format "AUTHORIZATION: basic 'encoded token'"
+        # 'encoded token' is the Base64 of the string "nfbot:personal-token"
+        $auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$(GitHubToken)")))"
+
         # get PR associate with commit
         $prUrl = "https://api.github.com/repos/$env:Build_Repository_Name/commits/$env:Build_SourceVersion/pulls"
-        $commit = Invoke-RestMethod -Uri $prUrl -ContentType "application/json" -Headers @{"Accept"="application/vnd.github.groot-preview+json"} -Method GET
+        $commit = Invoke-RestMethod -Uri $prUrl -ContentType "application/json" -Header @{"Authorization"="$auth"} -Method GET
 
         if($commit -ne $null)
         {

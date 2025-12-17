@@ -165,7 +165,7 @@ else
 Set-Location "$env:Agent_TempDirectory" | Out-Null
 
 # clone repo and checkout main branch
-Write-Debug "Init and featch nf-Deployer repo"
+Write-Debug "Init and fetch nano firmware flasher repo"
 
 git clone --depth 1 https://github.com/nanoframework/nanoFirmwareFlasher nanoFirmwareFlasher
 Set-Location nanoFirmwareFlasher | Out-Null
