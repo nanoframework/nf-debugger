@@ -18,7 +18,12 @@ $newBranchName = "develop-nfbot/update-dependencies/" + [guid]::NewGuid().ToStri
 $packageTargetVersion = gh release view --json tagName --jq .tagName
 $packageTargetVersion = $packageTargetVersion -replace "^v"
 $packageName = "nanoframework.tools.debugger.net"
-$repoMainBranch = "main"
+$repoBranch = "main"
+
+if ($packageTargetVersion -match "preview") {
+    # switch to develop branch for preview versions
+    $repoBranch = "develop"
+}
 
 # working directory is agent temp directory
 Write-Debug "Changing working directory to $env:Agent_TempDirectory"
@@ -40,8 +45,8 @@ git config --global user.name nfbot
 git config --global user.email nanoframework@outlook.com
 git config --global core.autocrlf true
 
-Write-Host "Checkout $repoMainBranch branch..."
-git checkout --quiet $repoMainBranch | Out-Null
+Write-Host "Checkout $repoBranch branch..."
+git checkout --quiet $repoBranch | Out-Null
 
 # check if nuget package is already available from nuget.org
 $nugetApiUrl = "https://api.nuget.org/v3-flatcontainer/$packageName/index.json"
@@ -52,7 +57,19 @@ function Get-LatestNugetVersion {
     )
     try {
         $response = Invoke-RestMethod -Uri $url -Method Get
-        return $response.versions[-1]
+
+        if ($packageTargetVersion -match "preview") {
+            # Select only versions that include 'preview'
+            $versions = $response.versions | Where-Object { $_ -match "preview" }
+        }
+        else {
+            # Exclude any version that includes 'preview'
+            $versions = $response.versions | Where-Object { $_ -notmatch "preview" }
+        }
+
+        Write-Debug "Latest version found: $($versions[-1])"
+
+        return $versions[-1]
     }
     catch {
         throw "Error querying NuGet API: $_"
@@ -159,6 +176,12 @@ else
 #######################
 # nano firmware flasher
 
+#if this is a preview version, skip updating the firmware flasher
+if ($packageTargetVersion -match "preview") {
+    Write-Host "Preview version detected, skipping nano firmware flasher update."
+    exit 0
+}
+
 "**************************************************************************************" | Write-Host
 "Updating nanoFramework.Tools.Debugger.Net package in nano firmware flasher solution..." | Write-Host
 
@@ -174,8 +197,8 @@ git config --global user.name nfbot
 git config --global user.email nanoframework@outlook.com
 git config --global core.autocrlf true
 
-Write-Host "Checkout main branch..."
-git checkout --quiet main | Out-Null
+Write-Host "Checkout $repoBranch branch..."
+git checkout --quiet $repoBranch | Out-Null
 
 dotnet restore
 dotnet remove nanoFirmwareFlasher.Library/nanoFirmwareFlasher.Library.csproj package nanoFramework.Tools.Debugger.Net
