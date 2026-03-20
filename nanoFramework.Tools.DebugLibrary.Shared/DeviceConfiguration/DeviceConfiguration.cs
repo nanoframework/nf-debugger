@@ -148,7 +148,8 @@ namespace nanoFramework.Tools.Debugger
             {
                 if (address != null)
                 {
-                    var addressBytesReversed = address.GetAddressBytes().Reverse().ToArray();
+                    var addressBytes = address.GetAddressBytes();
+                    var addressBytesReversed = System.Linq.Enumerable.Reverse(addressBytes).ToArray();
 
                     return new uint[] { BitConverter.ToUInt32(addressBytesReversed, 0),
                                     BitConverter.ToUInt32(addressBytesReversed, 4),
