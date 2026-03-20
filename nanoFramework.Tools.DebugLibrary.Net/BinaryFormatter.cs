@@ -2218,12 +2218,9 @@ namespace nanoFramework.Tools.Debugger
         {
             try
             {
-                MemoryStream stream = new MemoryStream();
-                System.Runtime.Serialization.Formatters.Binary.BinaryFormatter bf = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                byte[] data = Encoding.UTF8.GetBytes(o?.ToString() ?? string.Empty);
 
-                bf.Serialize(stream, o);
-
-                SaveToFile(stream.ToArray(), pathPrefix, "orig", dt);
+                SaveToFile(data, pathPrefix, "orig", dt);
             }
             catch
             {
