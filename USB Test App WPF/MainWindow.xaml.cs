@@ -919,28 +919,29 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             (sender as Button).IsEnabled = true;
         }
 
-        private void ReScanDevices_Click(object sender, RoutedEventArgs e)
+        private async void ReScanDevices_Click(object sender, RoutedEventArgs e)
         {
-            // disable button
-            (sender as Button).IsEnabled = false;
+            var button = (Button)sender;
+            button.IsEnabled = false;
 
-            Task.Run(delegate
+            // Capture the client reference on the UI thread before handing off to the background thread.
+            // DataContext is a DependencyObject property that must only be accessed from the UI thread.
+            PortBase debugClient = (DataContext as MainViewModel).SerialDebugService.SerialDebugClient;
+
+            try
             {
-                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                debugClient.ReScanDevices();
+
+                // Wait for enumeration to complete without blocking the UI thread.
+                while (!debugClient.IsDevicesEnumerationComplete)
                 {
-                    (DataContext as MainViewModel).SerialDebugService.SerialDebugClient.ReScanDevices();
-
-                    // need to wait for devices enumeration to complete
-                    while (!(DataContext as MainViewModel).SerialDebugService.SerialDebugClient.IsDevicesEnumerationComplete)
-                    {
-                        Thread.Sleep(100);
-                    }
-
-                    // enable button
-                    (sender as Button).IsEnabled = true;
-                }));
-
-            });
+                    await Task.Delay(100);
+                }
+            }
+            finally
+            {
+                button.IsEnabled = true;
+            }
         }
 
         private void ReadTestButton_Click(object sender, RoutedEventArgs e)
