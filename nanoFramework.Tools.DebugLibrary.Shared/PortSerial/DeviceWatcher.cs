@@ -83,16 +83,28 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             if (!_started)
             {
-                _threadWatch = new Thread(() =>
+                try
                 {
-                    StartWatcher(portsToExclude ?? []);
-                })
-                {
-                    IsBackground = true,
-                    Priority = ThreadPriority.Lowest
-                };
+                    _threadWatch = new Thread(() =>
+                    {
+                        StartWatcher(portsToExclude ?? []);
+                    })
+                    {
+                        IsBackground = true,
+                        Priority = ThreadPriority.Lowest
+                    };
 
-                _threadWatch.Start();
+                    _threadWatch.Start();
+
+                    // Set only after the thread has been successfully started
+                    // so Start() can be retried if thread creation or start throws.
+                    _started = true;
+                }
+                catch
+                {
+                    _threadWatch = null;
+                    throw;
+                }
             }
         }
 
@@ -101,8 +113,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             _ownerManager.OnLogMessageAvailable($"PortSerial device watcher started @ Thread {_threadWatch.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
 
             _ports = [];
-
-            _started = true;
 
             #region Support for the AllNewDevicesAdded event
             object allNewDevicesLock = new object();
@@ -186,15 +196,24 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 if (PortSerialManager.GetRegisteredDevice(port) is null)
                                 {
                                     bool isOneOfAllNewDevices = true;
+                                    bool shouldRaiseAllNewDevicesAdded = false;
                                     lock (allNewDevicesLock)
                                     {
-                                        if (raiseAllNewDevicesAdded)
+                                        if (raiseAllNewDevicesAdded && allNewDevicesCandidateCount == 0)
                                         {
-                                            allNewDevicesCandidateCount++;
+                                            raiseAllNewDevicesAdded = false;
+                                            shouldRaiseAllNewDevicesAdded = true;
                                         }
-                                        else
+                                    }
+                                    if (shouldRaiseAllNewDevicesAdded)
+                                    {
+                                        try
                                         {
-                                            isOneOfAllNewDevices = false;
+                                            AllNewDevicesAdded?.Invoke(this);
+                                        }
+                                        catch
+                                        {
+                                            // The device watcher must continue
                                         }
                                     }
 
@@ -247,6 +266,27 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             }
                         }
                     }
+
+                    // If no new device candidates were queued during this first scan pass (either because
+                    // there are no ports at all, or all visible ports are already registered), the
+                    // UpdateAllNewDevices callback will never be called and AllNewDevicesAdded would
+                    // never fire. Fire it explicitly here to unblock enumeration completion.
+                    lock (allNewDevicesLock)
+                    {
+                        if (raiseAllNewDevicesAdded && allNewDevicesCandidateCount == 0)
+                        {
+                            raiseAllNewDevicesAdded = false;
+                            try
+                            {
+                                AllNewDevicesAdded?.Invoke(this);
+                            }
+                            catch
+                            {
+                                // The device watcher must continue
+                            }
+                        }
+                    }
+
                     Thread.Sleep(200);
                 }
 #if DEBUG
