@@ -109,13 +109,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         private void StartDeviceWatchersInternal()
         {
-            // Start all device watchers
+            // Reset flag before starting the watcher so it is already false
+            // when the new watcher thread begins.
+            IsDevicesEnumerationComplete = false;
 
             _deviceWatcher.Start(PortExclusionList);
 
             _watchersStarted = true;
-
-            IsDevicesEnumerationComplete = false;
         }
 
         /// <summary>
