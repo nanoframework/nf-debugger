@@ -633,6 +633,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 int length,
                 int offset = 0)
             {
+                DataLength = (uint)length;
+
                 // add file name to data buffer
                 PrepareForSend();
 
@@ -657,12 +659,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             {
                 // add the file name to the data buffer
                 Data = Encoding.UTF8.GetBytes(FileName);
+                int fileNameByteCount = Data.Length;
 
                 // add room for \0 terminator
-                Array.Resize(ref Data, FileName.Length + 1);
+                Array.Resize(ref Data, fileNameByteCount + 1);
 
                 // add terminator
-                Data[FileName.Length] = 0;
+                Data[fileNameByteCount] = 0;
             }
 
             //////////////////////////////////////////////////////////////////////////////////////
