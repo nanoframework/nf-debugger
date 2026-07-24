@@ -124,7 +124,20 @@ steps:
   condition: eq( variables['StartReleaseCandidate'], true )
   displayName: NBGV prepare release
 
-- task: SonarCloudPrepare@2
+- task: JavaToolInstaller@1
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
+    )
+  displayName: Set Java 21 for SonarCloud analysis
+  inputs:
+    versionSpec: '21'
+    jdkArchitectureOption: 'x64'
+    jdkSourceOption: 'PreInstalled'
+
+- task: SonarCloudPrepare@4
   condition: >-
     and(
       ne(variables['StartReleaseCandidate'], true),
@@ -134,7 +147,7 @@ steps:
   inputs:
     SonarCloud: 'sonarcloud-debugger'
     organization: 'nanoframework'
-    scannerMode: 'MSBuild'
+    scannerMode: 'dotnet'
     projectKey: 'nanoframework_nf-debugger'
 
 - template: azure-pipelines-templates/install-nuget.yml@templates
@@ -168,7 +181,7 @@ steps:
 #     platform: '$(buildPlatform)'
 #     configuration: '$(buildConfiguration)'
 
-- task: SonarCloudAnalyze@2
+- task: SonarCloudAnalyze@4
   condition: >-
     and(
       succeeded(),
@@ -177,7 +190,7 @@ steps:
     )
   displayName: 'Run Code Analysis'
 
-- task: SonarCloudPublish@2
+- task: SonarCloudPublish@4
   condition: >-
     and(
       succeeded(),
