@@ -71,10 +71,8 @@ steps:
     {
         # build NOT from PR
         Write-Host "Build NOT from PR, commit ID: $env:Build_SourceVersion"
-
-        # compute authorization header in format "AUTHORIZATION: basic 'encoded token'"
-        # 'encoded token' is the Base64 of the string "nfbot:personal-token"
-        $auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$(GitHubToken)")))"
+    
+        $auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":$(GitHubToken)")))"
 
         # get PR associate with commit
         $prUrl = "https://api.github.com/repos/$env:Build_Repository_Name/commits/$env:Build_SourceVersion/pulls"
@@ -267,24 +265,6 @@ steps:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: deployables
     ArtifactType: Container
-
-# push NuGet packages to Azure Artifacts feed (always happens except on PR builds)
-- task: NuGetCommand@2
-  condition: >-
-    and(
-      succeeded(),
-      eq(variables['System.PullRequest.PullRequestId'], ''),
-      ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true')
-    )
-  displayName: Push NuGet packages to Azure Artifacts
-  inputs:
-    command: push
-    nuGetFeedType: external
-    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
-    publishFeedCredentials: 'AzureArtifacts-debugger'
-    includeSymbols: true
-    allowPackageConflicts: true
 
 # push NuGet class lib package to NuGet (always happens except on PR builds)
 - task: NuGetCommand@2
