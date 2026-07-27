@@ -1,4 +1,4 @@
-//
+﻿//
 // Copyright (c) .NET Foundation and Contributors
 // Portions Copyright (c) Microsoft Corporation.  All rights reserved.
 // See LICENSE file in the project root for full license information.
@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
@@ -586,11 +587,6 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public string FileName = string.Empty;
 
             /// <summary>
-            /// Length of the name of the file to be used in the operation.
-            /// </summary>
-            public uint NameLength = 0;
-
-            /// <summary>
             /// Length of the data to be used in the operation.
             /// </summary>
             public uint DataLength = 0;
@@ -629,34 +625,47 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             /// <summary>
             /// Prepare for sending a storage operation to the target device.
             /// </summary>
-            /// <param name="buffer">Data buffer to be sent to the device.</param>
-            /// <param name="offset">Offset in the <paramref name="buffer"/> to start copying data from.</param>
-            /// <param name="length">Length of the data to be copied from the <paramref name="buffer"/>.</param>
+            /// <param name="data">Data buffer to be sent to the device.</param>
+            /// <param name="offset">Offset in the <paramref name="data"/> to start copying data from.</param>
+            /// <param name="length">Length of the data to be copied from the <paramref name="data"/>.</param>
             public override bool PrepareForSend(
-                byte[] buffer,
+                byte[] data,
                 int length,
                 int offset = 0)
             {
-                // setup the data payload
                 DataLength = (uint)length;
-                Data = new byte[length + FileName.Length];
 
-                // add the file name to the data property buffer
-                var tempName = Encoding.UTF8.GetBytes(FileName);
-                NameLength = (uint)tempName.Length;
-                Array.Copy(tempName, 0, Data, 0, NameLength);
+                // add file name to data buffer
+                PrepareForSend();
 
-                // copy the buffer data to the data property buffer
-                Array.Copy(buffer, offset, Data, NameLength, length);
+                // store file data start position
+                int fileDataStart = Data.Length;
+
+                // resize to add file data
+                Array.Resize(ref Data, Data.Length + length);
+
+                // copy the buffer data to the data buffer
+                Array.Copy(
+                    data,
+                    offset,
+                    Data,
+                    fileDataStart,
+                    length);
 
                 return true;
             }
 
             internal void PrepareForSend()
             {
-                // add the file name to the data property buffer
+                // add the file name to the data buffer
                 Data = Encoding.UTF8.GetBytes(FileName);
-                NameLength = (uint)FileName.Length;
+                int fileNameByteCount = Data.Length;
+
+                // add room for \0 terminator
+                Array.Resize(ref Data, fileNameByteCount + 1);
+
+                // add terminator
+                Data[fileNameByteCount] = 0;
             }
 
             //////////////////////////////////////////////////////////////////////////////////////
