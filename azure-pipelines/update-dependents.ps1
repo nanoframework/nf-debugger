@@ -7,18 +7,29 @@
 # 'encoded token' is the Base64 of the string "nfbot:personal-token"
 $auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("nfbot:$env:GITHUB_TOKEN")))"
 
-# because it can take sometime for the package to become available on the NuGet providers
-# need to hang here for 1 minutes (1 * 60)
-"Waiting 1 minute to let package process flow in Azure Artifacts feed..." | Write-Host
-Start-Sleep -Seconds 60 
-
 # init/reset these
 $prTitle = ""
 $newBranchName = "develop-nfbot/update-dependencies/" + [guid]::NewGuid().ToString()
-$packageTargetVersion = gh release view --json tagName --jq .tagName
-$packageTargetVersion = $packageTargetVersion -replace "^v"
 $packageName = "nanoframework.tools.debugger.net"
 $repoBranch = "main"
+
+# resolve target version: prefer explicit TARGET_VERSION env var, fall back to the build tag
+if (![string]::IsNullOrEmpty($env:TARGET_VERSION)) {
+    $packageTargetVersion = $env:TARGET_VERSION
+    Write-Host "Using TARGET_VERSION from environment: $packageTargetVersion"
+}
+else {
+    $packageTargetVersion = $env:Build_SourceBranch
+
+    # check if this is running from a checked out tag
+    if ($packageTargetVersion -notlike "refs/tags/*") {
+        throw "ERROR: Branch name is not a tag and TARGET_VERSION is not set! Either set TARGET_VERSION or checkout a tag before calling."
+    }
+
+    # extract version from ref (refs/tags/v1.2.3)
+    $packageTargetVersion = $packageTargetVersion -replace "refs/tags/", ""
+    $packageTargetVersion = $packageTargetVersion -replace "^v"
+}
 
 if ($packageTargetVersion -match "preview") {
     # switch to develop branch for preview versions
@@ -38,15 +49,19 @@ Write-Debug "Init and featch nf-Visual-Studio-extension repo"
 "********************************************************************************" | Write-Host
 "Updating nanoFramework.Tools.Debugger.Net package in VS2019 & VS2022 solution..." | Write-Host
 
-git clone --depth 1 https://github.com/nanoframework/nf-Visual-Studio-extension repo
+git clone --depth 1 --branch $repoBranch https://github.com/nanoframework/nf-Visual-Studio-extension repo
+
+if ($LASTEXITCODE -ne 0) {
+    throw "ERROR: Failed to clone branch '$repoBranch' from nf-Visual-Studio-extension."
+}
+
 Set-Location repo | Out-Null
 git config --global gc.auto 0
 git config --global user.name nfbot
 git config --global user.email nanoframework@outlook.com
 git config --global core.autocrlf true
 
-Write-Host "Checkout $repoBranch branch..."
-git checkout --quiet $repoBranch | Out-Null
+Write-Host "Checked out $repoBranch branch."
 
 # check if nuget package is already available from nuget.org
 $nugetApiUrl = "https://api.nuget.org/v3-flatcontainer/$packageName/index.json"
@@ -75,6 +90,8 @@ function Get-LatestNugetVersion {
         throw "Error querying NuGet API: $_"
     }
 }
+
+Write-Host "Target version is: $packageTargetVersion."
 
 $latestNugetVersion = Get-LatestNugetVersion -url $nugetApiUrl
 
@@ -135,9 +152,9 @@ if ($repoStatus -ne "")
     git -c http.extraheader="AUTHORIZATION: $auth" push --set-upstream origin $newBranchName > $null
 
     # start PR
-    # we are pointing to the $repoMainBranch 
-    # considering that the base branch can be changed at the PR ther is no big deal about this 
-    $prRequestBody = @{title="$prTitle";body="$commitMessage";head="$newBranchName";base="$repoMainBranch"} | ConvertTo-Json
+    # we are pointing to the selected repo branch
+    # considering that the base branch can be changed at the PR there is no big deal about this
+    $prRequestBody = @{title="$prTitle";body="$commitMessage";head="$newBranchName";base="$repoBranch"} | ConvertTo-Json
     $githubApiEndpoint = "https://api.github.com/repos/nanoframework/nf-Visual-Studio-extension/pulls"
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
