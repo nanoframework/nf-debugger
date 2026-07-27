@@ -216,6 +216,8 @@ dotnet remove nanoFirmwareFlasher.Library/nanoFirmwareFlasher.Library.csproj pac
 dotnet add nanoFirmwareFlasher.Library/nanoFirmwareFlasher.Library.csproj package nanoFramework.Tools.Debugger.Net --version $packageTargetVersion --no-restore 
 dotnet remove nanoFirmwareFlasher.Tool/nanoFirmwareFlasher.Tool.csproj package nanoFramework.Tools.Debugger.Net
 dotnet add nanoFirmwareFlasher.Tool/nanoFirmwareFlasher.Tool.csproj package nanoFramework.Tools.Debugger.Net --version $packageTargetVersion --no-restore 
+dotnet remove nanoFirmwareFlasher.Tests/nanoFirmwareFlasher.Tests.csproj package nanoFramework.Tools.Debugger.Net
+dotnet add nanoFirmwareFlasher.Tests/nanoFirmwareFlasher.Tests.csproj package nanoFramework.Tools.Debugger.Net --version $packageTargetVersion --no-restore 
 dotnet restore --force-evaluate
 
 "Bumping nanoFramework.Tools.Debugger to v$packageTargetVersion." | Write-Host -ForegroundColor Cyan                
