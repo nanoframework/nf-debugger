@@ -83,7 +83,10 @@ namespace nanoFramework.Tools.Debugger
 
                         byte[] data = m_eng.CreateConverter().Serialize(valToSerialize);
 
-                        m_value = SetBlock(m_handle.m_dt, data);
+                        if (SetBlock(m_handle.m_dt, data))
+                        {
+                            m_value = value;
+                        }
                     }
                 }
             }
