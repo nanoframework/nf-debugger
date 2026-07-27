@@ -72,9 +72,11 @@ steps:
         # build NOT from PR
         Write-Host "Build NOT from PR, commit ID: $env:Build_SourceVersion"
     
+        $auth = "basic $([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":$(GitHubToken)")))"
+
         # get PR associate with commit
         $prUrl = "https://api.github.com/repos/$env:Build_Repository_Name/commits/$env:Build_SourceVersion/pulls"
-        $commit = Invoke-RestMethod -Uri $prUrl -ContentType "application/json" -Headers @{"Accept"="application/vnd.github.groot-preview+json"} -Method GET
+        $commit = Invoke-RestMethod -Uri $prUrl -ContentType "application/json" -Header @{"Authorization"="$auth"} -Method GET
 
         if($commit -ne $null)
         {
@@ -263,24 +265,6 @@ steps:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: deployables
     ArtifactType: Container
-
-# push NuGet packages to Azure Artifacts feed (always happens except on PR builds)
-- task: NuGetCommand@2
-  condition: >-
-    and(
-      succeeded(),
-      eq(variables['System.PullRequest.PullRequestId'], ''),
-      ne(variables['StartReleaseCandidate'], true),
-      ne(variables['UPDATE_DEPENDENTS'], 'true')
-    )
-  displayName: Push NuGet packages to Azure Artifacts
-  inputs:
-    command: push
-    nuGetFeedType: external
-    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
-    publishFeedCredentials: 'AzureArtifacts-debugger'
-    includeSymbols: true
-    allowPackageConflicts: true
 
 # push NuGet class lib package to NuGet (always happens except on PR builds)
 - task: NuGetCommand@2
