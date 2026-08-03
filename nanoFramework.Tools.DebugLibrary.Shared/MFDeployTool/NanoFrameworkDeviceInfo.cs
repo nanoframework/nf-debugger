@@ -249,7 +249,7 @@ namespace nanoFramework.Tools.Debugger
                     {
                         output.AppendLine($"  nanoBooter: v{Dbg.TargetInfo.BooterVersion}");
                     }
-                    output.AppendLine("  IFU capable: " + (Dbg.IsIFUCapable ? "YES" : "NO"));
+                    output.AppendLine("  Has MCUboot: " + (Dbg.HasMCUboot ? "YES" : "NO"));
                     output.AppendLine("  Has proprietary bootloader: " + (Dbg.HasProprietaryBooter ? "YES" : "NO"));
 
                     output.AppendLine();

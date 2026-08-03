@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -153,9 +154,15 @@ namespace nanoFramework.Tools.Debugger
         public bool HasNanoBooter { get; private set; }
 
         /// <summary>
-        ///  This indicates if the target device is IFU capable.
+        /// This indicates if the target device uses MCUboot as its bootloader.
         /// </summary>
-        public bool IsIFUCapable { get; private set; }
+        public bool HasMCUboot { get; private set; }
+
+        /// <summary>
+        /// The size, in bytes, of the MCUboot image header reserved at the start of each image
+        /// slot on this device. Only meaningful when <see cref="HasMCUboot"/> is <see langword="true"/>.
+        /// </summary>
+        public uint McubootHeaderSize { get; private set; }
 
         public bool IsConnected { get; internal set; }
 
@@ -286,7 +293,30 @@ namespace nanoFramework.Tools.Debugger
 
                         HasNanoBooter = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasNanoBooter);
 
-                        IsIFUCapable = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable).Equals(Commands.Monitor_Ping.Monitor_Ping_c_IFUCapable);
+                        HasMCUboot = (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HasMCUboot).Equals(Commands.Monitor_Ping.Monitor_Ping_c_HasMCUboot);
+
+                        if (HasMCUboot)
+                        {
+                            switch (reply.Flags & Commands.Monitor_Ping.Monitor_Ping_c_HeaderSize_Position)
+                            {
+                                case Commands.Monitor_Ping.Monitor_Ping_c_HeaderSize_0x200:
+                                    McubootHeaderSize = 0x200;
+                                    break;
+                                case Commands.Monitor_Ping.Monitor_Ping_c_HeaderSize_0x400:
+                                    McubootHeaderSize = 0x400;
+                                    break;
+                                case Commands.Monitor_Ping.Monitor_Ping_c_HeaderSize_0x800:
+                                    McubootHeaderSize = 0x800;
+                                    break;
+                                case Commands.Monitor_Ping.Monitor_Ping_c_HeaderSize_0x1000:
+                                    McubootHeaderSize = 0x1000;
+                                    break;
+
+                                default:
+                                    // unrecognized/unreported header size: can't safely compose MCUboot images
+                                    throw new NotSupportedException("MCUboot image header size reported by target device is not supported.");
+                            }
+                        }
 
 
                         // update flag
@@ -3094,6 +3124,96 @@ namespace nanoFramework.Tools.Debugger
             return reply != null && reply.IsPositiveAcknowledge();
         }
 
+        // MCUboot image_header / TLV constants used to compose a deployment image below.
+        // See struct image_header / image_tlv_info / image_tlv in
+        // boot/bootutil/include/bootutil/image.h (mcu-tools/mcuboot). All fields are little endian,
+        // regardless of target byte order - this is the on-the-wire MCUboot image format, not
+        // target-native data.
+        private const uint McubootImageMagic = 0x96f3b83d;
+        private const ushort McubootTlvInfoMagic = 0x6907;
+        private const ushort McubootTlvTypeSha256 = 0x10;
+        private const int McubootImageHeaderStructSize = 32;
+
+        private static void WriteUInt16LE(byte[] buffer, int offset, ushort value)
+        {
+            buffer[offset] = (byte)value;
+            buffer[offset + 1] = (byte)(value >> 8);
+        }
+
+        private static void WriteUInt32LE(byte[] buffer, int offset, uint value)
+        {
+            buffer[offset] = (byte)value;
+            buffer[offset + 1] = (byte)(value >> 8);
+            buffer[offset + 2] = (byte)(value >> 16);
+            buffer[offset + 3] = (byte)(value >> 24);
+        }
+
+        /// <summary>
+        /// Builds an MCUboot <c>image_header</c>, padded with the erased-flash value (0xFF) up to
+        /// <paramref name="headerSize"/> bytes, matching what <c>imgtool sign --pad-header</c> produces.
+        /// <c>ih_load_addr</c>, <c>ih_flags</c> and <c>ih_ver</c> are left zeroed: this image is never
+        /// loaded to a fixed address and deployment images aren't independently versioned.
+        /// </summary>
+        private static byte[] BuildMcubootImageHeader(uint headerSize, uint imageSize)
+        {
+            byte[] header = new byte[headerSize];
+
+            for (int i = McubootImageHeaderStructSize; i < header.Length; i++)
+            {
+                header[i] = 0xFF;
+            }
+
+            WriteUInt32LE(header, 0, McubootImageMagic);           // ih_magic
+            WriteUInt16LE(header, 8, (ushort)headerSize);          // ih_hdr_size
+            WriteUInt32LE(header, 12, imageSize);                  // ih_img_size
+
+            return header;
+        }
+
+        /// <summary>
+        /// Builds the unprotected TLV area MCUboot expects right after the image payload: a
+        /// <c>image_tlv_info</c> header followed by a single SHA256 TLV, hashed over the header and
+        /// the image payload exactly like <c>bootutil_img_hash()</c> does on the device.
+        /// </summary>
+        private static byte[] BuildMcubootTlvFooter(byte[] header, List<byte[]> assemblies)
+        {
+            byte[] hash;
+
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                if (assemblies.Count == 0)
+                {
+                    hash = sha256.ComputeHash(header);
+                }
+                else
+                {
+                    sha256.TransformBlock(header, 0, header.Length, null, 0);
+
+                    for (int i = 0; i < assemblies.Count - 1; i++)
+                    {
+                        byte[] assembly = assemblies[i];
+                        sha256.TransformBlock(assembly, 0, assembly.Length, null, 0);
+                    }
+
+                    byte[] lastAssembly = assemblies[assemblies.Count - 1];
+                    sha256.TransformFinalBlock(lastAssembly, 0, lastAssembly.Length);
+
+                    hash = sha256.Hash;
+                }
+            }
+
+            // image_tlv_info (4 bytes) + image_tlv (4 bytes) + SHA256 hash
+            byte[] footer = new byte[4 + 4 + hash.Length];
+
+            WriteUInt16LE(footer, 0, McubootTlvInfoMagic);         // it_magic
+            WriteUInt16LE(footer, 2, (ushort)footer.Length);       // it_tlv_tot
+            WriteUInt16LE(footer, 4, McubootTlvTypeSha256);        // it_type
+            WriteUInt16LE(footer, 6, (ushort)hash.Length);         // it_len
+            Array.Copy(hash, 0, footer, 8, hash.Length);
+
+            return footer;
+        }
+
         private bool DeploymentExecuteIncremental(
             List<byte[]> assemblies,
             bool skipErase = false,
@@ -3103,11 +3223,24 @@ namespace nanoFramework.Tools.Debugger
             // check if we do have the map
             if (FlashSectorMap.Count != 0)
             {
-                // total size of assemblies to deploy 
-                int deployLength = assemblies.Sum(a => a.Length);
+                List<byte[]> chunksToWrite = assemblies;
+
+                if (HasMCUboot)
+                {
+                    // MCUboot targets required a specific layout (header + payload + TLV footer)
+                    byte[] mcubootHeader = BuildMcubootImageHeader(McubootHeaderSize, (uint)assemblies.Sum(a => a.Length));
+                    byte[] mcubootTlvFooter = BuildMcubootTlvFooter(mcubootHeader, assemblies);
+
+                    chunksToWrite = new List<byte[]> { mcubootHeader };
+                    chunksToWrite.AddRange(assemblies);
+                    chunksToWrite.Add(mcubootTlvFooter);
+                }
+
+                // total size of the data to deploy
+                int deployLength = chunksToWrite.Sum(a => a.Length);
 
                 // build the deployment blob from the flash sector map
-                // apply a filter so that we take only the blocks flag for deployment 
+                // apply a filter so that we take only the blocks flag for deployment
                 List<DeploymentSector> deploymentBlob = FlashSectorMap.Where(s => (s.Flags
                                                                                    & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_DEPLOYMENT)
                                                                       .Select(s => s.ToDeploymentSector())
@@ -3125,21 +3258,21 @@ namespace nanoFramework.Tools.Debugger
                     return false;
                 }
 
-                while (assemblies.Count > 0)
+                while (chunksToWrite.Count > 0)
                 {
                     //
-                    // Only word-aligned assemblies are allowed.
+                    // Only word-aligned chunks are allowed.
                     //
-                    if (assemblies.First().Length % 4 != 0)
+                    if (chunksToWrite.First().Length % 4 != 0)
                     {
-                        log?.Report($"It's only possible to deploy word aligned assemblies. Failed to deploy assembly with {assemblies.First().Length} bytes.");
+                        log?.Report($"It's only possible to deploy word aligned assemblies. Failed to deploy assembly with {chunksToWrite.First().Length} bytes.");
                         progress?.Report(new MessageWithProgress(""));
 
                         return false;
                     }
 
                     // setup counters
-                    int remainingBytes = assemblies.First().Length;
+                    int remainingBytes = chunksToWrite.First().Length;
                     int currentPosition = 0;
 
                     // find first block with available space
@@ -3160,7 +3293,7 @@ namespace nanoFramework.Tools.Debugger
 
                             byte[] tempBuffer = new byte[bytesToCopy];
 
-                            Array.Copy(assemblies.First(), tempBuffer, bytesToCopy);
+                            Array.Copy(chunksToWrite.First(), tempBuffer, bytesToCopy);
                             sector.DeploymentData = tempBuffer;
 
                             remainingBytes -= bytesToCopy;
@@ -3170,8 +3303,8 @@ namespace nanoFramework.Tools.Debugger
 
                     if (remainingBytes == 0)
                     {
-                        // assembly fully stored for deployment, remove it from the list
-                        assemblies.RemoveAt(0);
+                        // chunk fully stored for deployment, remove it from the list
+                        chunksToWrite.RemoveAt(0);
                     }
                     else
                     {

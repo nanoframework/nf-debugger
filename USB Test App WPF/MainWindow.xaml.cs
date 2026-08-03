@@ -132,8 +132,8 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
                 Debug.WriteLine("Device capabilities:");
 
-                Debug.Write("IFU capable: ");
-                if (device.IsIFUCapable)
+                Debug.Write("Has MCUboot: ");
+                if (device.HasMCUboot)
                 {
                     Debug.WriteLine("YES");
                 }
