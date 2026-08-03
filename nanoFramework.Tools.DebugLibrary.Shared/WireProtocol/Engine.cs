@@ -314,7 +314,7 @@ namespace nanoFramework.Tools.Debugger
 
                                 default:
                                     // unrecognized/unreported header size: can't safely compose MCUboot images
-                                    throw new NotSupportedException("MCUboot image header size reported by target device is not supported.");
+                                    goto connect_failed;
                             }
                         }
 
@@ -3223,7 +3223,7 @@ namespace nanoFramework.Tools.Debugger
             // check if we do have the map
             if (FlashSectorMap.Count != 0)
             {
-                List<byte[]> chunksToWrite = assemblies;
+                List<byte[]> chunksToWrite = new List<byte[]>(assemblies);
 
                 if (HasMCUboot)
                 {
