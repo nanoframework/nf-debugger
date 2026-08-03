@@ -204,9 +204,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint Monitor_Ping_c_HasProprietaryBooter = 0x00010000;
 
             /// <summary>
-            /// This flag indicates that the target device is IFU capable.
+            /// This flag indicates that the device uses MCUboot as its bootloader.
             /// </summary>
-            public const uint Monitor_Ping_c_IFUCapable = 0x00020000;
+            public const uint Monitor_Ping_c_HasMCUboot = 0x00020000;
 
             /// <summary>
             /// This flag indicates that the device requires that the configuration block to be erased before updating it.
@@ -217,6 +217,13 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             /// This flag indicates that the device has nanoBooter.
             /// </summary>
             public const uint Monitor_Ping_c_HasNanoBooter = 0x00080000;
+
+            // MCUboot image header size (4th position), only meaningful together with Monitor_Ping_c_HasMCUboot.
+            public const uint Monitor_Ping_c_HeaderSize_Position = 0x00700000;
+            public const uint Monitor_Ping_c_HeaderSize_0x200 = 0x00100000;
+            public const uint Monitor_Ping_c_HeaderSize_0x400 = 0x00200000;
+            public const uint Monitor_Ping_c_HeaderSize_0x800 = 0x00300000;
+            public const uint Monitor_Ping_c_HeaderSize_0x1000 = 0x00400000;
 
             ///////////////////////////////////////////////////////////////////////
 

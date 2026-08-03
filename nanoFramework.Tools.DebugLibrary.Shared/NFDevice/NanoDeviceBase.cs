@@ -115,9 +115,9 @@ namespace nanoFramework.Tools.Debugger
         public bool HasNanoBooter => DebugEngine != null && DebugEngine.HasNanoBooter;
 
         /// <summary>
-        /// This indicates if the target device is IFU capable.
+        /// This indicates if the target device uses MCUboot as its bootloader.
         /// </summary>
-        public bool IsIFUCapable => DebugEngine != null && DebugEngine.IsIFUCapable;
+        public bool HasMCUboot => DebugEngine != null && DebugEngine.HasMCUboot;
 
         private readonly object m_serverCert = null;
         private readonly Dictionary<uint, string> m_execSrecHash = new Dictionary<uint, string>();
