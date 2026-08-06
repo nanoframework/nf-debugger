@@ -730,13 +730,24 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
             try
             {
-                var images = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetImageInfo();
+                var debugEngine = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine;
 
-                Debug.WriteLine("");
-                Debug.WriteLine("");
-                Debug.WriteLine(images.ToStringForOutput());
-                Debug.WriteLine("");
-                Debug.WriteLine("");
+                if (!debugEngine.HasMCUboot)
+                {
+                    Debug.WriteLine("");
+                    Debug.WriteLine("Target device doesn't support MCUboot images.");
+                    Debug.WriteLine("");
+                }
+                else
+                {
+                    var images = debugEngine.GetImageInfo();
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine(images.ToStringForOutput());
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                }
             }
             catch
             {
@@ -754,13 +765,24 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
             try
             {
-                var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.EraseImage((uint)MonitorImageIndex.Clr, (uint)MonitorImageSlot.Secondary);
+                var debugEngine = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine;
 
-                Debug.WriteLine("");
-                Debug.WriteLine("");
-                Debug.WriteLine($"Erase CLR update (image 0, secondary slot): {(result.Success ? "SUCCESS" : "FAILED")} - {result.ErrorCode}");
-                Debug.WriteLine("");
-                Debug.WriteLine("");
+                if (!debugEngine.HasMCUboot)
+                {
+                    Debug.WriteLine("");
+                    Debug.WriteLine("Target device doesn't support MCUboot images.");
+                    Debug.WriteLine("");
+                }
+                else
+                {
+                    var result = debugEngine.EraseImage((uint)MonitorImageIndex.Clr, (uint)MonitorImageSlot.Secondary);
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"Erase CLR update (image 0, secondary slot): {(result.Success ? "SUCCESS" : "FAILED")} - {result.ErrorCode}");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                }
             }
             catch
             {
@@ -778,13 +800,24 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 
             try
             {
-                var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.EraseImage((uint)MonitorImageIndex.Deployment, (uint)MonitorImageSlot.Secondary);
+                var debugEngine = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine;
 
-                Debug.WriteLine("");
-                Debug.WriteLine("");
-                Debug.WriteLine($"Erase Deployment update (image 1, secondary slot): {(result.Success ? "SUCCESS" : "FAILED")} - {result.ErrorCode}");
-                Debug.WriteLine("");
-                Debug.WriteLine("");
+                if (!debugEngine.HasMCUboot)
+                {
+                    Debug.WriteLine("");
+                    Debug.WriteLine("Target device doesn't support MCUboot images.");
+                    Debug.WriteLine("");
+                }
+                else
+                {
+                    var result = debugEngine.EraseImage((uint)MonitorImageIndex.Deployment, (uint)MonitorImageSlot.Secondary);
+
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"Erase Deployment update (image 1, secondary slot): {(result.Success ? "SUCCESS" : "FAILED")} - {result.ErrorCode}");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                }
             }
             catch
             {

@@ -1876,6 +1876,14 @@ namespace nanoFramework.Tools.Debugger
                     return MonitorImageErrorCode.Write;
                 }
 
+                if (!reply.IsPositiveAcknowledge())
+                {
+                    progress?.Report(new MessageWithProgress(""));
+                    log?.Report($"Error writing image data @ offset {position}. Negative acknowledgment from nanoDevice.");
+
+                    return MonitorImageErrorCode.Write;
+                }
+
                 result = (MonitorImageErrorCode)cmdReply.ErrorCode;
 
                 if (result != MonitorImageErrorCode.Success)
@@ -1886,8 +1894,18 @@ namespace nanoFramework.Tools.Debugger
                     return result;
                 }
 
-                count -= packetLength;
-                position = (int)cmdReply.NextOffset;
+                int nextPosition = (int)cmdReply.NextOffset;
+
+                if (nextPosition <= position || nextPosition > imageData.Length)
+                {
+                    progress?.Report(new MessageWithProgress(""));
+                    log?.Report($"Error writing image data @ offset {position}. Invalid next offset {nextPosition} reported by nanoDevice.");
+
+                    return MonitorImageErrorCode.Write;
+                }
+
+                position = nextPosition;
+                count = imageData.Length - position;
             }
 
             progress?.Report(new MessageWithProgress(""));
@@ -1910,7 +1928,9 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null && reply.Payload is Commands.Monitor_ImageConfirm.Reply cmdReply)
             {
-                return ((MonitorImageErrorCode)cmdReply.ErrorCode, reply.IsPositiveAcknowledge());
+                MonitorImageErrorCode errorCode = (MonitorImageErrorCode)cmdReply.ErrorCode;
+
+                return (errorCode, reply.IsPositiveAcknowledge() && errorCode == MonitorImageErrorCode.Success);
             }
 
             return (MonitorImageErrorCode.Confirm, false);
@@ -1932,7 +1952,9 @@ namespace nanoFramework.Tools.Debugger
 
             if (reply != null && reply.Payload is Commands.Monitor_ImageErase.Reply cmdReply)
             {
-                return ((MonitorImageErrorCode)cmdReply.ErrorCode, reply.IsPositiveAcknowledge());
+                MonitorImageErrorCode errorCode = (MonitorImageErrorCode)cmdReply.ErrorCode;
+
+                return (errorCode, reply.IsPositiveAcknowledge() && errorCode == MonitorImageErrorCode.Success);
             }
 
             return (MonitorImageErrorCode.Erase, false);
