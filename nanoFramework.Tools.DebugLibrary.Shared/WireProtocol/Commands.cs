@@ -81,6 +81,139 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         NotSupported = 0xFFFF,
     }
 
+    /// <summary>
+    /// Image indexes used by the IFU (In-Field Update) image commands.
+    /// </summary>
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    // NEED TO KEEP THESE IN SYNC WITH the image index convention in native Debugger.cpp/WireProtocol_MonitorCommands.h //
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    public enum MonitorImageIndex : byte
+    {
+        /// <summary>
+        /// The nanoCLR firmware image.
+        /// </summary>
+        Clr = 0,
+
+        /// <summary>
+        /// The deployment (managed application) image.
+        /// </summary>
+        Deployment = 1,
+    }
+
+    /// <summary>
+    /// Slot indexes used by the IFU (In-Field Update) image commands.
+    /// </summary>
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    // NEED TO KEEP THESE IN SYNC WITH native 'Monitor_Image_Slot' enum in WireProtocol_MonitorCommands.h //
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    public enum MonitorImageSlot : byte
+    {
+        /// <summary>
+        /// Primary (running) slot - unverified developer write path.
+        /// </summary>
+        Primary = 0,
+
+        /// <summary>
+        /// Secondary (staging) slot - normal update path, triggers a one-time test-swap.
+        /// </summary>
+        Secondary = 1,
+    }
+
+    /// <summary>
+    /// State flags reported per slot by <see cref="Commands.Monitor_ImageInfo"/>.
+    /// </summary>
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    // NEED TO KEEP THESE IN SYNC WITH native 'Monitor_Image_StateFlags' enum in WireProtocol_MonitorCommands.h //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    [Flags]
+    public enum MonitorImageStateFlags : byte
+    {
+        /// <summary>
+        /// No flags set.
+        /// </summary>
+        None = 0x00,
+
+        /// <summary>
+        /// Image is the one currently running.
+        /// </summary>
+        Active = 0x01,
+
+        /// <summary>
+        /// Image is confirmed (permanent - no revert).
+        /// </summary>
+        Confirmed = 0x02,
+
+        /// <summary>
+        /// Image is scheduled for a one-time test-swap.
+        /// </summary>
+        Pending = 0x04,
+
+        /// <summary>
+        /// The pending swap is permanent (no revert). Only meaningful together with <see cref="Pending"/>;
+        /// when unset, a pending swap is a revertible test-swap.
+        /// </summary>
+        Permanent = 0x08,
+
+        /// <summary>
+        /// Image is bootable (IMAGE_F_NON_BOOTABLE is not set in the image header flags).
+        /// </summary>
+        Bootable = 0x10,
+    }
+
+    /// <summary>
+    /// Error codes carried in the ErrorCode field of the IFU (In-Field Update) command replies.
+    /// </summary>
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // NEED TO KEEP THESE IN SYNC WITH native 'Monitor_Image_Error' enum in WireProtocol_MonitorCommands.h //
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    public enum MonitorImageErrorCode : uint
+    {
+        /// <summary>
+        /// Operation succeeded.
+        /// </summary>
+        Success = 0,
+
+        /// <summary>
+        /// Invalid image or slot index.
+        /// </summary>
+        BadArgument = 1,
+
+        /// <summary>
+        /// Could not open the target flash area.
+        /// </summary>
+        FlashOpen = 2,
+
+        /// <summary>
+        /// First chunk is not a valid MCUboot image.
+        /// </summary>
+        BadMagic = 3,
+
+        /// <summary>
+        /// Image would exceed the target slot capacity.
+        /// </summary>
+        TooLarge = 4,
+
+        /// <summary>
+        /// Flash erase failed.
+        /// </summary>
+        Erase = 5,
+
+        /// <summary>
+        /// Flash write failed.
+        /// </summary>
+        Write = 6,
+
+        /// <summary>
+        /// boot_set_pending failed.
+        /// </summary>
+        SetPending = 7,
+
+        /// <summary>
+        /// boot_set_confirmed failed.
+        /// </summary>
+        Confirm = 8,
+    }
+
     public class Commands
     {
         public const uint c_Monitor_Ping = 0x00000000; // The payload is empty, this command is used to let the other side know we are here...
@@ -100,6 +233,12 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Monitor_UpdateConfiguration = 0x00000010;
         public const uint c_Monitor_StorageOperation = 0x00000011;
         public const uint c_Monitor_TargetInfo = 0x00000020;
+
+        // IFU (In-Field Update) commands
+        public const uint c_Monitor_ImageInfo = 0x00000021;
+        public const uint c_Monitor_ImageWrite = 0x00000022;
+        public const uint c_Monitor_ImageConfirm = 0x00000023;
+        public const uint c_Monitor_ImageErase = 0x00000024;
 
         public class Monitor_Message : IConverter
         {
@@ -712,6 +851,187 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 /// If the file doesn't exist, no action is taken.
                 /// </remarks>
                 Append = 3
+            }
+        }
+
+        //////////////////////////////////////////////////////////////////////////////////////
+        // IFU (In-Field Update) commands - MCUboot targets only                            //
+        //////////////////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// Queries the MCUboot image/slot state. The request payload is empty.
+        /// </summary>
+        public class Monitor_ImageInfo
+        {
+            /// <summary>
+            /// MCUboot image header version. Mirrors struct image_version in bootutil/image.h.
+            /// </summary>
+            public class ImageVersion
+            {
+                public byte MajorVersion;
+                public byte MinorVersion;
+                public ushort RevisionNumber;
+                public uint BuildNumber;
+            }
+
+            /// <summary>
+            /// Per (image, slot) state, as reported by the target device.
+            /// </summary>
+            public class Entry
+            {
+                /// <summary>
+                /// 0 = nanoCLR, 1 = deployment.
+                /// </summary>
+                public byte ImageIndex;
+
+                /// <summary>
+                /// 0 = primary, 1 = secondary. See <see cref="MonitorImageSlot"/>.
+                /// </summary>
+                public byte SlotIndex;
+
+                /// <summary>
+                /// <see cref="MonitorImageStateFlags"/> bitmask.
+                /// </summary>
+                public byte Flags;
+
+                /// <summary>
+                /// Non-zero when both the image header magic and the TLV info magic parse correctly.
+                /// This is a structural sanity check only - no hash or signature is verified.
+                /// </summary>
+                public byte ValidHeader;
+
+                public ImageVersion Version = new ImageVersion();
+
+                /// <summary>
+                /// SHA-256 of the image (from IMAGE_TLV_SHA256).
+                /// </summary>
+                public byte[] Hash = new byte[32];
+            }
+
+            public class Reply : IConverter
+            {
+                // size, in bytes, of a single Entry on the wire: 4 (ImageIndex+SlotIndex+Flags+ValidHeader)
+                // + 8 (Version) + 32 (Hash)
+                private const int c_EntrySize = 44;
+
+                public byte ImageCount;
+                public List<Entry> Images;
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    int num = (size - 1) / c_EntrySize;
+
+                    Images = Enumerable.Range(0, num).Select(x => new Entry()).ToList();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Writes a chunk of MCUboot image data to a target slot.
+        /// </summary>
+        public class Monitor_ImageWrite : OverheadBase
+        {
+            /// <summary>
+            /// 0 = CLR firmware, 1 = deployment.
+            /// </summary>
+            public byte ImageIndex;
+
+            /// <summary>
+            /// 0 = primary (dev path), 1 = secondary (normal update path). See <see cref="MonitorImageSlot"/>.
+            /// </summary>
+            public byte SlotIndex;
+
+            /// <summary>
+            /// Byte offset within the target slot.
+            /// </summary>
+            public uint Offset;
+
+            /// <summary>
+            /// Total image size. Only meaningful when <see cref="Offset"/> == 0.
+            /// </summary>
+            public uint TotalSize;
+
+            public byte[] Data;
+
+            public class Reply
+            {
+                /// <summary>
+                /// 0 = success. See <see cref="MonitorImageErrorCode"/>.
+                /// </summary>
+                public uint ErrorCode;
+
+                /// <summary>
+                /// Next expected offset for flow control.
+                /// </summary>
+                public uint NextOffset;
+            }
+
+            public void PrepareForSend(
+                byte imageIndex,
+                byte slotIndex,
+                uint totalSize,
+                byte[] data,
+                int offset,
+                int length)
+            {
+                ImageIndex = imageIndex;
+                SlotIndex = slotIndex;
+                TotalSize = totalSize;
+
+                PrepareForSend(data, offset, length);
+            }
+
+            public override bool PrepareForSend(byte[] data, int offset, int length)
+            {
+                Offset = (uint)offset;
+                Data = new byte[length];
+
+                Array.Copy(data, offset, Data, 0, length);
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Confirms the currently running image as permanent.
+        /// </summary>
+        public class Monitor_ImageConfirm
+        {
+            /// <summary>
+            /// Image to confirm (defaults to 0, the nanoCLR image).
+            /// </summary>
+            public uint ImageIndex;
+
+            public class Reply
+            {
+                /// <summary>
+                /// 0 = success. See <see cref="MonitorImageErrorCode"/>.
+                /// </summary>
+                public uint ErrorCode;
+            }
+        }
+
+        /// <summary>
+        /// Erases a slot (typically the secondary slot).
+        /// </summary>
+        public class Monitor_ImageErase
+        {
+            /// <summary>
+            /// Image whose slot is to be erased.
+            /// </summary>
+            public uint ImageIndex;
+
+            /// <summary>
+            /// Slot to erase. See <see cref="MonitorImageSlot"/>.
+            /// </summary>
+            public uint SlotIndex;
+
+            public class Reply
+            {
+                /// <summary>
+                /// 0 = success. See <see cref="MonitorImageErrorCode"/>.
+                /// </summary>
+                public uint ErrorCode;
             }
         }
 
@@ -2076,6 +2396,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_UpdateConfiguration: return new Monitor_UpdateConfiguration.Reply();
                     case c_Monitor_StorageOperation: return new Monitor_StorageOperation.Reply();
 
+                    case c_Monitor_ImageInfo: return new Monitor_ImageInfo.Reply();
+                    case c_Monitor_ImageWrite: return new Monitor_ImageWrite.Reply();
+                    case c_Monitor_ImageConfirm: return new Monitor_ImageConfirm.Reply();
+                    case c_Monitor_ImageErase: return new Monitor_ImageErase.Reply();
+
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr.Reply();
                     case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions.Reply();
                     case c_Debugging_Execution_Allocate: return new Debugging_Execution_Allocate.Reply();
@@ -2149,6 +2474,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap();
                     case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration();
                     case c_Monitor_StorageOperation: return new Monitor_StorageOperation();
+
+                    case c_Monitor_ImageInfo: return new Monitor_ImageInfo();
+                    case c_Monitor_ImageWrite: return new Monitor_ImageWrite();
+                    case c_Monitor_ImageConfirm: return new Monitor_ImageConfirm();
+                    case c_Monitor_ImageErase: return new Monitor_ImageErase();
 
                     case c_Debugging_Execution_BasePtr: return new Debugging_Execution_BasePtr();
                     case c_Debugging_Execution_ChangeConditions: return new DebuggingExecutionChangeConditions();

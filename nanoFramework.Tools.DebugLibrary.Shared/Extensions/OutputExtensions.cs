@@ -178,6 +178,87 @@ namespace nanoFramework.Tools.Debugger.Extensions
             return "Invalid or empty map data.";
         }
 
+        public static string ToStringForOutput(this List<Commands.Monitor_ImageInfo.Entry> images)
+        {
+            StringBuilder output = new StringBuilder();
+
+            try
+            {
+                if (images != null && images.Count > 0)
+                {
+                    output.AppendLine("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+                    output.AppendLine("++                    MCUboot Image Info                     ++");
+                    output.AppendLine("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+
+                    foreach (Commands.Monitor_ImageInfo.Entry entry in images)
+                    {
+                        string imageName = entry.ImageIndex == (byte)MonitorImageIndex.Clr ? "CLR" : "Deployment";
+
+                        if (entry.SlotIndex == (byte)MonitorImageSlot.Secondary)
+                        {
+                            output.AppendLine();
+                            output.AppendLine("  Update slot:");
+                            output.Append(ImageInfoEntryToStringForOutput(entry, "    "));
+                            output.AppendLine();
+                        }
+                        else
+                        {
+                            output.AppendLine($"{imageName}:");
+                            output.Append(ImageInfoEntryToStringForOutput(entry, "  "));
+                        }
+                    }
+
+                    return output.ToString();
+                }
+
+                return "No image info available.";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception when parsing image info data: {ex.Message + Environment.NewLine + ex.StackTrace}");
+            }
+
+            return "Exception when trying to parse image info data.";
+        }
+
+        private static string ImageInfoEntryToStringForOutput(Commands.Monitor_ImageInfo.Entry entry, string indent)
+        {
+            StringBuilder output = new StringBuilder();
+            MonitorImageStateFlags flags = (MonitorImageStateFlags)entry.Flags;
+
+            output.AppendLine($"{indent}Valid Header : {(entry.ValidHeader != 0 ? "YES" : "NO")}");
+
+            if (entry.ValidHeader != 0)
+            {
+                // MCUboot version string format is "major.minor.revision[+build]" (build number
+                // is only appended when non-zero) - see imgtool/version.py's SemiSemVersion.
+                string version = $"{entry.Version.MajorVersion}.{entry.Version.MinorVersion}.{entry.Version.RevisionNumber}";
+
+                if (entry.Version.BuildNumber != 0)
+                {
+                    version += $"+{entry.Version.BuildNumber}";
+                }
+
+                output.AppendLine($"{indent}Version      : {version}");
+                output.AppendLine($"{indent}Hash         : {BitConverter.ToString(entry.Hash).Replace("-", "")}");
+                output.AppendLine($"{indent}Bootable     : {(flags.HasFlag(MonitorImageStateFlags.Bootable) ? "YES" : "NO")}");
+            }
+
+            output.AppendLine($"{indent}Active       : {(flags.HasFlag(MonitorImageStateFlags.Active) ? "YES" : "NO")}");
+            output.AppendLine($"{indent}Confirmed    : {(flags.HasFlag(MonitorImageStateFlags.Confirmed) ? "YES" : "NO")}");
+
+            string pending = "NO";
+
+            if (flags.HasFlag(MonitorImageStateFlags.Pending))
+            {
+                pending = flags.HasFlag(MonitorImageStateFlags.Permanent) ? "YES (Permanent)" : "YES (Test)";
+            }
+
+            output.AppendLine($"{indent}Pending      : {pending}");
+
+            return output.ToString();
+        }
+
         public static string ToStringForOutput(this DeviceConfiguration.NetworkConfigurationProperties networkConfiguration)
         {
             StringBuilder output = new StringBuilder();
