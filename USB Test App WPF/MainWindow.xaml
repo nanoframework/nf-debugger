@@ -7,7 +7,7 @@
         xmlns:ViewModel="clr-namespace:Serial_Test_App_WPF.ViewModel"
         x:Class="Serial_Test_App_WPF.MainWindow"
         mc:Ignorable="d"
-        Title="MainWindow" Height="374" Width="570.729">
+        Title="MainWindow" Height="410" Width="570.729">
     <Window.Resources>
         <DataTemplate x:Key="NanoDevicesItemTemplate">
             <TextBlock Text="{Binding Path=Description}"/>
@@ -55,5 +55,9 @@
         <Button Content="Reboot CLR" HorizontalAlignment="Left" Margin="364,77,0,0" VerticalAlignment="Top" Width="121" Click="RebootDeviceButton_Click"/>
         <Button Content="Upload File I:\" HorizontalAlignment="Left" Margin="39,306,0,0" VerticalAlignment="Top" Width="110" Click="UploadFileInternalStorage_Click"/>
         <Button Content="Rm file I:\" HorizontalAlignment="Left" Margin="162,306,0,0" VerticalAlignment="Top" Width="75" Click="RemoveFileInternalStorage_Click"/>
+
+        <Button Content="List Images" HorizontalAlignment="Left" Margin="39,337,0,0" VerticalAlignment="Top" Width="110" Click="ListImagesButton_Click" />
+        <Button Content="Erase CLR Update" HorizontalAlignment="Left" Margin="162,337,0,0" VerticalAlignment="Top" Width="110" Click="EraseClrUpdateButton_Click" />
+        <Button Content="Erase Deployment Update" HorizontalAlignment="Left" Margin="284,337,0,0" VerticalAlignment="Top" Width="150" Click="EraseDeploymentUpdateButton_Click" />
     </Grid>
 </Window>

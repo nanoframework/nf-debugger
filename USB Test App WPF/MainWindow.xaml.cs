@@ -723,6 +723,78 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
             (sender as Button).IsEnabled = true;
         }
 
+        private void ListImagesButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                var images = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetImageInfo();
+
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine(images.ToStringForOutput());
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+            }
+            catch
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private void EraseClrUpdateButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.EraseImage((uint)MonitorImageIndex.Clr, (uint)MonitorImageSlot.Secondary);
+
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine($"Erase CLR update (image 0, secondary slot): {(result.Success ? "SUCCESS" : "FAILED")} - {result.ErrorCode}");
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+            }
+            catch
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
+        private void EraseDeploymentUpdateButton_Click(object sender, RoutedEventArgs e)
+        {
+            // disable button
+            (sender as Button).IsEnabled = false;
+
+            try
+            {
+                var result = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.EraseImage((uint)MonitorImageIndex.Deployment, (uint)MonitorImageSlot.Secondary);
+
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+                Debug.WriteLine($"Erase Deployment update (image 1, secondary slot): {(result.Success ? "SUCCESS" : "FAILED")} - {result.ErrorCode}");
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+            }
+            catch
+            {
+
+            }
+
+            // enable button
+            (sender as Button).IsEnabled = true;
+        }
+
         private void IsInitStateButton_Click(object sender, RoutedEventArgs e)
         {
             // disable button

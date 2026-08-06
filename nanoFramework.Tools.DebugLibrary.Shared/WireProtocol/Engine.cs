@@ -1816,6 +1816,130 @@ namespace nanoFramework.Tools.Debugger
             return (AccessMemoryErrorCodes.Unknown, false);
         }
 
+        #region IFU (In-Field Update) commands
+
+        /// <summary>
+        /// Queries the MCUboot image/slot state for all images on the target device.
+        /// Only meaningful when <see cref="HasMCUboot"/> is <see langword="true"/>.
+        /// </summary>
+        public List<Commands.Monitor_ImageInfo.Entry> GetImageInfo()
+        {
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_ImageInfo, 0, null);
+
+            if (reply != null)
+            {
+                if (reply.Payload is Commands.Monitor_ImageInfo.Reply cmdReply)
+                {
+                    return cmdReply.Images;
+                }
+            }
+
+            return new List<Commands.Monitor_ImageInfo.Entry>();
+        }
+
+        /// <summary>
+        /// Writes an MCUboot image to the given slot on the target device, in chunks.
+        /// Writing to the secondary slot schedules a one-time test-swap on the next reboot;
+        /// writing to the primary slot does not (developer path).
+        /// Only meaningful when <see cref="HasMCUboot"/> is <see langword="true"/>.
+        /// </summary>
+        public MonitorImageErrorCode WriteImage(
+            byte imageIndex,
+            byte slotIndex,
+            byte[] imageData,
+            IProgress<MessageWithProgress> progress = null,
+            IProgress<string> log = null)
+        {
+            int count = imageData.Length;
+            int position = 0;
+
+            MonitorImageErrorCode result = MonitorImageErrorCode.Success;
+
+            while (count > 0)
+            {
+                Commands.Monitor_ImageWrite cmd = new Commands.Monitor_ImageWrite();
+
+                int packetLength = Math.Min(GetPacketMaxLength(cmd), count);
+
+                cmd.PrepareForSend(imageIndex, slotIndex, (uint)imageData.Length, imageData, position, packetLength);
+
+                progress?.Report(new MessageWithProgress($"Writing image {position + packetLength}/{imageData.Length} bytes...", (uint)(position + packetLength), (uint)imageData.Length));
+                log?.Report($"Writing {position + packetLength}/{imageData.Length} bytes to image {imageIndex}, slot {slotIndex}.");
+
+                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_ImageWrite, 0, cmd, 4 * DefaultTimeout);
+
+                if (reply == null || !(reply.Payload is Commands.Monitor_ImageWrite.Reply cmdReply))
+                {
+                    progress?.Report(new MessageWithProgress(""));
+                    log?.Report($"Error writing image data @ offset {position}. No reply from nanoDevice.");
+
+                    return MonitorImageErrorCode.Write;
+                }
+
+                result = (MonitorImageErrorCode)cmdReply.ErrorCode;
+
+                if (result != MonitorImageErrorCode.Success)
+                {
+                    progress?.Report(new MessageWithProgress(""));
+                    log?.Report($"Error writing image data @ offset {position}: {result}.");
+
+                    return result;
+                }
+
+                count -= packetLength;
+                position = (int)cmdReply.NextOffset;
+            }
+
+            progress?.Report(new MessageWithProgress(""));
+
+            return result;
+        }
+
+        /// <summary>
+        /// Confirms the currently running image as permanent, preventing MCUboot from reverting it on the next boot.
+        /// Only meaningful when <see cref="HasMCUboot"/> is <see langword="true"/>.
+        /// </summary>
+        public (MonitorImageErrorCode ErrorCode, bool Success) ConfirmImage(uint imageIndex = 0)
+        {
+            Commands.Monitor_ImageConfirm cmd = new Commands.Monitor_ImageConfirm
+            {
+                ImageIndex = imageIndex
+            };
+
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_ImageConfirm, 0, cmd);
+
+            if (reply != null && reply.Payload is Commands.Monitor_ImageConfirm.Reply cmdReply)
+            {
+                return ((MonitorImageErrorCode)cmdReply.ErrorCode, reply.IsPositiveAcknowledge());
+            }
+
+            return (MonitorImageErrorCode.Confirm, false);
+        }
+
+        /// <summary>
+        /// Erases a slot (typically the secondary slot) for the given image.
+        /// Only meaningful when <see cref="HasMCUboot"/> is <see langword="true"/>.
+        /// </summary>
+        public (MonitorImageErrorCode ErrorCode, bool Success) EraseImage(uint imageIndex, uint slotIndex)
+        {
+            Commands.Monitor_ImageErase cmd = new Commands.Monitor_ImageErase
+            {
+                ImageIndex = imageIndex,
+                SlotIndex = slotIndex
+            };
+
+            IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_ImageErase, 0, cmd, 4 * DefaultTimeout);
+
+            if (reply != null && reply.Payload is Commands.Monitor_ImageErase.Reply cmdReply)
+            {
+                return ((MonitorImageErrorCode)cmdReply.ErrorCode, reply.IsPositiveAcknowledge());
+            }
+
+            return (MonitorImageErrorCode.Erase, false);
+        }
+
+        #endregion
+
         public bool ExecuteMemory(uint address)
         {
             Commands.Monitor_Execute cmd = new Commands.Monitor_Execute
@@ -3125,14 +3249,14 @@ namespace nanoFramework.Tools.Debugger
         }
 
         // MCUboot image_header / TLV constants used to compose a deployment image below.
-        // See struct image_header / image_tlv_info / image_tlv in
-        // boot/bootutil/include/bootutil/image.h (mcu-tools/mcuboot). All fields are little endian,
-        // regardless of target byte order - this is the on-the-wire MCUboot image format, not
-        // target-native data.
         private const uint McubootImageMagic = 0x96f3b83d;
         private const ushort McubootTlvInfoMagic = 0x6907;
         private const ushort McubootTlvTypeSha256 = 0x10;
         private const int McubootImageHeaderStructSize = 32;
+
+        // MCUboot writes its own trailer at the tail of every primary slot.
+        // This is a flat 1 kB reserve, that keeps deployment writes from ever landing on it.
+        private const int McubootTrailerReserve = 1024;
 
         private static void WriteUInt16LE(byte[] buffer, int offset, ushort value)
         {
@@ -3247,10 +3371,15 @@ namespace nanoFramework.Tools.Debugger
                                                                       .ToList();
 
                 // rough check if there is enough room to deploy
-                if (deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size) < deployLength)
+                //
+                // On MCUboot targets, hold back McubootTrailerReserve bytes at the tail of the reported region.
+                int reportedCapacity = deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size);
+                int usableCapacity = HasMCUboot ? (reportedCapacity - McubootTrailerReserve) : reportedCapacity;
+
+                if (usableCapacity < deployLength)
                 {
                     // compose error message
-                    string errorMessage = $"Deployment storage (available size: {deploymentBlob.ToDeploymentBlockList().Sum(b => b.Size)} bytes) is not large enough for assemblies to deploy (total size: {deployLength} bytes).";
+                    string errorMessage = $"Deployment storage (available size: {usableCapacity} bytes) is not large enough for assemblies to deploy (total size: {deployLength} bytes).";
 
                     log?.Report(errorMessage);
                     progress?.Report(new MessageWithProgress(""));
