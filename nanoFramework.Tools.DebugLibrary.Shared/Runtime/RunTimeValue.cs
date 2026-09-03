@@ -144,7 +144,7 @@ namespace nanoFramework.Tools.Debugger
         DATATYPE_FIRST_INVALID,
     }
 
-public abstract class RuntimeValue
+    public abstract class RuntimeValue
     {
         protected Engine m_eng;
         protected internal WireProtocol.Commands.Debugging_Value m_handle;
@@ -209,6 +209,33 @@ public abstract class RuntimeValue
             get
             {
                 return (m_handle.m_flags & WireProtocol.Commands.Debugging_Value.HB_Boxed) != 0;
+            }
+        }
+
+        /// <summary>
+        /// <see langword="true"/> when this value is an instance of a closed generic type.
+        /// </summary>
+        /// <remarks>
+        /// Distinct from <see cref="IsGenericInst"/>, which reports the DATATYPE_GENERICINST data type.
+        /// A generic instance is reported by the CLR as DATATYPE_CLASS or DATATYPE_VALUETYPE carrying this flag.
+        /// </remarks>
+        public virtual bool IsGenericInstance
+        {
+            get
+            {
+                return (m_handle.m_flags & WireProtocol.Commands.Debugging_Value.HB_GenericInstance) != 0;
+            }
+        }
+
+        /// <summary>
+        /// TypeSpec index of the closed generic type, 0 when <see cref="IsGenericInstance"/> is
+        /// <see langword="false"/>. <see cref="Type"/> remains the open generic TypeDef.
+        /// </summary>
+        public virtual uint GenericTypeSpec
+        {
+            get
+            {
+                return m_handle.m_ts;
             }
         }
 
