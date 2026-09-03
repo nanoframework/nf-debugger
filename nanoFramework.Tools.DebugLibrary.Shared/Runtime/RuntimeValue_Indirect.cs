@@ -75,6 +75,8 @@ namespace nanoFramework.Tools.Debugger
         public override uint Length { get { return (m_value == null) ? 0 : m_value.Length; } }
         public override uint Depth { get { return (m_value == null) ? 0 : m_value.Depth; } }
         public override uint Type { get { return (m_value == null) ? 0 : m_value.Type; } }
+        public override bool IsGenericInstance { get { return (m_value != null && m_value.IsGenericInstance); } }
+        public override uint GenericTypeSpec { get { return (m_value == null) ? 0 : m_value.GenericTypeSpec; } }
 
         internal override void SetStringValue(string val)
         {

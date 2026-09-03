@@ -1853,7 +1853,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public const uint HB_Event = 0x04;
             public const uint HB_Pinned = 0x08;
             public const uint HB_Boxed = 0x10;
-            public const uint HB_NeedFinalizer = 0x20;
+            public const uint HB_GenericInstance = 0x20;
             public const uint HB_Signaled = 0x40;
             public const uint HB_SignalAutoReset = 0x80;
 
