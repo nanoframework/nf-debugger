@@ -154,7 +154,7 @@ namespace nanoFramework.Tools.Debugger
 
                 foreach (byte b in bytes)
                 {
-                    builder.Append(String.Format("{0:X}", b));
+                    builder.Append(String.Format("{0:X2}", b));
                 }
 
                 return builder.ToString();
