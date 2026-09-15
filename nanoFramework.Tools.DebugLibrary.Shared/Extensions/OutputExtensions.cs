@@ -61,7 +61,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
             return "Exception when trying to parse memory map data.";
         }
 
-        public static string ToStringForOutput(this List<Commands.Monitor_FlashSectorMap.FlashSectorData> range)
+        public static string ToStringForOutput(this List<Commands.Monitor_FlashSectorMap.FlashSectorData> range, bool hasMCUboot = false)
         {
             StringBuilder output = new StringBuilder();
 
@@ -82,7 +82,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
 
                     foreach (Commands.Monitor_FlashSectorMap.FlashSectorData item in range)
                     {
-                        output.AppendLine($"{string.Format("{0,7}", i++)}    {string.Format("0x{0:X08}", item.StartAddress)}   {string.Format("{0,5}", item.NumBlocks)}      {string.Format("0x{0:X06}", item.BytesPerBlock)}     {item.UsageAsString()}");
+                        output.AppendLine($"{string.Format("{0,7}", i++)}    {string.Format("0x{0:X08}", item.StartAddress)}   {string.Format("{0,5}", item.NumBlocks)}      {string.Format("0x{0:X06}", item.BytesPerBlock)}     {item.UsageAsString(hasMCUboot)}");
                     }
 
                     output.AppendLine();
@@ -105,7 +105,7 @@ namespace nanoFramework.Tools.Debugger.Extensions
                             $" {string.Format(" 0x{0:X08}", range.First(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).StartAddress)}" +
                             $"   {string.Format(" 0x{0:X06}", range.Where(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.NumBlocks * obj.BytesPerBlock))}" +
                             $" {range.Where(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).Sum(obj => obj.NumBlocks * obj.BytesPerBlock).ToMemorySizeFormart()}" +
-                            $"   {range.First(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).UsageAsString()}");
+                            $"   {range.First(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP).UsageAsString(hasMCUboot)}");
                     }
 
                     // output config line only if it's available on the target
