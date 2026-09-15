@@ -9,12 +9,12 @@ namespace nanoFramework.Tools.Debugger.Extensions
 {
     public static class MonitorFlashSectorMapExtensions
     {
-        public static string UsageAsString(this Commands.Monitor_FlashSectorMap.FlashSectorData value)
+        public static string UsageAsString(this Commands.Monitor_FlashSectorMap.FlashSectorData value, bool hasMCUboot = false)
         {
             switch (value.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK)
             {
                 case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_BOOTSTRAP:
-                    return "nanoBooter";
+                    return hasMCUboot ? "MCUboot" : "nanoBooter";
                 case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CODE:
                     return "nanoCLR";
                 case Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG:

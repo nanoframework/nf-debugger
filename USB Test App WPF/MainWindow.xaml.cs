@@ -312,7 +312,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                      {
                          // load vars
                          var deviceMemoryMap = new StringBuilder(memoryMap?.ToStringForOutput() ?? "Empty");
-                         var deviceFlashSectorMap = new StringBuilder(flashMap?.ToStringForOutput() ?? "Empty");
+                         var deviceFlashSectorMap = new StringBuilder(flashMap?.ToStringForOutput(device.DebugEngine.HasMCUboot) ?? "Empty");
                          var deviceDeploymentMap = new StringBuilder(deploymentMap?.ToStringForOutput() ?? "Empty");
                          var deviceSystemInfo = new StringBuilder(deviceInfo?.ToString() ?? "Empty");
 
@@ -443,11 +443,12 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                     // enable button
                     (sender as Button).IsEnabled = true;
 
-                    var fm = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine.GetFlashSectorMap();
+                    var debugEngine = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex].DebugEngine;
+                    var fm = debugEngine.GetFlashSectorMap();
 
                     Debug.WriteLine("");
                     Debug.WriteLine("");
-                    Debug.WriteLine(fm.ToStringForOutput());
+                    Debug.WriteLine(fm.ToStringForOutput(debugEngine.HasMCUboot));
                     Debug.WriteLine("");
                     Debug.WriteLine("");
 
