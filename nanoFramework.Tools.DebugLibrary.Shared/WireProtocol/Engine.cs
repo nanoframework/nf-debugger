@@ -1846,16 +1846,19 @@ namespace nanoFramework.Tools.Debugger
                     log?.Report($"Reboot command executed {result}");
                 }
 
+                // the device reads this one as the flag it is, so test it the same way here
+                bool entersProprietaryBooter = ((RebootOptions)cmd.flags).HasFlag(RebootOptions.EnterProprietaryBooter);
+
                 // if reboot options ends up on a hard reboot, force connection state to disconnected
                 // a Connect request has to happen after this
                 if (((RebootOptions)cmd.flags == RebootOptions.EnterNanoBooter) ||
                     ((RebootOptions)cmd.flags == RebootOptions.NormalReboot) ||
-                    ((RebootOptions)cmd.flags == RebootOptions.EnterProprietaryBooter))
+                    entersProprietaryBooter)
                 {
                     IsConnected = false;
                 }
 
-                if ((RebootOptions)cmd.flags == RebootOptions.EnterProprietaryBooter)
+                if (entersProprietaryBooter)
                 {
                     // no ping is coming from a proprietary bootloader, so there is nothing to wait for
                     ConnectionSource = ConnectionSource.Unknown;
