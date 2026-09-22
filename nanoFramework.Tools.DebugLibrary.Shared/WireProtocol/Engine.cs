@@ -1974,6 +1974,14 @@ namespace nanoFramework.Tools.Debugger
             return reply != null && reply.IsPositiveAcknowledge();
         }
 
+        /// <summary>
+        /// Requests the device to reboot with the specified options.
+        /// </summary>
+        /// <param name="options">Reboot options to request.</param>
+        /// <param name="log">Optional progress report.</param>
+        /// <returns><see langword="true"/> when the reboot is confirmed by the ping that follows it or,
+        /// for <see cref="RebootOptions.EnterProprietaryBooter"/>, by the acknowledge to the request, as
+        /// a proprietary bootloader doesn't talk Wire Protocol.</returns>
         public bool RebootDevice(
             RebootOptions options = RebootOptions.NormalReboot,
             IProgress<string> log = null)
@@ -2014,12 +2022,24 @@ namespace nanoFramework.Tools.Debugger
                     log?.Report($"Reboot command executed {result}");
                 }
 
+                // the device reads this one as the flag it is, so test it the same way here
+                bool entersProprietaryBooter = ((RebootOptions)cmd.flags).HasFlag(RebootOptions.EnterProprietaryBooter);
+
                 // if reboot options ends up on a hard reboot, force connection state to disconnected
                 // a Connect request has to happen after this
                 if (((RebootOptions)cmd.flags == RebootOptions.EnterNanoBooter) ||
-                    ((RebootOptions)cmd.flags == RebootOptions.NormalReboot))
+                    ((RebootOptions)cmd.flags == RebootOptions.NormalReboot) ||
+                    entersProprietaryBooter)
                 {
                     IsConnected = false;
+                }
+
+                if (entersProprietaryBooter)
+                {
+                    // no ping is coming from a proprietary bootloader, so there is nothing to wait for
+                    ConnectionSource = ConnectionSource.Unknown;
+
+                    return reqResult != null && reqResult.IsPositiveAcknowledge();
                 }
 
                 var rebootTimeout = 5 * DefaultTimeout;
