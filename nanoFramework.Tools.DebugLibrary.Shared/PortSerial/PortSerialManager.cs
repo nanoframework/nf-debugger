@@ -222,7 +222,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // also clear nanoFramework devices list
             lock (NanoFrameworkDevices)
             {
-                devicesToRemove = NanoFrameworkDevices.Select(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).DeviceId).ToList();
+                devicesToRemove = NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().Select(nanoDevice => nanoDevice.DeviceId).ToList();
             }
 
             foreach (var deviceId in devicesToRemove)
@@ -393,17 +393,18 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public override void DisposeDevice(string instanceId)
         {
-            NanoDeviceBase deviceToDispose;
+            NanoDevice<NanoSerialDevice> deviceToDispose;
             lock (NanoFrameworkDevices)
             {
-                deviceToDispose = NanoFrameworkDevices.FirstOrDefault(nanoDevice => ((NanoDevice<NanoSerialDevice>)nanoDevice).DeviceId == instanceId);
+                // NanoFrameworkDevices is global and can hold devices of other transports
+                deviceToDispose = NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().FirstOrDefault(nanoDevice => nanoDevice.DeviceId == instanceId);
             }
 
             if (deviceToDispose != null)
             {
                 Task.Run(() =>
                 {
-                    ((NanoDevice<NanoSerialDevice>)deviceToDispose).Dispose();
+                    deviceToDispose.Dispose();
                 });
             }
         }

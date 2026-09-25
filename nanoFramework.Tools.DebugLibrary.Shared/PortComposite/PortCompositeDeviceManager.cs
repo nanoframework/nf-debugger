@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 
 
@@ -59,18 +60,37 @@ namespace nanoFramework.Tools.Debugger.PortComposite
                 _disposed = true;
             }
 
+            List<Exception> exceptions = null;
+
             if (disposing)
             {
-                _ports.ForEach(p =>
+                // dispose all ports, even if one of them throws
+                foreach (var port in _ports)
                 {
-                    p.DeviceEnumerationCompleted -= OnPortDeviceEnumerationCompleted;
-                    p.LogMessageAvailable -= OnLogMessageAvailable;
+                    port.DeviceEnumerationCompleted -= OnPortDeviceEnumerationCompleted;
+                    port.LogMessageAvailable -= OnLogMessageAvailable;
 
-                    p.Dispose();
-                });
+                    try
+                    {
+                        port.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        (exceptions ??= new List<Exception>()).Add(ex);
+                    }
+                }
             }
 
             base.Dispose(disposing);
+
+            if (exceptions?.Count == 1)
+            {
+                ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
+            }
+            else if (exceptions is not null)
+            {
+                throw new AggregateException(exceptions);
+            }
         }
 
         private void SubscribeToPortEvents()
