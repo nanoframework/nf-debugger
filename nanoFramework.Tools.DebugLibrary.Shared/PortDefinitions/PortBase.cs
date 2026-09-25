@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace nanoFramework.Tools.Debugger
 {
-    public abstract partial class PortBase
+    public abstract partial class PortBase : IDisposable
     {
         public List<string> PortExclusionList { get; set; } = new List<string>();
 
@@ -83,5 +83,25 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         /// <param name="instanceId">Id of the device to dispose.</param>
         public abstract void DisposeDevice(string instanceId);
+
+        /// <summary>
+        /// Stops the device watchers, releases the devices managed by this port and frees the resources in use.
+        /// </summary>
+        /// <remarks>
+        /// After this call the port can't be used anymore.
+        /// </remarks>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases the resources used by the port.
+        /// </summary>
+        /// <param name="disposing"><see langword="true"/> when called from <see cref="Dispose()"/>.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+        }
     }
 }

@@ -21,6 +21,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         // Serial device watchers started flag
         private bool _watchersStarted = false;
 
+        // the device watcher auto start (requested in the constructor) no longer applies
+        private bool _autoStartCancelled = false;
+        private readonly object _autoStartLock = new object();
+
+        private volatile bool _disposed = false;
+
         // counter of device watchers completed
         private int _deviceWatchersCompletedCount = 0;
 
@@ -48,20 +54,32 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 PortExclusionList = portExclusionList;
             }
 
-            Task.Factory.StartNew(() =>
+            // subscribe before anything can start the watcher, so no event is missed
+            InitializeDeviceWatchers();
+
+            if (startDeviceWatchers)
             {
-
-                InitializeDeviceWatchers();
-
-                if (startDeviceWatchers)
+                Task.Factory.StartNew(() =>
                 {
-                    StartSerialDeviceWatchers();
-                }
-            });
+                    lock (_autoStartLock)
+                    {
+                        // don't start if the caller has already taken control of the watchers
+                        // (e.g. called StopDeviceWatchers() before this task got to run)
+                        if (!_autoStartCancelled)
+                        {
+                            StartSerialDeviceWatchers();
+                        }
+                    }
+                });
+            }
         }
 
         public override void ReScanDevices()
         {
+            ThrowIfDisposed();
+
+            CancelAutoStart();
+
             // need to reset this here to have intimidate effect
             IsDevicesEnumerationComplete = false;
 
@@ -75,6 +93,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public override void StartDeviceWatchers()
         {
+            ThrowIfDisposed();
+
+            CancelAutoStart();
+
             if (!_watchersStarted)
             {
                 StartDeviceWatchersInternal();
@@ -83,7 +105,56 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public override void StopDeviceWatchers()
         {
+            CancelAutoStart();
+
             StopDeviceWatchersInternal();
+        }
+
+        private void CancelAutoStart()
+        {
+            lock (_autoStartLock)
+            {
+                _autoStartCancelled = true;
+            }
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(PortSerialManager));
+            }
+        }
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            lock (_autoStartLock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+
+                // in case the constructor task hasn't started the watcher yet
+                _autoStartCancelled = true;
+            }
+
+            if (disposing)
+            {
+                // stop the watcher and release all the serial devices (and their ports)
+                StopDeviceWatchersInternal();
+
+                _deviceWatcher.Added -= OnDeviceAdded;
+                _deviceWatcher.Removed -= OnDeviceRemoved;
+                _deviceWatcher.AllNewDevicesAdded -= ProcessDeviceEnumerationComplete;
+
+                _deviceWatcher.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         #region Device watcher management and host app status handling
@@ -100,6 +171,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public void StartSerialDeviceWatchers()
         {
+            ThrowIfDisposed();
+
             // Initialize the Serial device watchers to be notified when devices are connected/removed
             StartDeviceWatchersInternal();
         }
@@ -109,6 +182,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         private void StartDeviceWatchersInternal()
         {
+            if (_disposed)
+            {
+                // e.g. a pending ReScanDevices() task
+                return;
+            }
+
             // Reset flag before starting the watcher so it is already false
             // when the new watcher thread begins.
             IsDevicesEnumerationComplete = false;
@@ -116,6 +195,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             _deviceWatcher.Start(PortExclusionList);
 
             _watchersStarted = true;
+
+            if (_disposed)
+            {
+                // disposed while starting: don't leave the watcher running
+                _deviceWatcher.Stop();
+            }
         }
 
         /// <summary>
@@ -123,15 +208,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         private void StopDeviceWatchersInternal()
         {
-            if (_deviceWatcher.Status == DeviceWatcherStatus.Started)
-            {
-                _deviceWatcher.Stop();
-
-                while (_deviceWatcher.Status != DeviceWatcherStatus.Stopped)
-                {
-                    Thread.Sleep(100);
-                }
-            }
+            // stop the watcher (even if it's still starting) and wait for it to exit
+            // (no wait if called from the watcher thread, e.g. from an event handler)
+            _deviceWatcher.StopAndWait(Timeout.Infinite);
 
             NanoFrameworkDevicesRemoveAllSerial();
 
@@ -184,6 +263,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// from the list of devices. Returns <see langword="null"/> if no device has been added.</returns>
         public override NanoDeviceBase AddDevice(string deviceId)
         {
+            ThrowIfDisposed();
+
             return AddDeviceToListAsync(deviceId);
         }
 
@@ -218,10 +299,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice))
                     {
                         //add device to the collection
-                        NanoFrameworkDeviceAdd(newNanoFrameworkDevice);
-
-                        OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
-                        nanoFrameworkDeviceMatch = newNanoFrameworkDevice;
+                        if (NanoFrameworkDeviceAdd(newNanoFrameworkDevice))
+                        {
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
+                            nanoFrameworkDeviceMatch = newNanoFrameworkDevice;
+                        }
                     }
                     else
                     {
@@ -258,9 +340,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         {
                             if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice, true))
                             {
-                                NanoFrameworkDeviceAdd(newNanoFrameworkDevice);
-
-                                OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
+                                if (NanoFrameworkDeviceAdd(newNanoFrameworkDevice))
+                                {
+                                    OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
+                                }
                             }
                             else
                             {
@@ -285,16 +368,29 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Adds a device to the collection (if new).
         /// </summary>
         /// <param name="newNanoFrameworkDevice">The new <see cref="NanoSerialDevice"/></param>
-        private void NanoFrameworkDeviceAdd(NanoDevice<NanoSerialDevice> newNanoFrameworkDevice)
+        /// <returns><see langword="false"/> if the device was discarded because this manager has been disposed.</returns>
+        private bool NanoFrameworkDeviceAdd(NanoDevice<NanoSerialDevice> newNanoFrameworkDevice)
         {
             lock (NanoFrameworkDevices)
             {
-                if (newNanoFrameworkDevice != null && NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().Count(i => i.DeviceId == newNanoFrameworkDevice.DeviceId) == 0)
+                // checked inside the lock: Dispose() removes the devices under this same lock,
+                // so a validation that completes after that can't bring a device back into the list
+                if (!_disposed)
                 {
-                    //add device to the collection
-                    NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+                    if (newNanoFrameworkDevice != null && NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().Count(i => i.DeviceId == newNanoFrameworkDevice.DeviceId) == 0)
+                    {
+                        //add device to the collection
+                        NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+                    }
+
+                    return true;
                 }
             }
+
+            // manager disposed while the device was being validated: release it
+            RemoveNanoFrameworkDevices(newNanoFrameworkDevice);
+
+            return false;
         }
 
         public override void DisposeDevice(string instanceId)

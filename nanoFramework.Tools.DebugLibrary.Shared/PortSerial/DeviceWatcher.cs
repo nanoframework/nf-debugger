@@ -20,10 +20,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
     /// </summary>
     public class DeviceWatcher : IDisposable
     {
-        private bool _started = false;
-        private Dictionary<string, CancellationTokenSource> _ports;
-        private Thread _threadWatch = null;
+        private volatile bool _started = false;
+        private volatile Thread _threadWatch = null;
         private readonly PortSerialManager _ownerManager;
+        private readonly object _lifecycleLock = new object();
 
         /// <summary>
         /// Represents a delegate method that is used to handle the DeviceAdded event.
@@ -81,38 +81,98 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Changes in the collection after the start of the device watcher are taken into account.</param>
         public void Start(ICollection<string> portsToExclude = null)
         {
-            if (!_started)
+            while (true)
             {
-                try
-                {
-                    _threadWatch = new Thread(() =>
-                    {
-                        StartWatcher(portsToExclude ?? []);
-                    })
-                    {
-                        IsBackground = true,
-                        Priority = ThreadPriority.Lowest
-                    };
+                Thread previousThread;
 
-                    _threadWatch.Start();
-
-                    // Set only after the thread has been successfully started
-                    // so Start() can be retried if thread creation or start throws.
-                    _started = true;
-                }
-                catch
+                lock (_lifecycleLock)
                 {
-                    _threadWatch = null;
-                    throw;
+                    if (_started)
+                    {
+                        return;
+                    }
+
+                    previousThread = _threadWatch;
+
+                    if (previousThread is null
+                        || !previousThread.IsAlive
+                        || previousThread == Thread.CurrentThread)
+                    {
+                        StartWatcherThread(portsToExclude);
+                        return;
+                    }
                 }
+
+                previousThread.Join();
+            }
+        }
+
+        // must be called while holding _lifecycleLock
+        private void StartWatcherThread(ICollection<string> portsToExclude)
+        {
+            try
+            {
+                _threadWatch = new Thread(() =>
+                {
+                    StartWatcher(portsToExclude ?? []);
+                })
+                {
+                    IsBackground = true,
+                    Priority = ThreadPriority.Lowest
+                };
+
+                Status = DeviceWatcherStatus.Started;
+                _started = true;
+
+                _threadWatch.Start();
+            }
+            catch
+            {
+                _started = false;
+                _threadWatch = null;
+                Status = DeviceWatcherStatus.Stopped;
+
+                throw;
             }
         }
 
         private void StartWatcher(ICollection<string> portsToExclude)
         {
-            _ownerManager.OnLogMessageAvailable($"PortSerial device watcher started @ Thread {_threadWatch.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
+            try
+            {
+                RunWatcher(portsToExclude);
+            }
+            finally
+            {
+                lock (_lifecycleLock)
+                {
+                    if (IsCurrentWatcherThread)
+                    {
+                        Status = DeviceWatcherStatus.Stopped;
+                    }
+                }
+            }
+        }
 
-            _ports = [];
+        private bool IsCurrentWatcherThread => _threadWatch == Thread.CurrentThread;
+
+        private void LogMessage(string message)
+        {
+            try
+            {
+                _ownerManager.OnLogMessageAvailable(message);
+            }
+            catch
+            {
+                // a faulty log handler must not prevent the watcher from running or stopping
+            }
+        }
+
+        private void RunWatcher(ICollection<string> portsToExclude)
+        {
+            LogMessage($"PortSerial device watcher started @ Thread {Thread.CurrentThread.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
+
+            var watchedPorts = new Dictionary<string, CancellationTokenSource>();
 
             #region Support for the AllNewDevicesAdded event
             object allNewDevicesLock = new object();
@@ -148,9 +208,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
             #endregion
 
-            Status = DeviceWatcherStatus.Started;
-
-            while (_started)
+            // status is set to Started by Start(), before this thread runs
+            while (_started && IsCurrentWatcherThread)
             {
                 try
                 {
@@ -165,7 +224,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // check for ports that departed 
                     List<string> portsToRemove = new();
 
-                    foreach (var port in _ports)
+                    foreach (var port in watchedPorts)
                     {
                         if (!ports.Contains(port.Key))
                         {
@@ -177,9 +236,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // process ports that have departed 
                     foreach (var port in portsToRemove)
                     {
-                        if (_ports.ContainsKey(port))
+                        if (watchedPorts.ContainsKey(port))
                         {
-                            _ports.Remove(port);
+                            watchedPorts.Remove(port);
                             Removed?.Invoke(this, port);
                         }
                     }
@@ -187,10 +246,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // process ports that have arrived
                     foreach (var port in ports)
                     {
-                        if (!_ports.ContainsKey(port))
+                        if (!watchedPorts.ContainsKey(port))
                         {
                             var cancelWaitForAccess = new CancellationTokenSource();
-                            _ports[port] = cancelWaitForAccess;
+                            watchedPorts[port] = cancelWaitForAccess;
                             if (Added is not null)
                             {
                                 if (PortSerialManager.GetRegisteredDevice(port) is null)
@@ -251,7 +310,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                                         try
                                         {
-                                            Added.Invoke(this, port);
+                                            Added?.Invoke(this, port);
                                         }
                                         finally
                                         {
@@ -300,14 +359,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
             }
 
-            foreach (var source in _ports.Values)
+            foreach (var source in watchedPorts.Values)
             {
                 source.Cancel();
             }
 
-            _ownerManager.OnLogMessageAvailable($"PortSerial device watcher stopped @ Thread {_threadWatch.ManagedThreadId}");
-
-            Status = DeviceWatcherStatus.Stopped;
+            LogMessage($"PortSerial device watcher stopped @ Thread {Thread.CurrentThread.ManagedThreadId}");
         }
 
         /// <summary>
@@ -532,10 +589,48 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Stops the watcher.
         /// </summary>
+        /// <remarks>
+        /// This call doesn't wait for the watcher to stop. The <see cref="Status"/> changes to
+        /// <see cref="DeviceWatcherStatus.Stopped"/> once the watcher has actually stopped.
+        /// </remarks>
         public void Stop()
         {
-            _started = false;
-            Status = DeviceWatcherStatus.Stopping;
+            lock (_lifecycleLock)
+            {
+                if (!_started)
+                {
+                    return;
+                }
+
+                Status = DeviceWatcherStatus.Stopping;
+                _started = false;
+            }
+        }
+
+        /// <summary>
+        /// Stops the watcher and waits for the watcher thread to exit.
+        /// </summary>
+        /// <param name="millisecondsTimeout">Maximum time to wait, or <see cref="Timeout.Infinite"/>.</param>
+        /// <returns><see langword="true"/> if the watcher thread is not running when this call returns.
+        /// When called from the watcher thread itself (e.g. from an event handler) this doesn't wait and returns <see langword="false"/>.</returns>
+        internal bool StopAndWait(int millisecondsTimeout)
+        {
+            Stop();
+
+            var thread = _threadWatch;
+
+            if (thread is null)
+            {
+                return true;
+            }
+
+            if (thread == Thread.CurrentThread)
+            {
+                // don't wait for our thread
+                return false;
+            }
+
+            return thread.Join(millisecondsTimeout);
         }
 
         /// <summary>
@@ -543,14 +638,16 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         public void Dispose()
         {
-            Stop();
-
-            while (Status != DeviceWatcherStatus.Started)
+            if (StopAndWait(5000))
             {
-                Thread.Sleep(50);
+                lock (_lifecycleLock)
+                {
+                    if (_threadWatch?.IsAlive != true)
+                    {
+                        _threadWatch = null;
+                    }
+                }
             }
-
-            _threadWatch = null;
         }
     }
 }

@@ -25,6 +25,12 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         // Network device watchers started flag
         private bool _watchersStarted = false;
 
+        // the device watcher auto start (requested in the constructor) no longer applies
+        private bool _autoStartCancelled = false;
+        private readonly object _autoStartLock = new object();
+
+        private volatile bool _disposed = false;
+
         /// <summary>
         /// Internal list with the actual nF Network devices.
         /// This must be a static list as NanoFrameworkDevices is also global.
@@ -34,8 +40,9 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         /// </summary>
         private static readonly List<NetworkDeviceInformation> _networkDevices = new List<NetworkDeviceInformation>();
 
+        // NanoFrameworkDevices is global and can hold devices of other transports
         private IEnumerable<NanoDevice<NanoNetworkDevice>> _networkNanoFrameworkDevices =>
-            NanoFrameworkDevices.Cast<NanoDevice<NanoNetworkDevice>>();
+            NanoFrameworkDevices.OfType<NanoDevice<NanoNetworkDevice>>();
 
         private readonly ConcurrentDictionary<string, CachedDeviceInfo> _devicesCache =
             new ConcurrentDictionary<string, CachedDeviceInfo>();
@@ -47,15 +54,22 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         {
             _deviceWatcher = new DeviceWatcher(this, discoveryPort);
 
-            Task.Factory.StartNew(() =>
-            {
-                InitializeDeviceWatchers();
+            // subscribe before anything can start the watcher, so no event is missed
+            InitializeDeviceWatchers();
 
-                if (startDeviceWatchers)
+            if (startDeviceWatchers)
+            {
+                Task.Factory.StartNew(() =>
                 {
-                    StartNetworkDeviceWatchers();
-                }
-            });
+                    lock (_autoStartLock)
+                    {
+                        if (!_autoStartCancelled)
+                        {
+                            StartNetworkDeviceWatchers();
+                        }
+                    }
+                });
+            }
         }
 
         public override void ReScanDevices()
@@ -65,6 +79,10 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         public override void StartDeviceWatchers()
         {
+            ThrowIfDisposed();
+
+            CancelAutoStart();
+
             if (!_watchersStarted)
             {
                 StartDeviceWatchersInternal();
@@ -73,7 +91,54 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         public override void StopDeviceWatchers()
         {
+            CancelAutoStart();
+
             StopDeviceWatchersInternal();
+        }
+
+        private void CancelAutoStart()
+        {
+            lock (_autoStartLock)
+            {
+                _autoStartCancelled = true;
+            }
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(PortTcpIpManager));
+            }
+        }
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            lock (_autoStartLock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+
+                _autoStartCancelled = true;
+            }
+
+            if (disposing)
+            {
+                // stop the watcher and release all the network devices
+                StopDeviceWatchersInternal();
+
+                _deviceWatcher.Added -= OnDeviceAdded;
+                _deviceWatcher.Removed -= OnDeviceRemoved;
+
+                _deviceWatcher.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         #region Device watcher management and host app status handling
@@ -89,6 +154,8 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         public void StartNetworkDeviceWatchers()
         {
+            ThrowIfDisposed();
+
             // Initialize the Network device watchers to be notified when devices are connected/removed
             StartDeviceWatchersInternal();
         }
@@ -98,6 +165,11 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         /// </summary>
         private void StartDeviceWatchersInternal()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             // Start all device watchers
 
             _deviceWatcher.Start();
@@ -105,6 +177,12 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             _watchersStarted = true;
 
             IsDevicesEnumerationComplete = false;
+
+            if (_disposed)
+            {
+                // disposed while starting: don't leave the watcher running
+                _deviceWatcher.Stop();
+            }
         }
 
         /// <summary>
@@ -112,18 +190,8 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         /// </summary>
         private void StopDeviceWatchersInternal()
         {
-            if (_deviceWatcher.Status == DeviceWatcherStatus.Started)
-            {
-                _deviceWatcher.Stop();
+            _deviceWatcher.StopAndWait(Timeout.Infinite);
 
-                while (_deviceWatcher.Status != DeviceWatcherStatus.Stopped)
-                {
-                    Thread.Sleep(100);
-                }
-            }
-
-            // Clear the list of devices so we don't have potentially disconnected devices around
-            // also clear nanoFramework devices list
             List<string> devicesToRemove;
             lock (NanoFrameworkDevices)
             {
@@ -225,18 +293,36 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 {
                     if (CheckValidNanoFrameworkNetworkDevice(newNanoFrameworkDevice))
                     {
+                        bool added = false;
+
                         lock (NanoFrameworkDevices)
                         {
-                            //add device to the collection
-                            NanoFrameworkDevices.Add(newNanoFrameworkDevice);
-                            _networkDevices.Add(networkDevice);
+                            // checked inside the lock: Dispose() removes the devices under this same lock,
+                            // so a validation that completes after that can't bring a device back into the list
+                            if (!_disposed)
+                            {
+                                //add device to the collection
+                                NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+                                _networkDevices.Add(networkDevice);
+
+                                added = true;
+                            }
                         }
 
-                        OnLogMessageAvailable(
-                            NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
+                        if (added)
+                        {
+                            OnLogMessageAvailable(
+                                NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
 
-                        nanoFrameworkDeviceMatch = newNanoFrameworkDevice;
-                        isNew = true;
+                            nanoFrameworkDeviceMatch = newNanoFrameworkDevice;
+                            isNew = true;
+                        }
+                        else
+                        {
+                            // manager disposed while the device was being validated: release it
+                            newNanoFrameworkDevice.DebugEngine?.Dispose();
+                            newNanoFrameworkDevice.Disconnect(true);
+                        }
                     }
                     else
                     {
@@ -550,6 +636,8 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         /// <inheritdoc/>
         public override NanoDeviceBase AddDevice(string deviceId)
         {
+            ThrowIfDisposed();
+
             // expected format is "tcpip://{Host}:{Port}"
 
             var match = Regex.Match(deviceId, $"\"(tcpip:\\/\\/)(?<host>\\d{{1,3}}\\.\\d{{1,3}}\\.\\d{{1,3}}\\.\\d{{1,3}}):(?<port>[0-9]{{1,5}})\"gm");

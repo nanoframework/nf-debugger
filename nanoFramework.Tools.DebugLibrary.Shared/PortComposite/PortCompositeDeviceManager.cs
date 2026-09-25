@@ -12,9 +12,16 @@ namespace nanoFramework.Tools.Debugger.PortComposite
     public class PortCompositeDeviceManager : PortBase
     {
         private readonly List<PortBase> _ports = new List<PortBase>();
+        private readonly object _lifecycleLock = new object();
+        private bool _disposed = false;
         public override event EventHandler DeviceEnumerationCompleted;
         public override event EventHandler<StringEventArgs> LogMessageAvailable;
 
+        /// <summary>
+        /// Creates a device manager that aggregates several ports.
+        /// </summary>
+        /// <param name="ports">The ports to aggregate. They are owned by this manager and disposed with it.</param>
+        /// <param name="startDeviceWatchers">Indicates whether to start the device watchers.</param>
         public PortCompositeDeviceManager(
             IEnumerable<PortBase> ports,
             bool startDeviceWatchers = true)
@@ -28,9 +35,42 @@ namespace nanoFramework.Tools.Debugger.PortComposite
             {
                 if (startDeviceWatchers)
                 {
-                    _ports.ForEach(p => p.StartDeviceWatchers());
+                    lock (_lifecycleLock)
+                    {
+                        if (!_disposed)
+                        {
+                            _ports.ForEach(p => p.StartDeviceWatchers());
+                        }
+                    }
                 }
             });
+        }
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            lock (_lifecycleLock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+            }
+
+            if (disposing)
+            {
+                _ports.ForEach(p =>
+                {
+                    p.DeviceEnumerationCompleted -= OnPortDeviceEnumerationCompleted;
+                    p.LogMessageAvailable -= OnLogMessageAvailable;
+
+                    p.Dispose();
+                });
+            }
+
+            base.Dispose(disposing);
         }
 
         private void SubscribeToPortEvents()
