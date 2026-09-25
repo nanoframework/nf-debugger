@@ -120,10 +120,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private void ThrowIfDisposed()
         {
+#if NET7_0_OR_GREATER
+            ObjectDisposedException.ThrowIf(_disposed, this);
+#else
             if (_disposed)
             {
                 throw new ObjectDisposedException(nameof(PortSerialManager));
             }
+#endif
         }
 
         /// <inheritdoc/>
@@ -195,12 +199,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             _deviceWatcher.Start(PortExclusionList);
 
             _watchersStarted = true;
-
-            if (_disposed)
-            {
-                // disposed while starting: don't leave the watcher running
-                _deviceWatcher.Stop();
-            }
         }
 
         /// <summary>

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -24,6 +23,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         private UdpClient _udpClient;
         private readonly PortTcpIpManager _ownerManager;
         private readonly object _lifecycleLock = new object();
+        private bool _disposed = false;
 
         public delegate void EventDeviceAdded(object sender, NetworkDeviceInformation deviceInfo);
 
@@ -83,7 +83,8 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
                 lock (_lifecycleLock)
                 {
-                    if (_started)
+                    // once disposed, Start() has no effect
+                    if (_started || _disposed)
                     {
                         return;
                     }
@@ -150,7 +151,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         private void RunWatcher()
         {
-            LogMessage($"PortTcpIp network watcher started @ Thread {Thread.CurrentThread.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
+            LogMessage($"PortTcpIp network watcher started @ Thread {Environment.CurrentManagedThreadId} [ProcessID: {CurrentProcessId}]");
 
             UdpClient udpClient = null;
             string listenError = null;
@@ -204,9 +205,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
                         var discoveryPacket = udpClient.Receive(ref remoteEndPoint);
 
-                        // get address from device
-                        // TODO
-                        // remoteEndPoint;
+                        // TODO: take the device address from the packet sender (remoteEndPoint) instead of trusting the announced host
 
                         var message = Encoding.ASCII.GetString(discoveryPacket);
 
@@ -229,10 +228,16 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 udpClient.Close();
             }
 
-            LogMessage($"PortTcpIp device watcher stopped @ Thread {Thread.CurrentThread.ManagedThreadId}");
+            LogMessage($"PortTcpIp device watcher stopped @ Thread {Environment.CurrentManagedThreadId}");
         }
 
         private bool IsCurrentWatcherThread => _threadWatch == Thread.CurrentThread;
+
+#if NET5_0_OR_GREATER
+        private static int CurrentProcessId => Environment.ProcessId;
+#else
+        private static int CurrentProcessId => System.Diagnostics.Process.GetCurrentProcess().Id;
+#endif
 
         private void LogMessage(string message)
         {
@@ -292,7 +297,6 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                                         exclusiveAccess.Dispose();
                                     }
                                 }
-                                ;
                             });
                         }
                     }
@@ -332,6 +336,12 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         public void Dispose()
         {
+            lock (_lifecycleLock)
+            {
+                // from now on Start() has no effect
+                _disposed = true;
+            }
+
             // stop the watcher and wait up to 3 seconds for it to be stopped
             bool stopped = StopAndWait(3000);
 

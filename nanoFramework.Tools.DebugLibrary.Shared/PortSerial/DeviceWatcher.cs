@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -24,6 +23,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private volatile Thread _threadWatch = null;
         private readonly PortSerialManager _ownerManager;
         private readonly object _lifecycleLock = new object();
+        private bool _disposed = false;
 
         /// <summary>
         /// Represents a delegate method that is used to handle the DeviceAdded event.
@@ -87,7 +87,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 lock (_lifecycleLock)
                 {
-                    if (_started)
+                    // once disposed, Start() has no effect
+                    if (_started || _disposed)
                     {
                         return;
                     }
@@ -156,6 +157,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private bool IsCurrentWatcherThread => _threadWatch == Thread.CurrentThread;
 
+#if NET5_0_OR_GREATER
+        private static int CurrentProcessId => Environment.ProcessId;
+#else
+        private static int CurrentProcessId => System.Diagnostics.Process.GetCurrentProcess().Id;
+#endif
+
         private void LogMessage(string message)
         {
             try
@@ -170,181 +177,20 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private void RunWatcher(ICollection<string> portsToExclude)
         {
-            LogMessage($"PortSerial device watcher started @ Thread {Thread.CurrentThread.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
+            LogMessage($"PortSerial device watcher started @ Thread {Environment.CurrentManagedThreadId} [ProcessID: {CurrentProcessId}]");
 
+            // local to this watcher thread, so a restarted watcher never shares it
             var watchedPorts = new Dictionary<string, CancellationTokenSource>();
 
-            #region Support for the AllNewDevicesAdded event
-            object allNewDevicesLock = new object();
-            int allNewDevicesCandidateCount = 0;
-            bool anyOfAllNewDevicesDetected = false;
-            bool raiseAllNewDevicesAdded = true;
-
-            void UpdateAllNewDevices(bool isOneOfAllNewDevices)
-            {
-                lock (allNewDevicesLock)
-                {
-                    if (isOneOfAllNewDevices)
-                    {
-                        anyOfAllNewDevicesDetected = true;
-                    }
-                    if (--allNewDevicesCandidateCount == 0)
-                    {
-                        if (anyOfAllNewDevicesDetected && raiseAllNewDevicesAdded)
-                        {
-                            try
-                            {
-                                AllNewDevicesAdded?.Invoke(this);
-                            }
-                            catch
-                            {
-                                // The device watcher must continue
-                            }
-                        }
-                        anyOfAllNewDevicesDetected = false;
-                        raiseAllNewDevicesAdded = false;
-                    }
-                }
-            }
-            #endregion
+            // AllNewDevicesAdded is raised once per watcher run, during the first scan pass
+            bool allNewDevicesAddedPending = true;
 
             // status is set to Started by Start(), before this thread runs
             while (_started && IsCurrentWatcherThread)
             {
                 try
                 {
-                    var ports = new List<string>();
-                    lock (portsToExclude)
-                    {
-                        ports.AddRange(from p in GetPortNames()
-                                       where !portsToExclude.Contains(p)
-                                       select p);
-                    }
-
-                    // check for ports that departed 
-                    List<string> portsToRemove = new();
-
-                    foreach (var port in watchedPorts)
-                    {
-                        if (!ports.Contains(port.Key))
-                        {
-                            port.Value.Cancel();
-                            portsToRemove.Add(port.Key);
-                        }
-                    }
-
-                    // process ports that have departed 
-                    foreach (var port in portsToRemove)
-                    {
-                        if (watchedPorts.ContainsKey(port))
-                        {
-                            watchedPorts.Remove(port);
-                            Removed?.Invoke(this, port);
-                        }
-                    }
-
-                    // process ports that have arrived
-                    foreach (var port in ports)
-                    {
-                        if (!watchedPorts.ContainsKey(port))
-                        {
-                            var cancelWaitForAccess = new CancellationTokenSource();
-                            watchedPorts[port] = cancelWaitForAccess;
-                            if (Added is not null)
-                            {
-                                if (PortSerialManager.GetRegisteredDevice(port) is null)
-                                {
-                                    bool isOneOfAllNewDevices = true;
-                                    bool shouldRaiseAllNewDevicesAdded = false;
-                                    lock (allNewDevicesLock)
-                                    {
-                                        if (raiseAllNewDevicesAdded && allNewDevicesCandidateCount == 0)
-                                        {
-                                            raiseAllNewDevicesAdded = false;
-                                            shouldRaiseAllNewDevicesAdded = true;
-                                        }
-                                    }
-                                    if (shouldRaiseAllNewDevicesAdded)
-                                    {
-                                        try
-                                        {
-                                            AllNewDevicesAdded?.Invoke(this);
-                                        }
-                                        catch
-                                        {
-                                            // The device watcher must continue
-                                        }
-                                    }
-
-                                    Task.Run(async () =>
-                                    {
-                                        // Force true async running
-                                        await Task.Yield();
-
-                                        // Wait a short time, so that the AllNewDevices event does not have to
-                                        // be delayed for ports that are inaccessible.
-                                        var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, 1000, cancelWaitForAccess.Token);
-                                        if (exclusiveAccess is null)
-                                        {
-                                            // It took too long to get access
-                                            if (isOneOfAllNewDevices)
-                                            {
-                                                // Do not wait for the port to send the AllNewDevicesAdded
-                                                isOneOfAllNewDevices = false;
-                                                UpdateAllNewDevices(isOneOfAllNewDevices);
-                                            }
-
-                                            if (cancelWaitForAccess.IsCancellationRequested)
-                                            {
-                                                // The port disappeared
-                                                return;
-                                            }
-
-                                            // Now wait forever for the port to become available
-                                            exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, cancellationToken: cancelWaitForAccess.Token);
-                                            if (exclusiveAccess is null)
-                                            {
-                                                return;
-                                            }
-                                        }
-
-                                        try
-                                        {
-                                            Added?.Invoke(this, port);
-                                        }
-                                        finally
-                                        {
-                                            exclusiveAccess.Dispose();
-                                            if (isOneOfAllNewDevices)
-                                            {
-                                                UpdateAllNewDevices(isOneOfAllNewDevices);
-                                            }
-                                        }
-                                    });
-                                }
-                            }
-                        }
-                    }
-
-                    // If no new device candidates were queued during this first scan pass (either because
-                    // there are no ports at all, or all visible ports are already registered), the
-                    // UpdateAllNewDevices callback will never be called and AllNewDevicesAdded would
-                    // never fire. Fire it explicitly here to unblock enumeration completion.
-                    lock (allNewDevicesLock)
-                    {
-                        if (raiseAllNewDevicesAdded && allNewDevicesCandidateCount == 0)
-                        {
-                            raiseAllNewDevicesAdded = false;
-                            try
-                            {
-                                AllNewDevicesAdded?.Invoke(this);
-                            }
-                            catch
-                            {
-                                // The device watcher must continue
-                            }
-                        }
-                    }
+                    ScanPorts(portsToExclude, watchedPorts, ref allNewDevicesAddedPending);
 
                     Thread.Sleep(200);
                 }
@@ -364,7 +210,120 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 source.Cancel();
             }
 
-            LogMessage($"PortSerial device watcher stopped @ Thread {Thread.CurrentThread.ManagedThreadId}");
+            LogMessage($"PortSerial device watcher stopped @ Thread {Environment.CurrentManagedThreadId}");
+        }
+
+        private void ScanPorts(
+            ICollection<string> portsToExclude,
+            Dictionary<string, CancellationTokenSource> watchedPorts,
+            ref bool allNewDevicesAddedPending)
+        {
+            List<string> ports;
+            lock (portsToExclude)
+            {
+                ports = GetPortNames().Where(p => !portsToExclude.Contains(p)).ToList();
+            }
+
+            ProcessDepartedPorts(ports, watchedPorts);
+
+            ProcessArrivedPorts(ports, watchedPorts, ref allNewDevicesAddedPending);
+
+            // If no new device candidates were queued during this first scan pass (either because
+            // there are no ports at all, or all visible ports are already registered),
+            // AllNewDevicesAdded would never fire. Fire it explicitly here to unblock enumeration completion.
+            if (allNewDevicesAddedPending)
+            {
+                allNewDevicesAddedPending = false;
+                RaiseAllNewDevicesAdded();
+            }
+        }
+
+        private void ProcessDepartedPorts(
+            List<string> ports,
+            Dictionary<string, CancellationTokenSource> watchedPorts)
+        {
+            // check for ports that departed
+            var portsToRemove = watchedPorts.Keys.Where(p => !ports.Contains(p)).ToList();
+
+            foreach (var port in portsToRemove)
+            {
+                watchedPorts[port].Cancel();
+            }
+
+            // process ports that have departed
+            foreach (var port in portsToRemove)
+            {
+                if (watchedPorts.Remove(port))
+                {
+                    Removed?.Invoke(this, port);
+                }
+            }
+        }
+
+        private void ProcessArrivedPorts(
+            List<string> ports,
+            Dictionary<string, CancellationTokenSource> watchedPorts,
+            ref bool allNewDevicesAddedPending)
+        {
+            foreach (var port in ports.Where(p => !watchedPorts.ContainsKey(p)))
+            {
+                var cancelWaitForAccess = new CancellationTokenSource();
+                watchedPorts[port] = cancelWaitForAccess;
+
+                if (Added is null
+                    || PortSerialManager.GetRegisteredDevice(port) is not null)
+                {
+                    continue;
+                }
+
+                if (allNewDevicesAddedPending)
+                {
+                    allNewDevicesAddedPending = false;
+                    RaiseAllNewDevicesAdded();
+                }
+
+                Task.Run(() => NotifyDeviceAddedAsync(port, cancelWaitForAccess.Token));
+            }
+        }
+
+        private async Task NotifyDeviceAddedAsync(string port, CancellationToken portDeparted)
+        {
+            // Force true async running
+            await Task.Yield();
+
+            // Wait a short time first, then (if the port is still there) wait forever for it to become available
+            var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, 1000, portDeparted);
+            if (exclusiveAccess is null && !portDeparted.IsCancellationRequested)
+            {
+                exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, cancellationToken: portDeparted);
+            }
+
+            if (exclusiveAccess is null)
+            {
+                // the port disappeared
+                return;
+            }
+
+            try
+            {
+                Added?.Invoke(this, port);
+            }
+            finally
+            {
+                exclusiveAccess.Dispose();
+            }
+        }
+
+        private void RaiseAllNewDevicesAdded()
+        {
+            try
+            {
+                AllNewDevicesAdded?.Invoke(this);
+            }
+            catch
+            {
+                // The device watcher must continue
+            }
         }
 
         /// <summary>
@@ -638,6 +597,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         public void Dispose()
         {
+            lock (_lifecycleLock)
+            {
+                // from now on Start() has no effect
+                _disposed = true;
+            }
+
             if (StopAndWait(5000))
             {
                 lock (_lifecycleLock)

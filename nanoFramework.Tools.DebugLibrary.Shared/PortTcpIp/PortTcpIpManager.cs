@@ -106,10 +106,14 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         private void ThrowIfDisposed()
         {
+#if NET7_0_OR_GREATER
+            ObjectDisposedException.ThrowIf(_disposed, this);
+#else
             if (_disposed)
             {
                 throw new ObjectDisposedException(nameof(PortTcpIpManager));
             }
+#endif
         }
 
         /// <inheritdoc/>
@@ -177,12 +181,6 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             _watchersStarted = true;
 
             IsDevicesEnumerationComplete = false;
-
-            if (_disposed)
-            {
-                // disposed while starting: don't leave the watcher running
-                _deviceWatcher.Stop();
-            }
         }
 
         /// <summary>
@@ -291,38 +289,14 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 }
                 else if (connectResult == ConnectPortResult.Connected)
                 {
-                    if (CheckValidNanoFrameworkNetworkDevice(newNanoFrameworkDevice))
+                    if (CheckValidNanoFrameworkNetworkDevice(newNanoFrameworkDevice)
+                        && NanoFrameworkDeviceAdd(newNanoFrameworkDevice, networkDevice))
                     {
-                        bool added = false;
+                        OnLogMessageAvailable(
+                            NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
 
-                        lock (NanoFrameworkDevices)
-                        {
-                            // checked inside the lock: Dispose() removes the devices under this same lock,
-                            // so a validation that completes after that can't bring a device back into the list
-                            if (!_disposed)
-                            {
-                                //add device to the collection
-                                NanoFrameworkDevices.Add(newNanoFrameworkDevice);
-                                _networkDevices.Add(networkDevice);
-
-                                added = true;
-                            }
-                        }
-
-                        if (added)
-                        {
-                            OnLogMessageAvailable(
-                                NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
-
-                            nanoFrameworkDeviceMatch = newNanoFrameworkDevice;
-                            isNew = true;
-                        }
-                        else
-                        {
-                            // manager disposed while the device was being validated: release it
-                            newNanoFrameworkDevice.DebugEngine?.Dispose();
-                            newNanoFrameworkDevice.Disconnect(true);
-                        }
+                        nanoFrameworkDeviceMatch = newNanoFrameworkDevice;
+                        isNew = true;
                     }
                     else
                     {
@@ -337,6 +311,36 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             }
 
             return (nanoFrameworkDeviceMatch, isNew);
+        }
+
+        /// <summary>
+        /// Adds a validated device to the collections.
+        /// </summary>
+        /// <returns><see langword="false"/> if the device was discarded because this manager has been disposed.
+        /// The caller is responsible for disconnecting it.</returns>
+        private bool NanoFrameworkDeviceAdd(
+            NanoDevice<NanoNetworkDevice> newNanoFrameworkDevice,
+            NetworkDeviceInformation networkDevice)
+        {
+            lock (NanoFrameworkDevices)
+            {
+                // checked inside the lock: Dispose() removes the devices under this same lock,
+                // so a validation that completes after that can't bring a device back into the list
+                if (!_disposed)
+                {
+                    //add device to the collection
+                    NanoFrameworkDevices.Add(newNanoFrameworkDevice);
+                    _networkDevices.Add(networkDevice);
+
+                    return true;
+                }
+            }
+
+            // manager disposed while the device was being validated: release the debug engine
+            newNanoFrameworkDevice.DebugEngine?.Dispose();
+            newNanoFrameworkDevice.DebugEngine = null;
+
+            return false;
         }
 
         public override void DisposeDevice(string instanceId)
