@@ -236,7 +236,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Connects to a serial device.
         /// </summary>
         /// <returns>The result of the connection attempt</returns>
-        public ConnectPortResult ConnectDevice()
+        public ConnectPortResult ConnectDevice() => ConnectDevice(CancellationToken.None);
+
+        /// <summary>
+        /// Connects to a serial device.
+        /// </summary>
+        /// <param name="cancellationToken">Aborts the connection attempt (including the retries to open the port).</param>
+        /// <returns>The result of the connection attempt</returns>
+        public ConnectPortResult ConnectDevice(CancellationToken cancellationToken)
         {
             ConnectPortResult openDeviceResult = ConnectPortResult.NotConnected;
 
@@ -253,7 +260,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             bool exclusiveAccessCreated = false;
             if (_exclusiveAccess is null)
             {
-                _exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(InstanceId);
+                _exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(
+                    InstanceId,
+                    cancellationToken: cancellationToken.CanBeCanceled ? cancellationToken : null);
                 if (_exclusiveAccess is null)
                 {
                     return ConnectPortResult.NoExclusiveAccess;
@@ -267,7 +276,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     .Or<Exception>()
                     .WaitAndRetry(10, retryCount => TimeSpan.FromMilliseconds(retryCount * 75),
                         onRetry: (exception, delay, retryCount, context) => LogRetry(exception, delay, retryCount, context))
-                    .Execute(() => OpenDevice());
+                    .Execute(_ => OpenDevice(), cancellationToken);
 
                 if (openDeviceResult == ConnectPortResult.Connected)
                 {
@@ -278,6 +287,10 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // Most likely the device is opened by another app, but cannot be sure
                     OnLogMessageAvailable(NanoDevicesEventSource.Log.CriticalError($"Can't open Device: {InstanceId}"));
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                openDeviceResult = ConnectPortResult.NotConnected;
             }
             catch (UnauthorizedAccessException uaEx)
             {

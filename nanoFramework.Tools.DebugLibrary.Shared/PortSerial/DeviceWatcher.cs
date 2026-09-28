@@ -30,7 +30,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private readonly object _notificationsLock = new object();
 
         // set while running one of the Added notifications of a watcher, to detect calls from its event handlers
-        private static readonly AsyncLocal<DeviceWatcher> s_notifyingWatcher = new AsyncLocal<DeviceWatcher>();
+        // (thread static, not async local: it must not flow into threads or tasks started by the event handlers)
+        [ThreadStatic]
+        private static DeviceWatcher t_notifyingWatcher;
 
         /// <summary>
         /// Represents a delegate method that is used to handle the DeviceAdded event.
@@ -316,11 +318,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             CancellationToken portDeparted,
             Action releaseCandidate)
         {
+            var previousNotifyingWatcher = t_notifyingWatcher;
+            t_notifyingWatcher = this;
+
             try
             {
-                // flows into the event handlers invoked from here
-                s_notifyingWatcher.Value = this;
-
                 // Wait a short time first...
                 var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, 1000, portDeparted);
 
@@ -359,6 +361,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
             finally
             {
+                t_notifyingWatcher = previousNotifyingWatcher;
+
                 lock (_notificationsLock)
                 {
                     if (--_pendingNotifications == 0)
@@ -771,7 +775,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             var thread = _threadWatch;
 
             if (thread == Thread.CurrentThread
-                || s_notifyingWatcher.Value == this)
+                || t_notifyingWatcher == this)
             {
                 // called from an event handler: can't wait for ourselves
                 return false;

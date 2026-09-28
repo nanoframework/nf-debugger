@@ -162,6 +162,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 _deviceWatcher.Added -= OnDeviceAdded;
                 _deviceWatcher.Removed -= OnDeviceRemoved;
                 _deviceWatcher.AllNewDevicesAdded -= ProcessDeviceEnumerationComplete;
+
+                // the watcher can't run again: nothing uses this one
+                _validationCancellation.Dispose();
             }
 
             base.Dispose(disposing);
@@ -202,12 +205,6 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // when the new watcher thread begins.
             IsDevicesEnumerationComplete = false;
 
-            if (_validationCancellation.IsCancellationRequested)
-            {
-                // the validations of the new watcher run must not be cancelled
-                _validationCancellation = new CancellationTokenSource();
-            }
-
             _deviceWatcher.Start(PortExclusionList);
 
             _watchersStarted = true;
@@ -219,11 +216,22 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private void StopDeviceWatchersInternal()
         {
             // abort the device validations in progress, so that stopping doesn't wait for them to run their course
-            _validationCancellation.Cancel();
+            var validationCancellation = _validationCancellation;
+            validationCancellation.Cancel();
 
             // stop the watcher (even if it's still starting) and wait for it to exit
             // (no wait if called from the watcher thread, e.g. from an event handler)
-            _deviceWatcher.StopAndWait(Timeout.Infinite);
+            bool stopped = _deviceWatcher.StopAndWait(Timeout.Infinite);
+
+            // the validations of the next watcher run must not be cancelled
+            _validationCancellation = new CancellationTokenSource();
+
+            if (stopped)
+            {
+                // no validation can be using it anymore
+                // (otherwise, e.g. stopping from an event handler, it's left for the GC)
+                validationCancellation.Dispose();
+            }
 
             NanoFrameworkDevicesRemoveAllSerial();
 
@@ -301,10 +309,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 // Create a new element for this device and...
                 var newNanoFrameworkDevice = new NanoDevice<NanoSerialDevice>();
                 newNanoFrameworkDevice.DeviceId = deviceId;
-                newNanoFrameworkDevice.ConnectionPort = new PortSerial(this, newNanoFrameworkDevice);
+                var serialPort = new PortSerial(this, newNanoFrameworkDevice);
+                newNanoFrameworkDevice.ConnectionPort = serialPort;
                 newNanoFrameworkDevice.Transport = TransportType.Serial;
 
-                var connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
+                var connectResult = serialPort.ConnectDevice(cancellationToken);
 
                 if (connectResult == ConnectPortResult.Unauthorized)
                 {
@@ -352,7 +361,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                         OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {newNanoFrameworkDevice.DeviceId} *** 2nd attempt ***"));
 
-                        connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
+                        connectResult = serialPort.ConnectDevice(cancellationToken);
 
                         if (connectResult == ConnectPortResult.Unauthorized)
                         {
