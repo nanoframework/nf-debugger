@@ -183,6 +183,10 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             _watchersStarted = true;
 
             IsDevicesEnumerationComplete = false;
+
+            // network devices announce themselves, there's no initial list to enumerate:
+            // enumeration is complete as soon as the watcher is started, devices announcing later are added as they come
+            ProcessDeviceEnumerationComplete();
         }
 
         /// <summary>
@@ -409,12 +413,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         {
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(networkDevice.DeviceId));
 
-            var (_, isNew) = AddDeviceToListAsync(networkDevice);
-
-            if (isNew && !IsDevicesEnumerationComplete)
-            {
-                ProcessDeviceEnumerationComplete();
-            }
+            AddDeviceToListAsync(networkDevice);
         }
 
         #endregion
@@ -431,9 +430,8 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 count = NanoFrameworkDevices.OfType<NanoDevice<NanoNetworkDevice>>().Count();
             }
 
-            // TODO: count are not serial devices
             OnLogMessageAvailable(
-                NanoDevicesEventSource.Log.SerialDeviceEnumerationCompleted(count));
+                NanoDevicesEventSource.Log.NetworkDeviceEnumerationCompleted(count));
 
             // fire event that Network enumeration is complete 
             OnDeviceEnumerationCompleted();

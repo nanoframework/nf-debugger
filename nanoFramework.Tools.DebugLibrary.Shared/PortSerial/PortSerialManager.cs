@@ -27,6 +27,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private volatile bool _disposed = false;
 
+        // cancels the validation of the devices reported by the device watcher, when the watcher is stopped
+        private volatile CancellationTokenSource _validationCancellation = new CancellationTokenSource();
+
         // counter of device watchers completed
         private int _deviceWatchersCompletedCount = 0;
 
@@ -148,6 +151,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             if (disposing)
             {
+                // abort the device validations in progress, so that disposing doesn't wait for them to run their course
+                _validationCancellation.Cancel();
+
                 // dispose the watcher first: it can't be started again
                 _deviceWatcher.Dispose();
 
@@ -196,6 +202,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // when the new watcher thread begins.
             IsDevicesEnumerationComplete = false;
 
+            if (_validationCancellation.IsCancellationRequested)
+            {
+                // the validations of the new watcher run must not be cancelled
+                _validationCancellation = new CancellationTokenSource();
+            }
+
             _deviceWatcher.Start(PortExclusionList);
 
             _watchersStarted = true;
@@ -206,6 +218,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         private void StopDeviceWatchersInternal()
         {
+            // abort the device validations in progress, so that stopping doesn't wait for them to run their course
+            _validationCancellation.Cancel();
+
             // stop the watcher (even if it's still starting) and wait for it to exit
             // (no wait if called from the watcher thread, e.g. from an event handler)
             _deviceWatcher.StopAndWait(Timeout.Infinite);
@@ -263,14 +278,17 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             ThrowIfDisposed();
 
-            return AddDeviceToListAsync(deviceId);
+            return AddDeviceToListAsync(deviceId, CancellationToken.None);
         }
 
         /// <summary>
         /// Creates a <see cref="NanoDevice{NanoSerialDevice}"/> and adds it to the list of devices.
         /// </summary>
         /// <param name="deviceId">The AQS used to find this device</param>
-        private NanoDeviceBase AddDeviceToListAsync(string deviceId)
+        /// <param name="cancellationToken">Aborts the validation of the device.</param>
+        private NanoDeviceBase AddDeviceToListAsync(
+            string deviceId,
+            CancellationToken cancellationToken)
         {
             // search the nanoFramework device list for a device with a matching interface ID
             var nanoFrameworkDeviceMatch = FindNanoFrameworkDevice(deviceId);
@@ -294,7 +312,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
                 else if (connectResult == ConnectPortResult.Connected)
                 {
-                    if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice))
+                    if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice, false, cancellationToken))
                     {
                         //add device to the collection
                         if (NanoFrameworkDeviceAdd(newNanoFrameworkDevice))
@@ -324,7 +342,13 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             delay = _delay.Next(200, 600);
                         }
 
-                        Thread.Sleep(BootTime + delay);
+                        if (cancellationToken.WaitHandle.WaitOne(BootTime + delay))
+                        {
+                            // validation aborted (the device watcher is being stopped): no 2nd attempt
+                            OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(deviceId));
+
+                            return nanoFrameworkDeviceMatch;
+                        }
 
                         OnLogMessageAvailable(NanoDevicesEventSource.Log.CheckingValidDevice($" {newNanoFrameworkDevice.DeviceId} *** 2nd attempt ***"));
 
@@ -336,7 +360,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         }
                         else if (connectResult == ConnectPortResult.Connected)
                         {
-                            if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice, true))
+                            if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice, true, cancellationToken))
                             {
                                 if (NanoFrameworkDeviceAdd(newNanoFrameworkDevice))
                                 {
@@ -490,10 +514,21 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(serialPort));
 
-            Policy.Handle<InvalidOperationException>()
-                .WaitAndRetry(10, retryCount => TimeSpan.FromMilliseconds((retryCount * retryCount) * 25),
-                    onRetry: (exception, delay, retryCount, context) => LogRetry(exception, delay, retryCount, context))
-                .Execute(() => AddDeviceToListAsync(serialPort));
+            // taken now: the watcher waits for this handler before a restart can replace it
+            var validationCancellation = _validationCancellation.Token;
+
+            try
+            {
+                Policy.Handle<InvalidOperationException>()
+                    .WaitAndRetry(10, retryCount => TimeSpan.FromMilliseconds((retryCount * retryCount) * 25),
+                        onRetry: (exception, delay, retryCount, context) => LogRetry(exception, delay, retryCount, context))
+                    .Execute(cancellationToken => AddDeviceToListAsync(serialPort, cancellationToken), validationCancellation);
+            }
+            catch (OperationCanceledException)
+            {
+                // the device watcher is being stopped
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(serialPort));
+            }
         }
 
         private void LogRetry(Exception exception, TimeSpan delay, object retryCount, object context)
@@ -533,7 +568,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private bool CheckValidNanoFrameworkSerialDevice(
             NanoDevice<NanoSerialDevice> device,
-            bool longDelay = false)
+            bool longDelay,
+            CancellationToken cancellationToken)
         {
             bool validDevice = false;
             bool isKnownDevice = false;
@@ -552,6 +588,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     // need to go through all the valid baud rates: 921600, 460800 and 115200.
                     foreach (int baudRate in PortSerial.ValidBaudRates)
                     {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            // validation aborted (the device watcher is being stopped)
+                            break;
+                        }
+
                         if (device.DebugEngine == null)
                         {
                             device.CreateDebugEngine();
@@ -684,8 +726,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
                 else
                 {
-                    // remove from cache
-                    _devicesCache.TryRemove(deviceId, out var dummy);
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        // not a valid device: remove from cache (unless the validation was just aborted)
+                        _devicesCache.TryRemove(deviceId, out var dummy);
+                    }
 
                     device.DebugEngine?.Stop();
                     device.DebugEngine?.Dispose();

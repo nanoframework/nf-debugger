@@ -15,6 +15,10 @@ namespace nanoFramework.Tools.Debugger.PortComposite
         private readonly List<PortBase> _ports = new List<PortBase>();
         private readonly object _lifecycleLock = new object();
         private bool _disposed = false;
+
+        // raise DeviceEnumerationCompleted once per enumeration
+        private readonly object _enumerationLock = new object();
+        private bool _enumerationCompletedRaised = false;
         public override event EventHandler DeviceEnumerationCompleted;
         public override event EventHandler<StringEventArgs> LogMessageAvailable;
 
@@ -31,6 +35,8 @@ namespace nanoFramework.Tools.Debugger.PortComposite
 
             SubscribeToPortEvents();
 
+            // in case the ports have already completed their enumeration before we subscribed
+            EvaluateEnumerationComplete();
 
             Task.Factory.StartNew(() =>
             {
@@ -40,7 +46,7 @@ namespace nanoFramework.Tools.Debugger.PortComposite
                     {
                         if (!_disposed)
                         {
-                            _ports.ForEach(p => p.StartDeviceWatchers());
+                            StartPortsDeviceWatchers();
                         }
                     }
                 }
@@ -109,13 +115,58 @@ namespace nanoFramework.Tools.Debugger.PortComposite
 
         private void OnPortDeviceEnumerationCompleted(object sender, EventArgs e)
         {
-            IsDevicesEnumerationComplete = (from p in _ports
-                                            where p.IsDevicesEnumerationComplete
-                                            select p).Any();
-            if (IsDevicesEnumerationComplete)
+            EvaluateEnumerationComplete();
+        }
+
+        /// <summary>
+        /// Enumeration is complete once all the ports have completed theirs.
+        /// Raises <see cref="DeviceEnumerationCompleted"/> once per enumeration.
+        /// </summary>
+        private void EvaluateEnumerationComplete()
+        {
+            bool raise;
+
+            lock (_enumerationLock)
+            {
+                bool complete = _ports.Count > 0
+                                && _ports.All(p => p.IsDevicesEnumerationComplete);
+
+                IsDevicesEnumerationComplete = complete;
+
+                raise = complete && !_enumerationCompletedRaised;
+
+                if (raise)
+                {
+                    _enumerationCompletedRaised = true;
+                }
+            }
+
+            // raise outside the lock
+            if (raise)
             {
                 DeviceEnumerationCompleted?.Invoke(this, EventArgs.Empty);
             }
+        }
+
+        /// <summary>
+        /// Starts a new enumeration: to be called after the ports have (re)started theirs.
+        /// </summary>
+        private void RestartEnumeration()
+        {
+            lock (_enumerationLock)
+            {
+                _enumerationCompletedRaised = false;
+            }
+
+            // ports that are already running (and have completed) won't raise their event again
+            EvaluateEnumerationComplete();
+        }
+
+        private void StartPortsDeviceWatchers()
+        {
+            _ports.ForEach(p => p.StartDeviceWatchers());
+
+            RestartEnumeration();
         }
 
         /// <inheritdoc/>
@@ -130,7 +181,7 @@ namespace nanoFramework.Tools.Debugger.PortComposite
         public override void StartDeviceWatchers()
         {
             IsDevicesEnumerationComplete = false;
-            _ports.ForEach(p => p.StartDeviceWatchers());
+            StartPortsDeviceWatchers();
         }
 
         public override void StopDeviceWatchers()
@@ -143,7 +194,10 @@ namespace nanoFramework.Tools.Debugger.PortComposite
             IsDevicesEnumerationComplete = false;
             Task.Run(() =>
             {
+                // the ports reset their enumeration state synchronously
                 _ports.ForEach(p => p.ReScanDevices());
+
+                RestartEnumeration();
             });
         }
 

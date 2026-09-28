@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
 using System.Runtime.InteropServices;
+using System.Threading;
 using nanoFramework.Tools.Debugger.NFDevice;
 using Polly;
 
@@ -169,11 +170,16 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 try
                 {
-                    if (((SerialPort)NanoDevice.DeviceBase).IsOpen)
+                    var serialPort = (SerialPort)NanoDevice.DeviceBase;
+
+                    if (serialPort.IsOpen)
                     {
-                        ((SerialPort)NanoDevice.DeviceBase).Close();
+                        PrepareToClose(serialPort);
+
+                        serialPort.Close();
                     }
-                    ((SerialPort)NanoDevice.DeviceBase).Dispose();
+
+                    serialPort.Dispose();
                 }
                 catch (Exception ex)
                 {
@@ -184,6 +190,38 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             {
                 _exclusiveAccess.Dispose();
                 _exclusiveAccess = null;
+            }
+        }
+
+        /// <summary>
+        /// Closing the port can block for ~30 s on some devices (seen with the native USB port of an ESP32-S3 right
+        /// after it booted). SerialPort.Close() stops its event loop, then drops DTR and flushes the output.
+        /// Doing these steps explicitly beforehand, while the port is still fully operational, avoids that
+        /// (tested on hardware: purging alone isn't enough, dropping DTR and flushing beforehand are needed).
+        /// </summary>
+        private void PrepareToClose(SerialPort serialPort)
+        {
+            try
+            {
+                var drainTimer = Stopwatch.StartNew();
+
+                // give pending output a short time to go out...
+                while (serialPort.BytesToWrite > 0
+                       && drainTimer.ElapsedMilliseconds < 250)
+                {
+                    Thread.Sleep(10);
+                }
+
+                // ... then drop anything the driver still holds (it may not count what it already handed to USB)
+                serialPort.DiscardOutBuffer();
+                serialPort.DiscardInBuffer();
+
+                serialPort.DtrEnable = false;
+                serialPort.BaseStream.Flush();
+            }
+            catch
+            {
+                // the port may already be gone, closing it will sort that out
             }
         }
 
