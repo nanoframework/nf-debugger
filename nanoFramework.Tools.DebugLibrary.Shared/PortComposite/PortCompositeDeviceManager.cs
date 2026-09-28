@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 
 
@@ -12,9 +13,16 @@ namespace nanoFramework.Tools.Debugger.PortComposite
     public class PortCompositeDeviceManager : PortBase
     {
         private readonly List<PortBase> _ports = new List<PortBase>();
+        private readonly object _lifecycleLock = new object();
+        private bool _disposed = false;
         public override event EventHandler DeviceEnumerationCompleted;
         public override event EventHandler<StringEventArgs> LogMessageAvailable;
 
+        /// <summary>
+        /// Creates a device manager that aggregates several ports.
+        /// </summary>
+        /// <param name="ports">The ports to aggregate. They are owned by this manager and disposed with it.</param>
+        /// <param name="startDeviceWatchers">Indicates whether to start the device watchers.</param>
         public PortCompositeDeviceManager(
             IEnumerable<PortBase> ports,
             bool startDeviceWatchers = true)
@@ -28,9 +36,61 @@ namespace nanoFramework.Tools.Debugger.PortComposite
             {
                 if (startDeviceWatchers)
                 {
-                    _ports.ForEach(p => p.StartDeviceWatchers());
+                    lock (_lifecycleLock)
+                    {
+                        if (!_disposed)
+                        {
+                            _ports.ForEach(p => p.StartDeviceWatchers());
+                        }
+                    }
                 }
             });
+        }
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            lock (_lifecycleLock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+            }
+
+            List<Exception> exceptions = null;
+
+            if (disposing)
+            {
+                // dispose all ports, even if one of them throws
+                foreach (var port in _ports)
+                {
+                    port.DeviceEnumerationCompleted -= OnPortDeviceEnumerationCompleted;
+                    port.LogMessageAvailable -= OnLogMessageAvailable;
+
+                    try
+                    {
+                        port.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        (exceptions ??= new List<Exception>()).Add(ex);
+                    }
+                }
+            }
+
+            base.Dispose(disposing);
+
+            if (exceptions?.Count == 1)
+            {
+                ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
+            }
+            else if (exceptions is not null)
+            {
+                throw new AggregateException(exceptions);
+            }
         }
 
         private void SubscribeToPortEvents()

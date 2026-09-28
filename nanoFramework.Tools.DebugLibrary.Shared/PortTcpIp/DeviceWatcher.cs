@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -19,11 +18,12 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         private const string CommandDeviceStop = "-";
 
         private readonly int _discoveryPort;
-        private bool _started = false;
-        private Thread _threadWatch = null;
+        private volatile bool _started = false;
+        private volatile Thread _threadWatch = null;
         private UdpClient _udpClient;
         private readonly PortTcpIpManager _ownerManager;
-        private readonly AutoResetEvent _watcherStopped = new(false);
+        private readonly object _lifecycleLock = new object();
+        private bool _disposed = false;
 
         public delegate void EventDeviceAdded(object sender, NetworkDeviceInformation deviceInfo);
 
@@ -38,7 +38,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         /// <summary>
         /// Constructor for a <see cref="PortTcpIpManager"/> network watcher class.
         /// </summary>
-        /// <param name="owner"><The <see cref="PortTcpIpManager"/> that owns this network watcher./param>
+        /// <param name="owner">The <see cref="PortTcpIpManager"/> that owns this network watcher.</param>
         /// <param name="discoveryPort">The port what will be listening for nanoDevice announcement packets.</param>
         public DeviceWatcher(
             PortTcpIpManager owner,
@@ -48,81 +48,206 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             _ownerManager = owner;
         }
 
+        /// <summary>
+        /// Stops the watcher.
+        /// </summary>
+        /// <remarks>
+        /// This call doesn't wait for the watcher to stop. The <see cref="Status"/> changes to
+        /// <see cref="DeviceWatcherStatus.Stopped"/> once the watcher has actually stopped.
+        /// </remarks>
         public void Stop()
         {
-            // can stop only if it was started
-            if (_udpClient != null)
+            lock (_lifecycleLock)
             {
-                _udpClient.Close();
-
-                _started = false;
+                if (!_started)
+                {
+                    // never started or already stopping/stopped: don't overwrite the current status
+                    return;
+                }
 
                 Status = DeviceWatcherStatus.Stopping;
+                _started = false;
+
+                _udpClient?.Close();
             }
         }
 
+        /// <summary>
+        /// Starts the watcher.
+        /// </summary>
         public void Start()
         {
-            if (!_started)
+            while (true)
             {
-                _threadWatch = new Thread(async () =>
+                Thread previousThread;
+
+                lock (_lifecycleLock)
                 {
-                    _ownerManager.OnLogMessageAvailable($"PortTcpIp network watcher started @ Thread {_threadWatch.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
-
-                    _udpClient = new UdpClient();
-                    _udpClient.ExclusiveAddressUse = false;
-                    _udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-
-                    IPEndPoint listeningPort = new IPEndPoint(IPAddress.Any, _discoveryPort);
-
-                    _udpClient.Client.Bind(listeningPort);
-
-                    _started = true;
-
-                    Status = DeviceWatcherStatus.Started;
-                    using var isDiscovering = new CancellationTokenSource();
-
-                    while (_started)
+                    // once disposed, Start() has no effect
+                    if (_started || _disposed)
                     {
-                        try
-                        {
-                            var discoveryPacket = await _udpClient.ReceiveAsync();
-
-                            // get address from device
-                            // TODO
-                            // discoveryPacket.RemoteEndPoint;
-
-                            var message = Encoding.ASCII.GetString(discoveryPacket.Buffer);
-
-                            ProcessDiscoveryMessage(message, isDiscovering.Token);
-                        }
-#if DEBUG
-                        catch (Exception ex)
-#else
-                        catch
-#endif
-                        {
-                            // catch all so the listener can be always listening
-                            // on exception caused by the socket being closed, the thread will exit on the while loop condition
-                        }
+                        return;
                     }
 
-                    isDiscovering.Cancel();
+                    previousThread = _threadWatch;
 
-                    _ownerManager.OnLogMessageAvailable($"PortTcpIp device watcher stopped @ Thread {_threadWatch.ManagedThreadId}");
+                    if (previousThread is null
+                        || !previousThread.IsAlive
+                        || previousThread == Thread.CurrentThread)
+                    {
+                        StartWatcherThread();
 
-                    Status = DeviceWatcherStatus.Stopped;
+                        return;
+                    }
+                }
 
-                    // signal watcher stopped
-                    _watcherStopped.Set();
+                previousThread.Join();
+            }
+        }
 
-                })
+        // must be called while holding _lifecycleLock
+        private void StartWatcherThread()
+        {
+            try
+            {
+                _threadWatch = new Thread(WatcherThread)
                 {
                     IsBackground = true,
                     Priority = ThreadPriority.Lowest
                 };
 
+                Status = DeviceWatcherStatus.Started;
+                _started = true;
+
                 _threadWatch.Start();
+            }
+            catch
+            {
+                _started = false;
+                _threadWatch = null;
+                Status = DeviceWatcherStatus.Stopped;
+
+                throw;
+            }
+        }
+
+        private void WatcherThread()
+        {
+            try
+            {
+                RunWatcher();
+            }
+            finally
+            {
+                lock (_lifecycleLock)
+                {
+                    if (IsCurrentWatcherThread)
+                    {
+                        Status = DeviceWatcherStatus.Stopped;
+                    }
+                }
+            }
+        }
+
+        private void RunWatcher()
+        {
+            LogMessage($"PortTcpIp network watcher started @ Thread {Environment.CurrentManagedThreadId} [ProcessID: {CurrentProcessId}]");
+
+            UdpClient udpClient = null;
+            string listenError = null;
+
+            lock (_lifecycleLock)
+            {
+                if (!_started || !IsCurrentWatcherThread)
+                {
+                    return;
+                }
+
+                try
+                {
+                    udpClient = new UdpClient();
+                    udpClient.ExclusiveAddressUse = false;
+                    udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+                    IPEndPoint listeningPort = new IPEndPoint(IPAddress.Any, _discoveryPort);
+
+                    udpClient.Client.Bind(listeningPort);
+                }
+                catch (Exception ex)
+                {
+                    udpClient?.Dispose();
+                    udpClient = null;
+
+                    _started = false;
+
+                    listenError = ex.Message;
+                }
+
+                _udpClient = udpClient;
+            }
+
+            if (udpClient is null)
+            {
+                LogMessage($"PortTcpIp network watcher failed to listen on port {_discoveryPort}: {listenError}");
+
+                return;
+            }
+
+            using var isDiscovering = new CancellationTokenSource();
+
+            try
+            {
+                while (_started && IsCurrentWatcherThread)
+                {
+                    try
+                    {
+                        IPEndPoint remoteEndPoint = null;
+
+                        var discoveryPacket = udpClient.Receive(ref remoteEndPoint);
+
+                        // TODO: take the device address from the packet sender (remoteEndPoint) instead of trusting the announced host
+
+                        var message = Encoding.ASCII.GetString(discoveryPacket);
+
+                        ProcessDiscoveryMessage(message, isDiscovering.Token);
+                    }
+#if DEBUG
+                    catch (Exception ex)
+#else
+                    catch
+#endif
+                    {
+                        // catch all so the listener can be always listening
+                    }
+                }
+            }
+            finally
+            {
+                isDiscovering.Cancel();
+
+                udpClient.Close();
+            }
+
+            LogMessage($"PortTcpIp device watcher stopped @ Thread {Environment.CurrentManagedThreadId}");
+        }
+
+        private bool IsCurrentWatcherThread => _threadWatch == Thread.CurrentThread;
+
+#if NET5_0_OR_GREATER
+        private static int CurrentProcessId => Environment.ProcessId;
+#else
+        private static int CurrentProcessId => System.Diagnostics.Process.GetCurrentProcess().Id;
+#endif
+
+        private void LogMessage(string message)
+        {
+            try
+            {
+                _ownerManager.OnLogMessageAvailable(message);
+            }
+            catch
+            {
+                // a faulty log handler must not prevent the watcher from running or stopping
             }
         }
 
@@ -165,13 +290,13 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                                 {
                                     try
                                     {
-                                        Added.Invoke(this, info);
+                                        Added?.Invoke(this, info);
                                     }
                                     finally
                                     {
                                         exclusiveAccess.Dispose();
                                     }
-                                };
+                                }
                             });
                         }
                     }
@@ -183,17 +308,52 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             }
         }
 
-        public void Dispose()
+        /// <summary>
+        /// Stops the watcher and waits for the watcher thread to exit.
+        /// </summary>
+        /// <param name="millisecondsTimeout">Maximum time to wait, or <see cref="Timeout.Infinite"/>.</param>
+        /// <returns><see langword="true"/> if the watcher thread is not running when this call returns.
+        /// When called from the watcher thread itself (e.g. from an event handler) this doesn't wait and returns <see langword="false"/>.</returns>
+        internal bool StopAndWait(int millisecondsTimeout)
         {
-            // try stop the watcher
             Stop();
 
-            // wait 3 seconds for the watcher to be stopped
-            _watcherStopped.WaitOne(TimeSpan.FromSeconds(3));
+            var thread = _threadWatch;
 
-            _udpClient?.Dispose();
+            if (thread is null)
+            {
+                return true;
+            }
 
-            _threadWatch = null;
+            if (thread == Thread.CurrentThread)
+            {
+                // don't wait for our thread
+                return false;
+            }
+
+            return thread.Join(millisecondsTimeout);
+        }
+
+        public void Dispose()
+        {
+            lock (_lifecycleLock)
+            {
+                // from now on Start() has no effect
+                _disposed = true;
+            }
+
+            // stop the watcher and wait up to 3 seconds for it to be stopped
+            bool stopped = StopAndWait(3000);
+
+            lock (_lifecycleLock)
+            {
+                _udpClient?.Dispose();
+
+                if (stopped && _threadWatch?.IsAlive != true)
+                {
+                    _threadWatch = null;
+                }
+            }
         }
     }
 }

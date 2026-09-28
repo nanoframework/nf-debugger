@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -20,10 +19,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
     /// </summary>
     public class DeviceWatcher : IDisposable
     {
-        private bool _started = false;
-        private Dictionary<string, CancellationTokenSource> _ports;
-        private Thread _threadWatch = null;
+        private volatile bool _started = false;
+        private volatile Thread _threadWatch = null;
         private readonly PortSerialManager _ownerManager;
+        private readonly object _lifecycleLock = new object();
+        private bool _disposed = false;
 
         /// <summary>
         /// Represents a delegate method that is used to handle the DeviceAdded event.
@@ -81,211 +81,116 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Changes in the collection after the start of the device watcher are taken into account.</param>
         public void Start(ICollection<string> portsToExclude = null)
         {
-            if (!_started)
+            while (true)
             {
-                try
-                {
-                    _threadWatch = new Thread(() =>
-                    {
-                        StartWatcher(portsToExclude ?? []);
-                    })
-                    {
-                        IsBackground = true,
-                        Priority = ThreadPriority.Lowest
-                    };
+                Thread previousThread;
 
-                    _threadWatch.Start();
-
-                    // Set only after the thread has been successfully started
-                    // so Start() can be retried if thread creation or start throws.
-                    _started = true;
-                }
-                catch
+                lock (_lifecycleLock)
                 {
-                    _threadWatch = null;
-                    throw;
+                    // once disposed, Start() has no effect
+                    if (_started || _disposed)
+                    {
+                        return;
+                    }
+
+                    previousThread = _threadWatch;
+
+                    if (previousThread is null
+                        || !previousThread.IsAlive
+                        || previousThread == Thread.CurrentThread)
+                    {
+                        StartWatcherThread(portsToExclude);
+                        return;
+                    }
                 }
+
+                previousThread.Join();
+            }
+        }
+
+        // must be called while holding _lifecycleLock
+        private void StartWatcherThread(ICollection<string> portsToExclude)
+        {
+            try
+            {
+                _threadWatch = new Thread(() =>
+                {
+                    StartWatcher(portsToExclude ?? []);
+                })
+                {
+                    IsBackground = true,
+                    Priority = ThreadPriority.Lowest
+                };
+
+                Status = DeviceWatcherStatus.Started;
+                _started = true;
+
+                _threadWatch.Start();
+            }
+            catch
+            {
+                _started = false;
+                _threadWatch = null;
+                Status = DeviceWatcherStatus.Stopped;
+
+                throw;
             }
         }
 
         private void StartWatcher(ICollection<string> portsToExclude)
         {
-            _ownerManager.OnLogMessageAvailable($"PortSerial device watcher started @ Thread {_threadWatch.ManagedThreadId} [ProcessID: {Process.GetCurrentProcess().Id}]");
-
-            _ports = [];
-
-            #region Support for the AllNewDevicesAdded event
-            object allNewDevicesLock = new object();
-            int allNewDevicesCandidateCount = 0;
-            bool anyOfAllNewDevicesDetected = false;
-            bool raiseAllNewDevicesAdded = true;
-
-            void UpdateAllNewDevices(bool isOneOfAllNewDevices)
+            try
             {
-                lock (allNewDevicesLock)
+                RunWatcher(portsToExclude);
+            }
+            finally
+            {
+                lock (_lifecycleLock)
                 {
-                    if (isOneOfAllNewDevices)
+                    if (IsCurrentWatcherThread)
                     {
-                        anyOfAllNewDevicesDetected = true;
-                    }
-                    if (--allNewDevicesCandidateCount == 0)
-                    {
-                        if (anyOfAllNewDevicesDetected && raiseAllNewDevicesAdded)
-                        {
-                            try
-                            {
-                                AllNewDevicesAdded?.Invoke(this);
-                            }
-                            catch
-                            {
-                                // The device watcher must continue
-                            }
-                        }
-                        anyOfAllNewDevicesDetected = false;
-                        raiseAllNewDevicesAdded = false;
+                        Status = DeviceWatcherStatus.Stopped;
                     }
                 }
             }
-            #endregion
+        }
 
-            Status = DeviceWatcherStatus.Started;
+        private bool IsCurrentWatcherThread => _threadWatch == Thread.CurrentThread;
 
-            while (_started)
+#if NET5_0_OR_GREATER
+        private static int CurrentProcessId => Environment.ProcessId;
+#else
+        private static int CurrentProcessId => System.Diagnostics.Process.GetCurrentProcess().Id;
+#endif
+
+        private void LogMessage(string message)
+        {
+            try
+            {
+                _ownerManager.OnLogMessageAvailable(message);
+            }
+            catch
+            {
+                // a faulty log handler must not prevent the watcher from running or stopping
+            }
+        }
+
+        private void RunWatcher(ICollection<string> portsToExclude)
+        {
+            LogMessage($"PortSerial device watcher started @ Thread {Environment.CurrentManagedThreadId} [ProcessID: {CurrentProcessId}]");
+
+            // local to this watcher thread, so a restarted watcher never shares it
+            var watchedPorts = new Dictionary<string, CancellationTokenSource>();
+
+            // AllNewDevicesAdded is raised once per watcher run, during the first scan pass
+            bool allNewDevicesAddedPending = true;
+
+            // status is set to Started by Start(), before this thread runs
+            while (_started && IsCurrentWatcherThread)
             {
                 try
                 {
-                    var ports = new List<string>();
-                    lock (portsToExclude)
-                    {
-                        ports.AddRange(from p in GetPortNames()
-                                       where !portsToExclude.Contains(p)
-                                       select p);
-                    }
-
-                    // check for ports that departed 
-                    List<string> portsToRemove = new();
-
-                    foreach (var port in _ports)
-                    {
-                        if (!ports.Contains(port.Key))
-                        {
-                            port.Value.Cancel();
-                            portsToRemove.Add(port.Key);
-                        }
-                    }
-
-                    // process ports that have departed 
-                    foreach (var port in portsToRemove)
-                    {
-                        if (_ports.ContainsKey(port))
-                        {
-                            _ports.Remove(port);
-                            Removed?.Invoke(this, port);
-                        }
-                    }
-
-                    // process ports that have arrived
-                    foreach (var port in ports)
-                    {
-                        if (!_ports.ContainsKey(port))
-                        {
-                            var cancelWaitForAccess = new CancellationTokenSource();
-                            _ports[port] = cancelWaitForAccess;
-                            if (Added is not null)
-                            {
-                                if (PortSerialManager.GetRegisteredDevice(port) is null)
-                                {
-                                    bool isOneOfAllNewDevices = true;
-                                    bool shouldRaiseAllNewDevicesAdded = false;
-                                    lock (allNewDevicesLock)
-                                    {
-                                        if (raiseAllNewDevicesAdded && allNewDevicesCandidateCount == 0)
-                                        {
-                                            raiseAllNewDevicesAdded = false;
-                                            shouldRaiseAllNewDevicesAdded = true;
-                                        }
-                                    }
-                                    if (shouldRaiseAllNewDevicesAdded)
-                                    {
-                                        try
-                                        {
-                                            AllNewDevicesAdded?.Invoke(this);
-                                        }
-                                        catch
-                                        {
-                                            // The device watcher must continue
-                                        }
-                                    }
-
-                                    Task.Run(async () =>
-                                    {
-                                        // Force true async running
-                                        await Task.Yield();
-
-                                        // Wait a short time, so that the AllNewDevices event does not have to
-                                        // be delayed for ports that are inaccessible.
-                                        var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, 1000, cancelWaitForAccess.Token);
-                                        if (exclusiveAccess is null)
-                                        {
-                                            // It took too long to get access
-                                            if (isOneOfAllNewDevices)
-                                            {
-                                                // Do not wait for the port to send the AllNewDevicesAdded
-                                                isOneOfAllNewDevices = false;
-                                                UpdateAllNewDevices(isOneOfAllNewDevices);
-                                            }
-
-                                            if (cancelWaitForAccess.IsCancellationRequested)
-                                            {
-                                                // The port disappeared
-                                                return;
-                                            }
-
-                                            // Now wait forever for the port to become available
-                                            exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, cancellationToken: cancelWaitForAccess.Token);
-                                            if (exclusiveAccess is null)
-                                            {
-                                                return;
-                                            }
-                                        }
-
-                                        try
-                                        {
-                                            Added.Invoke(this, port);
-                                        }
-                                        finally
-                                        {
-                                            exclusiveAccess.Dispose();
-                                            if (isOneOfAllNewDevices)
-                                            {
-                                                UpdateAllNewDevices(isOneOfAllNewDevices);
-                                            }
-                                        }
-                                    });
-                                }
-                            }
-                        }
-                    }
-
-                    // If no new device candidates were queued during this first scan pass (either because
-                    // there are no ports at all, or all visible ports are already registered), the
-                    // UpdateAllNewDevices callback will never be called and AllNewDevicesAdded would
-                    // never fire. Fire it explicitly here to unblock enumeration completion.
-                    lock (allNewDevicesLock)
-                    {
-                        if (raiseAllNewDevicesAdded && allNewDevicesCandidateCount == 0)
-                        {
-                            raiseAllNewDevicesAdded = false;
-                            try
-                            {
-                                AllNewDevicesAdded?.Invoke(this);
-                            }
-                            catch
-                            {
-                                // The device watcher must continue
-                            }
-                        }
-                    }
+                    ScanPorts(portsToExclude, watchedPorts, ref allNewDevicesAddedPending);
 
                     Thread.Sleep(200);
                 }
@@ -300,14 +205,125 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
             }
 
-            foreach (var source in _ports.Values)
+            foreach (var source in watchedPorts.Values)
             {
                 source.Cancel();
             }
 
-            _ownerManager.OnLogMessageAvailable($"PortSerial device watcher stopped @ Thread {_threadWatch.ManagedThreadId}");
+            LogMessage($"PortSerial device watcher stopped @ Thread {Environment.CurrentManagedThreadId}");
+        }
 
-            Status = DeviceWatcherStatus.Stopped;
+        private void ScanPorts(
+            ICollection<string> portsToExclude,
+            Dictionary<string, CancellationTokenSource> watchedPorts,
+            ref bool allNewDevicesAddedPending)
+        {
+            List<string> ports;
+            lock (portsToExclude)
+            {
+                ports = GetPortNames().Where(p => !portsToExclude.Contains(p)).ToList();
+            }
+
+            ProcessDepartedPorts(ports, watchedPorts);
+
+            ProcessArrivedPorts(ports, watchedPorts, ref allNewDevicesAddedPending);
+
+            // If no new device candidates were queued during this first scan pass (either because
+            // there are no ports at all, or all visible ports are already registered),
+            // AllNewDevicesAdded would never fire. Fire it explicitly here to unblock enumeration completion.
+            if (allNewDevicesAddedPending)
+            {
+                allNewDevicesAddedPending = false;
+                RaiseAllNewDevicesAdded();
+            }
+        }
+
+        private void ProcessDepartedPorts(
+            List<string> ports,
+            Dictionary<string, CancellationTokenSource> watchedPorts)
+        {
+            // check for ports that departed
+            var portsToRemove = watchedPorts.Keys.Where(p => !ports.Contains(p)).ToList();
+
+            foreach (var port in portsToRemove)
+            {
+                watchedPorts[port].Cancel();
+            }
+
+            // process ports that have departed
+            foreach (var port in portsToRemove)
+            {
+                if (watchedPorts.Remove(port))
+                {
+                    Removed?.Invoke(this, port);
+                }
+            }
+        }
+
+        private void ProcessArrivedPorts(
+            List<string> ports,
+            Dictionary<string, CancellationTokenSource> watchedPorts,
+            ref bool allNewDevicesAddedPending)
+        {
+            foreach (var port in ports.Where(p => !watchedPorts.ContainsKey(p)))
+            {
+                var cancelWaitForAccess = new CancellationTokenSource();
+                watchedPorts[port] = cancelWaitForAccess;
+
+                if (Added is null
+                    || PortSerialManager.GetRegisteredDevice(port) is not null)
+                {
+                    continue;
+                }
+
+                if (allNewDevicesAddedPending)
+                {
+                    allNewDevicesAddedPending = false;
+                    RaiseAllNewDevicesAdded();
+                }
+
+                Task.Run(() => NotifyDeviceAddedAsync(port, cancelWaitForAccess.Token));
+            }
+        }
+
+        private async Task NotifyDeviceAddedAsync(string port, CancellationToken portDeparted)
+        {
+            // Force true async running
+            await Task.Yield();
+
+            // Wait a short time first, then (if the port is still there) wait forever for it to become available
+            var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, 1000, portDeparted);
+            if (exclusiveAccess is null && !portDeparted.IsCancellationRequested)
+            {
+                exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, cancellationToken: portDeparted);
+            }
+
+            if (exclusiveAccess is null)
+            {
+                // the port disappeared
+                return;
+            }
+
+            try
+            {
+                Added?.Invoke(this, port);
+            }
+            finally
+            {
+                exclusiveAccess.Dispose();
+            }
+        }
+
+        private void RaiseAllNewDevicesAdded()
+        {
+            try
+            {
+                AllNewDevicesAdded?.Invoke(this);
+            }
+            catch
+            {
+                // The device watcher must continue
+            }
         }
 
         /// <summary>
@@ -532,10 +548,48 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Stops the watcher.
         /// </summary>
+        /// <remarks>
+        /// This call doesn't wait for the watcher to stop. The <see cref="Status"/> changes to
+        /// <see cref="DeviceWatcherStatus.Stopped"/> once the watcher has actually stopped.
+        /// </remarks>
         public void Stop()
         {
-            _started = false;
-            Status = DeviceWatcherStatus.Stopping;
+            lock (_lifecycleLock)
+            {
+                if (!_started)
+                {
+                    return;
+                }
+
+                Status = DeviceWatcherStatus.Stopping;
+                _started = false;
+            }
+        }
+
+        /// <summary>
+        /// Stops the watcher and waits for the watcher thread to exit.
+        /// </summary>
+        /// <param name="millisecondsTimeout">Maximum time to wait, or <see cref="Timeout.Infinite"/>.</param>
+        /// <returns><see langword="true"/> if the watcher thread is not running when this call returns.
+        /// When called from the watcher thread itself (e.g. from an event handler) this doesn't wait and returns <see langword="false"/>.</returns>
+        internal bool StopAndWait(int millisecondsTimeout)
+        {
+            Stop();
+
+            var thread = _threadWatch;
+
+            if (thread is null)
+            {
+                return true;
+            }
+
+            if (thread == Thread.CurrentThread)
+            {
+                // don't wait for our thread
+                return false;
+            }
+
+            return thread.Join(millisecondsTimeout);
         }
 
         /// <summary>
@@ -543,14 +597,22 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// </summary>
         public void Dispose()
         {
-            Stop();
-
-            while (Status != DeviceWatcherStatus.Started)
+            lock (_lifecycleLock)
             {
-                Thread.Sleep(50);
+                // from now on Start() has no effect
+                _disposed = true;
             }
 
-            _threadWatch = null;
+            if (StopAndWait(5000))
+            {
+                lock (_lifecycleLock)
+                {
+                    if (_threadWatch?.IsAlive != true)
+                    {
+                        _threadWatch = null;
+                    }
+                }
+            }
         }
     }
 }
