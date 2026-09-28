@@ -148,14 +148,14 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             if (disposing)
             {
-                // stop the watcher and release all the serial devices (and their ports)
+                // dispose the watcher first: it can't be started again
+                _deviceWatcher.Dispose();
+
                 StopDeviceWatchersInternal();
 
                 _deviceWatcher.Added -= OnDeviceAdded;
                 _deviceWatcher.Removed -= OnDeviceRemoved;
                 _deviceWatcher.AllNewDevicesAdded -= ProcessDeviceEnumerationComplete;
-
-                _deviceWatcher.Dispose();
             }
 
             base.Dispose(disposing);

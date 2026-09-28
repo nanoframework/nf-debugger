@@ -133,13 +133,15 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
             if (disposing)
             {
-                // stop the watcher and release all the network devices
+                // dispose the watcher first: from now on it can't be started again,
+                // so the wait below is guaranteed to see its thread exit
+                _deviceWatcher.Dispose();
+
+                // make sure the watcher has stopped and release all the network devices
                 StopDeviceWatchersInternal();
 
                 _deviceWatcher.Added -= OnDeviceAdded;
                 _deviceWatcher.Removed -= OnDeviceRemoved;
-
-                _deviceWatcher.Dispose();
             }
 
             base.Dispose(disposing);
