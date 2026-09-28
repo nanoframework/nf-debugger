@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+#if NET5_0_OR_GREATER
+using System.Runtime.Versioning;
+#endif
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,13 +20,22 @@ namespace nanoFramework.Tools.Debugger.PortSerial
     /// <summary>
     /// Device watcher.
     /// </summary>
-    public class DeviceWatcher : IDisposable
+    public partial class DeviceWatcher : IDisposable
     {
         private volatile bool _started = false;
         private volatile Thread _threadWatch = null;
         private readonly PortSerialManager _ownerManager;
         private readonly object _lifecycleLock = new object();
         private bool _disposed = false;
+
+        // Added notifications queued by the watcher and not finished yet (they outlive the watcher thread)
+        private int _pendingNotifications = 0;
+        private readonly object _notificationsLock = new object();
+
+        // set while running one of the Added notifications of a watcher, to detect calls from its event handlers
+        // (thread static, not async local: it must not flow into threads or tasks started by the event handlers)
+        [ThreadStatic]
+        private static DeviceWatcher t_notifyingWatcher;
 
         /// <summary>
         /// Represents a delegate method that is used to handle the DeviceAdded event.
@@ -182,32 +194,40 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // local to this watcher thread, so a restarted watcher never shares it
             var watchedPorts = new Dictionary<string, CancellationTokenSource>();
 
-            // AllNewDevicesAdded is raised once per watcher run, during the first scan pass
-            bool allNewDevicesAddedPending = true;
+            // tracks the devices present when this watcher run started, to raise AllNewDevicesAdded once they're all processed
+            var initialEnumeration = new InitialEnumeration(RaiseAllNewDevicesAdded);
 
-            // status is set to Started by Start(), before this thread runs
-            while (_started && IsCurrentWatcherThread)
+            try
             {
-                try
+                // status is set to Started by Start(), before this thread runs
+                while (_started && IsCurrentWatcherThread)
                 {
-                    ScanPorts(portsToExclude, watchedPorts, ref allNewDevicesAddedPending);
+                    try
+                    {
+                        ScanPorts(portsToExclude, watchedPorts, initialEnumeration);
 
-                    Thread.Sleep(200);
-                }
+                        Thread.Sleep(200);
+                    }
 #if DEBUG
-                catch (Exception ex)
+                    catch (Exception ex)
 #else
-                catch
+                    catch
 #endif
-                {
-                    // catch all so the watcher can always do it's job
-                    // on any exception the thread will get back to the loop or exit on the while loop condition
+                    {
+                        // catch all so the watcher can always do it's job
+                        // on any exception the thread will get back to the loop or exit on the while loop condition
+                    }
                 }
             }
-
-            foreach (var source in watchedPorts.Values)
+            finally
             {
-                source.Cancel();
+                // candidates still being processed belong to this run: they must not signal a later run
+                initialEnumeration.Abandon();
+
+                foreach (var source in watchedPorts.Values)
+                {
+                    source.Cancel();
+                }
             }
 
             LogMessage($"PortSerial device watcher stopped @ Thread {Environment.CurrentManagedThreadId}");
@@ -216,7 +236,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private void ScanPorts(
             ICollection<string> portsToExclude,
             Dictionary<string, CancellationTokenSource> watchedPorts,
-            ref bool allNewDevicesAddedPending)
+            InitialEnumeration initialEnumeration)
         {
             List<string> ports;
             lock (portsToExclude)
@@ -226,16 +246,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
             ProcessDepartedPorts(ports, watchedPorts);
 
-            ProcessArrivedPorts(ports, watchedPorts, ref allNewDevicesAddedPending);
+            ProcessArrivedPorts(ports, watchedPorts, initialEnumeration);
 
-            // If no new device candidates were queued during this first scan pass (either because
-            // there are no ports at all, or all visible ports are already registered),
-            // AllNewDevicesAdded would never fire. Fire it explicitly here to unblock enumeration completion.
-            if (allNewDevicesAddedPending)
-            {
-                allNewDevicesAddedPending = false;
-                RaiseAllNewDevicesAdded();
-            }
+            // first scan pass completed: from now on AllNewDevicesAdded is raised as soon as all
+            // the candidates it found are processed (right away if there were none)
+            initialEnumeration.CloseFirstPass();
         }
 
         private void ProcessDepartedPorts(
@@ -263,7 +278,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private void ProcessArrivedPorts(
             List<string> ports,
             Dictionary<string, CancellationTokenSource> watchedPorts,
-            ref bool allNewDevicesAddedPending)
+            InitialEnumeration initialEnumeration)
         {
             foreach (var port in ports.Where(p => !watchedPorts.ContainsKey(p)))
             {
@@ -276,41 +291,186 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     continue;
                 }
 
-                if (allNewDevicesAddedPending)
+                // only the devices found by the first scan pass are part of the initial enumeration
+                Action releaseCandidate = initialEnumeration.IsFirstPassOpen
+                    ? initialEnumeration.AddCandidate()
+                    : NoCandidate;
+
+                // counted before queuing, so that StopAndWait() can't miss it
+                lock (_notificationsLock)
                 {
-                    allNewDevicesAddedPending = false;
-                    RaiseAllNewDevicesAdded();
+                    _pendingNotifications++;
                 }
 
-                Task.Run(() => NotifyDeviceAddedAsync(port, cancelWaitForAccess.Token));
+                // processing a device blocks for seconds so use a dedicated thread
+                Task.Factory.StartNew(
+                    () => NotifyDeviceAdded(port, releaseCandidate, cancelWaitForAccess.Token),
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default);
             }
         }
 
-        private async Task NotifyDeviceAddedAsync(string port, CancellationToken portDeparted)
+        private static void NoCandidate()
         {
-            // Force true async running
-            await Task.Yield();
+            // not part of the initial enumeration, nothing to release
+        }
 
-            // Wait a short time first, then (if the port is still there) wait forever for it to become available
-            var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, 1000, portDeparted);
-            if (exclusiveAccess is null && !portDeparted.IsCancellationRequested)
-            {
-                exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, cancellationToken: portDeparted);
-            }
-
-            if (exclusiveAccess is null)
-            {
-                // the port disappeared
-                return;
-            }
+        private void NotifyDeviceAdded(
+            string port,
+            Action releaseCandidate,
+            CancellationToken portDeparted)
+        {
+            var previousNotifyingWatcher = t_notifyingWatcher;
+            t_notifyingWatcher = this;
 
             try
             {
-                Added?.Invoke(this, port);
+                // Wait a short time first...
+                var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, 1000, portDeparted);
+
+                if (exclusiveAccess is null)
+                {
+                    // ... a port that is inaccessible (or gone) must not hold up the initial enumeration
+                    releaseCandidate();
+
+                    if (portDeparted.IsCancellationRequested)
+                    {
+                        // the port disappeared
+                        return;
+                    }
+
+                    // ... then wait forever for the port to become available (or the watcher to stop)
+                    exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(port, cancellationToken: portDeparted);
+
+                    if (exclusiveAccess is null)
+                    {
+                        // the port disappeared
+                        return;
+                    }
+                }
+
+                try
+                {
+                    Added?.Invoke(this, port);
+                }
+                finally
+                {
+                    exclusiveAccess.Dispose();
+
+                    // the device has been processed (no-op if already released)
+                    releaseCandidate();
+                }
             }
             finally
             {
-                exclusiveAccess.Dispose();
+                t_notifyingWatcher = previousNotifyingWatcher;
+
+                lock (_notificationsLock)
+                {
+                    if (--_pendingNotifications == 0)
+                    {
+                        Monitor.PulseAll(_notificationsLock);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Waits for the queued Added notifications to finish.
+        /// </summary>
+        private bool WaitForNotifications(int millisecondsTimeout)
+        {
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+
+            lock (_notificationsLock)
+            {
+                while (_pendingNotifications > 0)
+                {
+                    int remaining = millisecondsTimeout == Timeout.Infinite
+                        ? Timeout.Infinite
+                        : (int)Math.Max(0, millisecondsTimeout - timer.ElapsedMilliseconds);
+
+                    if (!Monitor.Wait(_notificationsLock, remaining))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Tracks the initial enumeration of a watcher run: the devices found by the first scan pass.
+        /// Raises the completion callback once, after the first scan pass and all its candidates have been processed.
+        /// </summary>
+        private sealed class InitialEnumeration
+        {
+            private readonly Action _onCompleted;
+
+            // the first scan pass holds one "pending" until it's done, so completion can't be
+            // signalled while candidates are still being queued
+            private int _pending = 1;
+            private int _completed = 0;
+            private volatile bool _abandoned = false;
+
+            public InitialEnumeration(Action onCompleted)
+            {
+                _onCompleted = onCompleted;
+            }
+
+            /// <summary>
+            /// Gets whether the first scan pass is still in progress. Only accessed from the watcher thread.
+            /// </summary>
+            public bool IsFirstPassOpen { get; private set; } = true;
+
+            /// <summary>
+            /// Adds a candidate to the initial enumeration.
+            /// </summary>
+            /// <returns>The action to call once the candidate is processed. It can be called more than once, only the first call counts.</returns>
+            public Action AddCandidate()
+            {
+                Interlocked.Increment(ref _pending);
+
+                int released = 0;
+
+                return () =>
+                {
+                    if (Interlocked.Exchange(ref released, 1) == 0)
+                    {
+                        Release();
+                    }
+                };
+            }
+
+            /// <summary>
+            /// Signals the end of the first scan pass. Only the first call counts.
+            /// </summary>
+            public void CloseFirstPass()
+            {
+                if (IsFirstPassOpen)
+                {
+                    IsFirstPassOpen = false;
+
+                    Release();
+                }
+            }
+
+            /// <summary>
+            /// The watcher run has ended: completion won't be signalled anymore.
+            /// </summary>
+            public void Abandon() => _abandoned = true;
+
+            private void Release()
+            {
+                if (Interlocked.Decrement(ref _pending) == 0
+                    && Interlocked.Exchange(ref _completed, 1) == 0
+                    && !_abandoned)
+                {
+                    // no locks held here
+                    _onCompleted();
+                }
             }
         }
 
@@ -332,10 +492,15 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <returns>The list of serial ports that may be connected to a nanoDevice.</returns>
         public static List<string> GetPortNames()
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return GetPortNames_Windows();
+            }
+
             return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux()
                 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX()
                 : RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? GetPortNames_FreeBSD()
-                : GetPortNames_Windows();
+                : new List<string>();
         }
 
         private static List<string> GetPortNames_Linux()
@@ -419,10 +584,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return ports;
         }
 
+#if NET5_0_OR_GREATER
+        [SupportedOSPlatform("windows")]
+#endif
         private static List<string> GetPortNames_Windows()
         {
-            const string FindFullPathPattern = @"\\\\\?\\([\w]*)#([\w&]*)#([\w&]*)";
-            const string RegExPattern = @"\\Device\\([a-zA-Z]*)(\d)";
             List<string> portNames = new List<string>();
             try
             {
@@ -463,86 +629,146 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
 
                 // Gets the list of supposed open ports
-                RegistryKey allPorts = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM");
-                RegistryKey deviceFullPaths = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\COM Name Arbiter\Devices");
+                // (Windows can leave stale entries here for devices that are no longer present)
+                using RegistryKey allPorts = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM");
+                using RegistryKey deviceFullPaths = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\COM Name Arbiter\Devices");
+
                 if (allPorts != null)
                 {
                     // Then gets all the names, they are like \Device\BthModem0 \Device\Silabser0 etc,
                     foreach (var port in allPorts.GetValueNames())
                     {
-                        var portNameDetails = Regex.Match(port, RegExPattern);
-                        if (portNameDetails.Success)
+                        if (allPorts.GetValue(port) is not string portName)
                         {
-                            RegistryKey activePorts = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Services\\{portNameDetails.Groups[1]}\\Enum");
-                            if (activePorts != null)
-                            {
-                                // If the device is still plugged, it should appear as valid here, if not present, it means, the device has been disconnected
-                                string portDescription = (string)activePorts.GetValue($"{portNameDetails.Groups[2]}");
-                                int numPorts = (int)activePorts.GetValue("Count");
-                                if ((portDescription == null) && (numPorts > 0))
-                                {
-                                    portDescription = (string)activePorts.GetValue($"{numPorts - 1}");
-                                }
+                            continue;
+                        }
 
-                                if (portDescription != null)
-                                {
-                                    RegistryKey portKeyInfo = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{portDescription}\\Device Parameters");
-                                    if (portKeyInfo != null)
-                                    {
-                                        string portName = (string)allPorts.GetValue(port);
-                                        if (portName != null
-                                            && !IsSpecialPort((string)deviceFullPaths.GetValue(portName)))
-                                        {
-                                            portNames.Add(portName);
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                string portName = (string)allPorts.GetValue(port);
-                                string deviceFullPath = (string)deviceFullPaths.GetValue(portName);
-                                if (deviceFullPath != null)
-                                {
-                                    if (IsSpecialPort(deviceFullPath))
-                                    {
-                                        // don't even bother with this one
-                                        continue;
-                                    }
+                        string deviceFullPath = deviceFullPaths?.GetValue(portName) as string;
 
-                                    // Get the full qualified name of the device
-                                    var devicePathDetail = Regex.Match(deviceFullPath.Replace("+", "&"), FindFullPathPattern);
-                                    if ((devicePathDetail.Success) && (devicePathDetail.Groups.Count == 4))
-                                    {
-                                        string devicePath = deviceFullPath.Split('#')[1];
+                        if (IsSpecialPort(deviceFullPath))
+                        {
+                            // don't even bother with this one
+                            continue;
+                        }
 
-                                        RegistryKey device = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Enum\\{devicePathDetail.Groups[1]}\\{devicePath}\\{devicePathDetail.Groups[3]}");
-                                        if (device != null)
-                                        {
-                                            string service = (string)device.GetValue("Service");
-                                            if (service != null)
-                                            {
-                                                activePorts = Registry.LocalMachine.OpenSubKey($"SYSTEM\\CurrentControlSet\\Services\\{service}\\Enum");
-                                                if (activePorts != null)
-                                                {
-                                                    // If the device is still plugged, it should appear as valid here, if not present, it means, the device has been disconnected                                                        
-                                                    portNames.Add(portName);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                        if (IsPortPresent_Windows(port, portName, deviceFullPath))
+                        {
+                            portNames.Add(portName);
                         }
                     }
                 }
             }
             catch
             {
-                // Errors in enumeration can happen                
+                // Errors in enumeration can happen
             }
 
             return portNames;
+        }
+
+        /// <summary>
+        /// Checks if a serial port listed in SERIALCOMM belongs to a device that is currently present.
+        /// A device instance is present when it's listed in the Enum key of its driver service.
+        /// </summary>
+        /// <param name="deviceName">The device name, like \Device\USBSER000.</param>
+        /// <param name="portName">The port name, like COM3.</param>
+        /// <param name="deviceFullPath">The device path from the COM Name Arbiter, if available.</param>
+#if NET5_0_OR_GREATER
+        [SupportedOSPlatform("windows")]
+#endif
+        private static bool IsPortPresent_Windows(
+            string deviceName,
+            string portName,
+            string deviceFullPath)
+        {
+            // 1st: the driver service is named after the device (e.g. \Device\USBSER000 -> usbser):
+            // look for a present device instance that owns this port name
+            var deviceNameDetails = DeviceNameRegex().Match(deviceName);
+
+            if (deviceNameDetails.Success
+                && AnyPresentInstance(
+                    deviceNameDetails.Groups[1].Value,
+                    instanceId => OwnsPort(instanceId, portName)))
+            {
+                return true;
+            }
+
+            // 2nd: get the device instance from its path
+            // (e.g. \\?\usb#vid_0483&pid_5740#nano_123#{guid} -> usb\vid_0483&pid_5740\nano_123)
+            // and check that it's present for its driver service
+            if (deviceFullPath is null
+                || !deviceFullPath.StartsWith(@"\\?\", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var pathParts = deviceFullPath.Substring(4).Split('#');
+
+            if (pathParts.Length < 3)
+            {
+                return false;
+            }
+
+            string deviceInstanceId = $@"{pathParts[0]}\{pathParts[1]}\{pathParts[2]}";
+
+            using RegistryKey device = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Enum\{deviceInstanceId}");
+
+            return device?.GetValue("Service") is string service
+                   && AnyPresentInstance(
+                       service,
+                       instanceId => string.Equals(instanceId, deviceInstanceId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // device names in SERIALCOMM, like \Device\USBSER000: the driver service name followed by the device number
+#if NET7_0_OR_GREATER
+        [GeneratedRegex(@"^\\Device\\([a-zA-Z]+)\d+$")]
+        private static partial Regex DeviceNameRegex();
+#else
+        private static readonly Regex s_deviceNameRegex = new Regex(@"^\\Device\\([a-zA-Z]+)\d+$");
+
+        private static Regex DeviceNameRegex() => s_deviceNameRegex;
+#endif
+
+#if NET5_0_OR_GREATER
+        [SupportedOSPlatform("windows")]
+#endif
+        private static bool OwnsPort(
+            string instanceId,
+            string portName)
+        {
+            using RegistryKey deviceParameters = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Enum\{instanceId}\Device Parameters");
+
+            return string.Equals(deviceParameters?.GetValue("PortName") as string, portName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Checks the device instances that are currently present for a driver service.
+        /// </summary>
+#if NET5_0_OR_GREATER
+        [SupportedOSPlatform("windows")]
+#endif
+        private static bool AnyPresentInstance(
+            string service,
+            Func<string, bool> predicate)
+        {
+            // the Enum key of a service lists the device instances currently present, as values "0" to "Count - 1"
+            using RegistryKey presentInstances = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{service}\Enum");
+
+            if (presentInstances?.GetValue("Count") is not int count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                if (presentInstances.GetValue($"{i}") is string instanceId
+                    && predicate(instanceId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -567,29 +793,37 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         }
 
         /// <summary>
-        /// Stops the watcher and waits for the watcher thread to exit.
+        /// Stops the watcher and waits for the watcher thread to exit and for the queued Added notifications to finish.
         /// </summary>
         /// <param name="millisecondsTimeout">Maximum time to wait, or <see cref="Timeout.Infinite"/>.</param>
-        /// <returns><see langword="true"/> if the watcher thread is not running when this call returns.
-        /// When called from the watcher thread itself (e.g. from an event handler) this doesn't wait and returns <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the watcher thread is not running and no notification is pending when this call returns.
+        /// When called from the watcher itself (i.e. from one of its event handlers) this doesn't wait and returns <see langword="false"/>.</returns>
         internal bool StopAndWait(int millisecondsTimeout)
         {
             Stop();
 
             var thread = _threadWatch;
 
-            if (thread is null)
+            if (thread == Thread.CurrentThread
+                || t_notifyingWatcher == this)
             {
-                return true;
-            }
-
-            if (thread == Thread.CurrentThread)
-            {
-                // don't wait for our thread
+                // called from an event handler: can't wait for ourselves
                 return false;
             }
 
-            return thread.Join(millisecondsTimeout);
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+
+            if (thread is not null
+                && !thread.Join(millisecondsTimeout))
+            {
+                return false;
+            }
+
+            // notifications still running are part of the watcher's work, wait for them too
+            return WaitForNotifications(
+                millisecondsTimeout == Timeout.Infinite
+                    ? Timeout.Infinite
+                    : (int)Math.Max(0, millisecondsTimeout - timer.ElapsedMilliseconds));
         }
 
         /// <summary>
