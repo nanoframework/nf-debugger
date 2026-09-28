@@ -199,7 +199,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Doing these steps explicitly beforehand, while the port is still fully operational, avoids that
         /// (tested on hardware: purging alone isn't enough, dropping DTR and flushing beforehand are needed).
         /// </summary>
-        private void PrepareToClose(SerialPort serialPort)
+        private static void PrepareToClose(SerialPort serialPort)
         {
             try
             {

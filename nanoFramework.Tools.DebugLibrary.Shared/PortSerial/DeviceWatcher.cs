@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+#if NET5_0_OR_GREATER
+using System.Runtime.Versioning;
+#endif
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +20,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
     /// <summary>
     /// Device watcher.
     /// </summary>
-    public class DeviceWatcher : IDisposable
+    public partial class DeviceWatcher : IDisposable
     {
         private volatile bool _started = false;
         private volatile Thread _threadWatch = null;
@@ -301,7 +304,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
                 // processing a device blocks for seconds so use a dedicated thread
                 Task.Factory.StartNew(
-                    () => NotifyDeviceAdded(port, cancelWaitForAccess.Token, releaseCandidate),
+                    () => NotifyDeviceAdded(port, releaseCandidate, cancelWaitForAccess.Token),
                     CancellationToken.None,
                     TaskCreationOptions.LongRunning,
                     TaskScheduler.Default);
@@ -315,8 +318,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private void NotifyDeviceAdded(
             string port,
-            CancellationToken portDeparted,
-            Action releaseCandidate)
+            Action releaseCandidate,
+            CancellationToken portDeparted)
         {
             var previousNotifyingWatcher = t_notifyingWatcher;
             t_notifyingWatcher = this;
@@ -489,10 +492,15 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <returns>The list of serial ports that may be connected to a nanoDevice.</returns>
         public static List<string> GetPortNames()
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return GetPortNames_Windows();
+            }
+
             return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetPortNames_Linux()
                 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetPortNames_OSX()
                 : RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? GetPortNames_FreeBSD()
-                : GetPortNames_Windows();
+                : new List<string>();
         }
 
         private static List<string> GetPortNames_Linux()
@@ -576,6 +584,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return ports;
         }
 
+#if NET5_0_OR_GREATER
+        [SupportedOSPlatform("windows")]
+#endif
         private static List<string> GetPortNames_Windows()
         {
             List<string> portNames = new List<string>();
@@ -662,6 +673,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <param name="deviceName">The device name, like \Device\USBSER000.</param>
         /// <param name="portName">The port name, like COM3.</param>
         /// <param name="deviceFullPath">The device path from the COM Name Arbiter, if available.</param>
+#if NET5_0_OR_GREATER
+        [SupportedOSPlatform("windows")]
+#endif
         private static bool IsPortPresent_Windows(
             string deviceName,
             string portName,
@@ -669,7 +683,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             // 1st: the driver service is named after the device (e.g. \Device\USBSER000 -> usbser):
             // look for a present device instance that owns this port name
-            var deviceNameDetails = Regex.Match(deviceName, @"^\\Device\\([a-zA-Z]+)\d+$");
+            var deviceNameDetails = DeviceNameRegex().Match(deviceName);
 
             if (deviceNameDetails.Success
                 && AnyPresentInstance(
@@ -705,6 +719,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                        instanceId => string.Equals(instanceId, deviceInstanceId, StringComparison.OrdinalIgnoreCase));
         }
 
+        // device names in SERIALCOMM, like \Device\USBSER000: the driver service name followed by the device number
+#if NET7_0_OR_GREATER
+        [GeneratedRegex(@"^\\Device\\([a-zA-Z]+)\d+$")]
+        private static partial Regex DeviceNameRegex();
+#else
+        private static readonly Regex s_deviceNameRegex = new Regex(@"^\\Device\\([a-zA-Z]+)\d+$");
+
+        private static Regex DeviceNameRegex() => s_deviceNameRegex;
+#endif
+
+#if NET5_0_OR_GREATER
+        [SupportedOSPlatform("windows")]
+#endif
         private static bool OwnsPort(
             string instanceId,
             string portName)
@@ -717,6 +744,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Checks the device instances that are currently present for a driver service.
         /// </summary>
+#if NET5_0_OR_GREATER
+        [SupportedOSPlatform("windows")]
+#endif
         private static bool AnyPresentInstance(
             string service,
             Func<string, bool> predicate)

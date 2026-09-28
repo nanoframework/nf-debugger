@@ -108,6 +108,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         public override void StopDeviceWatchers()
         {
+            if (_disposed)
+            {
+                // already stopped when disposing
+                return;
+            }
+
             CancelAutoStart();
 
             StopDeviceWatchersInternal();
@@ -522,6 +528,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
 
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(serialPort));
+
+            if (_disposed)
+            {
+                // late notification
+                return;
+            }
 
             // taken now: the watcher waits for this handler before a restart can replace it
             var validationCancellation = _validationCancellation.Token;
