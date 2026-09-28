@@ -138,6 +138,16 @@ namespace nanoFramework.Tools.Debugger
             return logMessage;
         }
 
+        [Event(12, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
+        public string NetworkDeviceEnumerationCompleted(int deviceCount)
+        {
+            string logMessage = $"NanoDevices: Network device enumeration completed. Found {deviceCount} devices";
+
+            WriteEvent(12, logMessage);
+
+            return logMessage;
+        }
+
         [Event(11, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
         public string DeviceDeparture(string deviceId)
         {
