@@ -327,6 +327,7 @@ steps:
     filePath: azure-pipelines/update-dependents.ps1
   env:
     GITHUB_TOKEN: $(GitHubToken)
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
 # step from template @ nf-tools repo
 # report error
