@@ -14,24 +14,34 @@ $packageName = "nanoframework.tools.debugger.net"
 $repoBranch = "main"
 
 # resolve target version: prefer explicit TARGET_VERSION env var, fall back to the build tag
-if (![string]::IsNullOrEmpty($env:TARGET_VERSION)) {
+if (![string]::IsNullOrWhiteSpace($env:TARGET_VERSION)) {
     $packageTargetVersion = $env:TARGET_VERSION
+    $explicitVersion = $true
     Write-Host "Using TARGET_VERSION from environment: $packageTargetVersion"
 }
 else {
     $packageTargetVersion = $env:Build_SourceBranch
+    $explicitVersion = $false
 
     # check if this is running from a checked out tag
     if ($packageTargetVersion -notlike "refs/tags/*") {
         throw "ERROR: Branch name is not a tag and TARGET_VERSION is not set! Either set TARGET_VERSION or checkout a tag before calling."
     }
-
-    # extract version from ref (refs/tags/v1.2.3)
-    $packageTargetVersion = $packageTargetVersion -replace "refs/tags/", ""
-    $packageTargetVersion = $packageTargetVersion -replace "^v"
 }
 
-if ($packageTargetVersion -match "preview") {
+# normalize version: accepts '1.2.3', 'v1.2.3', 'V1.2.3', 'refs/tags/v1.2.3', surrounding quotes/spaces and build metadata
+$packageTargetVersion = $packageTargetVersion -replace "^[\s'`"]+|[\s'`"]+$", ""
+$packageTargetVersion = $packageTargetVersion -replace "^refs/tags/", ""
+$packageTargetVersion = $packageTargetVersion -replace "^[vV]", ""
+$packageTargetVersion = $packageTargetVersion -replace "\+.*$", ""
+
+if ($packageTargetVersion -notmatch "^\d+\.\d+\.\d+(-[0-9A-Za-z\.-]+)?$") {
+    throw "ERROR: '$packageTargetVersion' is not a valid package version."
+}
+
+$isPreview = $packageTargetVersion -match "preview"
+
+if ($isPreview) {
     # switch to develop branch for preview versions
     $repoBranch = "develop"
 }
@@ -66,42 +76,95 @@ Write-Host "Checked out $repoBranch branch."
 # check if nuget package is already available from nuget.org
 $nugetApiUrl = "https://api.nuget.org/v3-flatcontainer/$packageName/index.json"
 
-function Get-LatestNugetVersion {
+function Test-NugetVersionAvailable {
     param (
-        [string]$url
+        [string]$url,
+        [string]$targetVersion,
+        [bool]$exactMatch,
+        [bool]$preview
     )
     try {
-        $response = Invoke-RestMethod -Uri $url -Method Get
-
-        if ($packageTargetVersion -match "preview") {
-            # Select only versions that include 'preview'
-            $versions = $response.versions | Where-Object { $_ -match "preview" }
-        }
-        else {
-            # Exclude any version that includes 'preview'
-            $versions = $response.versions | Where-Object { $_ -notmatch "preview" }
-        }
-
-        Write-Debug "Latest version found: $($versions[-1])"
-
-        return $versions[-1]
+        $versions = @((Invoke-RestMethod -Uri $url -Method Get).versions)
     }
     catch {
-        throw "Error querying NuGet API: $_"
+        Write-Warning "Error querying NuGet API: $_"
+        return $false
+    }
+
+    if ($exactMatch) {
+        # explicit version: just check that it has been published (-contains is case-insensitive)
+        return $versions -contains $targetVersion
+    }
+
+    # no explicit version: check that the target is the latest one published for its track (preview or stable)
+    if ($preview) {
+        $versions = @($versions | Where-Object { $_ -match "preview" })
+    }
+    else {
+        $versions = @($versions | Where-Object { $_ -notmatch "preview" })
+    }
+
+    if ($versions.Count -eq 0) {
+        return $false
+    }
+
+    Write-Host "Latest version on nuget.org feed: $($versions[-1])"
+
+    return $versions[-1] -eq $targetVersion
+}
+
+$script:cancelCheckWarned = $false
+
+function Test-BuildCanceled {
+    if ([string]::IsNullOrEmpty($env:SYSTEM_ACCESSTOKEN) -or
+        [string]::IsNullOrEmpty($env:SYSTEM_COLLECTIONURI) -or
+        [string]::IsNullOrEmpty($env:SYSTEM_TEAMPROJECTID) -or
+        [string]::IsNullOrEmpty($env:BUILD_BUILDID)) {
+
+        if (-not $script:cancelCheckWarned) {
+            Write-Warning "SYSTEM_ACCESSTOKEN not available, can't check if the build was canceled."
+            $script:cancelCheckWarned = $true
+        }
+
+        return $false
+    }
+
+    try {
+        $buildUrl = "$($env:SYSTEM_COLLECTIONURI.TrimEnd('/'))/$($env:SYSTEM_TEAMPROJECTID)/_apis/build/builds/$($env:BUILD_BUILDID)?api-version=7.1"
+        $build = Invoke-RestMethod -Uri $buildUrl -Method Get -Headers @{ Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN" }
+
+        return ($build.status -eq "cancelling") -or ($build.result -eq "canceled")
+    }
+    catch {
+        if (-not $script:cancelCheckWarned) {
+            Write-Warning "Error checking build status: $_"
+            $script:cancelCheckWarned = $true
+        }
+
+        return $false
     }
 }
 
-Write-Host "Target version is: $packageTargetVersion."
-
-$latestNugetVersion = Get-LatestNugetVersion -url $nugetApiUrl
-
-while ($latestNugetVersion -ne $packageTargetVersion) {
-    Write-Host "Target version ($packageTargetVersion) still not available from nuget.org feed. Waiting 5 minutes..."
-    Start-Sleep -Seconds 300
-    $latestNugetVersion = Get-LatestNugetVersion -url $nugetApiUrl
+if ($explicitVersion) {
+    Write-Host "Target version is: $packageTargetVersion (explicit, waiting for this version)."
+}
+else {
+    $track = if ($isPreview) { "preview" } else { "stable" }
+    Write-Host "Target version is: $packageTargetVersion (from tag, waiting for it to be the latest $track version)."
 }
 
-Write-Host "Version $latestNugetVersion available from nuget.org feed. Proceeding with update."
+while (-not (Test-NugetVersionAvailable -url $nugetApiUrl -targetVersion $packageTargetVersion -exactMatch $explicitVersion -preview $isPreview)) {
+    Write-Host "Target version ($packageTargetVersion) still not available from nuget.org feed. Waiting 5 minutes..."
+    Start-Sleep -Seconds 300
+
+    # exit if the build was canceled meanwhile
+    if (Test-BuildCanceled) {
+        Write-Host "Build was canceled. Exiting wait loop."
+        exit 0
+    }
+}
+
+Write-Host "Version $packageTargetVersion available from nuget.org feed. Proceeding with update."
 
 dotnet restore
 dotnet remove VisualStudio.Extension-2019/VisualStudio.Extension-vs2019.csproj package nanoFramework.Tools.Debugger.Net 
