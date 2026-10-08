@@ -22,7 +22,7 @@ namespace nanoFramework.Tools.Debugger.Compatibility
     /// {
     ///   "schemaVersion": 1,
     ///   "target": "ESP32_C3",
-    ///   "nanoCLRVersion": "1.12.0.0",
+    ///   "nanoCLRVersion": "2.0.1.0",
     ///   "nativeAssemblies": [ { "name": "System.Device.Gpio", "contractHash": "0x1234ABCD", "variant": "optional" } ]
     /// }
     /// </code>

@@ -72,6 +72,7 @@ namespace nanoFramework.Tools.Debugger.Compatibility
         /// Checks PE files and/or deployment images against a connected device: its native assemblies and the PE format its firmware loads.
         /// </summary>
         /// <param name="peOrImagePaths">Paths to the PE files and/or deployment images making the whole deployment.</param>
+        /// <remarks>When the device capabilities are unknown (e.g. connected to nanoBooter), native assemblies are not checked and no PE format is enforced (only a deployment mixing PE formats is reported).</remarks>
         /// <param name="device">Connected device (device information and debug engine already populated).</param>
         /// <exception cref="System.IO.InvalidDataException">One of the files is not a valid PE file or deployment image.</exception>
         public static CompatibilityCheckResult Check(
@@ -83,16 +84,14 @@ namespace nanoFramework.Tools.Debugger.Compatibility
                 throw new ArgumentNullException(nameof(device));
             }
 
-            return Check(
-                peOrImagePaths,
-                device.DeviceInfo.NativeAssemblies,
-                GetDevicePeFormat(device.DebugEngine));
+            return CheckAgainstEngine(peOrImagePaths, device.DebugEngine);
         }
 
         /// <summary>
         /// Checks PE files and/or deployment images against the device connected to a debug engine: its native assemblies and the PE format its firmware loads.
         /// </summary>
         /// <param name="peOrImagePaths">Paths to the PE files and/or deployment images making the whole deployment.</param>
+        /// <remarks>When the device capabilities are unknown (e.g. connected to nanoBooter), native assemblies are not checked and no PE format is enforced (only a deployment mixing PE formats is reported).</remarks>
         /// <param name="engine">Debug engine connected to the device (capabilities already queried).</param>
         /// <exception cref="System.IO.InvalidDataException">One of the files is not a valid PE file or deployment image.</exception>
         public static CompatibilityCheckResult Check(
@@ -104,10 +103,7 @@ namespace nanoFramework.Tools.Debugger.Compatibility
                 throw new ArgumentNullException(nameof(engine));
             }
 
-            return Check(
-                peOrImagePaths,
-                engine.Capabilities.NativeAssemblies,
-                GetDevicePeFormat(engine));
+            return CheckAgainstEngine(peOrImagePaths, engine);
         }
 
         /// <summary>
@@ -189,13 +185,49 @@ namespace nanoFramework.Tools.Debugger.Compatibility
                 throw new ArgumentNullException(nameof(nativeAssemblies));
             }
 
+            return CheckCore(assemblies, nativeAssemblies, expectedFormat);
+        }
+
+        private static CompatibilityCheckResult CheckAgainstEngine(
+            IEnumerable<string> peOrImagePaths,
+            Engine engine)
+        {
+            if (peOrImagePaths is null)
+            {
+                throw new ArgumentNullException(nameof(peOrImagePaths));
+            }
+
+            CLRCapabilities capabilities = engine?.Capabilities;
+
+            // capabilities unknown (e.g. connected to nanoBooter): the native assemblies in the firmware are not known,
+            // so they can't be checked (an empty list would report every assembly with native code as missing)
+            IReadOnlyList<NativeAssemblyDescriptor> nativeAssemblies = capabilities is null || capabilities.IsUnknown
+                ? null
+                : NativeAssemblyDescriptor.FromDevice(capabilities.NativeAssemblies);
+
+            return CheckCore(
+                peOrImagePaths.SelectMany(PeFileReader.ReadFile).ToList(),
+                nativeAssemblies,
+                GetDevicePeFormat(engine));
+        }
+
+        /// <param name="nativeAssemblies">Native assemblies available in the firmware, <see langword="null"/> if unknown (native check skipped).</param>
+        private static CompatibilityCheckResult CheckCore(
+            IEnumerable<PeAssemblyInfo> assemblies,
+            IEnumerable<NativeAssemblyDescriptor> nativeAssemblies,
+            PeFormat? expectedFormat)
+        {
             List<PeAssemblyInfo> assemblyList = assemblies.ToList();
             var issues = new List<CompatibilityIssue>();
 
             HashSet<PeAssemblyInfo> wrongFormat = CheckFormat(assemblyList, expectedFormat, issues);
             List<PeAssemblyInfo> toCheck = assemblyList.Where(a => !wrongFormat.Contains(a)).ToList();
 
-            CheckNative(toCheck, nativeAssemblies, issues);
+            if (nativeAssemblies != null)
+            {
+                CheckNative(toCheck, nativeAssemblies, issues);
+            }
+
             CheckReferences(toCheck, assemblyList, issues);
 
             return new CompatibilityCheckResult(assemblyList, issues);
