@@ -15,6 +15,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)Capabilities\Esp32.TargetCapabilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Capabilities\Stm32.TargetCapabilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CLRCapabilities.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Compatibility\CompatibilityCheckResult.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Compatibility\NativeAssembliesManifest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Compatibility\NativeAssemblyDescriptor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Compatibility\DeploymentCompatibility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Compatibility\PeAssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Compatibility\PeFileReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CRC32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DebuggerEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.NetworkConfigurationProperties.cs" />

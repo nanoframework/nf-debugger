@@ -15,11 +15,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serial Test App WPF", "USB 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C4E43092-51E8-46C3-8C7A-FD05E9A29FE2}"
 	ProjectSection(SolutionItems) = preProject
-		..\azure-pipelines.yml = ..\azure-pipelines.yml
+		azure-pipelines.yml = azure-pipelines.yml
 		README-BEFORE-UPDATE-REFS.txt = README-BEFORE-UPDATE-REFS.txt
 		..\README.md = ..\README.md
 		version.json = version.json
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nanoFramework.Tools.DebugLibrary.Tests", "nanoFramework.Tools.DebugLibrary.Tests\nanoFramework.Tools.DebugLibrary.Tests.csproj", "{80EDCB6E-9515-492F-8F8E-925FBD8292A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -62,6 +64,22 @@ Global
 		{654CCB72-B942-4FFA-AA2B-17F9F85310EE}.Release|ARM.Build.0 = Release|Any CPU
 		{654CCB72-B942-4FFA-AA2B-17F9F85310EE}.Release|x64.ActiveCfg = Release|Any CPU
 		{654CCB72-B942-4FFA-AA2B-17F9F85310EE}.Release|x86.ActiveCfg = Release|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Debug|ARM.Build.0 = Debug|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Debug|x64.Build.0 = Debug|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Debug|x86.Build.0 = Debug|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Release|ARM.ActiveCfg = Release|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Release|ARM.Build.0 = Release|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Release|x64.ActiveCfg = Release|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Release|x64.Build.0 = Release|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Release|x86.ActiveCfg = Release|Any CPU
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -70,6 +88,7 @@ Global
 		{31472CAE-4B1A-4AB9-9B2A-8F28DBE01BCF} = {5318C561-62E1-49CB-8A94-D704CFBAEE5B}
 		{101D57AD-D22F-4905-A992-DE15E723F164} = {5318C561-62E1-49CB-8A94-D704CFBAEE5B}
 		{654CCB72-B942-4FFA-AA2B-17F9F85310EE} = {4BB47DB4-92A3-4DE9-81C0-462373258F49}
+		{80EDCB6E-9515-492F-8F8E-925FBD8292A6} = {5318C561-62E1-49CB-8A94-D704CFBAEE5B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0E005ECA-A03A-4A11-BB97-0C89AEC45CF3}

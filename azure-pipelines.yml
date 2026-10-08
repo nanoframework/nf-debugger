@@ -177,11 +177,53 @@ steps:
     msbuildArgs: '-p:PublicRelease=true -t:build,pack'
     configuration: '$(buildConfiguration)'
 
-# we don't have tests (yet)
-# - task: VSTest@2
-#   inputs:
-#     platform: '$(buildPlatform)'
-#     configuration: '$(buildConfiguration)'
+- task: VisualStudioTestPlatformInstaller@1
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
+    )
+  displayName: 'Visual Studio Test Platform Installer'
+  inputs:
+    versionSelector: latestStable
+
+- task: VSTest@2
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
+    )
+  displayName: 'Running tests'
+  inputs:
+    testSelector: 'testAssemblies'
+    testAssemblyVer2: |
+      **\nanoFramework.Tools.DebugLibrary.Tests.dll
+      !**\obj\**
+    searchFolder: '$(System.DefaultWorkingDirectory)'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+    diagnosticsEnabled: true
+    vsTestVersion: toolsInstaller
+    codeCoverageEnabled: true
+
+- task: CopyFiles@1
+  condition: failed()
+  displayName: Collecting test results
+  inputs:
+    Contents: |
+      **\TestResults\*.trx
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    flattenFolders: true
+
+- task: PublishBuildArtifacts@1
+  condition: failed()
+  displayName: Publish test results
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: test_results
+    ArtifactType: Container
 
 - task: SonarCloudAnalyze@4
   condition: >-
