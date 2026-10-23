@@ -270,7 +270,7 @@ namespace nanoFramework.Tools.Debugger
                     output.AppendLine("Native Assemblies:");
                     foreach (CLRCapabilities.NativeAssemblyProperties assembly in NativeAssemblies)
                     {
-                        output.AppendLine($"  {assembly.Name} v{assembly.Version}, checksum 0x{assembly.Checksum.ToString("X8")}");
+                        output.AppendLine($"  {assembly}");
                     }
 
                     return output.ToString();

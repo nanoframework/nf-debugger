@@ -193,8 +193,16 @@ namespace nanoFramework.Tools.Debugger
 
         public struct NativeAssemblyProperties
         {
+            /// <summary>
+            /// Checksum of the native assembly. For targets with nanoCLR v2 and later this is the native contract hash.
+            /// </summary>
             public uint Checksum;
-            public Version Version; // TODO add 'version info' in a future version
+
+            /// <summary>
+            /// Version of the native assembly. <see langword="null"/> for targets with nanoCLR v2 and later, which don't report it.
+            /// </summary>
+            public Version Version;
+
             public string Name;
 
             public NativeAssemblyProperties(string name, uint checksum, Version version)
@@ -202,6 +210,20 @@ namespace nanoFramework.Tools.Debugger
                 Checksum = checksum;
                 Name = name;
                 Version = version;
+            }
+
+            /// <summary>
+            /// Formats the native assembly for display.
+            /// Targets with nanoCLR v2 and later don't report the assembly version, so only the contract hash is listed for those.
+            /// </summary>
+            public override string ToString()
+            {
+                if (Version is null)
+                {
+                    return $"{Name}, contract hash 0x{Checksum:X8}";
+                }
+
+                return $"{Name} v{Version}, checksum 0x{Checksum:X8}";
             }
         }
 
