@@ -1585,6 +1585,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 }
             }
 
+            /// <summary>
+            /// Native assembly record reported by targets with nanoCLR v1 (includes the assembly version).
+            /// </summary>
             public class NativeAssemblyDetails
             {
                 /// <summary>
@@ -1613,17 +1616,118 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 public string Name => GetZeroTerminatedString(_name, true);
             }
 
+            /// <summary>
+            /// Native assembly record reported by targets with nanoCLR v2 and later (no assembly version, only the native contract hash).
+            /// </summary>
+            public class NativeAssemblyDetailsV2
+            {
+                /// <summary>
+                /// size of NativeAssemblyDetails struct (4 + 128 * 1)
+                /// </summary>
+                public const int Size = (4 + 128 * 1);
+
+                // the fields bellow have to follow the exact type and order so that the reply of the device can be properly parsed
+
+                ////////////////////////////////////////////////////////////////////////////////////////////////////
+                // NEED TO KEEP THESE IN SYNC WITH native 'NativeAssemblyDetails' struct in nanoCLR_Debugging.h //
+                ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                /// <summary>
+                /// Hash of the native contract implemented by the assembly.
+                /// </summary>
+                public uint ContractHash;
+                private readonly byte[] _name = new byte[128];
+
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                /// <summary>
+                /// Name of the assembly.
+                /// </summary>
+                public string Name => GetZeroTerminatedString(_name, true);
+            }
+
             public class NativeAssemblies : IConverter
             {
                 public List<NativeAssemblyDetails> NativeInteropAssemblies;
 
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
                 {
-                    // find out how many items are in the reply array 
+                    // find out how many items are in the reply array
                     // size of the reply buffer divided by the size of NativeAssemblyDetails struct
                     int numOfAssemblies = size / NativeAssemblyDetails.Size;
 
                     NativeInteropAssemblies = Enumerable.Range(0, numOfAssemblies).Select(x => new NativeAssemblyDetails()).ToList();
+                }
+            }
+
+            public class NativeAssembliesV2 : IConverter
+            {
+                public List<NativeAssemblyDetailsV2> NativeInteropAssemblies;
+
+                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
+                {
+                    // find out how many items are in the reply array
+                    // size of the reply buffer divided by the size of NativeAssemblyDetailsV2 struct
+                    int numOfAssemblies = size / NativeAssemblyDetailsV2.Size;
+
+                    NativeInteropAssemblies = Enumerable.Range(0, numOfAssemblies).Select(x => new NativeAssemblyDetailsV2()).ToList();
+                }
+            }
+
+            /// <summary>
+            /// Finds out the size of the native assembly records in a reply, from its length and the number of records it holds.
+            /// </summary>
+            /// <param name="replyLength">Length of the reply data.</param>
+            /// <param name="recordCount">Number of records in the reply.</param>
+            /// <returns><see cref="NativeAssemblyDetailsV2.Size"/>, <see cref="NativeAssemblyDetails.Size"/> or 0 if the length doesn't match any of the known formats.</returns>
+            public static int GetNativeAssemblyRecordSize(int replyLength, int recordCount)
+            {
+                if (recordCount <= 0)
+                {
+                    return 0;
+                }
+
+                if (replyLength == recordCount * NativeAssemblyDetailsV2.Size)
+                {
+                    return NativeAssemblyDetailsV2.Size;
+                }
+
+                if (replyLength == recordCount * NativeAssemblyDetails.Size)
+                {
+                    return NativeAssemblyDetails.Size;
+                }
+
+                return 0;
+            }
+
+            /// <summary>
+            /// Parses a reply with native assembly records.
+            /// </summary>
+            /// <param name="data">Reply data.</param>
+            /// <param name="recordSize">Size of the records in the reply (see <see cref="GetNativeAssemblyRecordSize"/>).</param>
+            /// <returns>The native assemblies in the reply. For v2 records <see cref="CLRCapabilities.NativeAssemblyProperties.Version"/> is <see langword="null"/>.</returns>
+            public static List<CLRCapabilities.NativeAssemblyProperties> ParseNativeAssemblies(byte[] data, int recordSize)
+            {
+                switch (recordSize)
+                {
+                    case NativeAssemblyDetailsV2.Size:
+                        var assembliesV2 = new NativeAssembliesV2();
+                        new Converter().Deserialize(assembliesV2, data);
+
+                        return assembliesV2.NativeInteropAssemblies
+                            .Select(a => new CLRCapabilities.NativeAssemblyProperties(a.Name, a.ContractHash, null))
+                            .ToList();
+
+                    case NativeAssemblyDetails.Size:
+                        var assemblies = new NativeAssemblies();
+                        new Converter().Deserialize(assemblies, data);
+
+                        return assemblies.NativeInteropAssemblies
+                            .Select(a => new CLRCapabilities.NativeAssemblyProperties(a.Name, a.CheckSum, a.AssemblyVersion.Version))
+                            .ToList();
+
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(recordSize));
                 }
             }
 

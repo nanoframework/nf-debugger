@@ -3945,8 +3945,9 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Gets a list of the native assemblies available in the target device.
         /// </summary>
+        /// <param name="clrVersion">nanoCLR version reported by the device. Used only to cross-check the detected record format.</param>
         /// <returns>A list of the native assemblies available in the target device</returns>
-        private List<CLRCapabilities.NativeAssemblyProperties> DiscoveryInteropNativeAssemblies()
+        private List<CLRCapabilities.NativeAssemblyProperties> DiscoveryInteropNativeAssemblies(Version clrVersion)
         {
             const int maxRetryCount = 2;
 
@@ -3979,8 +3980,49 @@ namespace nanoFramework.Tools.Debugger
 
                             assemblyCount = reader.ReadUInt32();
 
+                            // request a single record to find out the record format used by the target
+                            int recordSize = 0;
+
+                            if (assemblyCount > 0)
+                            {
+                                for (int probeCount = 0; probeCount <= maxRetryCount && recordSize == 0; probeCount++)
+                                {
+                                    // need to pause between requests
+                                    Thread.Sleep(_InterRequestSleep);
+
+                                    // encode request for 1 record starting at index 0
+                                    reply = DiscoverCLRCapability(
+                                        Commands.Debugging_Execution_QueryCLRCapabilities.c_CapabilityInteropNativeAssemblies +
+                                        (1u << 24));
+
+                                    if (reply != null
+                                        && reply.IsPositiveAcknowledge()
+                                        && reply.Payload is Commands.Debugging_Execution_QueryCLRCapabilities.Reply probeReply
+                                        && probeReply.m_data != null)
+                                    {
+                                        recordSize = Commands.Debugging_Execution_QueryCLRCapabilities.GetNativeAssemblyRecordSize(probeReply.m_data.Length, 1);
+                                    }
+                                }
+
+                                if (recordSize == 0)
+                                {
+                                    Debug.WriteLine("couldn't find out the native assemblies record format");
+
+                                    return null;
+                                }
+
+                                bool isV2Record = recordSize == Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblyDetailsV2.Size;
+
+                                if (clrVersion != null
+                                    && clrVersion.Major >= 1
+                                    && (clrVersion.Major >= 2) != isV2Record)
+                                {
+                                    Debug.WriteLine($"nanoCLR v{clrVersion} is reporting {(isV2Record ? "v2" : "v1")} native assemblies records");
+                                }
+                            }
+
                             // compute the assembly batch size that fits on target WP packet size
-                            uint batchSize = WireProtocolPacketSize / Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblyDetails.Size;
+                            uint batchSize = recordSize > 0 ? WireProtocolPacketSize / (uint)recordSize : 1;
                             uint index = 0;
 
                             while (index < assemblyCount)
@@ -4007,18 +4049,10 @@ namespace nanoFramework.Tools.Debugger
 
                                         if (cmdReply != null && cmdReply.m_data != null)
                                         {
-                                            nativeInteropAssemblies = new Commands.Debugging_Execution_QueryCLRCapabilities.NativeAssemblies();
-
-                                            new Converter().Deserialize(nativeInteropAssemblies, cmdReply.m_data);
-
                                             nativeAssemblies.AddRange(
-                                                   nativeInteropAssemblies.NativeInteropAssemblies.Select(
-                                                       a => new CLRCapabilities.NativeAssemblyProperties(
-                                                           a.Name,
-                                                           a.CheckSum,
-                                                           a.AssemblyVersion.Version)
-                                                       )
-                                                   );
+                                                Commands.Debugging_Execution_QueryCLRCapabilities.ParseNativeAssemblies(
+                                                    cmdReply.m_data,
+                                                    recordSize));
 
                                             index += batchSize;
 
@@ -4087,7 +4121,8 @@ namespace nanoFramework.Tools.Debugger
                             return nativeAssemblies;
                         }
 
-                        return nativeInteropAssemblies.NativeInteropAssemblies.Select(a => new CLRCapabilities.NativeAssemblyProperties(a.Name, a.CheckSum, a.AssemblyVersion.Version)).ToList();
+                        // unexpected reply to the assembly count request
+                        return null;
                     }
                 }
                 else
@@ -4200,7 +4235,7 @@ namespace nanoFramework.Tools.Debugger
             Thread.Sleep(_InterRequestSleep);
 
 
-            var nativeAssembliesInfo = DiscoveryInteropNativeAssemblies();
+            var nativeAssembliesInfo = DiscoveryInteropNativeAssemblies(clrInfo.clrVersion);
             // check for cancellation request
             if (cancellationToken.IsCancellationRequested)
             {
