@@ -699,7 +699,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                     targetInfoRetryCount,
                                     TargetInfoRetryDelay,
                                     shouldRetryOnException: IsNullReference,
-                                    shouldRetryOnResult: r => r.TargetName == null);
+                                    // no reply (null) is retried too, then falls back to the deprecated command below
+                                    shouldRetryOnResult: r => r?.TargetName == null);
 
                                 if (targetInfo != null)
                                 {

@@ -19,6 +19,7 @@ namespace nanoFramework.Tools.Debugger
     /// <para>
     /// <see cref="DeviceAdded"/> and <see cref="DeviceRemoved"/> are raised on a library thread (e.g. a device watcher thread),
     /// in the order the changes happened. UI consumers have to marshal them to the UI thread.
+    /// An exception thrown by a subscriber is logged and doesn't reach the other subscribers.
     /// </para>
     /// </remarks>
     public sealed class NanoDeviceCollection : IReadOnlyCollection<NanoDeviceBase>
@@ -139,6 +140,8 @@ namespace nanoFramework.Tools.Debugger
                 _raisingNotifications = true;
             }
 
+            bool allRaised = false;
+
             try
             {
                 while (true)
@@ -150,6 +153,7 @@ namespace nanoFramework.Tools.Debugger
                         if (_pendingNotifications.Count == 0)
                         {
                             _raisingNotifications = false;
+                            allRaised = true;
                             return;
                         }
 
@@ -157,18 +161,39 @@ namespace nanoFramework.Tools.Debugger
                     }
 
                     var handler = notification.Added ? DeviceAdded : DeviceRemoved;
-                    handler?.Invoke(this, new NanoDeviceEventArgs(notification.Device));
+
+                    if (handler is null)
+                    {
+                        continue;
+                    }
+
+                    var eventArgs = new NanoDeviceEventArgs(notification.Device);
+
+                    // each subscriber on its own: one that throws must not keep the others (or the library) from getting on
+                    foreach (EventHandler<NanoDeviceEventArgs> subscriber in handler.GetInvocationList())
+                    {
+                        try
+                        {
+                            subscriber(this, eventArgs);
+                        }
+                        catch (Exception ex)
+                        {
+                            NanoDevicesEventSource.Log.CriticalError(
+                                $"{(notification.Added ? nameof(DeviceAdded) : nameof(DeviceRemoved))} handler failed: {ex.Message}");
+                        }
+                    }
                 }
             }
-            catch
+            finally
             {
-                // a handler has thrown: the notifications left are raised with the next change
-                lock (_syncRoot)
+                if (!allRaised)
                 {
-                    _raisingNotifications = false;
+                    // unexpected failure: the notifications left are raised with the next change
+                    lock (_syncRoot)
+                    {
+                        _raisingNotifications = false;
+                    }
                 }
-
-                throw;
             }
         }
 
