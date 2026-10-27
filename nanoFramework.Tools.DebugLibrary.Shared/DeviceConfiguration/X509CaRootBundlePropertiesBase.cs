@@ -3,11 +3,8 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using PropertyChanged;
-
 namespace nanoFramework.Tools.Debugger
 {
-    [AddINotifyPropertyChangedInterface]
     public partial class X509CaRootBundlePropertiesBase
     {
         private byte[] _certificate;

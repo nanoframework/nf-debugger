@@ -4,7 +4,6 @@
 //
 
 using nanoFramework.Tools.Debugger.WireProtocol;
-using Polly;
 using System;
 using System.Diagnostics;
 
@@ -22,10 +21,13 @@ namespace nanoFramework.Tools.Debugger.Extensions
         /// </remarks>
         public static bool IsDeviceInInitializeState(this Engine debugEngine)
         {
-            var getExecutionModePolicy = Policy.Handle<Exception>().OrResult<Commands.DebuggingExecutionChangeConditions.State>(r => r == Commands.DebuggingExecutionChangeConditions.State.Unknown)
-                                       .WaitAndRetry(3, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
-
-            var result = getExecutionModePolicy.Execute(() => debugEngine.GetExecutionMode());
+            // retry on any error or while the state is unknown
+            var result = RetryHelper.Execute(
+                () => debugEngine.GetExecutionMode(),
+                retryCount: 3,
+                delayProvider: retry => TimeSpan.FromMilliseconds((retry + 1) * 250),
+                shouldRetryOnException: _ => true,
+                shouldRetryOnResult: r => r == Commands.DebuggingExecutionChangeConditions.State.Unknown);
 
             if (result != Commands.DebuggingExecutionChangeConditions.State.Unknown)
             {

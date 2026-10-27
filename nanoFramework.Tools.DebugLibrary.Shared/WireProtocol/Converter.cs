@@ -92,6 +92,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
 #pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
 
                 // filter out the PropertyChanged field
+                // (no wire type implements INotifyPropertyChanged today, kept as a guard against one being added)
                 foreach (FieldInfo f in fieldTypes.Where(f => f.Name != "PropertyChanged"))
                 {
                     // only process fields that are not marked with IgnoreDataMember attribute

@@ -5,7 +5,7 @@
 
 using System;
 using System.Collections.Generic;
-using CommunityToolkit.Mvvm.DependencyInjection;
+using System.Windows;
 using nanoFramework.ANT.Services.NanoFrameworkService;
 using nanoFramework.Tools.Debugger;
 using Serial_Test_App_WPF.ViewModel;
@@ -17,23 +17,28 @@ namespace Serial_Test_App_WPF
     /// </summary>
     public partial class App : System.Windows.Application
     {
-        public ViewModelLocator vml;
+        private readonly MainViewModel _mainViewModel = new MainViewModel();
 
         public App()
         {
             Activated += App_Activated;
             Deactivated += App_Deactivated;
             Exit += App_Exit;
-            vml = new ViewModelLocator();
 
-            var serialClient = CreateSerialDebugClient();
-            Ioc.Default.GetService<MainViewModel>().SerialDebugService = serialClient;
+            _mainViewModel.SerialDebugService = CreateSerialDebugClient();
+        }
+
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            MainWindow = new MainWindow(_mainViewModel);
+            MainWindow.Show();
         }
 
         private void App_Exit(object sender, System.Windows.ExitEventArgs e)
         {
-            var serialClient = Ioc.Default.GetService<MainViewModel>().SerialDebugService;
-            serialClient.SerialDebugClient.StopDeviceWatchers();
+            _mainViewModel.SerialDebugService.SerialDebugClient.StopDeviceWatchers();
         }
 
         private void App_Deactivated(object sender, EventArgs e)

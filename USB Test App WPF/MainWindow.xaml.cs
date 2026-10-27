@@ -99,9 +99,11 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 -----END CERTIFICATE-----";
 
 
-        public MainWindow()
+        public MainWindow(MainViewModel viewModel)
         {
             InitializeComponent();
+
+            DataContext = viewModel;
         }
 
         private void ConnectDeviceButton_Click(object sender, RoutedEventArgs e)

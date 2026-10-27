@@ -31,7 +31,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationOption.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationBase.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NanoFrameworkDevices.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NanoDeviceCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NanoDeviceEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessAPBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessAPConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\Wireless80211ConfigurationPropertiesBase.cs" />
@@ -44,6 +45,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NetworkConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NetworkConfigurationBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EndPoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RetryHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\CouldntOpenNanoFrameworkDeviceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DebugSessionAlreadyOpenException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DeviceNotConnectedException.cs" />

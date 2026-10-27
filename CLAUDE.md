@@ -86,6 +86,6 @@ Serial baud rates are tried in order: `921600`, `460800`, `115200`.
 
 ## Dependency version constraints — do not bump without care
 
-- `Polly` pinned to `7.2.4` — newer versions conflict with `System.Threading.Tasks.Extensions`.
 - `System.Threading.Tasks.Extensions` ≤ 4.5.4 — required for VS2019 extension compatibility; see `README-BEFORE-UPDATE-REFS.txt`.
-- `Fody` 6.9.1 / `PropertyChanged.Fody` 4.1.0 — IL weaving for auto `INotifyPropertyChanged`.
+- `Microsoft.Bcl.AsyncInterfaces` ≤ 5.0 (net472) — VS2019 binding redirects stop at 5.0.0.0; this rules out e.g. Polly 8 (via `Polly.Core`).
+- Keep runtime dependencies to a minimum (the library is also used by CLI tools, e.g. nanoff): retries use the internal `RetryHelper`, not Polly; no IL weavers or MVVM/UI packages.

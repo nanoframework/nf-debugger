@@ -13,7 +13,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.WireProtocol;
-using Polly;
 
 namespace nanoFramework.Tools.Debugger
 {
@@ -353,12 +352,13 @@ namespace nanoFramework.Tools.Debugger
                 }
             }
 
-            var flashMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_FlashSectorMap.FlashSectorData>>(r => r == null)
-                                        .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
-            var memoryMapPolicy = Policy.Handle<Exception>().OrResult<List<Commands.Monitor_MemoryMap.Range>>(r => r == null)
-                                        .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
-            var targetInfoPolicy = Policy.Handle<Exception>().OrResult<TargetInfo>(r => r == null)
-                                            .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
+            // retry on any error or on a missing reply
+            T RetryOnFailure<T>(Func<T> request) where T : class => RetryHelper.Execute(
+                request,
+                retryCount: 2,
+                delayProvider: retry => TimeSpan.FromMilliseconds((retry + 1) * 250),
+                shouldRetryOnException: _ => true,
+                shouldRetryOnResult: r => r == null);
 
             if (IsConnectedTonanoCLR &&
                 requestCapabilities)
@@ -369,14 +369,14 @@ namespace nanoFramework.Tools.Debugger
                 // fill flash sector map
                 if (FlashSectorMap.Count == 0)
                 {
-                    FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
+                    FlashSectorMap = RetryOnFailure(GetFlashSectorMap);
                 }
 
                 if (FlashSectorMap.Count != 0)
                 {
                     if (MemoryMap.Count == 0)
                     {
-                        MemoryMap = memoryMapPolicy.Execute(() => GetMemoryMap());
+                        MemoryMap = RetryOnFailure(GetMemoryMap);
                     }
 
                     if (MemoryMap.Count != 0)
@@ -384,7 +384,7 @@ namespace nanoFramework.Tools.Debugger
                         // get target info
                         if (TargetInfo == null)
                         {
-                            TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                            TargetInfo = RetryOnFailure(GetMonitorTargetInfo);
                         }
 
                         if (TargetInfo != null)
@@ -424,7 +424,7 @@ namespace nanoFramework.Tools.Debugger
                 // fill flash sector map
                 if (FlashSectorMap.Count == 0)
                 {
-                    FlashSectorMap = flashMapPolicy.Execute(() => GetFlashSectorMap());
+                    FlashSectorMap = RetryOnFailure(GetFlashSectorMap);
                 }
 
                 if (FlashSectorMap.Count > 0)
@@ -433,7 +433,7 @@ namespace nanoFramework.Tools.Debugger
                     // get target info
                     if (TargetInfo == null)
                     {
-                        TargetInfo = targetInfoPolicy.Execute(() => GetMonitorTargetInfo());
+                        TargetInfo = RetryOnFailure(GetMonitorTargetInfo);
                     }
 
                     if (TargetInfo != null)
@@ -1801,10 +1801,13 @@ namespace nanoFramework.Tools.Debugger
                 timeout = 10000;
             }
 
-            var getExecutionModePolicy = Policy.Handle<Exception>().OrResult<IncomingMessage>(r => r == null)
-                                       .WaitAndRetry(3, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 250));
-
-            var reply = getExecutionModePolicy.Execute(() => PerformSyncRequest(Commands.c_Monitor_EraseMemory, 0, cmd, timeout));
+            // retry on any error or on a missing reply
+            var reply = RetryHelper.Execute(
+                () => PerformSyncRequest(Commands.c_Monitor_EraseMemory, 0, cmd, timeout),
+                retryCount: 3,
+                delayProvider: retry => TimeSpan.FromMilliseconds((retry + 1) * 250),
+                shouldRetryOnException: _ => true,
+                shouldRetryOnResult: r => r == null);
 
             if (reply != null)
             {

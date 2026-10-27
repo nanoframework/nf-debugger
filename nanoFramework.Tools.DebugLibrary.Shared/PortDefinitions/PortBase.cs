@@ -50,7 +50,7 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public virtual bool IsDevicesEnumerationComplete { get; internal set; } = false;
 
-        public virtual NanoFrameworkDevices NanoFrameworkDevices { get; }
+        public virtual NanoDeviceCollection NanoFrameworkDevices { get; }
 
         /// <summary>
         /// Adds a new device to list of NanoFrameworkDevices.

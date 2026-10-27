@@ -7,15 +7,13 @@
         xmlns:ViewModel="clr-namespace:Serial_Test_App_WPF.ViewModel"
         x:Class="Serial_Test_App_WPF.MainWindow"
         mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=ViewModel:MainViewModel}"
         Title="MainWindow" Height="410" Width="570.729">
     <Window.Resources>
         <DataTemplate x:Key="NanoDevicesItemTemplate">
             <TextBlock Text="{Binding Path=Description}"/>
         </DataTemplate>
     </Window.Resources>
-    <Window.DataContext>
-        <Binding Mode="OneWay" Path="Main" Source="{StaticResource Locator}"/>
-    </Window.DataContext>
 
     <Grid>
         <Label Content="Available nanoFramework devices:" HorizontalAlignment="Left" Margin="39,46,0,0" VerticalAlignment="Top"/>

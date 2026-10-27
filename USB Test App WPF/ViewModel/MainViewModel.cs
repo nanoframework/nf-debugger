@@ -12,7 +12,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
-using System.Windows.Data;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -32,10 +31,8 @@ namespace Serial_Test_App_WPF.ViewModel
     /// </summary>
     public class MainViewModel : ObservableObject
     {
-        private readonly object _lockObj = new object();
-
         private INFSerialDebugClientService _serialDebugService;
-        private ObservableCollection<NanoDeviceBase> _availableDevices;
+        private ObservableCollection<NanoDeviceBase> _availableDevices = new ObservableCollection<NanoDeviceBase>();
         private NanoDeviceBase _selectedDevice;
         private List<TransportType> _availableTransportTypes;
         private TransportType _selectedTransportType;
@@ -64,12 +61,13 @@ namespace Serial_Test_App_WPF.ViewModel
                 {
                     SelectedTransportType = TransportType.Serial;
 
-                    AvailableDevices = _serialDebugService.SerialDebugClient.NanoFrameworkDevices;
+                    NanoDeviceCollection devices = _serialDebugService.SerialDebugClient.NanoFrameworkDevices;
 
-                    // need to do this in order to allow sync from another thread
-                    BindingOperations.EnableCollectionSynchronization(AvailableDevices, _lockObj);
+                    // subscribe before loading the current devices, so no change is missed
+                    devices.DeviceAdded += NanoFrameworkDevices_DeviceAdded;
+                    devices.DeviceRemoved += NanoFrameworkDevices_DeviceRemoved;
 
-                    SerialDebugService.SerialDebugClient.NanoFrameworkDevices.CollectionChanged += NanoFrameworkDevices_CollectionChanged;
+                    AvailableDevices = new ObservableCollection<NanoDeviceBase>(devices);
 
                     SerialDebugService.SerialDebugClient.LogMessageAvailable += SerialDebugClient_LogMessageAvailable1;
                 }
@@ -104,27 +102,33 @@ namespace Serial_Test_App_WPF.ViewModel
             set => SetProperty(ref _availableDevices, value);
         }
 
-        private void NanoFrameworkDevices_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        // the library raises these on its own threads: the device list is only changed on the UI thread
+        private void NanoFrameworkDevices_DeviceAdded(object sender, NanoDeviceEventArgs e)
         {
             Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
-                // handle this according to the selected device type 
-                switch (SelectedTransportType)
+                // the device may already be there, if it was added while loading the initial list
+                if (!AvailableDevices.Contains(e.Device))
                 {
-                    //case TransportType.Usb:
-                    //    AvailableDevices = new ObservableCollection<NanoDeviceBase>(UsbDebugService.UsbDebugClient.NanoFrameworkDevices);
-                    //    break;
-
-                    case TransportType.Serial:
-                        break;
-
-                    default:
-                        // shouldn't get here...
-                        break;
+                    AvailableDevices.Add(e.Device);
                 }
 
-                // if there's just one, select it
-                SelectedDevice = (AvailableDevices.Count == 1) ? AvailableDevices.First() : null;
+                UpdateSelectedDevice();
             }));
+        }
+
+        private void NanoFrameworkDevices_DeviceRemoved(object sender, NanoDeviceEventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+                AvailableDevices.Remove(e.Device);
+
+                UpdateSelectedDevice();
+            }));
+        }
+
+        private void UpdateSelectedDevice()
+        {
+            // if there's just one, select it
+            SelectedDevice = (AvailableDevices.Count == 1) ? AvailableDevices.First() : null;
         }
 
         public NanoDeviceBase SelectedDevice

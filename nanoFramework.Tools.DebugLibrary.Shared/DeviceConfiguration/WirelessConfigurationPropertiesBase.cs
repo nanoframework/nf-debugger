@@ -3,14 +3,11 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using PropertyChanged;
-
 namespace nanoFramework.Tools.Debugger
 {
     /// <summary>
     /// Base class for common wireless configuration properties.
     /// </summary>
-    [AddINotifyPropertyChangedInterface]
     public partial class WirelessConfigurationPropertiesBase
     {
         /// <summary>
