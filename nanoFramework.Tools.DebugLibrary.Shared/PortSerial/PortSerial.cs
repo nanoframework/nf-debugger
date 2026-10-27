@@ -7,9 +7,9 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using nanoFramework.Tools.Debugger.NFDevice;
-using Polly;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
@@ -20,6 +20,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
     {
         private readonly PortSerialManager _portManager;
         private GlobalExclusiveDeviceAccess _exclusiveAccess;
+
+        // the port has been opened at least once: from then on, a missing port means it's gone (not that it isn't ready yet)
+        private volatile bool _hasBeenOpened;
 
         /// <summary>
         /// Event that is raised when a log message is available.
@@ -89,15 +92,9 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// An exception may be thrown if the device could not be opened for extraordinary reasons.</returns>
         public ConnectPortResult OpenDevice()
         {
-            bool exclusiveAccessCreated = false;
-            if (_exclusiveAccess is null)
+            if (!TryAcquireExclusiveAccess(null, out GlobalExclusiveDeviceAccess acquiredAccess))
             {
-                _exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(InstanceId);
-                if (_exclusiveAccess is null)
-                {
-                    return ConnectPortResult.NoExclusiveAccess;
-                }
-                exclusiveAccessCreated = true;
+                return ConnectPortResult.NoExclusiveAccess;
             }
 
             bool successfullyOpenedDevice = false;
@@ -123,6 +120,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     Device.Open();
 
                     successfullyOpenedDevice = true;
+                    _hasBeenOpened = true;
 
                     // set conservative timeouts
                     Device.WriteTimeout = 5000;
@@ -139,14 +137,66 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
             finally
             {
-                if (exclusiveAccessCreated && !successfullyOpenedDevice)
+                if (!successfullyOpenedDevice)
                 {
-                    _exclusiveAccess.Dispose();
-                    _exclusiveAccess = null;
+                    ReleaseExclusiveAccess(acquiredAccess);
                 }
             }
 
             return successfullyOpenedDevice ? ConnectPortResult.Connected : ConnectPortResult.NotConnected;
+        }
+
+        /// <summary>
+        /// Gets the exclusive access to the device, unless it's already held for this port.
+        /// </summary>
+        /// <param name="cancellationToken">Aborts waiting for the exclusive access.</param>
+        /// <param name="acquiredAccess">The exclusive access acquired by this call, which the caller has to release
+        /// with <see cref="ReleaseExclusiveAccess"/> if the device isn't opened. <see langword="null"/> if it was already held.</param>
+        /// <returns><see langword="false"/> if the exclusive access couldn't be acquired.</returns>
+        private bool TryAcquireExclusiveAccess(
+            CancellationToken? cancellationToken,
+            out GlobalExclusiveDeviceAccess acquiredAccess)
+        {
+            acquiredAccess = null;
+
+            if (Volatile.Read(ref _exclusiveAccess) is not null)
+            {
+                return true;
+            }
+
+            var access = GlobalExclusiveDeviceAccess.TryGet(InstanceId, cancellationToken: cancellationToken);
+            if (access is null)
+            {
+                return false;
+            }
+
+            if (Interlocked.CompareExchange(ref _exclusiveAccess, access, null) is not null)
+            {
+                // another thread has acquired it for this port in the meantime: keep that one
+                access.Dispose();
+            }
+            else
+            {
+                acquiredAccess = access;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Releases the exclusive access acquired by <see cref="TryAcquireExclusiveAccess"/>, if this port still holds it.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="CloseDevice"/> can run on another thread while the device is being opened (e.g. the device has been unplugged)
+        /// and release the exclusive access first: it must be released only once.
+        /// </remarks>
+        private void ReleaseExclusiveAccess(GlobalExclusiveDeviceAccess acquiredAccess)
+        {
+            if (acquiredAccess is not null
+                && Interlocked.CompareExchange(ref _exclusiveAccess, null, acquiredAccess) == acquiredAccess)
+            {
+                acquiredAccess.Dispose();
+            }
         }
 
         /// <summary>
@@ -186,11 +236,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     Debug.WriteLine($">>>> CloseDevice ERROR from {InstanceId}: {ex.Message}");
                 }
             }
-            if (_exclusiveAccess is not null)
-            {
-                _exclusiveAccess.Dispose();
-                _exclusiveAccess = null;
-            }
+            // taken atomically: a connection attempt in progress on another thread may be releasing it too
+            Interlocked.Exchange(ref _exclusiveAccess, null)?.Dispose();
         }
 
         /// <summary>
@@ -257,26 +304,26 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 return ConnectPortResult.Connected;
             }
 
-            bool exclusiveAccessCreated = false;
-            if (_exclusiveAccess is null)
+            if (!TryAcquireExclusiveAccess(
+                    cancellationToken.CanBeCanceled ? cancellationToken : null,
+                    out GlobalExclusiveDeviceAccess acquiredAccess))
             {
-                _exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(
-                    InstanceId,
-                    cancellationToken: cancellationToken.CanBeCanceled ? cancellationToken : null);
-                if (_exclusiveAccess is null)
-                {
-                    return ConnectPortResult.NoExclusiveAccess;
-                }
-                exclusiveAccessCreated = true;
+                return ConnectPortResult.NoExclusiveAccess;
             }
+
+            bool portGone = false;
+
             try
             {
-                openDeviceResult = Policy.Handle<IOException>()
-                    .Or<UnauthorizedAccessException>()
-                    .Or<Exception>()
-                    .WaitAndRetry(10, retryCount => TimeSpan.FromMilliseconds(retryCount * 75),
-                        onRetry: (exception, delay, retryCount, context) => LogRetry(exception, delay, retryCount, context))
-                    .Execute(_ => OpenDevice(), cancellationToken);
+                // retry on any error, unless the port is gone (e.g. device unplugged): it won't come back within the retries
+                openDeviceResult = RetryHelper.Execute(
+                    _ => OpenDevice(),
+                    retryCount: 10,
+                    delayProvider: retry => TimeSpan.FromMilliseconds(retry * 75),
+                    shouldRetryOnException: ex => !(portGone = IsPortGone(ex)),
+                    shouldRetryOnResult: null,
+                    onRetry: LogRetry,
+                    cancellationToken);
 
                 if (openDeviceResult == ConnectPortResult.Connected)
                 {
@@ -290,6 +337,11 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
             catch (OperationCanceledException)
             {
+                openDeviceResult = ConnectPortResult.NotConnected;
+            }
+            catch (Exception) when (portGone)
+            {
+                OnLogMessageAvailable(NanoDevicesEventSource.Log.PortGone(InstanceId));
                 openDeviceResult = ConnectPortResult.NotConnected;
             }
             catch (UnauthorizedAccessException uaEx)
@@ -310,17 +362,85 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             }
             finally
             {
-                if (exclusiveAccessCreated && openDeviceResult != ConnectPortResult.Connected)
+                if (openDeviceResult != ConnectPortResult.Connected)
                 {
-                    _exclusiveAccess.Dispose();
-                    _exclusiveAccess = null;
+                    ReleaseExclusiveAccess(acquiredAccess);
                 }
             }
 
             return openDeviceResult;
         }
 
-        private void LogRetry(Exception response, TimeSpan delay, object retryCount, object context)
+        /// <summary>
+        /// Checks if an error opening the port means that the port is gone (e.g. the device has been unplugged).
+        /// </summary>
+        /// <param name="exception">The error opening the port.</param>
+        /// <returns><see langword="true"/> if the port is gone.</returns>
+        /// <remarks>
+        /// Only after the port has been opened once: right after a device is plugged in, the port can be reported
+        /// before it's ready to be opened, and opening it fails as if it doesn't exist.
+        /// </remarks>
+        private bool IsPortGone(Exception exception)
+        {
+            if (!_hasBeenOpened)
+            {
+                // not ready yet, rather than gone: keep retrying
+                return false;
+            }
+
+            switch (exception)
+            {
+                // .NET reports the missing device file
+                case FileNotFoundException:
+                    return true;
+
+                // .NET Framework reports a generic IOException (localized message, no Win32 error code in the HResult):
+                // have to check if the port is there
+                case IOException:
+                    return !PortExists();
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks if the serial port is still present in the system.
+        /// </summary>
+        /// <returns><see langword="false"/> if the port is gone (e.g. the device has been unplugged).
+        /// <see langword="true"/> if it's present or if that can't be determined.</returns>
+        private bool PortExists()
+        {
+            try
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // the port name (e.g. COM31) is a link to the driver's device, removed as soon as the device is gone:
+                    // opening the port fails with "port doesn't exist" when the link is missing.
+                    // (the ports list in the registry, used by SerialPort.GetPortNames(), can still have it for a while)
+                    var target = new StringBuilder(MaxDosDeviceTargetLength);
+
+                    return QueryDosDevice(InstanceId, target, target.Capacity) != 0
+                        || Marshal.GetLastWin32Error() != ERROR_FILE_NOT_FOUND;
+                }
+
+                // elsewhere the port is a device file (e.g. /dev/ttyACM0)
+                return File.Exists(InstanceId);
+            }
+            catch
+            {
+                // can't tell: assume it's there
+                return true;
+            }
+        }
+
+        private const int ERROR_FILE_NOT_FOUND = 2;
+        private const int MaxDosDeviceTargetLength = 260;
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint QueryDosDevice(string lpDeviceName, StringBuilder lpTargetPath, int ucchMax);
+
+        private void LogRetry(Exception response, TimeSpan delay, int retryCount)
         {
             string logMsg = $"Can't open {InstanceId}: {response.Message} retryCount: {retryCount}, delay msec: {delay.TotalMilliseconds}";
 

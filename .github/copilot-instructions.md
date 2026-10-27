@@ -102,10 +102,7 @@ There is no `copilot-setup-steps.yml` as CI runs on Azure DevOps, not GitHub Act
 
 | Package | Pinned version | Reason |
 |---|---|---|
-| `Polly` | ≤ 7.2.4 | Dependency conflict with `System.Threading.Tasks.Extensions` |
 | `System.Threading.Tasks.Extensions` | ≤ 4.5.4 | VS2019 extension compatibility (transitive dependency conflict with `System.Collections.Immutable`) |
-| `Fody` | 6.9.1 | IL weaving for `PropertyChanged.Fody` |
-| `PropertyChanged.Fody` | 4.1.0 | Auto `INotifyPropertyChanged` implementation |
 | `Nerdbank.GitVersioning` | 3.6.146 | Git-based versioning |
 | `System.IO.Ports` | 8.0.0 | Serial port access |
 | `NuGet.Build.Tasks.Pack` | 6.12.1 | NuGet pack during build |
@@ -174,6 +171,7 @@ Valid serial baud rates: `921600`, `460800`, `115200` (tried in order).
 - `NanoDevice<T>` — generic device with typed transport info
 - `NanoSerialDevice` — serial-specific device info
 - `INanoDevice` — public device interface
+- `NanoDeviceCollection` — thread-safe list of the discovered devices (`PortBase.NanoFrameworkDevices`), shared by all port managers. Port managers group reads and changes with `using (NanoFrameworkDevices.Lock())`; `DeviceAdded`/`DeviceRemoved` are raised after the lock is released, on a library thread
 
 ### Device Configuration
 
@@ -196,11 +194,13 @@ The `DeviceConfiguration` namespace contains classes for reading/writing device 
 
 5. **Wire Protocol sync** — Comments in `Commands.cs` note that certain enums must be kept in sync with the native C++ `Debugger.h` in the nanoFramework firmware. When modifying protocol-related code, check upstream firmware definitions.
 
-6. **Version constraints** — Do not upgrade `Polly` beyond 7.2.4 or add dependencies that require `System.Threading.Tasks.Extensions` > 4.5.4 without thorough compatibility analysis. See `README-BEFORE-UPDATE-REFS.txt`.
+6. **Version constraints** — Do not add dependencies that require `System.Threading.Tasks.Extensions` > 4.5.4 or `Microsoft.Bcl.AsyncInterfaces` > 5.0 (on .NET Framework) without thorough compatibility analysis: VS2019 can't load them. See `README-BEFORE-UPDATE-REFS.txt`. For retries use the internal `RetryHelper` (Polly is no longer a dependency).
 
 7. **Assembly strong-naming** — The assembly is strong-name signed. The `key.snk` file must remain present and referenced in the project.
 
 8. **Multi-target** — The library targets both `net8.0` and `net472`. Ensure any new code is compatible with both targets (or conditionally compiled).
+
+9. **UI-agnostic library** — The library is also used by CLI tools (e.g. nanoff). Don't add `INotifyPropertyChanged`, observable collections, IL weavers or MVVM/UI dependencies: expose plain state and .NET events, and let UI consumers (VS extension, test app) wrap them in their own view models and marshal events to the UI thread.
 
 - @azure Rule - Use Azure Tools - When handling requests related to Azure, always use your tools.
 - @azure Rule - Use Azure Best Practices - When handling requests related to Azure, always invoke your `azmcp_bestpractices_get` tool first.

@@ -10,7 +10,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using nanoFramework.Tools.Debugger.WireProtocol;
-using Polly;
 
 namespace nanoFramework.Tools.Debugger.PortSerial
 {
@@ -30,12 +29,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         // cancels the validation of the devices reported by the device watcher, when the watcher is stopped
         private volatile CancellationTokenSource _validationCancellation = new CancellationTokenSource();
 
-        // counter of device watchers completed
-        private int _deviceWatchersCompletedCount = 0;
-
         private readonly Random _delay = new Random(DateTime.Now.Millisecond);
 
         private readonly ConcurrentDictionary<string, CachedDeviceInfo> _devicesCache = new ConcurrentDictionary<string, CachedDeviceInfo>();
+
+        // cancels the validation of the device on a port, when that port departs (or the watcher is stopped)
+        private readonly ConcurrentDictionary<string, CancellationTokenSource> _portValidations = new ConcurrentDictionary<string, CancellationTokenSource>();
 
         public int BootTime { get; set; }
 
@@ -249,7 +248,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             List<string> devicesToRemove;
 
             // also clear nanoFramework devices list
-            lock (NanoFrameworkDevices)
+            using (NanoFrameworkDevices.Lock())
             {
                 devicesToRemove = NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().Select(nanoDevice => nanoDevice.DeviceId).ToList();
             }
@@ -273,8 +272,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             if (!string.IsNullOrWhiteSpace(portName))
             {
-                var devices = NanoFrameworkDevices.Instance;
-                lock (devices)
+                var devices = NanoDeviceCollection.Instance;
+                using (devices.Lock())
                 {
                     return devices.FirstOrDefault(d => (d as NanoDevice<NanoSerialDevice>)?.DeviceId == portName);
                 }
@@ -330,7 +329,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                     if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice, false, cancellationToken))
                     {
                         //add device to the collection
-                        if (NanoFrameworkDeviceAdd(newNanoFrameworkDevice))
+                        if (NanoFrameworkDeviceAdd(newNanoFrameworkDevice, cancellationToken))
                         {
                             OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
                             nanoFrameworkDeviceMatch = newNanoFrameworkDevice;
@@ -377,7 +376,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                         {
                             if (CheckValidNanoFrameworkSerialDevice(newNanoFrameworkDevice, true, cancellationToken))
                             {
-                                if (NanoFrameworkDeviceAdd(newNanoFrameworkDevice))
+                                if (NanoFrameworkDeviceAdd(newNanoFrameworkDevice, cancellationToken))
                                 {
                                     OnLogMessageAvailable(NanoDevicesEventSource.Log.ValidDevice($"{newNanoFrameworkDevice.Description}"));
                                 }
@@ -405,14 +404,19 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// Adds a device to the collection (if new).
         /// </summary>
         /// <param name="newNanoFrameworkDevice">The new <see cref="NanoSerialDevice"/></param>
-        /// <returns><see langword="false"/> if the device was discarded because this manager has been disposed.</returns>
-        private bool NanoFrameworkDeviceAdd(NanoDevice<NanoSerialDevice> newNanoFrameworkDevice)
+        /// <param name="cancellationToken">Cancelled if the validation of the device has been aborted (e.g. its port has departed).</param>
+        /// <returns><see langword="false"/> if the device was discarded because this manager has been disposed
+        /// or the validation has been aborted.</returns>
+        private bool NanoFrameworkDeviceAdd(
+            NanoDevice<NanoSerialDevice> newNanoFrameworkDevice,
+            CancellationToken cancellationToken)
         {
-            lock (NanoFrameworkDevices)
+            using (NanoFrameworkDevices.Lock())
             {
-                // checked inside the lock: Dispose() removes the devices under this same lock,
+                // checked inside the lock: Dispose() and RemoveDeviceFromList() remove the devices under this same lock,
                 // so a validation that completes after that can't bring a device back into the list
-                if (!_disposed)
+                if (!_disposed
+                    && !cancellationToken.IsCancellationRequested)
                 {
                     if (newNanoFrameworkDevice != null && NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().Count(i => i.DeviceId == newNanoFrameworkDevice.DeviceId) == 0)
                     {
@@ -424,7 +428,8 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 }
             }
 
-            // manager disposed while the device was being validated: release it
+            // manager disposed or port departed while the device was being validated: release it
+            OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(newNanoFrameworkDevice.DeviceId));
             RemoveNanoFrameworkDevices(newNanoFrameworkDevice);
 
             return false;
@@ -433,7 +438,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         public override void DisposeDevice(string instanceId)
         {
             NanoDevice<NanoSerialDevice> deviceToDispose;
-            lock (NanoFrameworkDevices)
+            using (NanoFrameworkDevices.Lock())
             {
                 // NanoFrameworkDevices is global and can hold devices of other transports
                 deviceToDispose = NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>().FirstOrDefault(nanoDevice => nanoDevice.DeviceId == instanceId);
@@ -452,8 +457,23 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceDeparture(deviceId));
 
+            // abort the validation of a device on this port, if one is in progress.
+            // Cancelled before looking for the device in the list: a validation that completes after this
+            // won't add the device (see NanoFrameworkDeviceAdd), one that completed before has added it and it's removed below
+            if (_portValidations.TryGetValue(deviceId, out var portValidation))
+            {
+                try
+                {
+                    portValidation.Cancel();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // that validation has just completed
+                }
+            }
+
             List<NanoDevice<NanoSerialDevice>> devices;
-            lock (NanoFrameworkDevices)
+            using (NanoFrameworkDevices.Lock())
             {
                 // get devices
                 devices = NanoFrameworkDevices.OfType<NanoDevice<NanoSerialDevice>>()
@@ -471,7 +491,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                 return;
             }
 
-            lock (NanoFrameworkDevices)
+            using (NanoFrameworkDevices.Lock())
             {
                 NanoFrameworkDevices.Remove(device);
             }
@@ -488,7 +508,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         {
             if (deviceId != null)
             {
-                lock (NanoFrameworkDevices.Instance)
+                using (NanoFrameworkDevices.Lock())
                 {
                     return NanoFrameworkDevices.FirstOrDefault(d => (d as NanoDevice<NanoSerialDevice>)?.DeviceId == deviceId);
                 }
@@ -538,21 +558,36 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             // taken now: the watcher waits for this handler before a restart can replace it
             var validationCancellation = _validationCancellation.Token;
 
+            // also cancelled if the port departs while the device is being validated (see RemoveDeviceFromList),
+            // so that the device isn't added after its departure has been processed
+            using var portValidation = CancellationTokenSource.CreateLinkedTokenSource(validationCancellation);
+            _portValidations[serialPort] = portValidation;
+
             try
             {
-                Policy.Handle<InvalidOperationException>()
-                    .WaitAndRetry(10, retryCount => TimeSpan.FromMilliseconds((retryCount * retryCount) * 25),
-                        onRetry: (exception, delay, retryCount, context) => LogRetry(exception, delay, retryCount, context))
-                    .Execute(cancellationToken => AddDeviceToListAsync(serialPort, cancellationToken), validationCancellation);
+                RetryHelper.Execute(
+                    cancellationToken => AddDeviceToListAsync(serialPort, cancellationToken),
+                    retryCount: 10,
+                    delayProvider: retry => TimeSpan.FromMilliseconds((retry * retry) * 25),
+                    shouldRetryOnException: ex => ex is InvalidOperationException,
+                    shouldRetryOnResult: null,
+                    onRetry: LogRetry,
+                    portValidation.Token);
             }
             catch (OperationCanceledException)
             {
-                // the device watcher is being stopped
+                // the device watcher is being stopped or the port has departed
                 OnLogMessageAvailable(NanoDevicesEventSource.Log.QuitDevice(serialPort));
+            }
+            finally
+            {
+                // only if it's still this validation's
+                ((ICollection<KeyValuePair<string, CancellationTokenSource>>)_portValidations).Remove(
+                    new KeyValuePair<string, CancellationTokenSource>(serialPort, portValidation));
             }
         }
 
-        private void LogRetry(Exception exception, TimeSpan delay, object retryCount, object context)
+        private void LogRetry(Exception exception, TimeSpan delay, int retryCount)
         {
             string logMsg = $"Error in AddDeviceToListAsync: {exception.Message} retryCount: {retryCount}, delay msec: {delay.TotalMilliseconds}";
 
@@ -562,13 +597,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         #endregion
 
-
         #region Handlers and events for Device Enumeration Complete 
 
         private void ProcessDeviceEnumerationComplete(object sender)
         {
             int count;
-            lock (NanoFrameworkDevices)
+            using (NanoFrameworkDevices.Lock())
             {
                 if (IsDevicesEnumerationComplete)
                 {
@@ -652,18 +686,21 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 break;
                             }
 
-                            // set retry policies
-                            var targetInfoPropertiesPolicy = Policy.Handle<NullReferenceException>().OrResult<CLRCapabilities.TargetInfoProperties>(r => r.TargetName == null)
-                                                        .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
-                            var targetInfoPolicy = Policy.Handle<NullReferenceException>().OrResult<TargetInfo>(r => r.TargetName == null)
-                                                            .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
-                            var targetReleaseInfoPolicy = Policy.Handle<NullReferenceException>().OrResult<ReleaseInfo>(r => r == null)
-                                                            .WaitAndRetry(2, retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
+                            // retry settings for getting the target details
+                            const int targetInfoRetryCount = 2;
+                            static TimeSpan TargetInfoRetryDelay(int retry) => TimeSpan.FromMilliseconds((retry + 1) * 200);
+                            static bool IsNullReference(Exception ex) => ex is NullReferenceException;
 
                             if (device.DebugEngine.IsConnectedTonanoBooter)
                             {
                                 // try first with new command
-                                var targetInfo = targetInfoPolicy.Execute(() => device.DebugEngine.GetMonitorTargetInfo());
+                                var targetInfo = RetryHelper.Execute(
+                                    () => device.DebugEngine.GetMonitorTargetInfo(),
+                                    targetInfoRetryCount,
+                                    TargetInfoRetryDelay,
+                                    shouldRetryOnException: IsNullReference,
+                                    // no reply (null) is retried too, then falls back to the deprecated command below
+                                    shouldRetryOnResult: r => r?.TargetName == null);
 
                                 if (targetInfo != null)
                                 {
@@ -673,7 +710,12 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                                 else
                                 {
                                     // try again with deprecated command
-                                    var deviceInfo = targetReleaseInfoPolicy.Execute(() => device.DebugEngine.GetMonitorOemInfo());
+                                    var deviceInfo = RetryHelper.Execute(
+                                        () => device.DebugEngine.GetMonitorOemInfo(),
+                                        targetInfoRetryCount,
+                                        TargetInfoRetryDelay,
+                                        shouldRetryOnException: IsNullReference,
+                                        shouldRetryOnResult: r => r == null);
 
                                     if (deviceInfo != null)
                                     {
@@ -684,17 +726,22 @@ namespace nanoFramework.Tools.Debugger.PortSerial
                             }
                             else
                             {
-                                var deviceInfo = targetInfoPropertiesPolicy.Execute(() =>
-                                {
-                                    if (device.DebugEngine != null)
+                                var deviceInfo = RetryHelper.Execute(
+                                    () =>
                                     {
-                                        return device.DebugEngine.GetTargetInfo();
-                                    }
-                                    else
-                                    {
-                                        return new CLRCapabilities.TargetInfoProperties();
-                                    }
-                                });
+                                        if (device.DebugEngine != null)
+                                        {
+                                            return device.DebugEngine.GetTargetInfo();
+                                        }
+                                        else
+                                        {
+                                            return new CLRCapabilities.TargetInfoProperties();
+                                        }
+                                    },
+                                    targetInfoRetryCount,
+                                    TargetInfoRetryDelay,
+                                    shouldRetryOnException: IsNullReference,
+                                    shouldRetryOnResult: r => r.TargetName == null);
 
                                 if (!string.IsNullOrEmpty(deviceInfo.TargetName))
                                 {

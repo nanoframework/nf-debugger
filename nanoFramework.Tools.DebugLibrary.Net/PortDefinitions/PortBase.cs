@@ -13,7 +13,7 @@ namespace nanoFramework.Tools.Debugger
     {
         protected PortBase()
         {
-            NanoFrameworkDevices = NanoFrameworkDevices.Instance;
+            NanoFrameworkDevices = NanoDeviceCollection.Instance;
         }
 
         #region creating serial instances

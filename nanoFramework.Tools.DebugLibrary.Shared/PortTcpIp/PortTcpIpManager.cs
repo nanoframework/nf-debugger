@@ -9,7 +9,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using nanoFramework.Tools.Debugger.WireProtocol;
-using Polly;
 
 namespace nanoFramework.Tools.Debugger.PortTcpIp
 {
@@ -33,11 +32,14 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         /// <summary>
         /// Internal list with the actual nF Network devices.
-        /// This must be a static list as NanoFrameworkDevices is also global.
-        /// Take care that all items of _networkDevices are in the NanoFrameworkDevices,
-        /// and that there are no devices in NanoFrameworkDevices that should be present
-        /// in _networkDevices but are not (and use NanoFrameworkDevices for locks).
         /// </summary>
+        /// <remarks>
+        /// This must be a static list because the <see cref="NanoDeviceCollection"/> in <see cref="PortBase.NanoFrameworkDevices"/>
+        /// is global (<see cref="NanoDeviceCollection.Instance"/>).
+        /// Every item in <see cref="_networkDevices"/> must have its device in <see cref="PortBase.NanoFrameworkDevices"/>, and
+        /// every network device in <see cref="PortBase.NanoFrameworkDevices"/> must have its item in <see cref="_networkDevices"/>.
+        /// To keep both lists in sync, read and change them while holding the lock taken with <see cref="NanoDeviceCollection.Lock"/>.
+        /// </remarks>
         private static readonly List<NetworkDeviceInformation> _networkDevices = new List<NetworkDeviceInformation>();
 
         // NanoFrameworkDevices is global and can hold devices of other transports
@@ -197,7 +199,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             _deviceWatcher.StopAndWait(Timeout.Infinite);
 
             List<string> devicesToRemove;
-            lock (NanoFrameworkDevices)
+            using (NanoFrameworkDevices.Lock())
             {
                 devicesToRemove = _networkNanoFrameworkDevices.Select(nanoDevice => nanoDevice.DeviceId).ToList();
             }
@@ -206,7 +208,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             {
                 // get device...
                 NanoDeviceBase device;
-                lock (NanoFrameworkDevices)
+                using (NanoFrameworkDevices.Lock())
                 {
                     var deviceEntry = FindDevice(deviceId);
                     if (deviceEntry is null)
@@ -248,8 +250,8 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         {
             if (networkDevice is not null)
             {
-                var devices = NanoFrameworkDevices.Instance;
-                lock (devices)
+                var devices = NanoDeviceCollection.Instance;
+                using (devices.Lock())
                 {
                     return devices.FirstOrDefault(d => (d as NanoDevice<NanoNetworkDevice>)?.DeviceId == networkDevice.DeviceId);
                 }
@@ -267,7 +269,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             // search the device list for a device with a matching interface ID
             NetworkDeviceInformation networkMatch;
             NanoDeviceBase nanoFrameworkDeviceMatch;
-            lock (NanoFrameworkDevices)
+            using (NanoFrameworkDevices.Lock())
             {
                 networkMatch = FindDevice(networkDevice.DeviceId);
 
@@ -328,7 +330,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             NanoDevice<NanoNetworkDevice> newNanoFrameworkDevice,
             NetworkDeviceInformation networkDevice)
         {
-            lock (NanoFrameworkDevices)
+            using (NanoFrameworkDevices.Lock())
             {
                 // checked inside the lock: Dispose() removes the devices under this same lock,
                 // so a validation that completes after that can't bring a device back into the list
@@ -364,7 +366,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
             // get device...
             NanoDeviceBase device;
-            lock (NanoFrameworkDevices)
+            using (NanoFrameworkDevices.Lock())
             {
                 var deviceEntry = FindDevice(networkDevice.DeviceId);
                 if (deviceEntry != null)
@@ -424,7 +426,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         private void ProcessDeviceEnumerationComplete()
         {
             int count;
-            lock (NanoFrameworkDevices)
+            using (NanoFrameworkDevices.Lock())
             {
                 IsDevicesEnumerationComplete = true;
                 count = NanoFrameworkDevices.OfType<NanoDevice<NanoNetworkDevice>>().Count();
@@ -565,25 +567,31 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             return validDevice;
         }
 
+        // retry settings for getting the target details
+        private const int TargetInfoRetryCount = 2;
+
+        private static TimeSpan TargetInfoRetryDelay(int retry) => TimeSpan.FromMilliseconds((retry + 1) * 200);
+
+        private static bool IsNullReference(Exception ex) => ex is NullReferenceException;
+
         private static void TryGetTargetInfo(NanoDevice<NanoNetworkDevice> device)
         {
-            // set retry policies
-            var targetInfoPropertiesPolicy = Policy.Handle<NullReferenceException>()
-                .OrResult<CLRCapabilities.TargetInfoProperties>(r => r.TargetName == null)
-                .WaitAndRetry(2,
-                    retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
-
-            var deviceInfo = targetInfoPropertiesPolicy.Execute(() =>
-            {
-                if (device.DebugEngine != null)
+            var deviceInfo = RetryHelper.Execute(
+                () =>
                 {
-                    return device.DebugEngine.GetTargetInfo();
-                }
-                else
-                {
-                    return new CLRCapabilities.TargetInfoProperties();
-                }
-            });
+                    if (device.DebugEngine != null)
+                    {
+                        return device.DebugEngine.GetTargetInfo();
+                    }
+                    else
+                    {
+                        return new CLRCapabilities.TargetInfoProperties();
+                    }
+                },
+                TargetInfoRetryCount,
+                TargetInfoRetryDelay,
+                shouldRetryOnException: IsNullReference,
+                shouldRetryOnResult: r => r.TargetName == null);
 
             if (!string.IsNullOrEmpty(deviceInfo.TargetName))
             {
@@ -594,19 +602,14 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         private void TryGetMonitorTargetInfo(NanoDevice<NanoNetworkDevice> device)
         {
-            // set retry policies
-            var targetInfoPolicy = Policy.Handle<NullReferenceException>()
-                .OrResult<TargetInfo>(r => r.TargetName == null)
-                .WaitAndRetry(2,
-                    retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
-            var targetReleaseInfoPolicy = Policy.Handle<NullReferenceException>()
-                .OrResult<ReleaseInfo>(r => r == null)
-                .WaitAndRetry(2,
-                    retryAttempt => TimeSpan.FromMilliseconds((retryAttempt + 1) * 200));
-
             // try first with new command
-            var targetInfo =
-                targetInfoPolicy.Execute(() => device.DebugEngine.GetMonitorTargetInfo());
+            var targetInfo = RetryHelper.Execute(
+                () => device.DebugEngine.GetMonitorTargetInfo(),
+                TargetInfoRetryCount,
+                TargetInfoRetryDelay,
+                shouldRetryOnException: IsNullReference,
+                // no reply (null) is retried too, then falls back to the deprecated command below
+                shouldRetryOnResult: r => r?.TargetName == null);
 
             if (targetInfo != null)
             {
@@ -616,8 +619,12 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             else
             {
                 // try again with deprecated command
-                var deviceInfo = targetReleaseInfoPolicy.Execute(() =>
-                    device.DebugEngine.GetMonitorOemInfo());
+                var deviceInfo = RetryHelper.Execute(
+                    () => device.DebugEngine.GetMonitorOemInfo(),
+                    TargetInfoRetryCount,
+                    TargetInfoRetryDelay,
+                    shouldRetryOnException: IsNullReference,
+                    shouldRetryOnResult: r => r == null);
 
                 if (deviceInfo != null)
                 {

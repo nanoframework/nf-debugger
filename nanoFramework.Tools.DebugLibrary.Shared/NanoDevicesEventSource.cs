@@ -158,6 +158,16 @@ namespace nanoFramework.Tools.Debugger
             return logMessage;
         }
 
+        [Event(13, Level = EventLevel.Informational, Opcode = EventOpcode.Info)]
+        public string PortGone(string deviceId)
+        {
+            string logMessage = $"NanoDevices: can't open {deviceId.Replace(GUID_DEVINTERFACE_COMPORT, "").Replace(DEVICE_INSTANCE, "")}, the port is gone";
+
+            WriteEvent(13, logMessage);
+
+            return logMessage;
+        }
+
         private NanoDevicesEventSource()
         {
         }

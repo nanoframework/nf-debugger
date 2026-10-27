@@ -3,12 +3,10 @@
 // See LICENSE file in the project root for full license information.
 //
 
-using PropertyChanged;
 using System.Net;
 
 namespace nanoFramework.Tools.Debugger
 {
-    [AddINotifyPropertyChangedInterface]
     public partial class NetworkConfigurationPropertiesBase
     {
         public IPAddress IPv4Address { get; set; }

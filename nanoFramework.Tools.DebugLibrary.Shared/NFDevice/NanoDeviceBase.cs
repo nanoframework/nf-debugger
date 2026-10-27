@@ -10,11 +10,9 @@ using System.Threading;
 using nanoFramework.Tools.Debugger.Extensions;
 using nanoFramework.Tools.Debugger.PortTcpIp;
 using nanoFramework.Tools.Debugger.WireProtocol;
-using PropertyChanged;
 
 namespace nanoFramework.Tools.Debugger
 {
-    [AddINotifyPropertyChangedInterface]
     public abstract partial class NanoDeviceBase
     {
         /// <summary>
@@ -40,7 +38,6 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// Device description.
         /// </summary>
-        [DependsOn(nameof(TargetName), nameof(ConnectionId))]
         public string Description => $"{TargetName} @ {ConnectionId}";
 
         /// <summary>
