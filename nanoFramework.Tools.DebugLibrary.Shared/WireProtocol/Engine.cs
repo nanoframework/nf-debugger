@@ -4842,10 +4842,14 @@ namespace nanoFramework.Tools.Debugger
         /// <param name="certificate">The certificates (PEM or DER).</param>
         /// <param name="progress">An <see cref="IProgress&lt;MessageWithProgress&gt;"/> object to track the progress of the operation.</param>
         /// <returns>The result of the operation.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="certificate"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="certificate"/> is empty. Use <see cref="DeleteRootCaBundle"/> to remove it.</exception>
         public ConfigurationOperationResult StoreRootCaBundle(
             byte[] certificate,
             IProgress<MessageWithProgress> progress = null)
         {
+            ValidateCertificate(certificate, nameof(DeleteRootCaBundle));
+
             return StoreCertificate(
                 DeviceConfiguration.DeviceConfigurationOption.X509Certificate,
                 CreateConverter().Serialize(new X509CaRootBundleBase()
@@ -4863,10 +4867,14 @@ namespace nanoFramework.Tools.Debugger
         /// <param name="certificate">The certificate and private key (PEM or DER).</param>
         /// <param name="progress">An <see cref="IProgress&lt;MessageWithProgress&gt;"/> object to track the progress of the operation.</param>
         /// <returns>The result of the operation.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="certificate"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="certificate"/> is empty. Use <see cref="DeleteDeviceCertificate"/> to remove it.</exception>
         public ConfigurationOperationResult StoreDeviceCertificate(
             byte[] certificate,
             IProgress<MessageWithProgress> progress = null)
         {
+            ValidateCertificate(certificate, nameof(DeleteDeviceCertificate));
+
             return StoreCertificate(
                 DeviceConfiguration.DeviceConfigurationOption.X509DeviceCertificates,
                 CreateConverter().Serialize(new X509DeviceCertificatesBase()
@@ -4896,6 +4904,22 @@ namespace nanoFramework.Tools.Debugger
             return DeleteConfigurationBlock(DeviceConfiguration.DeviceConfigurationOption.X509DeviceCertificates, 0);
         }
 
+        private static void ValidateCertificate(
+            byte[] certificate,
+            string deleteMethod)
+        {
+            if (certificate is null)
+            {
+                throw new ArgumentNullException(nameof(certificate));
+            }
+
+            // an empty certificate isn't a valid block, the device would reject it with InvalidBlock
+            if (certificate.Length == 0)
+            {
+                throw new ArgumentException($"The certificate is empty. To remove it use {deleteMethod}.", nameof(certificate));
+            }
+        }
+
         private ConfigurationOperationResult StoreCertificate(
             DeviceConfiguration.DeviceConfigurationOption option,
             byte[] block,
@@ -4920,6 +4944,10 @@ namespace nanoFramework.Tools.Debugger
             IProgress<MessageWithProgress> progress)
         {
             block ??= Array.Empty<byte>();
+
+            // on flash-sector targets the chunk with the Last flag makes the device erase and rewrite the whole config region
+            // before replying, so that chunk gets a longer timeout
+            int lastChunkTimeout = GetConfigurationEraseTimeout(GetConfigurationStorageInfo());
 
             int position = 0;
 
@@ -4951,7 +4979,11 @@ namespace nanoFramework.Tools.Debugger
                 cmd.Flags = (uint)chunkFlags;
                 cmd.PrepareForSend(block, chunkLength, position);
 
-                IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_ConfigurationOperation, 0, cmd);
+                IncomingMessage reply = PerformSyncRequest(
+                    Commands.c_Monitor_ConfigurationOperation,
+                    0,
+                    cmd,
+                    chunkFlags.HasFlag(ConfigurationOperationFlags.Last) ? lastChunkTimeout : TIMEOUT_DEFAULT);
 
                 if (reply == null)
                 {
@@ -4983,6 +5015,37 @@ namespace nanoFramework.Tools.Debugger
 
             // the device is still waiting for data after the last chunk
             return new ConfigurationOperationResult(ConfigurationOperationError.Sequence);
+        }
+
+        /// <summary>
+        /// Timeout for the last chunk of a configuration operation. <see cref="TIMEOUT_DEFAULT"/> (the engine default timeout)
+        /// unless the device reports <see cref="ConfigurationStorageFlags.ErasesStorage"/>.
+        /// </summary>
+        private int GetConfigurationEraseTimeout(ConfigurationStorageInfo storageInfo)
+        {
+            if (storageInfo is null
+                || !storageInfo.Flags.HasFlag(ConfigurationStorageFlags.ErasesStorage))
+            {
+                return TIMEOUT_DEFAULT;
+            }
+
+            // On the last chunk the device erases the whole config region, writes the new image, reads it back to verify it
+            // and, on a failure, writes it once more. All of that happens before it replies.
+            const int eraseTimePerkb = 100;
+            const int writeTimePerkb = 100;
+
+            // config region size to assume if the device doesn't report it: largest STM32F4/F7 config sector
+            const uint defaultConfigRegionSize = 128 * 1024;
+
+            // to account for comm times and for the processing of the operation on the device (same as EraseMemory)
+            const int extraTimeoutForErase = 800;
+
+            uint regionSizeKb = ((storageInfo.TotalSize ?? defaultConfigRegionSize) + 1023) / 1024;
+
+            int timeout = (int)(regionSizeKb * (eraseTimePerkb + writeTimePerkb)) + extraTimeoutForErase;
+
+            // never shorter than the default timeout
+            return Math.Max(timeout, DefaultTimeout);
         }
 
         #endregion

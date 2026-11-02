@@ -965,8 +965,19 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                     Wireless80211Options = Wireless80211_ConfigurationOptions.AutoConnect
                 };
 
-                // write wireless configuration to device
-                var returnValue = device.DebugEngine.ReplaceConfigurationBlock(newWireless80211Configuration, 0);
+                // write wireless configuration to device: replace the stored profile, or add one if there is none
+                ConfigurationOperationResult returnValue;
+
+                if (device.DebugEngine.GetAllWireless80211Configurations().Count > 0)
+                {
+                    returnValue = device.DebugEngine.ReplaceConfigurationBlock(newWireless80211Configuration, 0);
+                }
+                else
+                {
+                    newWireless80211Configuration.Id = DeviceConfiguration.ConfigurationBlockIdAuto;
+
+                    returnValue = device.DebugEngine.AddConfigurationBlock(newWireless80211Configuration);
+                }
 
                 // build a CA certificate bundle
                 DeviceConfiguration.X509CaRootBundleProperties newX509CertificateBundle = new DeviceConfiguration.X509CaRootBundleProperties();
