@@ -1,4 +1,4 @@
-# Copyright (c) .NET Foundation and Contributors
+﻿# Copyright (c) .NET Foundation and Contributors
 # See LICENSE file in the project root for full license information.
 
 trigger:
@@ -340,9 +340,9 @@ steps:
     gitHubConnection: 'github.com_nano-$(System.TeamProject)'
     tagSource: userSpecifiedTag
     tag: v$(NBGV_NuGetPackageVersion)
-    title: 'nanoFramework Debugger Library v$(NBGV_NuGetPackageVersion)'
+    title: 'v$(NBGV_NuGetPackageVersion)'
     assets: '$(Build.ArtifactStagingDirectory)/*.nupkg'
-    isPreRelease: false
+    isPreRelease: true
     action: create
     isDraft: false
     addChangeLog: true
