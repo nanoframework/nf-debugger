@@ -230,8 +230,9 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Monitor_FlashSectorMap = 0x0000000C;
         public const uint c_Monitor_OemInfo = 0x0000000E;
         public const uint c_Monitor_QueryConfiguration = 0x0000000F;
-        public const uint c_Monitor_UpdateConfiguration = 0x00000010;
         public const uint c_Monitor_StorageOperation = 0x00000011;
+        public const uint c_Monitor_ConfigurationInfo = 0x00000012;
+        public const uint c_Monitor_ConfigurationOperation = 0x00000013;
         public const uint c_Monitor_TargetInfo = 0x00000020;
 
         // IFU (In-Field Update) commands
@@ -653,62 +654,78 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     MaxConnections = 0;
                 }
             }
+        }
 
-            public class X509CaRootBundleConfig : X509CaRootBundleBase, IConverter
+        /// <summary>
+        /// Gets the information about the configuration storage of the target device: count of blocks of each type,
+        /// limits and allowed operations. Never returns the content of the blocks.
+        /// </summary>
+        /// <remarks>
+        /// Devices without the configuration storage API don't reply to this command.
+        /// </remarks>
+        public class Monitor_ConfigurationInfo
+        {
+            public uint Reserved = 0;
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // !!! KEEP IN SYNC WITH Monitor_ConfigurationInfo_BlockInfo in WireProtocol_MonitorCommands.h (in nf-interpreter) !!! //
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            public struct BlockInfo
             {
-                public X509CaRootBundleConfig()
-                {
-                    Marker = new byte[4];
-                    CertificateSize = 0xFFFF;
-                    Certificate = new byte[64];
-                }
-
-                public void PrepareForDeserialize(int size, byte[] data, Converter converter)
-                {
-                    Marker = new byte[4];
-                    CertificateSize = 0xFFFF;
-                    Certificate = new byte[size - 4 - 4];
-                }
+                public byte Configuration;
+                public byte Count;
+                public byte MaxCount;
+                public byte Flags;
+                public uint MaxBlockSize;
             }
 
-            public class X509DeviceCertificatesConfig : X509DeviceCertificatesBase, IConverter
+            public class Reply : IConverter
             {
-                public X509DeviceCertificatesConfig()
-                {
-                    Marker = new byte[4];
-                    CertificateSize = 0xFFFF;
-                    Certificate = new byte[64];
-                }
+                public uint Version;
+                public uint Flags;
+                public uint TotalSize;
+                public uint FreeSize;
+                public uint BlockInfoCount;
+                public List<BlockInfo> Blocks;
 
                 public void PrepareForDeserialize(int size, byte[] data, Converter converter)
                 {
-                    Marker = new byte[4];
-                    CertificateSize = 0xFFFF;
-                    Certificate = new byte[size - 4 - 4];
+                    // 5 uint fields followed by the block information (4 bytes and an uint each)
+                    int count = Math.Max(0, (size - (5 * 4)) / 8);
+
+                    Blocks = Enumerable.Range(0, count).Select(x => new BlockInfo()).ToList();
                 }
             }
         }
 
-        public class Monitor_UpdateConfiguration : OverheadBase
+        /// <summary>
+        /// Adds, replaces or deletes a configuration block in the target device. The device executes the operation.
+        /// Large blocks (certificates) are sent in chunks, the operation is executed when the last one is received.
+        /// </summary>
+        public class Monitor_ConfigurationOperation : OverheadBase
         {
+            public uint Operation;
             public uint Configuration;
             public uint BlockIndex;
-            public uint Length;
+            public uint Flags;
+            public uint TotalLength;
             public uint Offset;
-            public uint Done;
+            public uint Length;
             public byte[] Data;
 
             public class Reply
             {
                 public uint ErrorCode;
+                public uint BlockIndex;
+                public uint Count;
+                public uint Id;
             };
 
             public override bool PrepareForSend(byte[] data, int length, int offset = 0)
             {
                 Length = (uint)length;
-                Data = new byte[length];
-
                 Offset = (uint)offset;
+                Data = new byte[length];
 
                 Array.Copy(data, offset, Data, 0, length);
 
@@ -2497,7 +2514,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_DeploymentMap: return new Monitor_DeploymentMap.Reply();
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap.Reply();
                     case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration.Reply();
-                    case c_Monitor_UpdateConfiguration: return new Monitor_UpdateConfiguration.Reply();
+                    case c_Monitor_ConfigurationInfo: return new Monitor_ConfigurationInfo.Reply();
+                    case c_Monitor_ConfigurationOperation: return new Monitor_ConfigurationOperation.Reply();
                     case c_Monitor_StorageOperation: return new Monitor_StorageOperation.Reply();
 
                     case c_Monitor_ImageInfo: return new Monitor_ImageInfo.Reply();
@@ -2578,6 +2596,8 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_FlashSectorMap: return new Monitor_FlashSectorMap();
                     case c_Monitor_QueryConfiguration: return new Monitor_QueryConfiguration();
                     case c_Monitor_StorageOperation: return new Monitor_StorageOperation();
+                    case c_Monitor_ConfigurationInfo: return new Monitor_ConfigurationInfo();
+                    case c_Monitor_ConfigurationOperation: return new Monitor_ConfigurationOperation();
 
                     case c_Monitor_ImageInfo: return new Monitor_ImageInfo();
                     case c_Monitor_ImageWrite: return new Monitor_ImageWrite();

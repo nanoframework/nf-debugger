@@ -868,33 +868,32 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                 var device = (DataContext as MainViewModel).AvailableDevices[DeviceGrid.SelectedIndex];
 
                 // get device info
-                var deviceConfig = device.DebugEngine.GetDeviceConfiguration(cts.Token);
+                var networkConfigurations = device.DebugEngine.GetAllNetworkConfigurations();
+                var wirelessConfigurations = device.DebugEngine.GetAllWireless80211Configurations();
+                var wirelessAPConfigurations = device.DebugEngine.GetAllWirelessAPConfigurations();
 
-                if (deviceConfig.NetworkConfigurations.Count > 0)
+                if (networkConfigurations.Count > 0)
                 {
-                    Debug.WriteLine(deviceConfig.NetworkConfigurations[0].ToStringForOutput());
+                    Debug.WriteLine(networkConfigurations[0].ToStringForOutput());
                 }
 
-                if (deviceConfig.Wireless80211Configurations.Count > 0)
+                if (wirelessConfigurations.Count > 0)
                 {
-                    Debug.WriteLine(deviceConfig.Wireless80211Configurations[0].ToStringForOutput());
+                    Debug.WriteLine(wirelessConfigurations[0].ToStringForOutput());
                 }
 
-                if (deviceConfig.WirelessAPConfigurations.Count > 0)
+                if (wirelessAPConfigurations.Count > 0)
                 {
-                    Debug.WriteLine(deviceConfig.WirelessAPConfigurations[0].ToStringForOutput());
+                    Debug.WriteLine(wirelessAPConfigurations[0].ToStringForOutput());
                 }
 
-                if (deviceConfig.X509Certificates.Count > 0)
-                {
-                    X509Certificate2 cert = new X509Certificate2(deviceConfig.X509Certificates[0].Certificate);
-                    Debug.WriteLine(cert.ToString());
-                }
+                // certificates can't be read back from the device, only whether there is one stored
+                var storageInfo = device.DebugEngine.GetConfigurationStorageInfo();
 
-                if (deviceConfig.X509DeviceCertificates.Count > 0)
+                if (storageInfo != null)
                 {
-                    X509Certificate2 deviceCert = new X509Certificate2(deviceConfig.X509Certificates[0].Certificate);
-                    Debug.WriteLine(deviceCert.ToString());
+                    Debug.WriteLine($"CA root bundle stored: {storageInfo[DeviceConfiguration.DeviceConfigurationOption.X509Certificate]?.IsStored}");
+                    Debug.WriteLine($"Device certificate stored: {storageInfo[DeviceConfiguration.DeviceConfigurationOption.X509DeviceCertificates]?.IsStored}");
                 }
 
                 //Debug.WriteLine(string.Empty);
@@ -966,8 +965,19 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
                     Wireless80211Options = Wireless80211_ConfigurationOptions.AutoConnect
                 };
 
-                // write wireless configuration to device
-                var returnValue = device.DebugEngine.UpdateDeviceConfiguration(newWireless80211Configuration, 0);
+                // write wireless configuration to device: replace the stored profile, or add one if there is none
+                ConfigurationOperationResult returnValue;
+
+                if (device.DebugEngine.GetAllWireless80211Configurations().Count > 0)
+                {
+                    returnValue = device.DebugEngine.ReplaceConfigurationBlock(newWireless80211Configuration, 0);
+                }
+                else
+                {
+                    newWireless80211Configuration.Id = DeviceConfiguration.ConfigurationBlockIdAuto;
+
+                    returnValue = device.DebugEngine.AddConfigurationBlock(newWireless80211Configuration);
+                }
 
                 // build a CA certificate bundle
                 DeviceConfiguration.X509CaRootBundleProperties newX509CertificateBundle = new DeviceConfiguration.X509CaRootBundleProperties();

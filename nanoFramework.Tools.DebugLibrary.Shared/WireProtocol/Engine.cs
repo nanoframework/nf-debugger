@@ -4269,66 +4269,6 @@ namespace nanoFramework.Tools.Debugger
 
         #region Device configuration methods
 
-        public DeviceConfiguration GetDeviceConfiguration(CancellationToken cancellationToken)
-        {
-            // get all network configuration blocks
-            var networkConfigs = GetAllNetworkConfigurations();
-            // check for cancellation request
-            if (cancellationToken.IsCancellationRequested)
-            {
-                // cancellation requested
-                Debug.WriteLine("cancellation requested");
-                return null;
-            }
-
-            // get all wireless network configuration blocks
-            var networkWirelessConfigs = GetAllWireless80211Configurations();
-            // check for cancellation request
-            if (cancellationToken.IsCancellationRequested)
-            {
-                // cancellation requested
-                Debug.WriteLine("cancellation requested");
-                return null;
-            }
-
-            // get all wireless network AP configuration blocks
-            var networkWirelessAPConfigs = GetAllWirelessAPConfigurations();
-            // check for cancellation request
-            if (cancellationToken.IsCancellationRequested)
-            {
-                // cancellation requested
-                Debug.WriteLine("cancellation requested");
-                return null;
-            }
-
-            // get all wireless network configuration blocks
-            var x509Certificates = GetAllX509Certificates();
-            // check for cancellation request
-            if (cancellationToken.IsCancellationRequested)
-            {
-                // cancellation requested
-                Debug.WriteLine("cancellation requested");
-                return null;
-            }
-
-            // get all wireless network configuration blocks
-            var x509DeviceCertificates = GetAllX509DeviceCertificates();
-            // check for cancellation request
-            if (cancellationToken.IsCancellationRequested)
-            {
-                // cancellation requested
-                Debug.WriteLine("cancellation requested");
-                return null;
-            }
-
-            return new DeviceConfiguration(
-                networkConfigs,
-                networkWirelessConfigs,
-                networkWirelessAPConfigs,
-                x509Certificates,
-                x509DeviceCertificates);
-        }
-
         public List<DeviceConfiguration.NetworkConfigurationProperties> GetAllNetworkConfigurations()
         {
             List<DeviceConfiguration.NetworkConfigurationProperties> networkConfigurations = new List<DeviceConfiguration.NetworkConfigurationProperties>();
@@ -4425,70 +4365,6 @@ namespace nanoFramework.Tools.Debugger
             return wirelessAPConfigurations;
         }
 
-        public List<DeviceConfiguration.X509CaRootBundleProperties> GetAllX509Certificates()
-        {
-            List<DeviceConfiguration.X509CaRootBundleProperties> x509Certificates = new List<DeviceConfiguration.X509CaRootBundleProperties>();
-
-            DeviceConfiguration.X509CaRootBundleProperties x509CertificatesProperties = null;
-            uint index = 0;
-
-            do
-            {
-                // get next X509 certificate configuration block, if available
-                x509CertificatesProperties = GetX509CertificatesProperties(index++);
-
-                // was there an answer?
-                if (x509CertificatesProperties != null)
-                {
-                    // add to list, if valid
-                    if (!x509CertificatesProperties.IsUnknown)
-                    {
-                        x509Certificates.Add(x509CertificatesProperties);
-                    }
-                }
-                else
-                {
-                    // no reply from device or no more config blocks available
-                    break;
-                }
-            }
-            while (!x509CertificatesProperties.IsUnknown);
-
-            return x509Certificates;
-        }
-
-        public List<DeviceConfiguration.X509DeviceCertificatesProperties> GetAllX509DeviceCertificates()
-        {
-            List<DeviceConfiguration.X509DeviceCertificatesProperties> x509DeviceCertificates = new List<DeviceConfiguration.X509DeviceCertificatesProperties>();
-
-            DeviceConfiguration.X509DeviceCertificatesProperties x509DeviceCertificatesProperties = null;
-            uint index = 0;
-
-            do
-            {
-                // get next X509 certificate configuration block, if available
-                x509DeviceCertificatesProperties = GetX509DeviceCertificatesProperties(index++);
-
-                // was there an answer?
-                if (x509DeviceCertificatesProperties != null)
-                {
-                    // add to list, if valid
-                    if (!x509DeviceCertificatesProperties.IsUnknown)
-                    {
-                        x509DeviceCertificates.Add(x509DeviceCertificatesProperties);
-                    }
-                }
-                else
-                {
-                    // no reply from device or no more config blocks available
-                    break;
-                }
-            }
-            while (!x509DeviceCertificatesProperties.IsUnknown);
-
-            return x509DeviceCertificates;
-        }
-
         public DeviceConfiguration.NetworkConfigurationProperties GetNetworkConfiguratonProperties(uint configurationBlockIndex)
         {
             Debug.WriteLine("NetworkConfiguratonProperties");
@@ -4580,58 +4456,6 @@ namespace nanoFramework.Tools.Debugger
             return wirelessAPConfigProperties;
         }
 
-        public DeviceConfiguration.X509CaRootBundleProperties GetX509CertificatesProperties(uint configurationBlockIndex)
-        {
-            Debug.WriteLine("X509CertificateProperties");
-
-            IncomingMessage reply = GetDeviceConfiguration((uint)DeviceConfiguration.DeviceConfigurationOption.X509Certificate, configurationBlockIndex);
-
-            Commands.Monitor_QueryConfiguration.X509CaRootBundleConfig x509Certificate = new Commands.Monitor_QueryConfiguration.X509CaRootBundleConfig();
-
-            DeviceConfiguration.X509CaRootBundleProperties x509CertificateProperties = null;
-
-            if (reply != null)
-            {
-                if (reply.IsPositiveAcknowledge())
-                {
-                    if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
-                    {
-                        new Converter().Deserialize(x509Certificate, cmdReply.Data);
-
-                        x509CertificateProperties = new DeviceConfiguration.X509CaRootBundleProperties(x509Certificate);
-                    }
-                }
-            }
-
-            return x509CertificateProperties;
-        }
-
-        public DeviceConfiguration.X509DeviceCertificatesProperties GetX509DeviceCertificatesProperties(uint configurationBlockIndex)
-        {
-            Debug.WriteLine("X509DeviceCertificateProperties");
-
-            IncomingMessage reply = GetDeviceConfiguration((uint)DeviceConfiguration.DeviceConfigurationOption.X509DeviceCertificates, configurationBlockIndex);
-
-            Commands.Monitor_QueryConfiguration.X509DeviceCertificatesConfig x509DeviceCertificates = new Commands.Monitor_QueryConfiguration.X509DeviceCertificatesConfig();
-
-            DeviceConfiguration.X509DeviceCertificatesProperties x509DeviceCertificateProperties = null;
-
-            if (reply != null)
-            {
-                if (reply.IsPositiveAcknowledge())
-                {
-                    if (reply.Payload is Commands.Monitor_QueryConfiguration.Reply cmdReply && cmdReply.Data != null)
-                    {
-                        new Converter().Deserialize(x509DeviceCertificates, cmdReply.Data);
-
-                        x509DeviceCertificateProperties = new DeviceConfiguration.X509DeviceCertificatesProperties(x509DeviceCertificates);
-                    }
-                }
-            }
-
-            return x509DeviceCertificateProperties;
-        }
-
         private IncomingMessage GetDeviceConfiguration(uint configuration, uint configurationBlockIndex)
         {
             Commands.Monitor_QueryConfiguration cmd = new Commands.Monitor_QueryConfiguration
@@ -4641,159 +4465,6 @@ namespace nanoFramework.Tools.Debugger
             };
 
             return PerformSyncRequest(Commands.c_Monitor_QueryConfiguration, 0, cmd);
-        }
-
-        /// <summary>
-        /// Writes the full configuration to the device.
-        /// This method should be used when the target device stores the configuration in a flash sector.
-        /// </summary>
-        /// <param name="configuration">The device configuration</param>
-        /// <returns></returns>
-        public UpdateDeviceResult UpdateDeviceConfiguration(DeviceConfiguration configuration)
-        {
-            bool okToUploadConfig = false;
-            byte[] configSectorBackup;
-            Commands.Monitor_FlashSectorMap.FlashSectorData configSector = new Commands.Monitor_FlashSectorMap.FlashSectorData();
-
-            // the requirement to erase flash before storing is dependent on CLR capabilities which is only available if the device is running nanoCLR
-            // when running nanoBooter those are not available
-            // currently the only target that doesn't have nanoBooter is ESP32, so we are assuming that the remaining ones (being STM32 based) use internal flash for storing configuration blocks
-            // if that is not the case, then the flash map won't show any config blocks and this step will be skipped 
-            if ((IsConnectedTonanoCLR && Capabilities.ConfigBlockRequiresErase) ||
-                IsConnectedTonanoBooter)
-            {
-                // this devices probably requires flash erase before updating the configuration block
-
-                // we need the device memory map in order to know were to store this
-                if (FlashSectorMap.Count == 0)
-                {
-                    // flash sector map is still empty, go get it
-                    if (GetFlashSectorMap() == null)
-                    {
-                        return UpdateDeviceResult.FailedToRetrieveExistingConfig;
-                    }
-                }
-
-                // get configuration sector details
-                configSector = FlashSectorMap.FirstOrDefault(item => (item.Flags & Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_MASK) == Commands.Monitor_FlashSectorMap.c_MEMORY_USAGE_CONFIG);
-
-                // check if the device has a config sector
-                if (configSector.NumBlocks > 0)
-                {
-                    // store the current configuration in case we need to revert this for some reason
-                    var readConfigSector = ReadMemory(configSector.StartAddress, configSector.NumBlocks * configSector.BytesPerBlock);
-
-                    if (readConfigSector.Success)
-                    {
-                        // copy over to backup array
-                        configSectorBackup = readConfigSector.Buffer;
-
-                        // start erasing the sector that holds the configuration block
-                        var (ErrorCode, Success) = EraseMemory(configSector.StartAddress, configSector.NumBlocks * configSector.BytesPerBlock);
-
-                        if (Success)
-                        {
-                            okToUploadConfig = true;
-                        }
-                    }
-                    else
-                    {
-                        return UpdateDeviceResult.FailedToRetrieveExistingConfig;
-                    }
-                }
-            }
-            else
-            {
-                // configurations storage doesn't require erase
-                okToUploadConfig = true;
-            }
-
-            if (okToUploadConfig)
-            {
-                Thread.Sleep(250);
-
-                // serialize the configuration block
-                var configurationSerialized = CreateConverter().Serialize((DeviceConfigurationBase)configuration);
-
-                // counters to manage the chunked update process
-                int count = configurationSerialized.Length;
-                int position = 0;
-                int attemptCount = 1;
-
-                // flag to signal the update operation success/failure
-                bool updateFailed = true;
-
-                while (count > 0 &&
-                        attemptCount >= 0)
-                {
-                    Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration
-                    {
-                        Configuration = (uint)DeviceConfiguration.DeviceConfigurationOption.All
-                    };
-
-                    // get packet length, either the maximum allowed size or whatever is still available to TX
-                    int packetLength = Math.Min(GetPacketMaxLength(cmd), count);
-
-                    // check if this is the last chunk
-                    if (count <= packetLength &&
-                       packetLength <= GetPacketMaxLength(cmd))
-                    {
-                        // yes, signal that by setting the Done field
-                        cmd.Done = 1;
-                    }
-                    else
-                    {
-                        // no, more data is coming after this one
-                        cmd.Done = 0;
-                    }
-
-                    cmd.PrepareForSend(configurationSerialized, packetLength, position);
-
-                    IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_UpdateConfiguration, 0, cmd);
-
-                    if (reply != null)
-                    {
-                        Commands.Monitor_UpdateConfiguration.Reply cmdReply = reply.Payload as Commands.Monitor_UpdateConfiguration.Reply;
-
-                        if (!reply.IsPositiveAcknowledge() || cmdReply.ErrorCode != 0)
-                        {
-                            break;
-                        }
-
-                        count -= packetLength;
-                        position += packetLength;
-
-                        if (count == 0)
-                        {
-                            // update was OK, switch flag
-                            updateFailed = false;
-                        }
-
-                        attemptCount = 1;
-                    }
-                    else
-                    {
-                        attemptCount--;
-                        Thread.Sleep(100);
-                    }
-                }
-
-                if (updateFailed)
-                {
-                    // failed to upload new configuration
-                    // revert back old one
-
-                    // TODO
-                    return UpdateDeviceResult.UpdateFailed;
-                }
-                else
-                {
-                    return UpdateDeviceResult.Sucess;
-                }
-            }
-
-            // default to false
-            return UpdateDeviceResult.UpdateFailed;
         }
 
         public int GetPacketMaxLength(Commands.OverheadBase cmd)
@@ -5019,251 +4690,362 @@ namespace nanoFramework.Tools.Debugger
 
         #endregion
 
+        #endregion
+
+        #region Configuration storage methods
+
         /// <summary>
-        /// Writes a specific configuration block to the device.
-        /// The configuration block is updated only with the changes for this configuration part.
+        /// Gets the information about the configuration storage of the device: count of blocks of each type, limits,
+        /// allowed operations and free space. The content of the blocks isn't included.
         /// </summary>
-        /// <param name="configuration">The configuration block</param>
-        /// <param name="blockIndex">The index of this configuration block</param>
-        /// <returns></returns>
-        public UpdateDeviceResult UpdateDeviceConfiguration<T>(T configuration, uint blockIndex)
+        /// <returns>The information, or <see langword="null"/> if the device firmware doesn't have the configuration storage API
+        /// (firmware has to be updated to change the configuration).</returns>
+        public ConfigurationStorageInfo GetConfigurationStorageInfo()
         {
-            // Create cancellation token source
-            CancellationTokenSource cts = new CancellationTokenSource();
+            IncomingMessage reply = PerformSyncRequest(
+                Commands.c_Monitor_ConfigurationInfo,
+                0,
+                new Commands.Monitor_ConfigurationInfo());
 
-            if (Capabilities.ConfigBlockRequiresErase)
+            if (reply != null
+                && reply.IsPositiveAcknowledge()
+                && reply.Payload is Commands.Monitor_ConfigurationInfo.Reply cmdReply
+                && cmdReply.Version >= 1)
             {
-                // this device requires erasing the configuration block before updating it
-
-                // get the current configuration from the device
-                var currentConfiguration = GetDeviceConfiguration(cts.Token);
-
-                if (currentConfiguration != null)
-                {
-                    // perform sanity of data read by looking at the interface type
-                    if (currentConfiguration.NetworkConfigurations.Count == 0 || currentConfiguration.NetworkConfigurations[0].InterfaceType == NetworkInterfaceType.Unknown)
-                    {
-                        // something wrong, can't use this configuration
-                        Debug.WriteLine("*** INVALID configuration read from the device ***");
-
-                        return UpdateDeviceResult.ExistingConfigurationInvalid;
-                    }
-
-                    // now update the specific configuration block
-                    if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
-                    {
-                        // validate request index
-                        if (currentConfiguration.NetworkConfigurations.ValidateIndex(blockIndex))
-                        {
-                            // if list is empty and request index is 0
-                            if (currentConfiguration.NetworkConfigurations.Count == 0 && blockIndex == 0)
-                            {
-                                currentConfiguration.NetworkConfigurations.Add(configuration as DeviceConfiguration.NetworkConfigurationProperties);
-                            }
-                            else
-                            {
-                                currentConfiguration.NetworkConfigurations[(int)blockIndex] = configuration as DeviceConfiguration.NetworkConfigurationProperties;
-                            }
-                        }
-                    }
-                    else if (configuration.GetType().Equals(typeof(DeviceConfiguration.Wireless80211ConfigurationProperties)))
-                    {
-                        // if list is empty and request index is 0
-                        if (currentConfiguration.Wireless80211Configurations.Count == 0 && blockIndex == 0)
-                        {
-                            currentConfiguration.Wireless80211Configurations.Add(configuration as DeviceConfiguration.Wireless80211ConfigurationProperties);
-                        }
-                        else
-                        {
-                            currentConfiguration.Wireless80211Configurations[(int)blockIndex] = configuration as DeviceConfiguration.Wireless80211ConfigurationProperties;
-                        }
-                    }
-                    else if (configuration.GetType().Equals(typeof(DeviceConfiguration.WirelessAPConfigurationProperties)))
-                    {
-                        // if list is empty and request index is 0
-                        if (currentConfiguration.WirelessAPConfigurations.Count == 0 && blockIndex == 0)
-                        {
-                            currentConfiguration.WirelessAPConfigurations.Add(configuration as DeviceConfiguration.WirelessAPConfigurationProperties);
-                        }
-                        else
-                        {
-                            currentConfiguration.WirelessAPConfigurations[(int)blockIndex] = configuration as DeviceConfiguration.WirelessAPConfigurationProperties;
-                        }
-                    }
-                    else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
-                    {
-                        // if list is empty and request index is 0
-                        if (currentConfiguration.X509Certificates.Count == 0 && blockIndex == 0)
-                        {
-                            currentConfiguration.X509Certificates.Add(configuration as DeviceConfiguration.X509CaRootBundleProperties);
-                        }
-                        else
-                        {
-                            currentConfiguration.X509Certificates[(int)blockIndex] = configuration as DeviceConfiguration.X509CaRootBundleProperties;
-                        }
-                    }
-                    else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509DeviceCertificatesProperties)))
-                    {
-                        // if list is empty and request index is 0
-                        if (currentConfiguration.X509DeviceCertificates.Count == 0 && blockIndex == 0)
-                        {
-                            currentConfiguration.X509DeviceCertificates.Add(configuration as DeviceConfiguration.X509DeviceCertificatesProperties);
-                        }
-                        else
-                        {
-                            currentConfiguration.X509DeviceCertificates[(int)blockIndex] = configuration as DeviceConfiguration.X509DeviceCertificatesProperties;
-                        }
-                    }
-
-                    return UpdateDeviceConfiguration(currentConfiguration);
-                }
-                else
-                {
-                    return UpdateDeviceResult.FailedToRetrieveExistingConfig;
-                }
+                return new ConfigurationStorageInfo(cmdReply);
             }
-            else
+
+            // device firmware without the configuration storage API
+            return null;
+        }
+
+        /// <summary>
+        /// Adds a wireless station profile. Set its Id to <see cref="DeviceConfiguration.ConfigurationBlockIdAuto"/>
+        /// to have the device assign one.
+        /// </summary>
+        /// <param name="profile">The wireless station profile.</param>
+        /// <returns>The result of the operation, with the index and the Id of the profile.</returns>
+        public ConfigurationOperationResult AddConfigurationBlock(DeviceConfiguration.Wireless80211ConfigurationProperties profile)
+        {
+            return PerformConfigurationOperation(
+                ConfigurationOperation.Add,
+                DeviceConfiguration.DeviceConfigurationOption.Wireless80211Network,
+                0,
+                ConfigurationOperationFlags.None,
+                CreateConverter().Serialize((Wireless80211ConfigurationBase)profile),
+                null);
+        }
+
+        /// <summary>
+        /// Adds a wireless AP profile. Set its Id to <see cref="DeviceConfiguration.ConfigurationBlockIdAuto"/>
+        /// to have the device assign one.
+        /// </summary>
+        /// <param name="profile">The wireless AP profile.</param>
+        /// <returns>The result of the operation, with the index and the Id of the profile.</returns>
+        public ConfigurationOperationResult AddConfigurationBlock(DeviceConfiguration.WirelessAPConfigurationProperties profile)
+        {
+            return PerformConfigurationOperation(
+                ConfigurationOperation.Add,
+                DeviceConfiguration.DeviceConfigurationOption.WirelessNetworkAP,
+                0,
+                ConfigurationOperationFlags.None,
+                CreateConverter().Serialize((WirelessAPConfigurationBase)profile),
+                null);
+        }
+
+        /// <summary>
+        /// Replaces the configuration of a network interface.
+        /// </summary>
+        /// <param name="configuration">The network interface configuration.</param>
+        /// <param name="index">Index of the network interface.</param>
+        /// <returns>The result of the operation.</returns>
+        public ConfigurationOperationResult ReplaceConfigurationBlock(
+            DeviceConfiguration.NetworkConfigurationProperties configuration,
+            uint index)
+        {
+            return PerformConfigurationOperation(
+                ConfigurationOperation.Replace,
+                DeviceConfiguration.DeviceConfigurationOption.Network,
+                index,
+                ConfigurationOperationFlags.None,
+                CreateConverter().Serialize((NetworkConfigurationBase)configuration),
+                null);
+        }
+
+        /// <summary>
+        /// Replaces a wireless station profile.
+        /// </summary>
+        /// <param name="profile">The wireless station profile.</param>
+        /// <param name="index">Index of the profile to replace.</param>
+        /// <param name="keepPassword"><see langword="true"/> to keep the password stored on the device (passwords can't be read back).</param>
+        /// <returns>The result of the operation, with the Id of the profile.</returns>
+        public ConfigurationOperationResult ReplaceConfigurationBlock(
+            DeviceConfiguration.Wireless80211ConfigurationProperties profile,
+            uint index,
+            bool keepPassword = false)
+        {
+            return PerformConfigurationOperation(
+                ConfigurationOperation.Replace,
+                DeviceConfiguration.DeviceConfigurationOption.Wireless80211Network,
+                index,
+                keepPassword ? ConfigurationOperationFlags.KeepPassword : ConfigurationOperationFlags.None,
+                CreateConverter().Serialize((Wireless80211ConfigurationBase)profile),
+                null);
+        }
+
+        /// <summary>
+        /// Replaces a wireless AP profile.
+        /// </summary>
+        /// <param name="profile">The wireless AP profile.</param>
+        /// <param name="index">Index of the profile to replace.</param>
+        /// <param name="keepPassword"><see langword="true"/> to keep the password stored on the device (passwords can't be read back).</param>
+        /// <returns>The result of the operation, with the Id of the profile.</returns>
+        public ConfigurationOperationResult ReplaceConfigurationBlock(
+            DeviceConfiguration.WirelessAPConfigurationProperties profile,
+            uint index,
+            bool keepPassword = false)
+        {
+            return PerformConfigurationOperation(
+                ConfigurationOperation.Replace,
+                DeviceConfiguration.DeviceConfigurationOption.WirelessNetworkAP,
+                index,
+                keepPassword ? ConfigurationOperationFlags.KeepPassword : ConfigurationOperationFlags.None,
+                CreateConverter().Serialize((WirelessAPConfigurationBase)profile),
+                null);
+        }
+
+        /// <summary>
+        /// Deletes a configuration block. The indexes of the blocks of the same type that follow shift down by one.
+        /// Deleting a network interface configuration resets it to the defaults.
+        /// </summary>
+        /// <param name="option">Type of the configuration block.</param>
+        /// <param name="index">Index of the block to delete.</param>
+        /// <param name="force"><see langword="true"/> to delete a wireless profile that a network interface is using.</param>
+        /// <returns>The result of the operation.</returns>
+        public ConfigurationOperationResult DeleteConfigurationBlock(
+            DeviceConfiguration.DeviceConfigurationOption option,
+            uint index,
+            bool force = false)
+        {
+            return PerformConfigurationOperation(
+                ConfigurationOperation.Delete,
+                option,
+                index,
+                force ? ConfigurationOperationFlags.Force : ConfigurationOperationFlags.None,
+                null,
+                null);
+        }
+
+        /// <summary>
+        /// Stores the CA root certificates bundle, replacing the one stored, if any. Certificates can't be read back.
+        /// </summary>
+        /// <param name="certificate">The certificates (PEM or DER).</param>
+        /// <param name="progress">An <see cref="IProgress&lt;MessageWithProgress&gt;"/> object to track the progress of the operation.</param>
+        /// <returns>The result of the operation.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="certificate"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="certificate"/> is empty. Use <see cref="DeleteRootCaBundle"/> to remove it.</exception>
+        public ConfigurationOperationResult StoreRootCaBundle(
+            byte[] certificate,
+            IProgress<MessageWithProgress> progress = null)
+        {
+            ValidateCertificate(certificate, nameof(DeleteRootCaBundle));
+
+            return StoreCertificate(
+                DeviceConfiguration.DeviceConfigurationOption.X509Certificate,
+                CreateConverter().Serialize(new X509CaRootBundleBase()
+                {
+                    Marker = Encoding.UTF8.GetBytes(DeviceConfiguration.MarkerConfigurationX509CaRootBundle_v1),
+                    CertificateSize = (uint)certificate.Length,
+                    Certificate = certificate
+                }),
+                progress);
+        }
+
+        /// <summary>
+        /// Stores the device certificate, replacing the one stored, if any. Certificates can't be read back.
+        /// </summary>
+        /// <param name="certificate">The certificate and private key (PEM or DER).</param>
+        /// <param name="progress">An <see cref="IProgress&lt;MessageWithProgress&gt;"/> object to track the progress of the operation.</param>
+        /// <returns>The result of the operation.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="certificate"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="certificate"/> is empty. Use <see cref="DeleteDeviceCertificate"/> to remove it.</exception>
+        public ConfigurationOperationResult StoreDeviceCertificate(
+            byte[] certificate,
+            IProgress<MessageWithProgress> progress = null)
+        {
+            ValidateCertificate(certificate, nameof(DeleteDeviceCertificate));
+
+            return StoreCertificate(
+                DeviceConfiguration.DeviceConfigurationOption.X509DeviceCertificates,
+                CreateConverter().Serialize(new X509DeviceCertificatesBase()
+                {
+                    Marker = Encoding.UTF8.GetBytes(DeviceConfiguration.MarkerConfigurationX509DeviceCertificate_v1),
+                    CertificateSize = (uint)certificate.Length,
+                    Certificate = certificate
+                }),
+                progress);
+        }
+
+        /// <summary>
+        /// Deletes the CA root certificates bundle.
+        /// </summary>
+        /// <returns>The result of the operation, <see cref="ConfigurationOperationError.NotFound"/> if there is none stored.</returns>
+        public ConfigurationOperationResult DeleteRootCaBundle()
+        {
+            return DeleteConfigurationBlock(DeviceConfiguration.DeviceConfigurationOption.X509Certificate, 0);
+        }
+
+        /// <summary>
+        /// Deletes the device certificate.
+        /// </summary>
+        /// <returns>The result of the operation, <see cref="ConfigurationOperationError.NotFound"/> if there is none stored.</returns>
+        public ConfigurationOperationResult DeleteDeviceCertificate()
+        {
+            return DeleteConfigurationBlock(DeviceConfiguration.DeviceConfigurationOption.X509DeviceCertificates, 0);
+        }
+
+        private static void ValidateCertificate(
+            byte[] certificate,
+            string deleteMethod)
+        {
+            if (certificate is null)
             {
-                // no need to erase configuration block, just update what's required
+                throw new ArgumentNullException(nameof(certificate));
+            }
 
-                // serialize the configuration block
-                byte[] configurationSerialized = GetDeviceConfigurationSerialized(configuration);
-
-                // counters to manage the chunked update process
-                int count = configurationSerialized.Length;
-                int position = 0;
-                int attemptCount = 1;
-
-
-                // flag to signal the update operation success/failure
-                bool updateFailed = true;
-
-                while (count > 0 &&
-                        attemptCount >= 0)
-                {
-                    Commands.Monitor_UpdateConfiguration cmd = new Commands.Monitor_UpdateConfiguration
-                    {
-                        Configuration = (uint)GetDeviceConfigurationOption(configuration),
-                        BlockIndex = blockIndex,
-                    };
-
-                    // get packet length, either the maximum allowed size or whatever is still available to TX
-                    int packetLength = Math.Min(GetPacketMaxLength(cmd), count);
-
-                    // check if this is the last chunk
-                    if (count <= packetLength &&
-                        packetLength <= GetPacketMaxLength(cmd))
-                    {
-                        // yes, signal that by setting the Done field
-                        cmd.Done = 1;
-                    }
-                    else
-                    {
-                        // no, more data is coming after this one
-                        cmd.Done = 0;
-                    }
-
-                    cmd.PrepareForSend(configurationSerialized, packetLength, position);
-
-                    IncomingMessage reply = PerformSyncRequest(Commands.c_Monitor_UpdateConfiguration, 0, cmd);
-
-                    if (reply != null)
-                    {
-                        Commands.Monitor_UpdateConfiguration.Reply cmdReply = reply.Payload as Commands.Monitor_UpdateConfiguration.Reply;
-
-                        if (!reply.IsPositiveAcknowledge() || cmdReply.ErrorCode != 0)
-                        {
-                            break;
-                        }
-
-                        count -= packetLength;
-                        position += packetLength;
-
-                        if (count == 0)
-                        {
-                            // update was OK, switch flag
-                            updateFailed = false;
-                        }
-
-                        attemptCount = 1;
-                    }
-                    else
-                    {
-                        attemptCount--;
-                    }
-                }
-
-                if (updateFailed)
-                {
-                    // failed to upload new configuration
-                    return UpdateDeviceResult.UpdateFailed;
-                }
-                else
-                {
-                    return UpdateDeviceResult.Sucess;
-                }
+            // an empty certificate isn't a valid block, the device would reject it with InvalidBlock
+            if (certificate.Length == 0)
+            {
+                throw new ArgumentException($"The certificate is empty. To remove it use {deleteMethod}.", nameof(certificate));
             }
         }
 
-        private byte[] GetDeviceConfigurationSerialized<T>(T configuration)
+        private ConfigurationOperationResult StoreCertificate(
+            DeviceConfiguration.DeviceConfigurationOption option,
+            byte[] block,
+            IProgress<MessageWithProgress> progress)
         {
-            if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
-            {
-                DeviceConfiguration.NetworkConfigurationProperties configBase = configuration as DeviceConfiguration.NetworkConfigurationProperties;
-                return CreateConverter().Serialize((NetworkConfigurationBase)configBase);
-            }
-            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.Wireless80211ConfigurationProperties)))
-            {
-                DeviceConfiguration.Wireless80211ConfigurationProperties configBase = configuration as DeviceConfiguration.Wireless80211ConfigurationProperties;
-                return CreateConverter().Serialize((Wireless80211ConfigurationBase)configBase);
-            }
-            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.WirelessAPConfigurationProperties)))
-            {
-                DeviceConfiguration.WirelessAPConfigurationProperties configBase = configuration as DeviceConfiguration.WirelessAPConfigurationProperties;
-                return CreateConverter().Serialize((WirelessAPConfigurationBase)configBase);
-            }
-            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
-            {
-                DeviceConfiguration.X509CaRootBundleProperties configBase = configuration as DeviceConfiguration.X509CaRootBundleProperties;
-                return CreateConverter().Serialize((X509CaRootBundleBase)configBase);
-            }
-            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509DeviceCertificatesProperties)))
-            {
-                DeviceConfiguration.X509DeviceCertificatesProperties configBase = configuration as DeviceConfiguration.X509DeviceCertificatesProperties;
-                return CreateConverter().Serialize((X509DeviceCertificatesBase)configBase);
-            }
-            else
-            {
-                throw new NotSupportedException();
-            }
+            // single instance: replace the one at index 0, or add it if there is none
+            return PerformConfigurationOperation(
+                ConfigurationOperation.Replace,
+                option,
+                0,
+                ConfigurationOperationFlags.Upsert,
+                block,
+                progress);
         }
 
-        private DeviceConfiguration.DeviceConfigurationOption GetDeviceConfigurationOption<T>(T configuration)
+        private ConfigurationOperationResult PerformConfigurationOperation(
+            ConfigurationOperation operation,
+            DeviceConfiguration.DeviceConfigurationOption option,
+            uint index,
+            ConfigurationOperationFlags flags,
+            byte[] block,
+            IProgress<MessageWithProgress> progress)
         {
-            if (configuration.GetType().Equals(typeof(DeviceConfiguration.NetworkConfigurationProperties)))
+            block ??= Array.Empty<byte>();
+
+            // on flash-sector targets the chunk with the Last flag makes the device erase and rewrite the whole config region
+            // before replying, so that chunk gets a longer timeout
+            int lastChunkTimeout = GetConfigurationEraseTimeout(GetConfigurationStorageInfo());
+
+            int position = 0;
+
+            do
             {
-                return DeviceConfiguration.DeviceConfigurationOption.Network;
+                var cmd = new Commands.Monitor_ConfigurationOperation
+                {
+                    Operation = (uint)operation,
+                    Configuration = (uint)option,
+                    BlockIndex = index,
+                    TotalLength = (uint)block.Length
+                };
+
+                // get chunk length, either the maximum allowed size or whatever is still available to send
+                int chunkLength = Math.Min(GetPacketMaxLength(cmd), block.Length - position);
+
+                ConfigurationOperationFlags chunkFlags = flags;
+
+                if (position == 0)
+                {
+                    chunkFlags |= ConfigurationOperationFlags.First;
+                }
+
+                if (position + chunkLength >= block.Length)
+                {
+                    chunkFlags |= ConfigurationOperationFlags.Last;
+                }
+
+                cmd.Flags = (uint)chunkFlags;
+                cmd.PrepareForSend(block, chunkLength, position);
+
+                IncomingMessage reply = PerformSyncRequest(
+                    Commands.c_Monitor_ConfigurationOperation,
+                    0,
+                    cmd,
+                    chunkFlags.HasFlag(ConfigurationOperationFlags.Last) ? lastChunkTimeout : TIMEOUT_DEFAULT);
+
+                if (reply == null)
+                {
+                    return new ConfigurationOperationResult(ConfigurationOperationError.NoReply);
+                }
+
+                if (!reply.IsPositiveAcknowledge()
+                    || reply.Payload is not Commands.Monitor_ConfigurationOperation.Reply cmdReply)
+                {
+                    // device firmware without the configuration storage API
+                    return new ConfigurationOperationResult(ConfigurationOperationError.FirmwareUpdateRequired);
+                }
+
+                position += chunkLength;
+
+                if ((ConfigurationOperationError)cmdReply.ErrorCode != ConfigurationOperationError.Pending)
+                {
+                    progress?.Report(new MessageWithProgress(""));
+
+                    return new ConfigurationOperationResult(cmdReply);
+                }
+
+                progress?.Report(new MessageWithProgress(
+                    "Sending configuration block to the device...",
+                    (uint)position,
+                    (uint)block.Length));
             }
-            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.Wireless80211ConfigurationProperties)))
+            while (position < block.Length);
+
+            // the device is still waiting for data after the last chunk
+            return new ConfigurationOperationResult(ConfigurationOperationError.Sequence);
+        }
+
+        /// <summary>
+        /// Timeout for the last chunk of a configuration operation. <see cref="TIMEOUT_DEFAULT"/> (the engine default timeout)
+        /// unless the device reports <see cref="ConfigurationStorageFlags.ErasesStorage"/>.
+        /// </summary>
+        private int GetConfigurationEraseTimeout(ConfigurationStorageInfo storageInfo)
+        {
+            if (storageInfo is null
+                || !storageInfo.Flags.HasFlag(ConfigurationStorageFlags.ErasesStorage))
             {
-                return DeviceConfiguration.DeviceConfigurationOption.Wireless80211Network;
+                return TIMEOUT_DEFAULT;
             }
-            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.WirelessAPConfigurationProperties)))
-            {
-                return DeviceConfiguration.DeviceConfigurationOption.WirelessNetworkAP;
-            }
-            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509CaRootBundleProperties)))
-            {
-                return DeviceConfiguration.DeviceConfigurationOption.X509Certificate;
-            }
-            else if (configuration.GetType().Equals(typeof(DeviceConfiguration.X509DeviceCertificatesProperties)))
-            {
-                return DeviceConfiguration.DeviceConfigurationOption.X509DeviceCertificates;
-            }
-            else
-            {
-                throw new NotSupportedException();
-            }
+
+            // On the last chunk the device erases the whole config region, writes the new image, reads it back to verify it
+            // and, on a failure, writes it once more. All of that happens before it replies.
+            const int eraseTimePerkb = 100;
+            const int writeTimePerkb = 100;
+
+            // config region size to assume if the device doesn't report it: largest STM32F4/F7 config sector
+            const uint defaultConfigRegionSize = 128 * 1024;
+
+            // to account for comm times and for the processing of the operation on the device (same as EraseMemory)
+            const int extraTimeoutForErase = 800;
+
+            uint regionSizeKb = ((storageInfo.TotalSize ?? defaultConfigRegionSize) + 1023) / 1024;
+
+            int timeout = (int)(regionSizeKb * (eraseTimePerkb + writeTimePerkb)) + extraTimeoutForErase;
+
+            // never shorter than the default timeout
+            return Math.Max(timeout, DefaultTimeout);
         }
 
         #endregion
@@ -5275,47 +5057,6 @@ namespace nanoFramework.Tools.Debugger
             th.Start();
 
             return th;
-        }
-
-        /// <summary>
-        /// Enumerable with result of the call to <see cref="UpdateDeviceConfiguration"/>.
-        /// </summary>
-        public enum UpdateDeviceResult
-        {
-            /// <summary>
-            /// No result reported.
-            /// </summary>
-            None = 0,
-
-            /// <summary>
-            /// Successfully updated configuration to device.
-            /// </summary>
-            Sucess,
-
-            /// <summary>
-            /// Failed to retrieve existing configuration from the device
-            /// </summary>
-            FailedToRetrieveExistingConfig,
-
-            /// <summary>
-            /// The current configuration retrieved from the connected device is not valid.
-            /// </summary>
-            ExistingConfigurationInvalid,
-
-            /// <summary>
-            /// Failed to upload the new configuration to the device.
-            /// </summary>
-            UpdateFailed,
-
-            /// <summary>
-            /// Failed to upload the new configuration to the device and the previous configuration was restored.
-            /// </summary>
-            UpdateFailedOldConfigRestored,
-
-            /// <summary>
-            /// Failed to upload the new configuration to the device and failed to restore the previous configuration.
-            /// </summary>
-            UpdateFailedAndFailredToRestoreOldConfig
         }
     }
 }
