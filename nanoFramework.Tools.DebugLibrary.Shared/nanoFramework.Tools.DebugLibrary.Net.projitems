@@ -30,7 +30,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.X509DeviceCertificatesProperties.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationOption.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfiguration.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\DeviceConfigurationBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\ConfigurationStorage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NanoDeviceCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\NanoDeviceEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessAPBase.cs" />
