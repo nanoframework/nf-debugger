@@ -42,9 +42,9 @@ namespace nanoFramework.Tools.Debugger
             X509DeviceCertificates = 5,
 
             /// <summary>
-            /// Wire Protocol configuration block (authentication token of the network channel)
+            /// WP authentication token configuration block (network channel)
             /// </summary>
-            WireProtocol = 6,
+            WPAuthToken = 6,
 
             /// <summary>
             /// All configuration blocks

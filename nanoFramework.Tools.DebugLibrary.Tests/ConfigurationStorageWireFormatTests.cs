@@ -156,20 +156,20 @@ namespace nanoFramework.Tools.Debugger.Tests
         }
 
         [TestMethod]
-        public void WireProtocolOptionValue()
+        public void WPAuthTokenOptionValue()
         {
-            Assert.AreEqual((byte)6, (byte)DeviceConfiguration.DeviceConfigurationOption.WireProtocol);
+            Assert.AreEqual((byte)6, (byte)DeviceConfiguration.DeviceConfigurationOption.WPAuthToken);
         }
 
         [TestMethod]
-        public void WireProtocolBlockLayout()
+        public void WPAuthTokenBlockLayout()
         {
-            byte[] serialized = new Converter().Serialize(WireProtocolConfigurationBase.Create("s3cret"));
+            byte[] serialized = new Converter().Serialize(WPAuthTokenConfigurationBase.Create("s3cret"));
 
-            // marker (4) + token length (1) + token (64): packed, same as HAL_Configuration_WireProtocol
+            // marker (4) + token length (1) + token (64): packed, same as HAL_Configuration_WPAuthToken
             Assert.AreEqual(4 + 1 + 64, serialized.Length);
 
-            CollectionAssert.AreEqual(new byte[] { (byte)'W', (byte)'P', (byte)'1', 0 }, serialized[0..4]);
+            CollectionAssert.AreEqual(new byte[] { (byte)'A', (byte)'T', (byte)'1', 0 }, serialized[0..4]);
             Assert.AreEqual(6, serialized[4]);
             CollectionAssert.AreEqual(System.Text.Encoding.UTF8.GetBytes("s3cret"), serialized[5..11]);
 
@@ -181,20 +181,20 @@ namespace nanoFramework.Tools.Debugger.Tests
         }
 
         [TestMethod]
-        public void WireProtocolBlockEmptyTokenTurnsAuthenticationOff()
+        public void WPAuthTokenBlockEmptyTokenTurnsAuthenticationOff()
         {
-            byte[] serialized = new Converter().Serialize(WireProtocolConfigurationBase.Create(string.Empty));
+            byte[] serialized = new Converter().Serialize(WPAuthTokenConfigurationBase.Create(string.Empty));
 
             Assert.AreEqual(69, serialized.Length);
             Assert.AreEqual(0, serialized[4]);
         }
 
         [TestMethod]
-        public void WireProtocolBlockTokenOfMaxLength()
+        public void WPAuthTokenBlockTokenOfMaxLength()
         {
             string token = new string('x', 64);
 
-            byte[] serialized = new Converter().Serialize(WireProtocolConfigurationBase.Create(token));
+            byte[] serialized = new Converter().Serialize(WPAuthTokenConfigurationBase.Create(token));
 
             Assert.AreEqual(69, serialized.Length);
             Assert.AreEqual(64, serialized[4]);
@@ -202,36 +202,36 @@ namespace nanoFramework.Tools.Debugger.Tests
         }
 
         [TestMethod]
-        public void WireProtocolBlockLengthIsInBytesNotCharacters()
+        public void WPAuthTokenBlockLengthIsInBytesNotCharacters()
         {
             // 32 characters of 2 bytes each fit, 33 do not
-            byte[] serialized = new Converter().Serialize(WireProtocolConfigurationBase.Create(new string('é', 32)));
+            byte[] serialized = new Converter().Serialize(WPAuthTokenConfigurationBase.Create(new string('é', 32)));
             Assert.AreEqual(64, serialized[4]);
 
-            Assert.ThrowsException<ArgumentException>(() => WireProtocolConfigurationBase.Create(new string('é', 33)));
+            Assert.ThrowsException<ArgumentException>(() => WPAuthTokenConfigurationBase.Create(new string('é', 33)));
         }
 
         [TestMethod]
-        public void WireProtocolBlockTooLongTokenIsRejected()
+        public void WPAuthTokenBlockTooLongTokenIsRejected()
         {
-            Assert.ThrowsException<ArgumentException>(() => WireProtocolConfigurationBase.Create(new string('x', 65)));
+            Assert.ThrowsException<ArgumentException>(() => WPAuthTokenConfigurationBase.Create(new string('x', 65)));
         }
 
         [TestMethod]
-        public void WireProtocolBlockNullTokenIsRejected()
+        public void WPAuthTokenBlockNullTokenIsRejected()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => WireProtocolConfigurationBase.Create(null));
+            Assert.ThrowsException<ArgumentNullException>(() => WPAuthTokenConfigurationBase.Create(null));
         }
 
         [TestMethod]
-        public void WireProtocolOperationCommandLayout()
+        public void WPAuthTokenOperationCommandLayout()
         {
-            byte[] block = new Converter().Serialize(WireProtocolConfigurationBase.Create("abc"));
+            byte[] block = new Converter().Serialize(WPAuthTokenConfigurationBase.Create("abc"));
 
             var cmd = new Commands.Monitor_ConfigurationOperation
             {
                 Operation = (uint)ConfigurationOperation.Replace,
-                Configuration = (uint)DeviceConfiguration.DeviceConfigurationOption.WireProtocol,
+                Configuration = (uint)DeviceConfiguration.DeviceConfigurationOption.WPAuthToken,
                 BlockIndex = 0,
                 Flags = (uint)(ConfigurationOperationFlags.First | ConfigurationOperationFlags.Last | ConfigurationOperationFlags.Upsert),
                 TotalLength = (uint)block.Length,
@@ -272,13 +272,13 @@ namespace nanoFramework.Tools.Debugger.Tests
                     // all the types of the firmware with the network channel: 1 to 5 and the Wire Protocol one
                     for (byte option = 1; option <= 6; option++)
                     {
-                        bool isWireProtocol = option == (byte)DeviceConfiguration.DeviceConfigurationOption.WireProtocol;
+                        bool isWPAuthToken = option == (byte)DeviceConfiguration.DeviceConfigurationOption.WPAuthToken;
 
                         w.Write(option);
-                        w.Write((byte)(isWireProtocol ? 1 : 0));
-                        w.Write((byte)(isWireProtocol ? 1 : 4));
+                        w.Write((byte)(isWPAuthToken ? 1 : 0));
+                        w.Write((byte)(isWPAuthToken ? 1 : 4));
                         w.Write((byte)(ConfigurationBlockFlags.CanAdd | ConfigurationBlockFlags.CanReplace | ConfigurationBlockFlags.CanDelete));
-                        w.Write(isWireProtocol ? 69u : 100u);
+                        w.Write(isWPAuthToken ? 69u : 100u);
                     }
                 });
 
@@ -291,7 +291,7 @@ namespace nanoFramework.Tools.Debugger.Tests
 
             Assert.AreEqual(6, info.Blocks.Count);
 
-            ConfigurationBlockInfo token = info[DeviceConfiguration.DeviceConfigurationOption.WireProtocol];
+            ConfigurationBlockInfo token = info[DeviceConfiguration.DeviceConfigurationOption.WPAuthToken];
             Assert.IsNotNull(token);
             Assert.AreEqual(1, token.MaxCount);
             Assert.AreEqual(69u, token.MaxBlockSize);
@@ -302,7 +302,7 @@ namespace nanoFramework.Tools.Debugger.Tests
         }
 
         [TestMethod]
-        public void InfoReplyWithoutWireProtocolBlockType()
+        public void InfoReplyWithoutWPAuthTokenBlockType()
         {
             // firmware without the network channel: the type is not reported
             byte[] data = Build(
@@ -326,7 +326,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             reply.PrepareForDeserialize(data.Length, data, converter);
             converter.Deserialize(reply, data);
 
-            Assert.IsNull(new ConfigurationStorageInfo(reply)[DeviceConfiguration.DeviceConfigurationOption.WireProtocol]);
+            Assert.IsNull(new ConfigurationStorageInfo(reply)[DeviceConfiguration.DeviceConfigurationOption.WPAuthToken]);
         }
 
         private static byte[] Build(Action<BinaryWriter> write)

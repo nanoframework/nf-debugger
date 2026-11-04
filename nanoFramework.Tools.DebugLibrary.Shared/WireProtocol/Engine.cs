@@ -507,6 +507,8 @@ namespace nanoFramework.Tools.Debugger
                 return true;
             }
 
+            // result 1: wrong token. Result 2: wrong token and the device is dropping the connection (expected, nothing
+            // else to do as the engine is marked as disconnected here). A NACK means the command was gated.
             IsConnected = false;
 
             throw new DeviceAuthenticationFailedException(deviceId);
@@ -5089,10 +5091,10 @@ namespace nanoFramework.Tools.Debugger
         }
 
         /// <summary>
-        /// Stores the Wire Protocol authentication token of the device, replacing the one stored, if any.
+        /// Stores the WP authentication token of the device, replacing the one stored, if any.
         /// The token can't be read back.
         /// </summary>
-        /// <param name="token">The token (UTF-8, at most <see cref="DeviceConfiguration.WireProtocolMaxTokenLength"/> bytes).
+        /// <param name="token">The token (UTF-8, at most <see cref="DeviceConfiguration.WPAuthTokenMaxTokenLength"/> bytes).
         /// An empty token turns the authentication off, even if the firmware has a default token.</param>
         /// <returns>The result of the operation. <see cref="ConfigurationOperationError.NotSupported"/> if the firmware has
         /// no network channel.</returns>
@@ -5102,21 +5104,21 @@ namespace nanoFramework.Tools.Debugger
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="token"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">The UTF-8 encoding of <paramref name="token"/> is longer than
-        /// <see cref="DeviceConfiguration.WireProtocolMaxTokenLength"/> bytes.</exception>
-        public ConfigurationOperationResult StoreWireProtocolToken(string token)
+        /// <see cref="DeviceConfiguration.WPAuthTokenMaxTokenLength"/> bytes.</exception>
+        public ConfigurationOperationResult StoreWPAuthToken(string token)
         {
             // single instance: replace the one at index 0, or add it if there is none
             return PerformConfigurationOperation(
                 ConfigurationOperation.Replace,
-                DeviceConfiguration.DeviceConfigurationOption.WireProtocol,
+                DeviceConfiguration.DeviceConfigurationOption.WPAuthToken,
                 0,
                 ConfigurationOperationFlags.Upsert,
-                CreateConverter().Serialize(WireProtocolConfigurationBase.Create(token)),
+                CreateConverter().Serialize(WPAuthTokenConfigurationBase.Create(token)),
                 null);
         }
 
         /// <summary>
-        /// Deletes the Wire Protocol authentication token stored in the device, so the default of the firmware
+        /// Deletes the WP authentication token stored in the device, so the default of the firmware
         /// (if any) applies again.
         /// </summary>
         /// <returns>The result of the operation, <see cref="ConfigurationOperationError.NotFound"/> if there is none stored.</returns>
@@ -5124,9 +5126,9 @@ namespace nanoFramework.Tools.Debugger
         /// The device reads the token once, when the network channel starts: the change takes effect after a full
         /// device reboot (not a CLR-only reboot).
         /// </remarks>
-        public ConfigurationOperationResult DeleteWireProtocolToken()
+        public ConfigurationOperationResult DeleteWPAuthToken()
         {
-            return DeleteConfigurationBlock(DeviceConfiguration.DeviceConfigurationOption.WireProtocol, 0);
+            return DeleteConfigurationBlock(DeviceConfiguration.DeviceConfigurationOption.WPAuthToken, 0);
         }
 
         private static void ValidateCertificate(

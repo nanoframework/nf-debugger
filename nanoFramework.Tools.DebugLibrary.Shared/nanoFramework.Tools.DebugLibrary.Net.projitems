@@ -38,7 +38,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\Wireless80211ConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509DeviceCertificatesPropertiesBase.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WireProtocolConfigurationBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WPAuthTokenConfigurationBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509DeviceCertificatesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509CaRootBundleBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509CaRootBundlePropertiesBase.cs" />
