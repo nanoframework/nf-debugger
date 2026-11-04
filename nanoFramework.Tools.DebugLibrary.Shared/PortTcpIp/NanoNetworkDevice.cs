@@ -62,8 +62,16 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                         return available;
                     }
 
+                    if (!socket.Poll(0, SelectMode.SelectRead))
+                    {
+                        return 0;
+                    }
+
+                    // readable: data may have arrived since the first read, check again
+                    available = socket.Available;
+
                     // readable without data available means the other side closed (or reset) the connection
-                    return socket.Poll(0, SelectMode.SelectRead) ? -1 : 0;
+                    return available > 0 ? available : -1;
                 }
                 catch (Exception ex) when (ex is ObjectDisposedException || ex is SocketException || ex is NullReferenceException)
                 {

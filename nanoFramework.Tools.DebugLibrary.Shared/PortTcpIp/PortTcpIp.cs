@@ -63,6 +63,12 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
             if (stream is not null && NanoNetworkDevice?.Connected == true)
             {
+                if (bytesToRead <= 0)
+                {
+                    // a zero length read returns 0, which isn't a disconnection
+                    return Array.Empty<byte>();
+                }
+
                 byte[] buffer = new byte[bytesToRead];
 
                 try

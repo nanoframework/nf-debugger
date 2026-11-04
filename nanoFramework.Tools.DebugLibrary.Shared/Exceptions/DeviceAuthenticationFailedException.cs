@@ -16,6 +16,10 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public string DeviceId { get; }
 
+        /// <summary>
+        /// Creates the exception for a device that rejected the token.
+        /// </summary>
+        /// <param name="deviceId">Id of the device.</param>
         public DeviceAuthenticationFailedException(string deviceId)
             : base($"Device {deviceId} rejected the authentication token.")
         {

@@ -82,9 +82,10 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         }
 
         /// <summary>
-        /// Checks if a device id is a network device id.
+        /// Checks if a device id is a network device id, that is, if <see cref="TryParse"/> accepts it
+        /// (the <c>tcpip://</c> prefix is optional).
         /// </summary>
         public static bool IsNetworkDeviceId(string deviceId) =>
-            deviceId?.StartsWith(DeviceIdPrefix, StringComparison.OrdinalIgnoreCase) == true;
+            TryParse(deviceId, out _);
     }
 }

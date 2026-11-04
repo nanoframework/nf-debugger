@@ -112,48 +112,9 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             {
                 try
                 {
-                    List<NanoDevice<NanoNetworkDevice>> listedDevices;
-                    using (NanoFrameworkDevices.Lock())
-                    {
-                        listedDevices = _networkNanoFrameworkDevices.ToList();
-                    }
+                    RemoveUnreachableDevices();
 
-                    foreach (var device in listedDevices)
-                    {
-                        if (_disposed)
-                        {
-                            return;
-                        }
-
-                        if (!IsDeviceReachable(device)
-                            && NetworkDeviceInformation.TryParse(device.DeviceId, out var info))
-                        {
-                            RemoveDeviceFromList(info);
-                        }
-                    }
-
-                    List<NetworkDeviceInformation> manualDevices;
-                    lock (_manualDevicesLock)
-                    {
-                        manualDevices = _manualDevices.Values.ToList();
-                    }
-
-                    foreach (var info in manualDevices)
-                    {
-                        if (_disposed)
-                        {
-                            return;
-                        }
-
-                        try
-                        {
-                            AddDeviceToListAsync(info, false);
-                        }
-                        catch (DeviceAuthenticationFailedException)
-                        {
-                            // already logged, the device is added when the token is available
-                        }
-                    }
+                    RetryManualDevices();
                 }
                 finally
                 {
@@ -163,6 +124,58 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                     }
                 }
             });
+        }
+
+        private void RemoveUnreachableDevices()
+        {
+            List<NanoDevice<NanoNetworkDevice>> listedDevices;
+            using (NanoFrameworkDevices.Lock())
+            {
+                listedDevices = _networkNanoFrameworkDevices.ToList();
+            }
+
+            foreach (var device in listedDevices)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                if (!IsDeviceReachable(device)
+                    && NetworkDeviceInformation.TryParse(device.DeviceId, out var info))
+                {
+                    RemoveDeviceFromList(info);
+                }
+            }
+        }
+
+        private void RetryManualDevices()
+        {
+            List<NetworkDeviceInformation> manualDevices;
+            lock (_manualDevicesLock)
+            {
+                manualDevices = _manualDevices.Values.ToList();
+            }
+
+            foreach (var info in manualDevices)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                // same exclusive access that the discovery and the manual add take
+                using var access = GlobalExclusiveDeviceAccess.TryGet(info);
+
+                if (access is null)
+                {
+                    // someone else is using it
+                    continue;
+                }
+
+                // authentication failures are logged and not thrown
+                AddDeviceToListAsync(info, false);
+            }
         }
 
         private bool IsDeviceReachable(NanoDevice<NanoNetworkDevice> device)
@@ -190,18 +203,34 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
                 var reachable = device.DebugEngine.Connect(NanoNetworkDevice.SafeDefaultTimeout);
 
-                device.DebugEngine.Stop();
+                ReleaseConnection(device);
 
                 return reachable;
             }
             catch (DeviceAuthenticationFailedException)
             {
+                ReleaseConnection(device);
+
                 // it answers, it just needs the token
                 return true;
             }
             catch
             {
+                ReleaseConnection(device);
+
                 return false;
+            }
+        }
+
+        private static void ReleaseConnection(NanoDevice<NanoNetworkDevice> device)
+        {
+            try
+            {
+                device.DebugEngine?.Stop();
+            }
+            catch
+            {
+                // nothing else to do if the connection can't be released
             }
         }
 
@@ -436,10 +465,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                     }
                     catch (DeviceAuthenticationFailedException ex)
                     {
-                        OnLogMessageAvailable(
-                            NanoDevicesEventSource.Log.CriticalError($"ERROR: {ex.Message}"));
-
-                        newNanoFrameworkDevice.Disconnect();
+                        HandleAuthenticationFailure(ex, newNanoFrameworkDevice);
 
                         if (throwOnAuthenticationFailure)
                         {
@@ -471,6 +497,16 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             }
 
             return (nanoFrameworkDeviceMatch, isNew);
+        }
+
+        private void HandleAuthenticationFailure(
+            DeviceAuthenticationFailedException ex,
+            NanoDevice<NanoNetworkDevice> device)
+        {
+            OnLogMessageAvailable(
+                NanoDevicesEventSource.Log.CriticalError($"ERROR: {ex.Message}"));
+
+            device.Disconnect();
         }
 
         /// <summary>
