@@ -233,6 +233,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Monitor_StorageOperation = 0x00000011;
         public const uint c_Monitor_ConfigurationInfo = 0x00000012;
         public const uint c_Monitor_ConfigurationOperation = 0x00000013;
+
+        /// <summary>
+        /// Authenticates a network session with the pre-shared token (empty if none). KEEP IN SYNC WITH native c_Monitor_Authenticate in WireProtocol.h.
+        /// </summary>
+        public const uint c_Monitor_Authenticate = 0x00000014;
         public const uint c_Monitor_TargetInfo = 0x00000020;
 
         // IFU (In-Field Update) commands
@@ -522,6 +527,44 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 Array.Copy(signature, 0, m_signature, 0, length);
 
                 return true;
+            }
+        }
+
+        /// <summary>
+        /// Authenticates the network session. The token is sent as UTF-8 bytes, 64 at most.
+        /// </summary>
+        public class Monitor_Authenticate
+        {
+            /// <summary>
+            /// Maximum length of the token, in bytes.
+            /// </summary>
+            public const int MaxTokenLength = 64;
+
+            public uint Length;
+            public byte[] Data;
+
+            public class Reply
+            {
+                /// <summary>
+                /// 0 for success, anything else for failure.
+                /// </summary>
+                public uint Result;
+            }
+
+            public Monitor_Authenticate()
+            {
+            }
+
+            public Monitor_Authenticate(string token)
+            {
+                Data = Encoding.UTF8.GetBytes(token ?? string.Empty);
+
+                if (Data.Length > MaxTokenLength)
+                {
+                    throw new ArgumentException($"Token is longer than {MaxTokenLength} bytes.", nameof(token));
+                }
+
+                Length = (uint)Data.Length;
             }
         }
 
@@ -2517,6 +2560,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_ConfigurationInfo: return new Monitor_ConfigurationInfo.Reply();
                     case c_Monitor_ConfigurationOperation: return new Monitor_ConfigurationOperation.Reply();
                     case c_Monitor_StorageOperation: return new Monitor_StorageOperation.Reply();
+                    case c_Monitor_Authenticate: return new Monitor_Authenticate.Reply();
 
                     case c_Monitor_ImageInfo: return new Monitor_ImageInfo.Reply();
                     case c_Monitor_ImageWrite: return new Monitor_ImageWrite.Reply();
@@ -2598,6 +2642,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_StorageOperation: return new Monitor_StorageOperation();
                     case c_Monitor_ConfigurationInfo: return new Monitor_ConfigurationInfo();
                     case c_Monitor_ConfigurationOperation: return new Monitor_ConfigurationOperation();
+                    case c_Monitor_Authenticate: return new Monitor_Authenticate();
 
                     case c_Monitor_ImageInfo: return new Monitor_ImageInfo();
                     case c_Monitor_ImageWrite: return new Monitor_ImageWrite();

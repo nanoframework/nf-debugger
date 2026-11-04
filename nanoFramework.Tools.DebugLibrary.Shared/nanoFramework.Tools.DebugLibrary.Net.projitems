@@ -38,6 +38,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\Wireless80211ConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WirelessConfigurationPropertiesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509DeviceCertificatesPropertiesBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\WireProtocolConfigurationBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509DeviceCertificatesBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509CaRootBundleBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceConfiguration\X509CaRootBundlePropertiesBase.cs" />
@@ -48,6 +49,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)RetryHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\CouldntOpenNanoFrameworkDeviceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DebugSessionAlreadyOpenException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DeviceAuthenticationFailedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\DeviceNotConnectedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\RemotedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\CancellationTokenExtensions.cs" />
@@ -101,6 +103,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)PortSerial\PortSerialManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\NanoNetworkDevice.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\NetworkDeviceInformation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\DiscoveryMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\DeviceWatcher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\PortTcpIpManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\PortTcpIp.cs" />

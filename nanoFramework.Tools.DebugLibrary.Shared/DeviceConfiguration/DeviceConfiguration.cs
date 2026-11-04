@@ -40,6 +40,17 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public static string MarkerConfigurationX509DeviceCertificate_v1 = "XD1\0";
 
+        /// <summary>
+        /// Wire Protocol configuration marker
+        /// </summary>
+        public static string MarkerConfigurationWireProtocol_v1 = "WP1\0";
+
+        /// <summary>
+        /// Maximum length, in bytes, of the Wire Protocol authentication token.
+        /// KEEP IN SYNC WITH native WIREPROTOCOL_CONFIG_MAX_TOKEN_LENGTH in nanoHAL_Network.h.
+        /// </summary>
+        public const int WireProtocolMaxTokenLength = 64;
+
         /////////////////////////////////////////////////////////////
 
         /// <summary>

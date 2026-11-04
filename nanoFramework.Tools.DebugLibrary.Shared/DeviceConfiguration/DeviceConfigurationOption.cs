@@ -42,6 +42,11 @@ namespace nanoFramework.Tools.Debugger
             X509DeviceCertificates = 5,
 
             /// <summary>
+            /// Wire Protocol configuration block (authentication token of the network channel)
+            /// </summary>
+            WireProtocol = 6,
+
+            /// <summary>
             /// All configuration blocks
             /// </summary>
             All = 255,

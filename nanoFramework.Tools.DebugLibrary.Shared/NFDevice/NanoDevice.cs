@@ -26,6 +26,10 @@ namespace nanoFramework.Tools.Debugger
             {
                 Transport = TransportType.Serial;
             }
+            else if (Device is NanoNetworkDevice)
+            {
+                Transport = TransportType.TcpIp;
+            }
         }
 
         #region Disposable implementation
