@@ -121,10 +121,10 @@ namespace nanoFramework.Tools.Debugger.Tests
         public void ExclusiveAccessKey_IsTheDeviceId_ForEveryRoute()
         {
             // discovery builds the information from the datagram, a manual add parses the id: the key must be the same
-            DiscoveryMessage.TryParse("+:26000:x", out var message);
+            Assert.IsTrue(DiscoveryMessage.TryParse("+:26000:x", out var message));
             var fromDiscovery = message.ToDeviceInformation(IPAddress.Parse("10.0.0.7"));
 
-            NetworkDeviceInformation.TryParse("tcpip://10.0.0.7:26000", out var fromId);
+            Assert.IsTrue(NetworkDeviceInformation.TryParse("tcpip://10.0.0.7:26000", out var fromId));
             var fromHostAndPort = new NetworkDeviceInformation("10.0.0.7", 26000);
 
             Assert.AreEqual(fromDiscovery.DeviceId, fromDiscovery.ExclusiveAccessKey);
@@ -151,10 +151,10 @@ namespace nanoFramework.Tools.Debugger.Tests
         {
             using var manager = new PortTcpIpManager(false);
 
-            Assert.ThrowsException<ArgumentException>(() => manager.AddDevice("COM3"));
-            Assert.ThrowsException<ArgumentException>(() => manager.AddDevice("\"tcpip://1.2.3.4:26000\"gm"));
-            Assert.ThrowsException<ArgumentException>(() => manager.AddDevice("host with spaces", 26000));
-            Assert.ThrowsException<ArgumentException>(() => manager.AddDevice("host", 0));
+            Assert.ThrowsExactly<ArgumentException>(() => manager.AddDevice("COM3"));
+            Assert.ThrowsExactly<ArgumentException>(() => manager.AddDevice("\"tcpip://1.2.3.4:26000\"gm"));
+            Assert.ThrowsExactly<ArgumentException>(() => manager.AddDevice("host with spaces", 26000));
+            Assert.ThrowsExactly<ArgumentException>(() => manager.AddDevice("host", 0));
         }
 
         [TestMethod]
@@ -177,8 +177,11 @@ namespace nanoFramework.Tools.Debugger.Tests
         [TestMethod]
         public void Authenticate_Constants_AreTheAgreedOnes()
         {
-            Assert.AreEqual(0x00000014u, Commands.c_Monitor_Authenticate);
-            Assert.AreEqual(64, Commands.Monitor_Authenticate.MaxTokenLength);
+            var command = Commands.c_Monitor_Authenticate;
+            var maxTokenLength = Commands.Monitor_Authenticate.MaxTokenLength;
+
+            Assert.AreEqual(0x00000014u, command);
+            Assert.AreEqual(64, maxTokenLength);
         }
 
         [TestMethod]
@@ -198,7 +201,7 @@ namespace nanoFramework.Tools.Debugger.Tests
         [TestMethod]
         public void AuthenticateRequest_TokenTooLong_Throws()
         {
-            Assert.ThrowsException<ArgumentException>(() => new Commands.Monitor_Authenticate(new string('a', 65)));
+            Assert.ThrowsExactly<ArgumentException>(() => new Commands.Monitor_Authenticate(new string('a', 65)));
 
             // 64 bytes is fine
             Assert.AreEqual(64u, new Commands.Monitor_Authenticate(new string('a', 64)).Length);
@@ -274,7 +277,7 @@ namespace nanoFramework.Tools.Debugger.Tests
                 NetworkDeviceInformation = new NetworkDeviceInformation("127.0.0.1", port)
             };
 
-            Assert.ThrowsException<AggregateException>(() => device.Connect());
+            Assert.ThrowsExactly<AggregateException>(() => device.Connect());
             Assert.IsFalse(device.Connected);
         }
 

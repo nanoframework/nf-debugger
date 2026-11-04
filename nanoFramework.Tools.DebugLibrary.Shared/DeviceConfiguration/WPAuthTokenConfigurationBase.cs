@@ -30,6 +30,9 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public byte[] Token;
 
+        /// <summary>
+        /// Creates an empty block, with the arrays sized as the device expects.
+        /// </summary>
         public WPAuthTokenConfigurationBase()
         {
             // need to init these here to match the expected size on the struct to be sent to the device

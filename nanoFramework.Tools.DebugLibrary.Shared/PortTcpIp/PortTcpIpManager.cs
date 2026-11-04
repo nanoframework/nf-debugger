@@ -178,7 +178,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             }
         }
 
-        private bool IsDeviceReachable(NanoDevice<NanoNetworkDevice> device)
+        private static bool IsDeviceReachable(NanoDevice<NanoNetworkDevice> device)
         {
             if (device.DebugEngine?.IsConnected == true)
             {
@@ -668,7 +668,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 else
                 {
                     // remove from cache
-                    _devicesCache.TryRemove(deviceId, out var dummy);
+                    _devicesCache.TryRemove(deviceId, out _);
 
                     device.DebugEngine?.Stop();
                     device.DebugEngine?.Dispose();
@@ -679,7 +679,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             catch (DeviceAuthenticationFailedException)
             {
                 // the caller decides what to do about it, release the device
-                _devicesCache.TryRemove(deviceId, out var dummy);
+                _devicesCache.TryRemove(deviceId, out _);
 
                 try
                 {
@@ -701,7 +701,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 // if there is a deviceID, remove it from cache, just in case
                 if (deviceId != null)
                 {
-                    _devicesCache.TryRemove(deviceId, out var dummy);
+                    _devicesCache.TryRemove(deviceId, out _);
                 }
 
                 try

@@ -32,7 +32,9 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         // keepalive: the first probe is sent after the connection is idle for this time (seconds), then at this interval, this number of times
         private const int KeepAliveTime = 5;
         private const int KeepAliveInterval = 2;
+#if NET5_0_OR_GREATER
         private const int KeepAliveRetryCount = 3;
+#endif
 
         /// <summary>
         /// <see langword="true"/> if there is a connection to the device and it is still alive.

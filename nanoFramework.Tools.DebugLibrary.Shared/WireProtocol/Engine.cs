@@ -345,14 +345,12 @@ namespace nanoFramework.Tools.Debugger
                                 break;
                         }
 
-                        if ((Device as NanoDeviceBase)?.Transport == TransportType.TcpIp)
+                        // always sent over network, the device accepts any token when it has none configured
+                        // throws if the token is rejected
+                        if ((Device as NanoDeviceBase)?.Transport == TransportType.TcpIp
+                            && !Authenticate(timeout))
                         {
-                            // always sent over network, the device accepts any token when it has none configured
-                            // throws if the token is rejected
-                            if (!Authenticate(timeout))
-                            {
-                                goto connect_failed;
-                            }
+                            goto connect_failed;
                         }
 
                         if (Silent)

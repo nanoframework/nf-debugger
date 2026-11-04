@@ -29,8 +29,14 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         /// </summary>
         public bool IsAnnouncement { get; }
 
+        /// <summary>
+        /// TCP port the device listens on.
+        /// </summary>
         public int Port { get; }
 
+        /// <summary>
+        /// Name of the target announcing itself.
+        /// </summary>
         public string TargetName { get; }
 
         private DiscoveryMessage(bool isAnnouncement, int port, string targetName)

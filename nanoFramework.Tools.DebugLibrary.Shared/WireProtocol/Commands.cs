@@ -540,9 +540,19 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             /// </summary>
             public const int MaxTokenLength = 64;
 
+            /// <summary>
+            /// Length of the token, in bytes.
+            /// </summary>
             public uint Length;
+
+            /// <summary>
+            /// Token, UTF-8 encoded.
+            /// </summary>
             public byte[] Data;
 
+            /// <summary>
+            /// Reply to the authentication request.
+            /// </summary>
             public class Reply
             {
                 /// <summary>
@@ -551,10 +561,18 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                 public uint Result;
             }
 
+            /// <summary>
+            /// Creates an empty request.
+            /// </summary>
             public Monitor_Authenticate()
             {
             }
 
+            /// <summary>
+            /// Creates a request with the token.
+            /// </summary>
+            /// <param name="token">The token. UTF-8 length can't exceed <see cref="MaxTokenLength"/> bytes.</param>
+            /// <exception cref="ArgumentException">The token is too long.</exception>
             public Monitor_Authenticate(string token)
             {
                 Data = Encoding.UTF8.GetBytes(token ?? string.Empty);
@@ -753,9 +771,19 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public uint Flags;
             public uint TotalLength;
             public uint Offset;
+            /// <summary>
+            /// Length of the token, in bytes.
+            /// </summary>
             public uint Length;
+
+            /// <summary>
+            /// Token, UTF-8 encoded.
+            /// </summary>
             public byte[] Data;
 
+            /// <summary>
+            /// Reply to the authentication request.
+            /// </summary>
             public class Reply
             {
                 public uint ErrorCode;

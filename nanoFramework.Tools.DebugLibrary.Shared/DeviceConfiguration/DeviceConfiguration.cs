@@ -43,7 +43,7 @@ namespace nanoFramework.Tools.Debugger
         /// <summary>
         /// WP authentication token configuration marker
         /// </summary>
-        public static string MarkerConfigurationWPAuthToken_v1 = "AT1\0";
+        public const string MarkerConfigurationWPAuthToken_v1 = "AT1\0";
 
         /// <summary>
         /// Maximum length, in bytes, of the WP authentication token.

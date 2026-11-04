@@ -158,7 +158,9 @@ namespace nanoFramework.Tools.Debugger.Tests
         [TestMethod]
         public void WPAuthTokenOptionValue()
         {
-            Assert.AreEqual((byte)6, (byte)DeviceConfiguration.DeviceConfigurationOption.WPAuthToken);
+            var option = DeviceConfiguration.DeviceConfigurationOption.WPAuthToken;
+
+            Assert.AreEqual((byte)6, (byte)option);
         }
 
         [TestMethod]
@@ -208,19 +210,19 @@ namespace nanoFramework.Tools.Debugger.Tests
             byte[] serialized = new Converter().Serialize(WPAuthTokenConfigurationBase.Create(new string('é', 32)));
             Assert.AreEqual(64, serialized[4]);
 
-            Assert.ThrowsException<ArgumentException>(() => WPAuthTokenConfigurationBase.Create(new string('é', 33)));
+            Assert.ThrowsExactly<ArgumentException>(() => WPAuthTokenConfigurationBase.Create(new string('é', 33)));
         }
 
         [TestMethod]
         public void WPAuthTokenBlockTooLongTokenIsRejected()
         {
-            Assert.ThrowsException<ArgumentException>(() => WPAuthTokenConfigurationBase.Create(new string('x', 65)));
+            Assert.ThrowsExactly<ArgumentException>(() => WPAuthTokenConfigurationBase.Create(new string('x', 65)));
         }
 
         [TestMethod]
         public void WPAuthTokenBlockNullTokenIsRejected()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => WPAuthTokenConfigurationBase.Create(null));
+            Assert.ThrowsExactly<ArgumentNullException>(() => WPAuthTokenConfigurationBase.Create(null));
         }
 
         [TestMethod]
