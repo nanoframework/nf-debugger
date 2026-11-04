@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -13,10 +14,6 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 {
     public class DeviceWatcher : IDisposable
     {
-        private const char TokenSeparator = ':';
-        private const string CommandDeviceStart = "+";
-        private const string CommandDeviceStop = "-";
-
         private readonly int _discoveryPort;
         private volatile bool _started = false;
         private volatile Thread _threadWatch = null;
@@ -205,11 +202,9 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
                         var discoveryPacket = udpClient.Receive(ref remoteEndPoint);
 
-                        // TODO: take the device address from the packet sender (remoteEndPoint) instead of trusting the announced host
-
                         var message = Encoding.ASCII.GetString(discoveryPacket);
 
-                        ProcessDiscoveryMessage(message, isDiscovering.Token);
+                        ProcessDiscoveryMessage(message, remoteEndPoint.Address, isDiscovering.Token);
                     }
 #if DEBUG
                     catch (Exception ex)
@@ -251,60 +246,59 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             }
         }
 
-        private void ProcessDiscoveryMessage(string message, CancellationToken isDiscovering)
+        // devices being added: they re-announce every few seconds, no need to queue one more attempt while one is running
+        private readonly ConcurrentDictionary<string, byte> _adding = new ConcurrentDictionary<string, byte>();
+
+        internal void ProcessDiscoveryMessage(string message, IPAddress sender, CancellationToken isDiscovering)
         {
-            if (string.IsNullOrEmpty(message))
+            if (!DiscoveryMessage.TryParse(message, out var discovery))
             {
                 return;
             }
 
-            var tokens = message.Split(new[] { TokenSeparator });
+            // the address of the device is the one of the sender of the announcement
+            var info = discovery.ToDeviceInformation(sender);
 
-            if (tokens.Length < 3)
+            if (discovery.IsAnnouncement)
             {
-                return;
-            }
-
-            var command = tokens[0];
-            var host = tokens[1];
-
-            if (!int.TryParse(tokens[2], out var port))
-            {
-                return;
-            }
-
-            switch (command)
-            {
-                case CommandDeviceStart:
-                    if (Added is not null)
+                if (Added is not null
+                    && PortTcpIpManager.GetRegisteredDevice(info) is null
+                    && _adding.TryAdd(info.DeviceId, 0))
+                {
+                    Task.Run(async () =>
                     {
-                        var info = new NetworkDeviceInformation(host, port);
-                        if (PortTcpIpManager.GetRegisteredDevice(info) is null)
+                        try
                         {
-                            Task.Run(async () =>
-                            {
-                                // Force true async running
-                                await Task.Yield();
-                                var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(info, cancellationToken: isDiscovering);
-                                if (exclusiveAccess is not null)
-                                {
-                                    try
-                                    {
-                                        Added?.Invoke(this, info);
-                                    }
-                                    finally
-                                    {
-                                        exclusiveAccess.Dispose();
-                                    }
-                                }
-                            });
-                        }
-                    }
-                    break;
+                            // Force true async running
+                            await Task.Yield();
 
-                case CommandDeviceStop:
-                    Removed?.Invoke(this, new NetworkDeviceInformation(host, port));
-                    break;
+                            var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(info, cancellationToken: isDiscovering);
+                            if (exclusiveAccess is not null)
+                            {
+                                try
+                                {
+                                    Added?.Invoke(this, info);
+                                }
+                                finally
+                                {
+                                    exclusiveAccess.Dispose();
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // the next announcement tries again
+                        }
+                        finally
+                        {
+                            _adding.TryRemove(info.DeviceId, out _);
+                        }
+                    });
+                }
+            }
+            else
+            {
+                Removed?.Invoke(this, info);
             }
         }
 

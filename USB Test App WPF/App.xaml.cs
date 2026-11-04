@@ -59,7 +59,9 @@ namespace Serial_Test_App_WPF
             var composite = PortBase.CreateInstanceForComposite(new[]
             {
                 PortBase.CreateInstanceForSerial(false, devicesToExclude), 
-                //PortBase.CreateInstanceForNetwork() 
+                // network devices: discovery on 23657, add one by hand with AddDevice("tcpip://host:26000");
+                // set TokenProvider on the PortTcpIpManager for devices that need a token
+                PortBase.CreateInstanceForNetwork(false)
             }, true);
 
             return new NFSerialDebugClientService(composite);

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -179,8 +180,20 @@ namespace nanoFramework.Tools.Debugger
         public void CreateDebugEngine(int timeoutMilliseconds)
         {
             DebugEngine = new Engine(this);
-            DebugEngine.DefaultTimeout = NanoSerialDevice.SafeDefaultTimeout;
+            DebugEngine.DefaultTimeout = timeoutMilliseconds;
         }
+
+        /// <summary>
+        /// Provides the token to authenticate with a network device that requires it. The argument is the id of the device.
+        /// Returning <see langword="null"/> or an empty string means there is no token.
+        /// </summary>
+        public Func<string, string> TokenProvider { get; set; }
+
+        /// <summary>
+        /// <see langword="false"/> if the device can't be switched to nanoBooter from here. That's the case of network devices:
+        /// nanoBooter has no network stack.
+        /// </summary>
+        public bool SupportsNanoBooter => Transport != TransportType.TcpIp;
 
         /// <summary>
         /// Get <see cref="INanoFrameworkDeviceInfo"/> from device.
@@ -258,6 +271,14 @@ namespace nanoFramework.Tools.Debugger
         public bool ConnectToNanoBooter()
         {
             bool ret = false;
+
+            if (!SupportsNanoBooter)
+            {
+                // nanoBooter has no network: there's no way to get there from a network connection
+                Debug.WriteLine("Connecting to nanoBooter is not supported over network.");
+
+                return false;
+            }
 
             if (!DebugEngine.Connect(1000, true))
             {

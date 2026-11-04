@@ -107,7 +107,7 @@ namespace nanoFramework.Tools.Debugger.NFDevice
             CancellationToken? cancellationToken = null)
         {
             return GetOrCreate(
-                $"{address.Host}:{address.Port}",
+                address.ExclusiveAccessKey,
                 millisecondsTimeout,
                 cancellationToken);
         }

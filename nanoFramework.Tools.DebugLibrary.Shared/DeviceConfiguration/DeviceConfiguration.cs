@@ -40,6 +40,17 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public static string MarkerConfigurationX509DeviceCertificate_v1 = "XD1\0";
 
+        /// <summary>
+        /// WP authentication token configuration marker
+        /// </summary>
+        public const string MarkerConfigurationWPAuthToken_v1 = "AT1\0";
+
+        /// <summary>
+        /// Maximum length, in bytes, of the WP authentication token.
+        /// KEEP IN SYNC WITH native WPAUTHTOKEN_CONFIG_MAX_TOKEN_LENGTH in nanoHAL_Network.h.
+        /// </summary>
+        public const int WPAuthTokenMaxTokenLength = 64;
+
         /////////////////////////////////////////////////////////////
 
         /// <summary>

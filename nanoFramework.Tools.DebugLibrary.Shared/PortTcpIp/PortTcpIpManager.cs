@@ -5,9 +5,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using nanoFramework.Tools.Debugger.NFDevice;
 using nanoFramework.Tools.Debugger.WireProtocol;
 
 namespace nanoFramework.Tools.Debugger.PortTcpIp
@@ -74,9 +74,164 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             }
         }
 
+        /// <summary>
+        /// Provides the token to authenticate with a device that requires it. The argument is the id of the device (<c>tcpip://host:port</c>).
+        /// Returning <see langword="null"/> or an empty string means there is no token.
+        /// </summary>
+        public Func<string, string> TokenProvider { get; set; }
+
+        // devices added by the user: they are kept even when they're not reachable, and are not removed by the device itself leaving
+        private readonly Dictionary<string, NetworkDeviceInformation> _manualDevices =
+            new Dictionary<string, NetworkDeviceInformation>();
+
+        private readonly object _manualDevicesLock = new object();
+
+        private bool IsManualDevice(string deviceId)
+        {
+            lock (_manualDevicesLock)
+            {
+                return _manualDevices.ContainsKey(deviceId);
+            }
+        }
+
+        /// <summary>
+        /// Checks the known devices again: the ones that don't answer are removed from the list, and the manually added
+        /// devices that are not in the list are tried again. Devices in use are left alone.
+        /// </summary>
         public override void ReScanDevices()
         {
-            //No active rescan logic for network listener manager
+            if (_disposed)
+            {
+                return;
+            }
+
+            // the enumeration restarts now, it completes when the devices are checked
+            IsDevicesEnumerationComplete = false;
+
+            Task.Run(() =>
+            {
+                try
+                {
+                    RemoveUnreachableDevices();
+
+                    RetryManualDevices();
+                }
+                finally
+                {
+                    if (!_disposed)
+                    {
+                        ProcessDeviceEnumerationComplete();
+                    }
+                }
+            });
+        }
+
+        private void RemoveUnreachableDevices()
+        {
+            List<NanoDevice<NanoNetworkDevice>> listedDevices;
+            using (NanoFrameworkDevices.Lock())
+            {
+                listedDevices = _networkNanoFrameworkDevices.ToList();
+            }
+
+            foreach (var device in listedDevices)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                if (!IsDeviceReachable(device)
+                    && NetworkDeviceInformation.TryParse(device.DeviceId, out var info))
+                {
+                    RemoveDeviceFromList(info);
+                }
+            }
+        }
+
+        private void RetryManualDevices()
+        {
+            List<NetworkDeviceInformation> manualDevices;
+            lock (_manualDevicesLock)
+            {
+                manualDevices = _manualDevices.Values.ToList();
+            }
+
+            foreach (var info in manualDevices)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                // same exclusive access that the discovery and the manual add take
+                using var access = GlobalExclusiveDeviceAccess.TryGet(info);
+
+                if (access is null)
+                {
+                    // someone else is using it
+                    continue;
+                }
+
+                // authentication failures are logged and not thrown
+                AddDeviceToListAsync(info, false);
+            }
+        }
+
+        private static bool IsDeviceReachable(NanoDevice<NanoNetworkDevice> device)
+        {
+            if (device.DebugEngine?.IsConnected == true)
+            {
+                // in use
+                return true;
+            }
+
+            using var access = GlobalExclusiveDeviceAccess.TryGet(device, NanoNetworkDevice.SafeDefaultTimeout);
+
+            if (access is null)
+            {
+                // someone else is using it
+                return true;
+            }
+
+            try
+            {
+                if (device.DebugEngine is null)
+                {
+                    device.CreateDebugEngine();
+                }
+
+                var reachable = device.DebugEngine.Connect(NanoNetworkDevice.SafeDefaultTimeout);
+
+                ReleaseConnection(device);
+
+                return reachable;
+            }
+            catch (DeviceAuthenticationFailedException)
+            {
+                ReleaseConnection(device);
+
+                // it answers, it just needs the token
+                return true;
+            }
+            catch
+            {
+                ReleaseConnection(device);
+
+                return false;
+            }
+        }
+
+        private static void ReleaseConnection(NanoDevice<NanoNetworkDevice> device)
+        {
+            try
+            {
+                device.DebugEngine?.Stop();
+            }
+            catch
+            {
+                // nothing else to do if the connection can't be released
+            }
         }
 
         public override void StartDeviceWatchers()
@@ -262,7 +417,12 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         /// <summary>
         /// Creates a DeviceListEntry for a device and adds it to the list of devices
         /// </summary>
-        private (NanoDeviceBase device, bool isNew) AddDeviceToListAsync(NetworkDeviceInformation networkDevice)
+        /// <param name="networkDevice">The device to add.</param>
+        /// <param name="throwOnAuthenticationFailure">Throw <see cref="DeviceAuthenticationFailedException"/> if the device needs a token that
+        /// isn't available or is rejected. Discovered devices only log it.</param>
+        private (NanoDeviceBase device, bool isNew) AddDeviceToListAsync(
+            NetworkDeviceInformation networkDevice,
+            bool throwOnAuthenticationFailure)
         {
             bool isNew = false;
 
@@ -286,7 +446,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 var newNanoFrameworkDevice = new NanoDevice<NanoNetworkDevice>();
                 newNanoFrameworkDevice.DeviceId = networkDevice.DeviceId;
                 newNanoFrameworkDevice.ConnectionPort = new PortTcpIp(this, newNanoFrameworkDevice, networkDevice);
-                newNanoFrameworkDevice.Transport = TransportType.TcpIp;
+                newNanoFrameworkDevice.TokenProvider = deviceId => TokenProvider?.Invoke(deviceId);
 
                 var connectResult = newNanoFrameworkDevice.ConnectionPort.ConnectDevice();
 
@@ -297,7 +457,25 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 }
                 else if (connectResult == ConnectPortResult.Connected)
                 {
-                    if (CheckValidNanoFrameworkNetworkDevice(newNanoFrameworkDevice)
+                    bool valid;
+
+                    try
+                    {
+                        valid = CheckValidNanoFrameworkNetworkDevice(newNanoFrameworkDevice);
+                    }
+                    catch (DeviceAuthenticationFailedException ex)
+                    {
+                        HandleAuthenticationFailure(ex, newNanoFrameworkDevice);
+
+                        if (throwOnAuthenticationFailure)
+                        {
+                            throw;
+                        }
+
+                        return (null, false);
+                    }
+
+                    if (valid
                         && NanoFrameworkDeviceAdd(newNanoFrameworkDevice, networkDevice))
                     {
                         OnLogMessageAvailable(
@@ -319,6 +497,16 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             }
 
             return (nanoFrameworkDeviceMatch, isNew);
+        }
+
+        private void HandleAuthenticationFailure(
+            DeviceAuthenticationFailedException ex,
+            NanoDevice<NanoNetworkDevice> device)
+        {
+            OnLogMessageAvailable(
+                NanoDevicesEventSource.Log.CriticalError($"ERROR: {ex.Message}"));
+
+            device.Disconnect();
         }
 
         /// <summary>
@@ -405,6 +593,12 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         /// </summary>
         private void OnDeviceRemoved(object sender, NetworkDeviceInformation networkDevice)
         {
+            if (IsManualDevice(networkDevice.DeviceId))
+            {
+                // the user keeps it until removing it
+                return;
+            }
+
             RemoveDeviceFromList(networkDevice);
         }
 
@@ -415,7 +609,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         {
             OnLogMessageAvailable(NanoDevicesEventSource.Log.DeviceArrival(networkDevice.DeviceId));
 
-            AddDeviceToListAsync(networkDevice);
+            AddDeviceToListAsync(networkDevice, false);
         }
 
         #endregion
@@ -474,13 +668,31 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 else
                 {
                     // remove from cache
-                    _devicesCache.TryRemove(deviceId, out var dummy);
+                    _devicesCache.TryRemove(deviceId, out _);
 
                     device.DebugEngine?.Stop();
                     device.DebugEngine?.Dispose();
                     device.DebugEngine = null;
                     device.Device?.Dispose();
                 }
+            }
+            catch (DeviceAuthenticationFailedException)
+            {
+                // the caller decides what to do about it, release the device
+                _devicesCache.TryRemove(deviceId, out _);
+
+                try
+                {
+                    device.DebugEngine?.Stop();
+                    device.DebugEngine?.Dispose();
+                    device.DebugEngine = null;
+                }
+                catch
+                {
+                    // catch all trying to get rid of the device
+                }
+
+                throw;
             }
             catch (Exception /* ex */
             ) // we could eat simple programming errors here - like a bad cast or other problem when changing code
@@ -489,7 +701,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 // if there is a deviceID, remove it from cache, just in case
                 if (deviceId != null)
                 {
-                    _devicesCache.TryRemove(deviceId, out var dummy);
+                    _devicesCache.TryRemove(deviceId, out _);
                 }
 
                 try
@@ -649,17 +861,62 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         {
             ThrowIfDisposed();
 
-            // expected format is "tcpip://{Host}:{Port}"
-
-            var match = Regex.Match(deviceId, $"\"(tcpip:\\/\\/)(?<host>\\d{{1,3}}\\.\\d{{1,3}}\\.\\d{{1,3}}\\.\\d{{1,3}}):(?<port>[0-9]{{1,5}})\"gm");
-            if (!match.Success)
+            // expected format is "tcpip://{Host}:{Port}", the host is an IPv4 address or a host name
+            if (!NetworkDeviceInformation.TryParse(deviceId, out var info))
             {
-                throw new ArgumentException("Invalid tcpip format.");
+                throw new ArgumentException("Invalid tcpip format.", nameof(deviceId));
             }
 
-            return AddDeviceToListAsync(new NetworkDeviceInformation(
-                match.Groups["host"].Value,
-                int.Parse(match.Groups["port"].Value))).device;
+            return AddDevice(info.Host, info.Port);
+        }
+
+        /// <summary>
+        /// Adds a device by its address, without it having to announce itself. The device is kept in the list of devices
+        /// until <see cref="RemoveDevice"/> is called: if it isn't reachable now, it is tried again at <see cref="ReScanDevices"/>.
+        /// </summary>
+        /// <param name="host">IPv4 address or host name of the device.</param>
+        /// <param name="port">TCP port of the device.</param>
+        /// <returns>The device, or <see langword="null"/> if it isn't reachable.</returns>
+        /// <exception cref="ArgumentException">The host or port are not valid.</exception>
+        /// <exception cref="DeviceAuthenticationFailedException">The device requires a token that <see cref="TokenProvider"/> doesn't provide or the device rejects.</exception>
+        public NanoDeviceBase AddDevice(string host, int port)
+        {
+            ThrowIfDisposed();
+
+            if (!NetworkDeviceInformation.TryParse($"{host}:{port}", out var info))
+            {
+                throw new ArgumentException($"Invalid host or port: {host}:{port}.");
+            }
+
+            lock (_manualDevicesLock)
+            {
+                _manualDevices[info.DeviceId] = info;
+            }
+
+            // same exclusive access that the discovery takes
+            using var access = GlobalExclusiveDeviceAccess.TryGet(info);
+
+            return AddDeviceToListAsync(info, true).device;
+        }
+
+        /// <summary>
+        /// Removes a device from the list of devices, and disconnects it. It also stops a device added with <see cref="AddDevice(string, int)"/>
+        /// from being kept, but a device that announces itself is added again.
+        /// </summary>
+        /// <param name="deviceId">The id of the device, <c>tcpip://host:port</c>.</param>
+        public void RemoveDevice(string deviceId)
+        {
+            if (!NetworkDeviceInformation.TryParse(deviceId, out var info))
+            {
+                throw new ArgumentException("Invalid tcpip format.", nameof(deviceId));
+            }
+
+            lock (_manualDevicesLock)
+            {
+                _manualDevices.Remove(info.DeviceId);
+            }
+
+            RemoveDeviceFromList(info);
         }
 
         /// <summary>

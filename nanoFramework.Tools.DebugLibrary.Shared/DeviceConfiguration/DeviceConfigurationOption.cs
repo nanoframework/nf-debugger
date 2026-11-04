@@ -42,6 +42,11 @@ namespace nanoFramework.Tools.Debugger
             X509DeviceCertificates = 5,
 
             /// <summary>
+            /// WP authentication token configuration block (network channel)
+            /// </summary>
+            WPAuthToken = 6,
+
+            /// <summary>
             /// All configuration blocks
             /// </summary>
             All = 255,

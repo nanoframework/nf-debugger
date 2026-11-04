@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Sockets;
 using nanoFramework.Tools.Debugger.NFDevice;
 
@@ -13,7 +14,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         private readonly PortTcpIpManager _portManager;
         private GlobalExclusiveDeviceAccess _exclusiveAccess;
 
-        private NetworkStream _stream;
+        private volatile NetworkStream _stream;
 
         private NanoDevice<NanoNetworkDevice> NanoDevice { get; }
 
@@ -34,11 +35,13 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         public int SendBuffer(byte[] buffer)
         {
-            if (NanoNetworkDevice?.Connected == true)
+            var stream = _stream;
+
+            if (stream is not null && NanoNetworkDevice?.Connected == true)
             {
                 try
                 {
-                    _stream.Write(buffer, 0, buffer.Length);
+                    stream.Write(buffer, 0, buffer.Length);
 
                     return buffer.Length;
                 }
@@ -56,13 +59,27 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         public byte[] ReadBuffer(int bytesToRead)
         {
-            if (NanoNetworkDevice?.Connected == true)
+            var stream = _stream;
+
+            if (stream is not null && NanoNetworkDevice?.Connected == true)
             {
+                if (bytesToRead <= 0)
+                {
+                    // a zero length read returns 0, which isn't a disconnection
+                    return Array.Empty<byte>();
+                }
+
                 byte[] buffer = new byte[bytesToRead];
 
                 try
                 {
-                    int readBytes = _stream.Read(buffer, 0, bytesToRead);
+                    int readBytes = stream.Read(buffer, 0, bytesToRead);
+
+                    if (readBytes == 0)
+                    {
+                        // the other side has closed the connection
+                        throw new DeviceNotConnectedException("Connection closed by the device.");
+                    }
 
                     if (readBytes != bytesToRead)
                     {
@@ -71,15 +88,28 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
                     return buffer;
                 }
+                catch (IOException ex) when (ex.InnerException is SocketException { SocketErrorCode: SocketError.TimedOut })
+                {
+                    // this is expected to happen when the timeout occurs, no need to do anything with it
+                }
                 catch (TimeoutException)
                 {
                     // this is expected to happen when the timeout occurs, no need to do anything with it
                 }
-                catch (Exception ex)
+                catch (DeviceNotConnectedException)
+                {
+                    CloseDevice();
+
+                    throw;
+                }
+                catch (Exception ex) when (ex is IOException || ex is ObjectDisposedException || ex is SocketException)
                 {
                     Debug.WriteLine($"Read-NetworkStream-Exception  occurred: {ex.Message}\r\n {ex.StackTrace}");
 
-                    throw;
+                    // the connection is gone
+                    CloseDevice();
+
+                    throw new DeviceNotConnectedException(ex.Message, ex);
                 }
             }
             else
@@ -146,8 +176,10 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         {
             try
             {
+                _stream = null;
+
+                // closing clears the client and stream, the device can connect again later
                 NanoNetworkDevice.Close();
-                NanoNetworkDevice.Dispose();
             }
             finally
             {

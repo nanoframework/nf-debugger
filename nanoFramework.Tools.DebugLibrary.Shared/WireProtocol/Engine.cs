@@ -163,6 +163,14 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public uint McubootHeaderSize { get; private set; }
 
+        // set while a reboot over network is in progress: the loss of the connection is expected
+        private volatile bool _networkRebootInProgress;
+
+        /// <summary>
+        /// Maximum time, in milliseconds, to wait for a network device to come back after a reboot.
+        /// </summary>
+        public const int NetworkRebootTimeout = 60000;
+
         public bool IsConnected { get; internal set; }
 
         private ConnectionSource _connectionSource = ConnectionSource.Unknown;
@@ -337,6 +345,14 @@ namespace nanoFramework.Tools.Debugger
                                 break;
                         }
 
+                        // always sent over network, the device accepts any token when it has none configured
+                        // throws if the token is rejected
+                        if ((Device as NanoDeviceBase)?.Transport == TransportType.TcpIp
+                            && !Authenticate(timeout))
+                        {
+                            goto connect_failed;
+                        }
+
                         if (Silent)
                         {
                             SetExecutionMode(Commands.DebuggingExecutionChangeConditions.State.DebuggerQuiet, 0);
@@ -461,6 +477,41 @@ namespace nanoFramework.Tools.Debugger
             return false;
         }
 
+        /// <summary>
+        /// Authenticates the session with the token provided by <see cref="NanoDeviceBase.TokenProvider"/>.
+        /// </summary>
+        /// <returns><see langword="true"/> if the device accepted the token, <see langword="false"/> if there was no reply.</returns>
+        /// <exception cref="DeviceAuthenticationFailedException">The device rejected the token.</exception>
+        private bool Authenticate(int timeout)
+        {
+            var deviceId = _portDefinition.InstanceId;
+
+            var token = (Device as NanoDeviceBase)?.TokenProvider?.Invoke(deviceId) ?? string.Empty;
+
+            IncomingMessage msg = PerformSyncRequest(
+                Commands.c_Monitor_Authenticate,
+                Flags.c_NoCaching,
+                new Commands.Monitor_Authenticate(token),
+                timeout);
+
+            if (msg is null)
+            {
+                return false;
+            }
+
+            if (msg.Payload is Commands.Monitor_Authenticate.Reply reply
+                && reply.Result == 0)
+            {
+                return true;
+            }
+
+            // result 1: wrong token. Result 2: wrong token and the device is dropping the connection (expected, nothing
+            // else to do as the engine is marked as disconnected here). A NACK means the command was gated.
+            IsConnected = false;
+
+            throw new DeviceAuthenticationFailedException(deviceId);
+        }
+
         public bool UpdateDebugFlags()
         {
             if (IsConnected)
@@ -518,7 +569,8 @@ namespace nanoFramework.Tools.Debugger
                 }
                 catch (DeviceNotConnectedException)
                 {
-                    Stop(true);
+                    // when rebooting over network the connection is expected to drop and the device is reconnected afterwards: don't dispose it
+                    Stop(!_networkRebootInProgress);
                     break;
                 }
                 catch (ThreadAbortException)
@@ -2008,9 +2060,25 @@ namespace nanoFramework.Tools.Debugger
                 cmd.flags = (uint)RebootOptions.NormalReboot;
             }
 
+            bool overNetwork = (Device as NanoDeviceBase)?.Transport == TransportType.TcpIp;
+
+            if (overNetwork
+                && (((RebootOptions)cmd.flags).HasFlag(RebootOptions.EnterNanoBooter)
+                    || ((RebootOptions)cmd.flags).HasFlag(RebootOptions.EnterProprietaryBooter)))
+            {
+                // there is no network in the booters
+                log?.Report("ERROR: Rebooting into a booter is not supported over network");
+
+                ThrowOnCommunicationFailure = fThrowOnCommunicationFailureSav;
+
+                return false;
+            }
+
             try
             {
                 log?.Report($"Rebooting ({(RebootOptions)cmd.flags})");
+
+                _networkRebootInProgress = overNetwork;
 
                 // reset event
                 _pingEvent.Reset();
@@ -2023,6 +2091,13 @@ namespace nanoFramework.Tools.Debugger
                     var result = reqResult.IsPositiveAcknowledge() ? "successfully" : " without reply";
 
                     log?.Report($"Reboot command executed {result}");
+                }
+
+                if (overNetwork)
+                {
+                    rebootSuccessful = CompleteRebootOverNetwork((RebootOptions)cmd.flags, log);
+
+                    return rebootSuccessful;
                 }
 
                 // the device reads this one as the flag it is, so test it the same way here
@@ -2066,6 +2141,11 @@ namespace nanoFramework.Tools.Debugger
                     ConnectionSource = ConnectionSource.Unknown;
                 }
             }
+            catch (DeviceAuthenticationFailedException)
+            {
+                // the caller has to know that a new token is needed
+                throw;
+            }
 #if DEBUG
             catch (Exception ex)
             {
@@ -2074,10 +2154,114 @@ namespace nanoFramework.Tools.Debugger
 #endif
             finally
             {
+                _networkRebootInProgress = false;
+
                 ThrowOnCommunicationFailure = fThrowOnCommunicationFailureSav;
             }
 
             return rebootSuccessful;
+        }
+
+        /// <summary>
+        /// Waits for the device to be back after a reboot request sent over network.
+        /// </summary>
+        /// <remarks>
+        /// A CLR only reboot keeps the connection if the device has the network channel running during it, and then the device pings.
+        /// In any other case the connection is dropped: it's closed here and the device is connected again, which includes the authentication.
+        /// </remarks>
+        private bool CompleteRebootOverNetwork(
+            RebootOptions options,
+            IProgress<string> log)
+        {
+            if (options.HasFlag(RebootOptions.ClrOnly))
+            {
+                var rebootTimeout = 5 * DefaultTimeout;
+
+                log?.Report($"Waiting {rebootTimeout}ms for reboot...");
+
+                var deadline = DateTime.UtcNow.AddMilliseconds(rebootTimeout);
+
+                while (DateTime.UtcNow < deadline)
+                {
+                    if (_pingEvent.WaitOne(100))
+                    {
+                        log?.Report("!! Device reboot confirmed !!");
+
+                        return true;
+                    }
+
+                    if (_portDefinition.AvailableBytes < 0)
+                    {
+                        // the connection is gone
+                        break;
+                    }
+                }
+
+                if (_portDefinition.AvailableBytes >= 0)
+                {
+                    log?.Report("ERROR: No activity detected from device after reboot...");
+
+                    ConnectionSource = ConnectionSource.Unknown;
+
+                    return false;
+                }
+            }
+
+            log?.Report("Connection dropped, waiting for the device to come back...");
+
+            return ReconnectOverNetwork(log);
+        }
+
+        private bool ReconnectOverNetwork(IProgress<string> log)
+        {
+            IsConnected = false;
+            ConnectionSource = ConnectionSource.Unknown;
+
+            // let the listener finish closing the port if it's doing it, or close it here
+            var settleDeadline = DateTime.UtcNow.AddSeconds(5);
+            while (_state.GetValue() == EngineState.Value.Stopping
+                   && DateTime.UtcNow < settleDeadline)
+            {
+                Thread.Sleep(50);
+            }
+
+            Stop();
+
+            var deadline = DateTime.UtcNow.AddMilliseconds(NetworkRebootTimeout);
+            var delay = 250;
+
+            while (DateTime.UtcNow < deadline)
+            {
+                try
+                {
+                    if (Connect(DefaultTimeout, true))
+                    {
+                        log?.Report("!! Device reboot confirmed !!");
+
+                        return true;
+                    }
+                }
+                catch (DeviceAuthenticationFailedException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    // the device is not accepting connections yet
+                    Debug.WriteLine($"Reconnect attempt failed: {ex.Message}");
+                }
+
+                // drop whatever was left of the failed attempt
+                Stop();
+
+                Thread.Sleep(delay);
+
+                delay = Math.Min(delay * 2, 2000);
+            }
+
+            log?.Report("ERROR: Device didn't come back after reboot...");
+
+            return false;
         }
 
         public bool Reconnect(bool fSoftReboot, int millisecondsTimeout = TIMEOUT_DEFAULT)
@@ -4902,6 +5086,47 @@ namespace nanoFramework.Tools.Debugger
         public ConfigurationOperationResult DeleteDeviceCertificate()
         {
             return DeleteConfigurationBlock(DeviceConfiguration.DeviceConfigurationOption.X509DeviceCertificates, 0);
+        }
+
+        /// <summary>
+        /// Stores the WP authentication token of the device, replacing the one stored, if any.
+        /// The token can't be read back.
+        /// </summary>
+        /// <param name="token">The token (UTF-8, at most <see cref="DeviceConfiguration.WPAuthTokenMaxTokenLength"/> bytes).
+        /// An empty token turns the authentication off, even if the firmware has a default token.</param>
+        /// <returns>The result of the operation. <see cref="ConfigurationOperationError.NotSupported"/> if the firmware has
+        /// no network channel.</returns>
+        /// <remarks>
+        /// The device reads the token once, when the network channel starts: the change takes effect after a full
+        /// device reboot (not a CLR-only reboot).
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="token"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">The UTF-8 encoding of <paramref name="token"/> is longer than
+        /// <see cref="DeviceConfiguration.WPAuthTokenMaxTokenLength"/> bytes.</exception>
+        public ConfigurationOperationResult StoreWPAuthToken(string token)
+        {
+            // single instance: replace the one at index 0, or add it if there is none
+            return PerformConfigurationOperation(
+                ConfigurationOperation.Replace,
+                DeviceConfiguration.DeviceConfigurationOption.WPAuthToken,
+                0,
+                ConfigurationOperationFlags.Upsert,
+                CreateConverter().Serialize(WPAuthTokenConfigurationBase.Create(token)),
+                null);
+        }
+
+        /// <summary>
+        /// Deletes the WP authentication token stored in the device, so the default of the firmware
+        /// (if any) applies again.
+        /// </summary>
+        /// <returns>The result of the operation, <see cref="ConfigurationOperationError.NotFound"/> if there is none stored.</returns>
+        /// <remarks>
+        /// The device reads the token once, when the network channel starts: the change takes effect after a full
+        /// device reboot (not a CLR-only reboot).
+        /// </remarks>
+        public ConfigurationOperationResult DeleteWPAuthToken()
+        {
+            return DeleteConfigurationBlock(DeviceConfiguration.DeviceConfigurationOption.WPAuthToken, 0);
         }
 
         private static void ValidateCertificate(

@@ -233,6 +233,11 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
         public const uint c_Monitor_StorageOperation = 0x00000011;
         public const uint c_Monitor_ConfigurationInfo = 0x00000012;
         public const uint c_Monitor_ConfigurationOperation = 0x00000013;
+
+        /// <summary>
+        /// Authenticates a network session with the pre-shared token (empty if none). KEEP IN SYNC WITH native c_Monitor_Authenticate in WireProtocol.h.
+        /// </summary>
+        public const uint c_Monitor_Authenticate = 0x00000014;
         public const uint c_Monitor_TargetInfo = 0x00000020;
 
         // IFU (In-Field Update) commands
@@ -525,6 +530,62 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             }
         }
 
+        /// <summary>
+        /// Authenticates the network session. The token is sent as UTF-8 bytes, 64 at most.
+        /// </summary>
+        public class Monitor_Authenticate
+        {
+            /// <summary>
+            /// Maximum length of the token, in bytes.
+            /// </summary>
+            public const int MaxTokenLength = 64;
+
+            /// <summary>
+            /// Length of the token, in bytes.
+            /// </summary>
+            public uint Length;
+
+            /// <summary>
+            /// Token, UTF-8 encoded.
+            /// </summary>
+            public byte[] Data;
+
+            /// <summary>
+            /// Reply to the authentication request.
+            /// </summary>
+            public class Reply
+            {
+                /// <summary>
+                /// 0 for success, anything else for failure.
+                /// </summary>
+                public uint Result;
+            }
+
+            /// <summary>
+            /// Creates an empty request.
+            /// </summary>
+            public Monitor_Authenticate()
+            {
+            }
+
+            /// <summary>
+            /// Creates a request with the token.
+            /// </summary>
+            /// <param name="token">The token. UTF-8 length can't exceed <see cref="MaxTokenLength"/> bytes.</param>
+            /// <exception cref="ArgumentException">The token is too long.</exception>
+            public Monitor_Authenticate(string token)
+            {
+                Data = Encoding.UTF8.GetBytes(token ?? string.Empty);
+
+                if (Data.Length > MaxTokenLength)
+                {
+                    throw new ArgumentException($"Token is longer than {MaxTokenLength} bytes.", nameof(token));
+                }
+
+                Length = (uint)Data.Length;
+            }
+        }
+
         public class MonitorReboot
         {
             public uint flags = 0;
@@ -710,9 +771,19 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
             public uint Flags;
             public uint TotalLength;
             public uint Offset;
+            /// <summary>
+            /// Length of the token, in bytes.
+            /// </summary>
             public uint Length;
+
+            /// <summary>
+            /// Token, UTF-8 encoded.
+            /// </summary>
             public byte[] Data;
 
+            /// <summary>
+            /// Reply to the authentication request.
+            /// </summary>
             public class Reply
             {
                 public uint ErrorCode;
@@ -2517,6 +2588,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_ConfigurationInfo: return new Monitor_ConfigurationInfo.Reply();
                     case c_Monitor_ConfigurationOperation: return new Monitor_ConfigurationOperation.Reply();
                     case c_Monitor_StorageOperation: return new Monitor_StorageOperation.Reply();
+                    case c_Monitor_Authenticate: return new Monitor_Authenticate.Reply();
 
                     case c_Monitor_ImageInfo: return new Monitor_ImageInfo.Reply();
                     case c_Monitor_ImageWrite: return new Monitor_ImageWrite.Reply();
@@ -2598,6 +2670,7 @@ namespace nanoFramework.Tools.Debugger.WireProtocol
                     case c_Monitor_StorageOperation: return new Monitor_StorageOperation();
                     case c_Monitor_ConfigurationInfo: return new Monitor_ConfigurationInfo();
                     case c_Monitor_ConfigurationOperation: return new Monitor_ConfigurationOperation();
+                    case c_Monitor_Authenticate: return new Monitor_Authenticate();
 
                     case c_Monitor_ImageInfo: return new Monitor_ImageInfo();
                     case c_Monitor_ImageWrite: return new Monitor_ImageWrite();

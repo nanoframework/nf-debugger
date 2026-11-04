@@ -6,7 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
-
+using nanoFramework.Tools.Debugger.PortSerial;
+using nanoFramework.Tools.Debugger.PortTcpIp;
 
 namespace nanoFramework.Tools.Debugger.PortComposite
 {
@@ -170,12 +171,20 @@ namespace nanoFramework.Tools.Debugger.PortComposite
         }
 
         /// <inheritdoc/>
-        /// <exception cref="NotImplementedException">This API is not available in PortCompositeDeviceManager.</exception>
+        /// <exception cref="ArgumentException">The ID is of a type of device that none of the managers handles.</exception>
         public override NanoDeviceBase AddDevice(string deviceId)
         {
-            // None of the Port*Manager has a check whether deviceId matches the ID handled by the manager,
-            // so we don't know how to add a device here.
-            throw new NotImplementedException();
+            // tcpip://host:port goes to the network manager, anything else is a serial port name
+            PortBase manager = NetworkDeviceInformation.IsNetworkDeviceId(deviceId)
+                ? _ports.OfType<PortTcpIpManager>().FirstOrDefault()
+                : _ports.OfType<PortSerialManager>().FirstOrDefault();
+
+            if (manager is null)
+            {
+                throw new ArgumentException($"There is no port manager that handles '{deviceId}'.", nameof(deviceId));
+            }
+
+            return manager.AddDevice(deviceId);
         }
 
         public override void StartDeviceWatchers()
