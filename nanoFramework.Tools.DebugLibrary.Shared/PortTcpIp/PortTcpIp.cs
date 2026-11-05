@@ -98,7 +98,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 }
                 catch (DeviceNotConnectedException)
                 {
-                    CloseDevice();
+                    CloseDeviceIfCurrent(stream);
 
                     throw;
                 }
@@ -107,7 +107,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                     Debug.WriteLine($"Read-NetworkStream-Exception  occurred: {ex.Message}\r\n {ex.StackTrace}");
 
                     // the connection is gone
-                    CloseDevice();
+                    CloseDeviceIfCurrent(stream);
 
                     throw new DeviceNotConnectedException(ex.Message, ex);
                 }
@@ -169,6 +169,17 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             if (force)
             {
                 _portManager.DisposeDevice(InstanceId);
+            }
+        }
+
+        /// <summary>
+        /// A reader that was left behind by a previous connection must not close the one that replaced it.
+        /// </summary>
+        private void CloseDeviceIfCurrent(System.IO.Stream stream)
+        {
+            if (ReferenceEquals(_stream, stream))
+            {
+                CloseDevice();
             }
         }
 

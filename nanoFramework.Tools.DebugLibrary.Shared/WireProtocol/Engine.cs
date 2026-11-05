@@ -585,11 +585,17 @@ namespace nanoFramework.Tools.Debugger
 
             var reassembler = new MessageReassembler(_controlller);
 
-            while (_state.IsRunning & _backgroundProcessor != null)
+            // a listener that was replaced (the engine stopped and connected again) must leave the new connection alone
+            while (_state.IsRunning & ReferenceEquals(_backgroundProcessor, Thread.CurrentThread))
             {
                 try
                 {
                     reassembler.Process();
+                }
+                catch (DeviceNotConnectedException) when (!ReferenceEquals(_backgroundProcessor, Thread.CurrentThread))
+                {
+                    // the connection this listener was reading is gone and a newer listener owns the engine now
+                    break;
                 }
                 catch (DeviceNotConnectedException)
                 {
@@ -611,7 +617,11 @@ namespace nanoFramework.Tools.Debugger
                 catch (Exception)
                 {
 #endif
-                    Stop();
+                    if (ReferenceEquals(_backgroundProcessor, Thread.CurrentThread))
+                    {
+                        Stop();
+                    }
+
                     break;
                 }
             }
@@ -1061,11 +1071,21 @@ namespace nanoFramework.Tools.Debugger
         {
             _state.SetValue(EngineState.Value.Stopping, false);
 
-            if (_backgroundProcessor != null)
+            var processor = _backgroundProcessor;
+
+            if (processor != null)
             {
+                if (ReferenceEquals(processor, Thread.CurrentThread))
+                {
+                    // the listener is stopping itself: there's nothing to wait for
+                    _backgroundProcessor = null;
+
+                    return;
+                }
+
                 try
                 {
-                    _backgroundProcessor.Join(TimeSpan.FromSeconds(1));
+                    processor.Join(TimeSpan.FromSeconds(1));
                 }
                 catch
                 {
@@ -1074,7 +1094,9 @@ namespace nanoFramework.Tools.Debugger
                 finally
                 {
                     Thread.Sleep(500);
-                    _backgroundProcessor = null;
+
+                    // only if nobody started another one in the meantime
+                    Interlocked.CompareExchange(ref _backgroundProcessor, null, processor);
                 }
             }
         }
