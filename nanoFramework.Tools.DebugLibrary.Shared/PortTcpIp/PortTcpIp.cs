@@ -16,6 +16,9 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         private volatile NetworkStream _stream;
 
+        // connecting, closing and the check that a reader's stream is still the current one can't interleave
+        private readonly object _connectionLock = new object();
+
         private NanoDevice<NanoNetworkDevice> NanoDevice { get; }
 
         private NanoNetworkDevice NanoNetworkDevice => NanoDevice.Device;
@@ -98,7 +101,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                 }
                 catch (DeviceNotConnectedException)
                 {
-                    CloseDevice();
+                    CloseDeviceIfCurrent(stream);
 
                     throw;
                 }
@@ -107,7 +110,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                     Debug.WriteLine($"Read-NetworkStream-Exception  occurred: {ex.Message}\r\n {ex.StackTrace}");
 
                     // the connection is gone
-                    CloseDevice();
+                    CloseDeviceIfCurrent(stream);
 
                     throw new DeviceNotConnectedException(ex.Message, ex);
                 }
@@ -121,6 +124,14 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         }
 
         public ConnectPortResult ConnectDevice()
+        {
+            lock (_connectionLock)
+            {
+                return ConnectDeviceLocked();
+            }
+        }
+
+        private ConnectPortResult ConnectDeviceLocked()
         {
             if (NanoNetworkDevice?.Connected == true)
             {
@@ -172,19 +183,36 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             }
         }
 
+        /// <summary>
+        /// A reader that was left behind by a previous connection must not close the one that replaced it.
+        /// </summary>
+        private void CloseDeviceIfCurrent(System.IO.Stream stream)
+        {
+            lock (_connectionLock)
+            {
+                if (ReferenceEquals(_stream, stream))
+                {
+                    CloseDevice();
+                }
+            }
+        }
+
         private void CloseDevice()
         {
-            try
+            lock (_connectionLock)
             {
-                _stream = null;
+                try
+                {
+                    _stream = null;
 
-                // closing clears the client and stream, the device can connect again later
-                NanoNetworkDevice.Close();
-            }
-            finally
-            {
-                _exclusiveAccess?.Dispose();
-                _exclusiveAccess = null;
+                    // closing clears the client and stream, the device can connect again later
+                    NanoNetworkDevice.Close();
+                }
+                finally
+                {
+                    _exclusiveAccess?.Dispose();
+                    _exclusiveAccess = null;
+                }
             }
         }
 
