@@ -171,10 +171,10 @@ namespace nanoFramework.Tools.Debugger.PortComposite
         }
 
         /// <inheritdoc/>
-        /// <exception cref="ArgumentException">The ID is of a type of device that none of the managers handles.</exception>
+        /// <exception cref="ArgumentException">There is no serial port manager.</exception>
+        /// <exception cref="NotSupportedException">The ID is of a network device, those are discovered.</exception>
         public override NanoDeviceBase AddDevice(string deviceId)
         {
-            // tcpip://host:port goes to the network manager, anything else is a serial port name
             PortBase manager = NetworkDeviceInformation.IsNetworkDeviceId(deviceId)
                 ? _ports.OfType<PortTcpIpManager>().FirstOrDefault()
                 : _ports.OfType<PortSerialManager>().FirstOrDefault();
