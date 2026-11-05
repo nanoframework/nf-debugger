@@ -167,7 +167,24 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
                     device.CreateDebugEngine();
                 }
 
+                var wasAuthenticated = device.AuthenticationState == DeviceAuthenticationState.Authenticated;
+
                 var reachable = device.DebugEngine.Connect(NanoNetworkDevice.SafeDefaultTimeout);
+
+                if (reachable
+                    && !wasAuthenticated
+                    && device.AuthenticationState == DeviceAuthenticationState.Authenticated)
+                {
+                    // the token is available now: the device was listed with the name it announced
+                    try
+                    {
+                        device.RefreshTargetIdentity();
+                    }
+                    catch
+                    {
+                        // it's reachable, the identity is read again the next time
+                    }
+                }
 
                 ReleaseConnection(device);
 

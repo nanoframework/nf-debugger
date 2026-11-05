@@ -273,13 +273,7 @@ namespace nanoFramework.Tools.Debugger
                 if (DebugEngine.Connect(NanoNetworkDevice.SafeDefaultTimeout)
                     && AuthenticationState == DeviceAuthenticationState.Authenticated)
                 {
-                    var targetInfo = DebugEngine.GetTargetInfo();
-
-                    if (!string.IsNullOrEmpty(targetInfo.TargetName))
-                    {
-                        TargetName = targetInfo.TargetName;
-                        Platform = targetInfo.Platform;
-                    }
+                    RefreshTargetIdentity();
                 }
             }
             catch (DeviceAuthenticationFailedException)
@@ -304,6 +298,21 @@ namespace nanoFramework.Tools.Debugger
             }
 
             return AuthenticationState;
+        }
+
+        /// <summary>
+        /// Reads the target name and platform from the connected device. A device that was listed without being authenticated
+        /// only has the name it announced, so this has to be called when it gets authenticated.
+        /// </summary>
+        internal void RefreshTargetIdentity()
+        {
+            var targetInfo = DebugEngine.GetTargetInfo();
+
+            if (!string.IsNullOrEmpty(targetInfo.TargetName))
+            {
+                TargetName = targetInfo.TargetName;
+                Platform = targetInfo.Platform;
+            }
         }
 
         /// <summary>

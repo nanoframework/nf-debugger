@@ -401,6 +401,27 @@ namespace nanoFramework.Tools.Debugger.Tests
         }
 
         [TestMethod]
+        public void ReScan_AuthenticatesAListedDevice_WhenTheTokenIsAvailableNow()
+        {
+            using var fake = new FakeNetworkDevice("secret");
+            var discoveryPort = FreeUdpPort();
+            using var manager = new PortTcpIpManager(false, discoveryPort);
+
+            string token = null;
+            manager.TokenProvider = _ => token;
+
+            var device = Discover(manager, discoveryPort, fake);
+            Assert.AreEqual(DeviceAuthenticationState.TokenMissing, device.AuthenticationState);
+
+            token = "secret";
+            manager.ReScanDevices();
+
+            // the check also reads the identity of the device, which the fake doesn't answer: that takes a while to give up
+            Assert.IsTrue(SpinWait.SpinUntil(() => device.AuthenticationState == DeviceAuthenticationState.Authenticated, 20000));
+            Assert.AreSame(device, Find($"tcpip://127.0.0.1:{fake.Port}", 1000), "it's reachable, so it stays listed");
+        }
+
+        [TestMethod]
         public void DiscoveryDisabled_DoesNotListen_EvenIfTheWatchersAreStarted()
         {
             using var fake = new FakeNetworkDevice("secret");
