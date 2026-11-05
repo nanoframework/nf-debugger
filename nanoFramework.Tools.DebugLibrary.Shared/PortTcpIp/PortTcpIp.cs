@@ -16,6 +16,9 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         private volatile NetworkStream _stream;
 
+        // connecting, closing and the check that a reader's stream is still the current one can't interleave
+        private readonly object _connectionLock = new object();
+
         private NanoDevice<NanoNetworkDevice> NanoDevice { get; }
 
         private NanoNetworkDevice NanoNetworkDevice => NanoDevice.Device;
@@ -122,6 +125,14 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         public ConnectPortResult ConnectDevice()
         {
+            lock (_connectionLock)
+            {
+                return ConnectDeviceLocked();
+            }
+        }
+
+        private ConnectPortResult ConnectDeviceLocked()
+        {
             if (NanoNetworkDevice?.Connected == true)
             {
                 return ConnectPortResult.Connected;
@@ -177,25 +188,31 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         /// </summary>
         private void CloseDeviceIfCurrent(System.IO.Stream stream)
         {
-            if (ReferenceEquals(_stream, stream))
+            lock (_connectionLock)
             {
-                CloseDevice();
+                if (ReferenceEquals(_stream, stream))
+                {
+                    CloseDevice();
+                }
             }
         }
 
         private void CloseDevice()
         {
-            try
+            lock (_connectionLock)
             {
-                _stream = null;
+                try
+                {
+                    _stream = null;
 
-                // closing clears the client and stream, the device can connect again later
-                NanoNetworkDevice.Close();
-            }
-            finally
-            {
-                _exclusiveAccess?.Dispose();
-                _exclusiveAccess = null;
+                    // closing clears the client and stream, the device can connect again later
+                    NanoNetworkDevice.Close();
+                }
+                finally
+                {
+                    _exclusiveAccess?.Dispose();
+                    _exclusiveAccess = null;
+                }
             }
         }
 
