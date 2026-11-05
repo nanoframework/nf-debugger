@@ -58,6 +58,7 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="key.snk" />
+    <InternalsVisibleTo Include="nanoFramework.Tools.DebugLibrary.Tests" Key="00240000048000009400000006020000002400005253413100040000010001001108149037b300a8dde3c0d3f9c2bb4943293eefbc7eb02ec7e4ae9fe7e094b01539e7f53b6d9e618e89b5f60686bfcd26af6c2af76bdfe5001c75320d5341b6d36e4349e160de7a856ebf4681c86949249d40d7c893e61b28a6044eda0cf6a5f63993fd292f82fb87546967bb1b44d1734847b8c796048cab953838d8e680b9" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub">

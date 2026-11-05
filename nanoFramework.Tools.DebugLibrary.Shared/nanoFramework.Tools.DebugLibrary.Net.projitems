@@ -106,6 +106,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\NetworkDeviceInformation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\DiscoveryMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\DeviceWatcher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\LocalAddresses.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\PortTcpIpManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PortTcpIp\PortTcpIp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Runtime\ReflectionDefinition.cs" />

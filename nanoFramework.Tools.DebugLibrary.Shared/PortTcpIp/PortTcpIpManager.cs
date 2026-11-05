@@ -21,6 +21,8 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         private readonly DeviceWatcher _deviceWatcher;
 
+        internal DeviceWatcher Watcher => _deviceWatcher;
+
         // Network device watchers started flag
         private bool _watchersStarted = false;
 
