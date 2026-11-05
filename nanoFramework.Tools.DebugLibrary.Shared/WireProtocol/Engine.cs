@@ -242,7 +242,7 @@ namespace nanoFramework.Tools.Debugger
                             _state.SetValue(EngineState.Value.Starting, true);
 
                             // start task to process background messages
-                            _backgroundProcessor = CreateThreadHelper(new ThreadStart(this.IncomingMessagesListener));
+                            StartBackgroundProcessor();
 
                             _state.SetValue(EngineState.Value.Started, false);
                         }
@@ -486,7 +486,17 @@ namespace nanoFramework.Tools.Debugger
         {
             var deviceId = _portDefinition.InstanceId;
 
-            var token = (Device as NanoDeviceBase)?.TokenProvider?.Invoke(deviceId) ?? string.Empty;
+            var device = Device as NanoDeviceBase;
+            var token = device?.TokenProvider?.Invoke(deviceId) ?? string.Empty;
+
+            if (device?.RejectedToken is not null
+                && device.RejectedToken == token)
+            {
+                // the device already rejected this one, and drops the connection after a few failures: don't send it again
+                IsConnected = false;
+
+                throw new DeviceAuthenticationFailedException(deviceId);
+            }
 
             IncomingMessage msg = PerformSyncRequest(
                 Commands.c_Monitor_Authenticate,
@@ -502,7 +512,21 @@ namespace nanoFramework.Tools.Debugger
             if (msg.Payload is Commands.Monitor_Authenticate.Reply reply
                 && reply.Result == 0)
             {
+                if (device is not null)
+                {
+                    device.RejectedToken = null;
+                    device.AuthenticationState = DeviceAuthenticationState.Authenticated;
+                }
+
                 return true;
+            }
+
+            if (device is not null)
+            {
+                device.RejectedToken = token;
+                device.AuthenticationState = token.Length == 0
+                    ? DeviceAuthenticationState.TokenMissing
+                    : DeviceAuthenticationState.TokenRejected;
             }
 
             // result 1: wrong token. Result 2: wrong token and the device is dropping the connection (expected, nothing
@@ -570,7 +594,9 @@ namespace nanoFramework.Tools.Debugger
                 catch (DeviceNotConnectedException)
                 {
                     // when rebooting over network the connection is expected to drop and the device is reconnected afterwards: don't dispose it
-                    Stop(!_networkRebootInProgress);
+                    // the same goes for a device that dropped the connection because of the authentication: it stays listed, waiting for the token
+                    Stop(!_networkRebootInProgress
+                         && !(Device is NanoDeviceBase { AuthenticationState: not DeviceAuthenticationState.Authenticated }));
                     break;
                 }
                 catch (ThreadAbortException)
@@ -711,12 +737,29 @@ namespace nanoFramework.Tools.Debugger
         private readonly static Dictionary<string, SemaphoreSlim> _syncReqLockForPort = [];
         private readonly SemaphoreSlim _syncReqLock;
 
+        /// <summary>
+        /// A device that is not authenticated only answers the ping and the authentication.
+        /// </summary>
+        /// <exception cref="DeviceAuthenticationFailedException">The device isn't authenticated.</exception>
+        private void ThrowIfNotAuthenticated(uint command)
+        {
+            if (command != Commands.c_Monitor_Ping
+                && command != Commands.c_Monitor_Authenticate
+                && Device is NanoDeviceBase device
+                && device.AuthenticationState != DeviceAuthenticationState.Authenticated)
+            {
+                throw new DeviceAuthenticationFailedException(_portDefinition.InstanceId);
+            }
+        }
+
         private IncomingMessage PerformSyncRequest(
             uint command,
             uint flags,
             object payload,
             int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
+            ThrowIfNotAuthenticated(command);
+
             OutgoingMessage message = new(
                 _controlller.GetNextSequenceId(),
                 CreateConverter(),
@@ -733,6 +776,8 @@ namespace nanoFramework.Tools.Debugger
             OutgoingMessage message,
             int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
+            ThrowIfNotAuthenticated(message.Header.Cmd);
+
             try
             {
                 _syncReqLock.Wait();
@@ -780,6 +825,8 @@ namespace nanoFramework.Tools.Debugger
 
         internal Task<IncomingMessage> PerformRequestAsync(OutgoingMessage message, int millisecondsTimeout = TIMEOUT_DEFAULT)
         {
+            ThrowIfNotAuthenticated(message.Header.Cmd);
+
             var timeout = millisecondsTimeout != TIMEOUT_DEFAULT ? millisecondsTimeout : DefaultTimeout;
 
             WireProtocolRequest request = new WireProtocolRequest(message, timeout);
@@ -1038,7 +1085,7 @@ namespace nanoFramework.Tools.Debugger
 
             if (_backgroundProcessor == null)
             {
-                _backgroundProcessor = CreateThreadHelper(new ThreadStart(this.IncomingMessagesListener));
+                StartBackgroundProcessor();
             }
         }
 
@@ -5275,13 +5322,17 @@ namespace nanoFramework.Tools.Debugger
 
         #endregion
 
-        private Thread CreateThreadHelper(ThreadStart ts)
+        private void StartBackgroundProcessor()
         {
-            Thread th = new Thread(ts);
-            th.IsBackground = true;
-            th.Start();
+            var thread = new Thread(new ThreadStart(IncomingMessagesListener))
+            {
+                IsBackground = true
+            };
 
-            return th;
+            // assigned before starting it: the listener stops when it finds the field empty
+            _backgroundProcessor = thread;
+
+            thread.Start();
         }
     }
 }

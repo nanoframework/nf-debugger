@@ -31,7 +31,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         public int Port { get; set; }
 
         /// <summary>
-        /// Name of the target, as announced by the device. Empty for devices that were added manually.
+        /// Name of the target, as announced by the device. Empty if the announcement has none.
         /// </summary>
         public string TargetName { get; set; } = string.Empty;
 

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using nanoFramework.Tools.Debugger.Extensions;
+using nanoFramework.Tools.Debugger.NFDevice;
 using nanoFramework.Tools.Debugger.PortTcpIp;
 using nanoFramework.Tools.Debugger.WireProtocol;
 
@@ -189,6 +190,122 @@ namespace nanoFramework.Tools.Debugger
         /// </summary>
         public Func<string, string> TokenProvider { get; set; }
 
+        private int _authenticationState = (int)DeviceAuthenticationState.Authenticated;
+
+        /// <summary>
+        /// Token that the device rejected, or <see langword="null"/> if it didn't reject any. It's not sent again: the device
+        /// drops the connection after a few failed attempts.
+        /// </summary>
+        internal string RejectedToken { get; set; }
+
+        /// <summary>
+        /// Authentication state of the device. A device that requires a token and doesn't have a valid one is still listed,
+        /// but the commands that need the authentication fail with <see cref="DeviceAuthenticationFailedException"/>.
+        /// Use <see cref="RetryAuthentication(bool)"/> after providing the token.
+        /// </summary>
+        public DeviceAuthenticationState AuthenticationState
+        {
+            get => (DeviceAuthenticationState)Volatile.Read(ref _authenticationState);
+            internal set
+            {
+                if (Interlocked.Exchange(ref _authenticationState, (int)value) != (int)value)
+                {
+                    AuthenticationStateChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Raised when <see cref="AuthenticationState"/> changes. It can be raised from any thread.
+        /// </summary>
+        public event EventHandler AuthenticationStateChanged;
+
+        /// <summary>
+        /// Commands that need the authentication fail with <see cref="DeviceAuthenticationFailedException"/> instead of failing generically.
+        /// </summary>
+        internal void ThrowIfNotAuthenticated()
+        {
+            if (AuthenticationState != DeviceAuthenticationState.Authenticated)
+            {
+                throw new DeviceAuthenticationFailedException(ConnectionPort?.InstanceId ?? ConnectionId);
+            }
+        }
+
+        /// <summary>
+        /// Tries to authenticate again a device that is not <see cref="DeviceAuthenticationState.Authenticated"/>, with the token that
+        /// <see cref="TokenProvider"/> provides now. The device stays in the list of devices.
+        /// </summary>
+        /// <param name="force">Send the token even if it's the one that the device rejected before. The device drops the connection
+        /// after 3 failed attempts, so use it only when the token configured in the device has changed.</param>
+        /// <returns>The <see cref="AuthenticationState"/> after the attempt. It's not changed, and nothing is sent to the device,
+        /// if the token is the one that was rejected (unless <paramref name="force"/>), or if the device is in use.</returns>
+        public DeviceAuthenticationState RetryAuthentication(bool force = false)
+        {
+            if (Transport != TransportType.TcpIp
+                || AuthenticationState == DeviceAuthenticationState.Authenticated)
+            {
+                return AuthenticationState;
+            }
+
+            using var access = GlobalExclusiveDeviceAccess.TryGet(this, NanoNetworkDevice.SafeDefaultTimeout);
+
+            if (access is null)
+            {
+                // someone else is using it
+                Debug.WriteLine("RetryAuthentication: device in use");
+
+                return AuthenticationState;
+            }
+
+            if (force)
+            {
+                RejectedToken = null;
+            }
+
+            try
+            {
+                if (DebugEngine is null)
+                {
+                    CreateDebugEngine();
+                }
+
+                // authenticates as part of the connection; it throws if the token isn't accepted (and the state reflects that)
+                if (DebugEngine.Connect(NanoNetworkDevice.SafeDefaultTimeout)
+                    && AuthenticationState == DeviceAuthenticationState.Authenticated)
+                {
+                    var targetInfo = DebugEngine.GetTargetInfo();
+
+                    if (!string.IsNullOrEmpty(targetInfo.TargetName))
+                    {
+                        TargetName = targetInfo.TargetName;
+                        Platform = targetInfo.Platform;
+                    }
+                }
+            }
+            catch (DeviceAuthenticationFailedException)
+            {
+                // the state has been updated
+            }
+            catch (Exception ex)
+            {
+                // not reachable, or any other communication error: the state is unchanged
+                Debug.WriteLine($"RetryAuthentication failed: {ex}");
+            }
+            finally
+            {
+                try
+                {
+                    DebugEngine?.Stop();
+                }
+                catch
+                {
+                    // nothing else to do if the connection can't be released
+                }
+            }
+
+            return AuthenticationState;
+        }
+
         /// <summary>
         /// <see langword="false"/> if the device can't be switched to nanoBooter from here. That's the case of network devices:
         /// nanoBooter has no network stack.
@@ -203,6 +320,8 @@ namespace nanoFramework.Tools.Debugger
         /// <returns>Return the <see cref="INanoFrameworkDeviceInfo"/> for this device.</returns>
         public INanoFrameworkDeviceInfo GetDeviceInfo(bool force = true)
         {
+            ThrowIfNotAuthenticated();
+
             // start by checking if we already have this available
             if (!DeviceInfo.Valid || force)
             {
@@ -366,6 +485,8 @@ namespace nanoFramework.Tools.Debugger
             IProgress<MessageWithProgress> progress = null,
             IProgress<string> log = null)
         {
+            ThrowIfNotAuthenticated();
+
             bool requestBooter = false;
 
             if (DebugEngine == null)
@@ -618,6 +739,8 @@ namespace nanoFramework.Tools.Debugger
             uint address,
             IProgress<string> progress = null)
         {
+            ThrowIfNotAuthenticated();
+
             // validate if file exists
             if (!File.Exists(binFile))
             {
@@ -776,6 +899,8 @@ namespace nanoFramework.Tools.Debugger
         /// </returns>
         public bool Execute(uint entryPoint)
         {
+            ThrowIfNotAuthenticated();
+
             if (DebugEngine == null)
             {
                 return false;
@@ -1360,6 +1485,8 @@ namespace nanoFramework.Tools.Debugger
             uint address,
             IProgress<string> progress = null)
         {
+            ThrowIfNotAuthenticated();
+
             return PrepareForDeploy(
                 address,
                 null,

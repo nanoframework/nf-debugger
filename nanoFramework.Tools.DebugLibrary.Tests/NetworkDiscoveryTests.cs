@@ -120,7 +120,7 @@ namespace nanoFramework.Tools.Debugger.Tests
         [TestMethod]
         public void ExclusiveAccessKey_IsTheDeviceId_ForEveryRoute()
         {
-            // discovery builds the information from the datagram, a manual add parses the id: the key must be the same
+            // discovery builds the information from the datagram, the id is parsed back: the key must be the same
             Assert.IsTrue(DiscoveryMessage.TryParse("+:26000:x", out var message));
             var fromDiscovery = message.ToDeviceInformation(IPAddress.Parse("10.0.0.7"));
 
@@ -144,34 +144,6 @@ namespace nanoFramework.Tools.Debugger.Tests
             using var second = NFDevice.GlobalExclusiveDeviceAccess.TryGet(info.DeviceId, millisecondsTimeout: 200);
             Assert.IsNotNull(second);
             Assert.AreSame(first, second);
-        }
-
-        [TestMethod]
-        public void AddDevice_InvalidId_Throws()
-        {
-            using var manager = new PortTcpIpManager(false);
-
-            Assert.ThrowsExactly<ArgumentException>(() => manager.AddDevice("COM3"));
-            Assert.ThrowsExactly<ArgumentException>(() => manager.AddDevice("\"tcpip://1.2.3.4:26000\"gm"));
-            Assert.ThrowsExactly<ArgumentException>(() => manager.AddDevice("host with spaces", 26000));
-            Assert.ThrowsExactly<ArgumentException>(() => manager.AddDevice("host", 0));
-        }
-
-        [TestMethod]
-        public void AddDevice_NotReachable_ReturnsNull_AndRemoveDeviceIsIdempotent()
-        {
-            // a port where nothing listens
-            var listener = new TcpListener(IPAddress.Loopback, 0);
-            listener.Start();
-            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-            listener.Stop();
-
-            using var manager = new PortTcpIpManager(false);
-
-            Assert.IsNull(manager.AddDevice("127.0.0.1", port));
-
-            manager.RemoveDevice($"tcpip://127.0.0.1:{port}");
-            manager.RemoveDevice($"tcpip://127.0.0.1:{port}");
         }
 
         [TestMethod]
