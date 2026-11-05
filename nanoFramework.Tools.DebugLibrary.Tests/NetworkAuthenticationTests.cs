@@ -23,7 +23,8 @@ namespace nanoFramework.Tools.Debugger.Tests
     {
         private const int HeaderSize = 32;
 
-        private readonly TcpListener _listener = new TcpListener(IPAddress.Loopback, 0);
+        // any address of this machine: the tests announce the device from more than one
+        private readonly TcpListener _listener = new TcpListener(IPAddress.Any, 0);
         private readonly List<TcpClient> _clients = new List<TcpClient>();
         private readonly int _dropAfterFailures;
         private int _authenticateAttempts;

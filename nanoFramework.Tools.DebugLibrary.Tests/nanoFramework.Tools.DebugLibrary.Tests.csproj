@@ -6,6 +6,9 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <RootNamespace>nanoFramework.Tools.Debugger.Tests</RootNamespace>
+    <!-- same key as the library, which makes its internals visible to the tests -->
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\nanoFramework.Tools.DebugLibrary.Net\key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>

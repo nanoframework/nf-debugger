@@ -246,8 +246,50 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
             }
         }
 
-        // devices being added: they re-announce every few seconds, no need to queue one more attempt while one is running
+        // devices being added: they re-announce every few seconds, no need to queue one more attempt while one is running.
+        // The key is the device id, or the port for a device announced from one of the addresses of this machine
         private readonly ConcurrentDictionary<string, byte> _adding = new ConcurrentDictionary<string, byte>();
+
+        // port -> id of the device that was announced from one of the addresses of this machine
+        private readonly ConcurrentDictionary<int, string> _localDevices = new ConcurrentDictionary<int, string>();
+
+        /// <summary>
+        /// Tells if an address is one of this machine. A device on this machine announces itself from each of the adapters it
+        /// sends to, but it is one device: those announcements are merged.
+        /// </summary>
+        internal Func<IPAddress, bool> IsLocalAddress { get; set; } = LocalAddresses.IsLocal;
+
+        private static string LocalKey(int port) => $"local:{port}";
+
+        /// <summary>
+        /// Decides if an announcement from one of the addresses of this machine is for a new device.
+        /// </summary>
+        private bool ClaimLocalPort(NetworkDeviceInformation info)
+        {
+            if (PortTcpIpManager.GetRegisteredDevice(info) is not null)
+            {
+                return false;
+            }
+
+            if (_localDevices.TryRemove(info.Port, out var knownId)
+                && NetworkDeviceInformation.TryParse(knownId, out var known)
+                && PortTcpIpManager.GetRegisteredDevice(known) is not null)
+            {
+                if (IPAddress.TryParse(known.Host, out var knownAddress)
+                    && IsLocalAddress(knownAddress))
+                {
+                    // the same device, announced from another adapter
+                    _localDevices[info.Port] = knownId;
+
+                    return false;
+                }
+
+                // the address that the device was listed under is gone, and it announces from this one
+                Removed?.Invoke(this, known);
+            }
+
+            return true;
+        }
 
         internal void ProcessDiscoveryMessage(string message, IPAddress sender, CancellationToken isDiscovering)
         {
@@ -258,46 +300,90 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
             // the address of the device is the one of the sender of the announcement
             var info = discovery.ToDeviceInformation(sender);
+            var local = IsLocalAddress(sender);
 
             if (discovery.IsAnnouncement)
             {
-                if (Added is not null
-                    && PortTcpIpManager.GetRegisteredDevice(info) is null
-                    && _adding.TryAdd(info.DeviceId, 0))
+                if (Added is null)
                 {
-                    Task.Run(async () =>
-                    {
-                        try
-                        {
-                            // Force true async running
-                            await Task.Yield();
+                    return;
+                }
 
-                            var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(info, cancellationToken: isDiscovering);
-                            if (exclusiveAccess is not null)
+                // claimed before looking at the list of devices: the device is listed before the claim is released,
+                // so an announcement is either turned down here or sees the device listed
+                var key = local ? LocalKey(info.Port) : info.DeviceId;
+
+                if (!_adding.TryAdd(key, 0))
+                {
+                    return;
+                }
+
+                var adding = false;
+
+                try
+                {
+                    if (local
+                        ? ClaimLocalPort(info)
+                        : PortTcpIpManager.GetRegisteredDevice(info) is null)
+                    {
+                        adding = true;
+
+                        Task.Run(async () =>
+                        {
+                            try
                             {
-                                try
+                                // Force true async running
+                                await Task.Yield();
+
+                                var exclusiveAccess = GlobalExclusiveDeviceAccess.TryGet(info, cancellationToken: isDiscovering);
+                                if (exclusiveAccess is not null)
                                 {
-                                    Added?.Invoke(this, info);
+                                    try
+                                    {
+                                        Added?.Invoke(this, info);
+                                    }
+                                    finally
+                                    {
+                                        exclusiveAccess.Dispose();
+                                    }
                                 }
-                                finally
+
+                                if (local
+                                    && PortTcpIpManager.GetRegisteredDevice(info) is not null)
                                 {
-                                    exclusiveAccess.Dispose();
+                                    // the announcements from the other adapters are for this one
+                                    _localDevices[info.Port] = info.DeviceId;
                                 }
                             }
-                        }
-                        catch
-                        {
-                            // the next announcement tries again
-                        }
-                        finally
-                        {
-                            _adding.TryRemove(info.DeviceId, out _);
-                        }
-                    });
+                            catch
+                            {
+                                // the next announcement tries again
+                            }
+                            finally
+                            {
+                                _adding.TryRemove(key, out _);
+                            }
+                        });
+                    }
+                }
+                finally
+                {
+                    if (!adding)
+                    {
+                        _adding.TryRemove(key, out _);
+                    }
                 }
             }
             else
             {
+                // wherever the device was listed from, the departure announced from any address of this machine is for it
+                if (local
+                    && _localDevices.TryRemove(info.Port, out var listedId)
+                    && NetworkDeviceInformation.TryParse(listedId, out var listed))
+                {
+                    info = listed;
+                }
+
                 Removed?.Invoke(this, info);
             }
         }
