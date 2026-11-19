@@ -1,4 +1,4 @@
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_nf-debugger&metric=alert_status)](https://sonarcloud.io/dashboard?id=nanoframework_nf-debugger) [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_nf-debugger&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=nanoframework_nf-debugger) [![Build Status](https://dev.azure.com/nanoframework/debugger/_apis/build/status/nanoframework.nf-debugger?repoName=nanoframework%2Fnf-debugger&branchName=main)](https://dev.azure.com/nanoframework/debugger/_build/latest?definitionId=33&repoName=nanoframework%2Fnf-debugger&branchName=main) [![NuGet](https://img.shields.io/nuget/v/nanoFramework.Tools.Debugger.Net.svg)](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/) [![#yourfirstpr](https://img.shields.io/badge/first--timers--only-friendly-blue.svg)](https://github.com/nanoframework/Home/blob/main/CONTRIBUTING.md) [![Discord](https://img.shields.io/discord/478725473862549535.svg)](https://discord.gg/gCyBu8T)
+﻿[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_nf-debugger&metric=alert_status)](https://sonarcloud.io/dashboard?id=nanoframework_nf-debugger) [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_nf-debugger&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=nanoframework_nf-debugger) [![Build Status](https://dev.azure.com/nanoframework/debugger/_apis/build/status/nanoframework.nf-debugger?repoName=nanoframework%2Fnf-debugger&branchName=main)](https://dev.azure.com/nanoframework/debugger/_build/latest?definitionId=33&repoName=nanoframework%2Fnf-debugger&branchName=main) [![NuGet](https://img.shields.io/nuget/v/nanoFramework.Tools.Debugger.Net.svg)](https://www.nuget.org/packages/nanoFramework.Tools.Debugger.Net/) [![#yourfirstpr](https://img.shields.io/badge/first--timers--only-friendly-blue.svg)](https://github.com/nanoframework/Home/blob/main/CONTRIBUTING.md) [![Discord](https://img.shields.io/discord/478725473862549535.svg)](https://discord.gg/gCyBu8T)
 
 ![nanoFramework logo](https://raw.githubusercontent.com/nanoframework/Home/main/resources/logo/nanoFramework-repo-logo.png)
 
@@ -8,6 +8,13 @@
 
 The debugger library provides debugging and communication capabilities to .NET applications and allows debugging and communicate with .NET **nanoFramework** devices.
 It's provided as source code and as a NuGet package that can be integrated on any application.
+
+## Framework support
+
+The package provides `net10.0` and `net472` library assets. .NET 8 and 9 applications should upgrade to .NET 10
+or remain on an earlier debugger package; .NET Framework fallback is not a
+supported replacement. Visual Studio extensions use the `net472` asset, but
+the updated dependency requires integration validation in each VS version.
 
 ## Feedback and documentation
 

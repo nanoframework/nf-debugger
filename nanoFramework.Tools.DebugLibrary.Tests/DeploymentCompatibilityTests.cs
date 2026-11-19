@@ -366,7 +366,7 @@ namespace nanoFramework.Tools.Debugger.Tests
                 PeFormat.V1).IsCompatible);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("1.18.4.10", PeFormat.V1)]
         [DataRow("1.0.0.0", PeFormat.V1)]
         [DataRow("2.0.1.0", PeFormat.V2)]
@@ -377,7 +377,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             Assert.AreEqual(expected, DeploymentCompatibility.GetDevicePeFormat(Version.Parse(nanoClrVersion)));
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(null)]
         [DataRow("0.0.0.0")]
         public void UnknownNanoClrVersionHasNoPeFormat(string nanoClrVersion)

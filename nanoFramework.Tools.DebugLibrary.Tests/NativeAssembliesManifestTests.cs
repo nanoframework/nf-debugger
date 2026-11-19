@@ -62,7 +62,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             }
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("12345678")]
         [DataRow("0x")]
         [DataRow("0x123456789")]
@@ -72,28 +72,28 @@ namespace nanoFramework.Tools.Debugger.Tests
         {
             string json = $"{{ \"schemaVersion\": 1, \"nativeAssemblies\": [ {{ \"name\": \"A\", \"contractHash\": \"{hash}\" }} ] }}";
 
-            InvalidDataException ex = Assert.ThrowsException<InvalidDataException>(() => NativeAssembliesManifest.Parse(json, "fw/native_assemblies.json"));
+            InvalidDataException ex = Assert.ThrowsExactly<InvalidDataException>(() => NativeAssembliesManifest.Parse(json, "fw/native_assemblies.json"));
             StringAssert.Contains(ex.Message, "'fw/native_assemblies.json': 'A' has an invalid 'contractHash'");
         }
 
         [TestMethod]
         public void MissingContractHashThrows()
         {
-            Assert.ThrowsException<InvalidDataException>(
+            Assert.ThrowsExactly<InvalidDataException>(
                 () => NativeAssembliesManifest.Parse("{ \"schemaVersion\": 1, \"nativeAssemblies\": [ { \"name\": \"A\" } ] }"));
         }
 
         [TestMethod]
         public void MissingNameThrows()
         {
-            Assert.ThrowsException<InvalidDataException>(
+            Assert.ThrowsExactly<InvalidDataException>(
                 () => NativeAssembliesManifest.Parse("{ \"schemaVersion\": 1, \"nativeAssemblies\": [ { \"contractHash\": \"0x1\" } ] }"));
         }
 
         [TestMethod]
         public void MissingListThrows()
         {
-            InvalidDataException ex = Assert.ThrowsException<InvalidDataException>(
+            InvalidDataException ex = Assert.ThrowsExactly<InvalidDataException>(
                 () => NativeAssembliesManifest.Parse("{ \"schemaVersion\": 1 }"));
 
             StringAssert.Contains(ex.Message, "nativeAssemblies");
@@ -102,19 +102,19 @@ namespace nanoFramework.Tools.Debugger.Tests
         [TestMethod]
         public void MissingSchemaVersionThrows()
         {
-            InvalidDataException ex = Assert.ThrowsException<InvalidDataException>(
+            InvalidDataException ex = Assert.ThrowsExactly<InvalidDataException>(
                 () => NativeAssembliesManifest.Parse("{ \"nativeAssemblies\": [] }"));
 
             StringAssert.Contains(ex.Message, "schemaVersion");
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("not json")]
         [DataRow("{ \"schemaVersion\": \"one\", \"nativeAssemblies\": [] }")]
         [DataRow("[ 1, 2 ]")]
         public void InvalidJsonThrows(string json)
         {
-            Assert.ThrowsException<InvalidDataException>(() => NativeAssembliesManifest.Parse(json));
+            Assert.ThrowsExactly<InvalidDataException>(() => NativeAssembliesManifest.Parse(json));
         }
     }
 }

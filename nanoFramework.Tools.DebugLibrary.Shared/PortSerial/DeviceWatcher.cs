@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-#if NET5_0_OR_GREATER
+#if NET10_0_OR_GREATER
 using System.Runtime.Versioning;
 #endif
 using System.Text.RegularExpressions;
@@ -169,7 +169,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private bool IsCurrentWatcherThread => _threadWatch == Thread.CurrentThread;
 
-#if NET5_0_OR_GREATER
+#if NET10_0_OR_GREATER
         private static int CurrentProcessId => Environment.ProcessId;
 #else
         private static int CurrentProcessId => System.Diagnostics.Process.GetCurrentProcess().Id;
@@ -584,7 +584,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
             return ports;
         }
 
-#if NET5_0_OR_GREATER
+#if NET10_0_OR_GREATER
         [SupportedOSPlatform("windows")]
 #endif
         private static List<string> GetPortNames_Windows()
@@ -673,7 +673,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <param name="deviceName">The device name, like \Device\USBSER000.</param>
         /// <param name="portName">The port name, like COM3.</param>
         /// <param name="deviceFullPath">The device path from the COM Name Arbiter, if available.</param>
-#if NET5_0_OR_GREATER
+#if NET10_0_OR_GREATER
         [SupportedOSPlatform("windows")]
 #endif
         private static bool IsPortPresent_Windows(
@@ -720,7 +720,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         }
 
         // device names in SERIALCOMM, like \Device\USBSER000: the driver service name followed by the device number
-#if NET7_0_OR_GREATER
+#if NET10_0_OR_GREATER
         [GeneratedRegex(@"^\\Device\\([a-zA-Z]+)\d+$")]
         private static partial Regex DeviceNameRegex();
 #else
@@ -729,7 +729,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         private static Regex DeviceNameRegex() => s_deviceNameRegex;
 #endif
 
-#if NET5_0_OR_GREATER
+#if NET10_0_OR_GREATER
         [SupportedOSPlatform("windows")]
 #endif
         private static bool OwnsPort(
@@ -744,7 +744,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
         /// <summary>
         /// Checks the device instances that are currently present for a driver service.
         /// </summary>
-#if NET5_0_OR_GREATER
+#if NET10_0_OR_GREATER
         [SupportedOSPlatform("windows")]
 #endif
         private static bool AnyPresentInstance(

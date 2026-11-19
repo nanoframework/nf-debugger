@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.1.32228.430
+# Visual Studio Version 18
+VisualStudioVersion = 18.10.12224.181 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Debug Components", "Debug Components", "{5318C561-62E1-49CB-8A94-D704CFBAEE5B}"
 EndProject
@@ -17,7 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		azure-pipelines.yml = azure-pipelines.yml
 		README-BEFORE-UPDATE-REFS.txt = README-BEFORE-UPDATE-REFS.txt
-		..\README.md = ..\README.md
+		README.md = README.md
 		version.json = version.json
 	EndProjectSection
 EndProject

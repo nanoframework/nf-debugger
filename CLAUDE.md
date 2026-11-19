@@ -10,7 +10,7 @@ Detailed agent instructions already exist at [.github/copilot-instructions.md](.
 
 ## Build
 
-Prerequisite: .NET SDK 8.0+, and **full git history** — Nerdbank.GitVersioning computes the version from commit height and fails on a shallow clone:
+Prerequisite: .NET SDK 10.0+, and **full git history** — Nerdbank.GitVersioning computes the version from commit height and fails on a shallow clone:
 
 ```
 error MSB4018: Shallow clone lacks the objects required to calculate version height.
@@ -26,14 +26,14 @@ git fetch --unshallow origin
 # Restore
 dotnet restore nanoFramework.Tools.Debugger.sln
 
-# Build the library (targets net8.0 and net472 — keep new code compatible with both)
+# Build the library (targets net10.0 and net472 — keep new code compatible with both)
 dotnet build nanoFramework.Tools.DebugLibrary.Net/nanoFramework.Tools.DebugLibrary.Net.csproj
 
 # Build and pack (creates .nupkg)
 dotnet build nanoFramework.Tools.DebugLibrary.Net/nanoFramework.Tools.DebugLibrary.Net.csproj -t:build,pack -p:PublicRelease=true -c Release
 ```
 
-There are **no automated tests** — the CI test step is commented out (`azure-pipelines.yml`, "we don't have tests (yet)"). The `USB Test App WPF/` project is a manual WPF test app (Windows-only, requires physical nanoFramework hardware), not part of the NuGet package.
+Run `dotnet test nanoFramework.Tools.DebugLibrary.Tests/nanoFramework.Tools.DebugLibrary.Tests.csproj` for the automated tests. The `USB Test App WPF/` project is a manual WPF test app (Windows-only, requires physical nanoFramework hardware), not part of the NuGet package.
 
 CI is **Azure DevOps** (`azure-pipelines.yml`), not GitHub Actions — don't look for or add workflows under `.github/workflows` for build/test.
 
@@ -41,7 +41,7 @@ CI is **Azure DevOps** (`azure-pipelines.yml`), not GitHub Actions — don't loo
 
 ### Shared project pattern
 
-Most source lives in `nanoFramework.Tools.DebugLibrary.Shared/`, a Visual Studio **Shared Project** (`.shproj`, no independent output) referenced by `nanoFramework.Tools.DebugLibrary.Net/` (the actual `.csproj` that targets `net8.0;net472` and produces the NuGet package). New source files go in the Shared project and must be included via `nanoFramework.Tools.DebugLibrary.Net.projitems`, not added directly to the `.csproj`.
+Most source lives in `nanoFramework.Tools.DebugLibrary.Shared/`, a Visual Studio **Shared Project** (`.shproj`, no independent output) referenced by `nanoFramework.Tools.DebugLibrary.Net/` (the actual `.csproj` that targets `net10.0;net472` and produces the NuGet package). New source files go in the Shared project and must be included via `nanoFramework.Tools.DebugLibrary.Net.projitems`, not added directly to the `.csproj`.
 
 ### Wire Protocol
 
