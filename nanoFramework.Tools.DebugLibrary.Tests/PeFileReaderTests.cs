@@ -105,7 +105,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             AssertReference(assemblies[2], "nanoFramework.TestFramework", new Version(1, 0, 0, 0));
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(PeFormat.V1, false)]
         [DataRow(PeFormat.V1, true)]
         [DataRow(PeFormat.V2, false)]
@@ -130,7 +130,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             AssertReference(assembly, "Other.Library", new Version(5, 6, 7, 8));
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(PeFormat.V1)]
         [DataRow(PeFormat.V2)]
         public void SynthesizedDeploymentImageWithUnalignedAssemblies(PeFormat format)
@@ -166,7 +166,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             Assert.AreEqual(PeFormat.V2, assemblies[1].Format);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow((byte)0x00)]
         [DataRow((byte)0xFF)]
         public void TrailingFillerIsIgnored(byte filler)
@@ -183,14 +183,14 @@ namespace nanoFramework.Tools.Debugger.Tests
             byte[] pe = PeBuilder.BuildImage(new PeBuilder(PeFormat.V2, "App", new Version(1, 0, 0, 0)));
             byte[] data = pe.Concat(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }).ToArray();
 
-            InvalidDataException ex = Assert.ThrowsException<InvalidDataException>(() => PeFileReader.Read(data, "x.bin"));
+            InvalidDataException ex = Assert.ThrowsExactly<InvalidDataException>(() => PeFileReader.Read(data, "x.bin"));
             StringAssert.Contains(ex.Message, "after assembly 'App'");
         }
 
         [TestMethod]
         public void NotAPeThrows()
         {
-            InvalidDataException ex = Assert.ThrowsException<InvalidDataException>(
+            InvalidDataException ex = Assert.ThrowsExactly<InvalidDataException>(
                 () => PeFileReader.Read(new byte[] { 0x4D, 0x5A, 0x90, 0x00, 0, 0, 0, 0 }, "app.dll"));
 
             StringAssert.Contains(ex.Message, "'app.dll' is not a nanoFramework PE file");
@@ -199,10 +199,10 @@ namespace nanoFramework.Tools.Debugger.Tests
         [TestMethod]
         public void EmptyDataThrows()
         {
-            Assert.ThrowsException<InvalidDataException>(() => PeFileReader.Read(Array.Empty<byte>()));
+            Assert.ThrowsExactly<InvalidDataException>(() => PeFileReader.Read(Array.Empty<byte>()));
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(PeFormat.V1)]
         [DataRow(PeFormat.V2)]
         public void TruncatedPeThrows(PeFormat format)
@@ -210,10 +210,10 @@ namespace nanoFramework.Tools.Debugger.Tests
             byte[] pe = new PeBuilder(format, "App", new Version(1, 0, 0, 0)).Reference("mscorlib", new Version(1, 0, 0, 0)).Build();
 
             // truncated header
-            Assert.ThrowsException<InvalidDataException>(() => PeFileReader.Read(pe.Take(60).ToArray()));
+            Assert.ThrowsExactly<InvalidDataException>(() => PeFileReader.Read(pe.Take(60).ToArray()));
 
             // truncated body
-            InvalidDataException ex = Assert.ThrowsException<InvalidDataException>(() => PeFileReader.Read(pe.Take(pe.Length - 4).ToArray()));
+            InvalidDataException ex = Assert.ThrowsExactly<InvalidDataException>(() => PeFileReader.Read(pe.Take(pe.Length - 4).ToArray()));
             StringAssert.Contains(ex.Message, "invalid size");
         }
 
@@ -226,7 +226,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             pe[32] = 0x00;
             pe[33] = 0x40;
 
-            InvalidDataException ex = Assert.ThrowsException<InvalidDataException>(() => PeFileReader.Read(pe));
+            InvalidDataException ex = Assert.ThrowsExactly<InvalidDataException>(() => PeFileReader.Read(pe));
             StringAssert.Contains(ex.Message, "outside of the strings table");
         }
 
@@ -251,7 +251,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             pe[32] = 0x40;
             pe[33] = 0xFE;
 
-            InvalidDataException ex = Assert.ThrowsException<InvalidDataException>(() => PeFileReader.Read(pe));
+            InvalidDataException ex = Assert.ThrowsExactly<InvalidDataException>(() => PeFileReader.Read(pe));
             StringAssert.Contains(ex.Message, "built-in string 0xFE40");
         }
 
@@ -263,7 +263,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             // TypeRef table starting before the header end
             BitConverter.GetBytes(8u).CopyTo(pe, 36 + 4);
 
-            InvalidDataException ex = Assert.ThrowsException<InvalidDataException>(() => PeFileReader.Read(pe));
+            InvalidDataException ex = Assert.ThrowsExactly<InvalidDataException>(() => PeFileReader.Read(pe));
             StringAssert.Contains(ex.Message, "invalid table layout");
         }
 

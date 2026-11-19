@@ -13,12 +13,12 @@ It is published as a NuGet package and used by tools such as the nanoFramework V
 ```
 nf-debugger/
 ├── nanoFramework.Tools.Debugger.sln          # Solution file (Visual Studio 2022)
-├── version.json                               # Nerdbank.GitVersioning config (version 2.5.x)
+├── version.json                               # Nerdbank.GitVersioning config
 ├── azure-pipelines.yml                        # CI build (Azure DevOps, NOT GitHub Actions)
 ├── azure-pipelines/
 │   └── update-dependents.ps1                 # Script to update downstream NuGet consumers
 ├── nanoFramework.Tools.DebugLibrary.Net/      # Main library project (.csproj)
-│   └── nanoFramework.Tools.DebugLibrary.Net.csproj  # Targets net8.0 and net472
+│   └── nanoFramework.Tools.DebugLibrary.Net.csproj  # Targets net10.0 and net472
 ├── nanoFramework.Tools.DebugLibrary.Shared/   # Shared project (.shproj) — most source code lives here
 │   ├── WireProtocol/                          # Wire protocol engine, commands, packets, controllers
 │   ├── NFDevice/                              # NanoDevice, NanoDeviceBase, device access
@@ -47,7 +47,7 @@ The **Shared project** (`nanoFramework.Tools.DebugLibrary.Shared.shproj`) contai
 
 ### Prerequisites
 
-- .NET SDK 8.0+
+- .NET SDK 10.0+
 - Full git history is **required** (Nerdbank.GitVersioning computes version from commit height)
 
 ### Known Build Issue: Shallow Clone
@@ -79,17 +79,18 @@ dotnet build nanoFramework.Tools.DebugLibrary.Net/nanoFramework.Tools.DebugLibra
 
 ### Tests
 
-**There are currently no automated tests.** The CI pipeline has a test step that is commented out. The `USB Test App WPF` project serves as a manual test application (Windows only).
+Run `dotnet test nanoFramework.Tools.DebugLibrary.Tests/nanoFramework.Tools.DebugLibrary.Tests.csproj`.
+The `USB Test App WPF` project is a manual test application requiring hardware.
 
 ---
 
 ## CI/CD
 
 - **CI system:** Azure DevOps (`azure-pipelines.yml`), **not** GitHub Actions
-- **Build agent:** `windows-latest` (VSBuild is used for the WPF test app too)
+- **Build agent:** `windows-2025-vs2026` (.NET 10 SDK and VSBuild)
 - **NuGet publishing:** Azure Artifacts + NuGet.org
 - **Code analysis:** SonarCloud
-- **Versioning:** Nerdbank.GitVersioning (version `2.5.x`, configured in `version.json`)
+- **Versioning:** Nerdbank.GitVersioning (configured in `version.json`)
 - **Package signing:** Azure Key Vault via `sign` CLI tool
 
 There is no `copilot-setup-steps.yml` as CI runs on Azure DevOps, not GitHub Actions.
@@ -103,10 +104,12 @@ There is no `copilot-setup-steps.yml` as CI runs on Azure DevOps, not GitHub Act
 | Package | Pinned version | Reason |
 |---|---|---|
 | `System.Threading.Tasks.Extensions` | ≤ 4.5.4 | VS2019 extension compatibility (transitive dependency conflict with `System.Collections.Immutable`) |
-| `Nerdbank.GitVersioning` | 3.6.146 | Git-based versioning |
-| `System.IO.Ports` | 8.0.0 | Serial port access |
-| `NuGet.Build.Tasks.Pack` | 6.12.1 | NuGet pack during build |
-| `Microsoft.SourceLink.GitHub` | 8.0.0 | Source linking for debugging |
+| `Nerdbank.GitVersioning` | 3.10.94 | Git-based versioning |
+| `System.IO.Ports` | 10.0.0 | Serial port access |
+| `NuGet.Build.Tasks.Pack` | 6.14.0 | NuGet pack during build |
+| `Microsoft.SourceLink.GitHub` | 11.0.100 | Source linking for debugging |
+| `Microsoft.NET.Test.Sdk` | 18.12.0 | Test runner infrastructure |
+| `MSTest.TestAdapter` / `MSTest.TestFramework` | 4.5.3 | Automated tests |
 
 ---
 
@@ -188,7 +191,7 @@ The `DeviceConfiguration` namespace contains classes for reading/writing device 
 
 2. **Shallow clone will break the build** — Always run `git fetch --unshallow origin` before attempting to build if the repository was cloned shallowly.
 
-3. **No test suite** — There are no automated tests. Cannot run `dotnet test`. Manual testing requires physical nanoFramework hardware.
+3. **Tests** — The MSTest project runs on .NET 10. Hardware-dependent manual testing uses the WPF test app.
 
 4. **Shared project pattern** — When adding new source files, they should typically go into `nanoFramework.Tools.DebugLibrary.Shared/` and be included via the `.projitems` file (`nanoFramework.Tools.DebugLibrary.Net.projitems`), not directly into the `.csproj`.
 
@@ -198,7 +201,7 @@ The `DeviceConfiguration` namespace contains classes for reading/writing device 
 
 7. **Assembly strong-naming** — The assembly is strong-name signed. The `key.snk` file must remain present and referenced in the project.
 
-8. **Multi-target** — The library targets both `net8.0` and `net472`. Ensure any new code is compatible with both targets (or conditionally compiled).
+8. **Multi-target** — The library targets both `net10.0` and `net472`. Ensure any new code is compatible with both targets (or conditionally compiled). .NET 8/9 consumers need to upgrade or use an earlier package; VSIX and SDK integration are separate follow-ups.
 
 9. **UI-agnostic library** — The library is also used by CLI tools (e.g. nanoff). Don't add `INotifyPropertyChanged`, observable collections, IL weavers or MVVM/UI dependencies: expose plain state and .NET events, and let UI consumers (VS extension, test app) wrap them in their own view models and marshal events to the UI thread.
 

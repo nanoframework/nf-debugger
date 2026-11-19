@@ -34,7 +34,7 @@ resources:
       endpoint: nanoframework
 
 pool:
-  vmImage: 'windows-latest'
+  vmImage: 'windows-2025-vs2026'
 
 variables:
   - group: sign-client-credentials
@@ -154,6 +154,18 @@ steps:
 
 - template: azure-pipelines-templates/install-nuget.yml@templates
 
+- task: UseDotNet@2
+  condition: >-
+    and(
+      succeeded(),
+      ne(variables['StartReleaseCandidate'], true),
+      ne(variables['UPDATE_DEPENDENTS'], 'true')
+    )
+  displayName: Install .NET 10 SDK
+  inputs:
+    packageType: sdk
+    version: '10.0.x'
+
 - task: NuGetCommand@2
   condition: >-
     and(
@@ -173,6 +185,7 @@ steps:
     )
   inputs:
     solution: '$(solution)'
+    vsVersion: latest
     platform: '$(buildPlatform)'
     msbuildArgs: '-p:PublicRelease=true -t:build,pack'
     configuration: '$(buildConfiguration)'

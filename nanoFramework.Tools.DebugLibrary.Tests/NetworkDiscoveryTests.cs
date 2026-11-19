@@ -42,7 +42,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             Assert.AreEqual(26000, message.Port);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("")]
         [DataRow("+")]
         [DataRow("+:26000")]
@@ -54,7 +54,6 @@ namespace nanoFramework.Tools.Debugger.Tests
         [DataRow("-:abc")]
         [DataRow("-:26000:extra")]
         [DataRow("*:26000:name")]
-        [DataRow("+:26000")] // no target name
         public void InvalidMessages_AreRejected(string text)
         {
             Assert.IsFalse(DiscoveryMessage.TryParse(text, out var message));
@@ -84,7 +83,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             Assert.AreEqual("tcpip://192.168.1.50:26000", info.DeviceId);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("tcpip://192.168.1.50:26000", "192.168.1.50", 26000)]
         [DataRow("tcpip://my-device.local:26001", "my-device.local", 26001)]
         [DataRow("tcpip://MyDevice:1", "mydevice", 1)]
@@ -98,7 +97,7 @@ namespace nanoFramework.Tools.Debugger.Tests
             Assert.AreEqual(port, info.Port);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(null)]
         [DataRow("")]
         [DataRow("COM3")]

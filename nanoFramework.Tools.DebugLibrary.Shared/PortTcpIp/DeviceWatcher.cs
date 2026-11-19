@@ -228,7 +228,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
         private bool IsCurrentWatcherThread => _threadWatch == Thread.CurrentThread;
 
-#if NET5_0_OR_GREATER
+#if NET10_0_OR_GREATER
         private static int CurrentProcessId => Environment.ProcessId;
 #else
         private static int CurrentProcessId => System.Diagnostics.Process.GetCurrentProcess().Id;

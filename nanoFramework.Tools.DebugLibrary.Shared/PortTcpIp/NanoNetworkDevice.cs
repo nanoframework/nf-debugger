@@ -32,7 +32,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
         // keepalive: the first probe is sent after the connection is idle for this time (seconds), then at this interval, this number of times
         private const int KeepAliveTime = 5;
         private const int KeepAliveInterval = 2;
-#if NET5_0_OR_GREATER
+#if NET10_0_OR_GREATER
         private const int KeepAliveRetryCount = 3;
 #endif
 
@@ -147,7 +147,7 @@ namespace nanoFramework.Tools.Debugger.PortTcpIp
 
             try
             {
-#if NET5_0_OR_GREATER
+#if NET10_0_OR_GREATER
                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, KeepAliveTime);
                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, KeepAliveInterval);
                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, KeepAliveRetryCount);

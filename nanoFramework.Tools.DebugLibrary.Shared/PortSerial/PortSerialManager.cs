@@ -128,7 +128,7 @@ namespace nanoFramework.Tools.Debugger.PortSerial
 
         private void ThrowIfDisposed()
         {
-#if NET7_0_OR_GREATER
+#if NET10_0_OR_GREATER
             ObjectDisposedException.ThrowIf(_disposed, this);
 #else
             if (_disposed)
