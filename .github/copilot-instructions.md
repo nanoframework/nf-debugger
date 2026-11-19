@@ -105,7 +105,7 @@ There is no `copilot-setup-steps.yml` as CI runs on Azure DevOps, not GitHub Act
 |---|---|---|
 | `System.Threading.Tasks.Extensions` | ≤ 4.5.4 | VS2019 extension compatibility (transitive dependency conflict with `System.Collections.Immutable`) |
 | `Nerdbank.GitVersioning` | 3.10.94 | Git-based versioning |
-| `System.IO.Ports` | 10.0.0 | Serial port access |
+| `System.IO.Ports` | 11.0.0 | Serial port access |
 | `NuGet.Build.Tasks.Pack` | 6.14.0 | NuGet pack during build |
 | `Microsoft.SourceLink.GitHub` | 11.0.100 | Source linking for debugging |
 | `Microsoft.NET.Test.Sdk` | 18.12.0 | Test runner infrastructure |
